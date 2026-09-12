@@ -107,6 +107,27 @@ init; the launcher is the pack).
 | `AFTER` | name list of services | optional; each resolves (R8), never itself (R27), never a cycle (R21) |
 | `NEEDS` | name list of capabilities | optional; each must be declared AND granted (R17, R18) |
 
+### DEFINE NETWORK — one interface, one way to an address
+
+| clause | value | obligation |
+|---|---|---|
+| `INTERFACE` | string | required — the interface's name (`"eth0"`); one network per interface (R39) |
+| `ADDRESS` | `dhcp` \| string `"a.b.c.d/n"` | required — a leased address, or a static address with its prefix; an address without its prefix is refused (R38) |
+| `GATEWAY` | string `"a.b.c.d"` | optional, static only — a dhcp network learns its gateway (R37); not an address is refused (R40) |
+| `DNS` | string list | optional, static only — the servers; a dhcp network learns them |
+
+A NETWORK needs the `network` capability granted (R36: silence is
+refusal, as for a service). A NETWORK is to the wire what a MOUNT is to
+the disk: PID 1 brings every declared network up **before any service
+runs**, in declaration order, and states the result — the address it
+carries, the gateway it set, the lease it was given, or the refusal by
+name. A dhcp network is served by a client in the one binary
+(`src/netcfg.zig`: DISCOVER, OFFER, REQUEST, ACK, three tries); the
+emulator court judges it against QEMU's user-mode network, whose
+server leases `10.0.2.15` with router `10.0.2.2` and dns `10.0.2.3`.
+Named seams: lease renewal, a DNS resolver, the box as a DHCP SERVER
+for the phones, IPv6.
+
 **AFTER waits for readiness, and the RESTART policy says what ready
 means.** A service with `RESTART never` is a one-shot: it is ready when
 it has exited 0, and if it exits otherwise, whatever comes AFTER it

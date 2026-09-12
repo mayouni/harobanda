@@ -14,6 +14,7 @@ pub const Step = union(enum) {
     mount: struct { at: []const u8, fs: machine.Fs, device: ?[]const u8, options: []const machine.MountOption, implicit: bool },
     capability: struct { name: machine.Capability, granted: bool },
     pin: struct { name: []const u8, gpio: u32, mode: machine.PinMode },
+    network: *const machine.Network,
     service: *const machine.Service,
 };
 
@@ -58,6 +59,7 @@ pub fn derive(arena: std.mem.Allocator, m: *const Machine) !Plan {
     }
     for (m.mounts) |mt| try steps.append(arena, .{ .mount = .{ .at = mt.at, .fs = mt.fs, .device = mt.device, .options = mt.options, .implicit = false } });
     for (m.capabilities) |c| try steps.append(arena, .{ .capability = .{ .name = c.name, .granted = c.granted } });
+    for (m.networks) |*n| try steps.append(arena, .{ .network = n });
     for (m.pins) |p| try steps.append(arena, .{ .pin = .{ .name = p.name, .gpio = p.gpio, .mode = p.mode } });
 
     const started = try arena.alloc(bool, m.services.len);
@@ -109,6 +111,20 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
         },
         .capability => |c| try out.print("{s} {s} ({s})\n", .{ if (c.granted) "grant" else "refuse", @tagName(c.name), @tagName(machine.kindOf(c.name)) }),
         .pin => |p| try out.print("pin {s} gpio {d} {s}\n", .{ p.name, p.gpio, @tagName(p.mode) }),
+        .network => |n| {
+            try out.print("network {s} -- {s} ", .{ n.name, n.interface });
+            switch (n.address) {
+                .dhcp => try out.print("dhcp", .{}),
+                .static => |st| try out.print("static {s}", .{st.text}),
+            }
+            if (n.gateway) |g| try out.print(" gateway {s}", .{g.text});
+            if (n.dns.len > 0) {
+                try out.print(" dns [", .{});
+                for (n.dns, 0..) |d, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", d.text });
+                try out.print("]", .{});
+            }
+            try out.print("\n", .{});
+        },
         .service => |svc| {
             try out.print("start {s} --", .{svc.name});
             for (svc.run) |w| try out.print(" {s}", .{w});

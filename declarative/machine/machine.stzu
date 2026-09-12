@@ -47,6 +47,15 @@ DEFINE DECLARATION mount AS (
   SEATS [at: text, fs: name, device: text?, options: [option]]
 ) RATIONALE "A filesystem of the profile at an absolute path"
 
+DEFINE FORM server AS (
+  SEATS [address: text]
+) RATIONALE "One dns server of a static network, an address as text"
+
+DEFINE DECLARATION network AS (
+  VERB "NETWORK",
+  SEATS [interface: text, address: text, gateway: text?, dns: [server]]
+) RATIONALE "One interface, one way to an address (dhcp or a static address/prefix); a static one may name its gateway and dns servers, a dhcp one learns them; brought up by PID 1 before any service"
+
 DEFINE DECLARATION pin AS (
   VERB "PIN",
   SEATS [gpio: number, mode: name]

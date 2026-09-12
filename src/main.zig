@@ -31,7 +31,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos court  [fixtures.json]        (default: {s})
         \\  stzos init   <file.machine> [--rehearse] [--turns N]
         \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
-        \\  stzos net    <iface> <a.b.c.d>/<prefix>      (a service of the machine)
+        \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -84,7 +84,7 @@ pub fn main() !u8 {
         return 0;
     }
     if (std.mem.eql(u8, verb, "net")) {
-        return net.run(args[2..], out);
+        return net.run(arena, args[2..], out);
     }
     if (std.mem.eql(u8, verb, "court")) {
         const path = if (args.len > 2) args[2] else default_fixtures;
@@ -98,8 +98,8 @@ pub fn main() !u8 {
         }
         const m = (try load(arena, args[2], out)) orelse return 1;
         if (std.mem.eql(u8, verb, "check")) {
-            try out.print("machine {s} -- {s} / {s} / kernel {s} -- {d} service(s), {d} capabilit{s}, {d} mount(s), {d} pin(s) -- judged, no refusal\n", .{
-                m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.kernel), m.services.len, m.capabilities.len, if (m.capabilities.len == 1) "y" else "ies", m.mounts.len, m.pins.len,
+            try out.print("machine {s} -- {s} / {s} / kernel {s} -- {d} service(s), {d} capabilit{s}, {d} mount(s), {d} pin(s), {d} network(s) -- judged, no refusal\n", .{
+                m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.kernel), m.services.len, m.capabilities.len, if (m.capabilities.len == 1) "y" else "ies", m.mounts.len, m.pins.len, m.networks.len,
             });
             return 0;
         }

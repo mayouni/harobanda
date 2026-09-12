@@ -102,6 +102,47 @@ pub const Pin = struct {
     rationale: []const u8,
 };
 
+pub const Ipv4 = struct { text: []const u8, addr: u32 };
+pub const Address = union(enum) {
+    dhcp,
+    static: struct { text: []const u8, ip: u32, prefix: u6 },
+};
+
+/// A declared network: one interface, one way to an address. PID 1 brings
+/// it up before any service runs (a NETWORK is to the wire what a MOUNT is
+/// to the disk). A static address may declare its GATEWAY and DNS; a dhcp
+/// address learns them.
+pub const Network = struct {
+    name: []const u8,
+    line: usize,
+    interface: []const u8,
+    address: Address,
+    gateway: ?Ipv4,
+    dns: []const Ipv4,
+    rationale: []const u8,
+};
+
+pub fn parseIpv4(s: []const u8) ?u32 {
+    var ip: u32 = 0;
+    var it = std.mem.splitScalar(u8, s, '.');
+    var n: usize = 0;
+    while (it.next()) |part| : (n += 1) {
+        if (n == 4 or part.len == 0) return null;
+        const b = std.fmt.parseInt(u8, part, 10) catch return null;
+        ip = (ip << 8) | b;
+    }
+    if (n != 4) return null;
+    return ip;
+}
+
+pub fn parseCidr(spec: []const u8) ?struct { ip: u32, prefix: u6 } {
+    const slash = std.mem.indexOfScalar(u8, spec, '/') orelse return null;
+    const prefix = std.fmt.parseInt(u6, spec[slash + 1 ..], 10) catch return null;
+    if (prefix > 32) return null;
+    const ip = parseIpv4(spec[0..slash]) orelse return null;
+    return .{ .ip = ip, .prefix = prefix };
+}
+
 pub const Machine = struct {
     name: []const u8,
     line: usize,
@@ -116,6 +157,7 @@ pub const Machine = struct {
     capabilities: []const CapDecl,
     mounts: []const Mount,
     pins: []const Pin,
+    networks: []const Network,
 
     pub fn granted(self: Machine, c: Capability) bool {
         for (self.capabilities) |d| if (d.name == c) return d.granted;
@@ -296,7 +338,7 @@ const Clause = struct {
     value: Value,
 };
 
-const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN };
+const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK };
 
 const Decl = struct {
     kind: Kind,
@@ -313,6 +355,7 @@ fn allowedClauses(kind: Kind) []const []const u8 {
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
+        .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS" },
     };
 }
 
@@ -376,7 +419,7 @@ fn parseDecl(ctx: *Ctx) Error!Decl {
     const kind_tok = ctx.next();
     const kind = if (kind_tok.tag == .keyword) std.meta.stringToEnum(Kind, kind_tok.text) else null;
     if (kind == null) {
-        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the machine kinds are closed (MACHINE, SERVICE, CAPABILITY, MOUNT, PIN)", .{kind_tok.text});
+        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the machine kinds are closed (MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK)", .{kind_tok.text});
     }
     const name = try ctx.expect(.ident, "a lower_snake name");
     const as_tok = ctx.next();
@@ -556,6 +599,43 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         }
     }.f;
 
+    // networks: one per interface, the network capability granted
+    var nets: std.ArrayList(Network) = .{};
+    for (decls.items) |d| if (d.kind == .NETWORK) {
+        switch (grantedCap(cap_slice, .network) orelse return ctx.refuse(d.line, "NETWORK {s} needs network, which no declaration grants", .{d.name})) {
+            true => {},
+            false => return ctx.refuse(d.line, "NETWORK {s} needs network, which is declared and refused (GRANT no)", .{d.name}),
+        }
+        const iface = try wantString(&ctx, try required(&ctx, d, "INTERFACE"));
+        if (iface.len == 0) return ctx.refuse(d.line, "INTERFACE names the interface (\"eth0\"), not an empty string", .{});
+        for (nets.items) |e| if (std.mem.eql(u8, e.interface, iface)) {
+            return ctx.refuse(d.line, "{s} already has a network ({s}); one network per interface", .{ iface, e.name });
+        };
+        const ac = try required(&ctx, d, "ADDRESS");
+        const address: Address = switch (ac.value) {
+            .ident => |w| if (std.mem.eql(u8, w, "dhcp")) Address.dhcp else return ctx.refuse(ac.line, "ADDRESS is dhcp or an address/prefix string, not '{s}'", .{w}),
+            .string => |s| blk: {
+                const c = parseCidr(s) orelse return ctx.refuse(ac.line, "'{s}' is not an address/prefix (a.b.c.d/n)", .{s});
+                break :blk Address{ .static = .{ .text = s, .ip = c.ip, .prefix = c.prefix } };
+            },
+            else => return ctx.refuse(ac.line, "ADDRESS is dhcp or an address/prefix string", .{}),
+        };
+        var gateway: ?Ipv4 = null;
+        if (find(d, "GATEWAY")) |c| {
+            if (address == .dhcp) return ctx.refuse(c.line, "a dhcp network learns its gateway; GATEWAY is for a static ADDRESS", .{});
+            const s = try wantString(&ctx, c);
+            gateway = .{ .text = s, .addr = parseIpv4(s) orelse return ctx.refuse(c.line, "'{s}' is not an address (a.b.c.d)", .{s}) };
+        }
+        var dns: std.ArrayList(Ipv4) = .{};
+        if (find(d, "DNS")) |c| {
+            if (address == .dhcp) return ctx.refuse(c.line, "a dhcp network learns its dns servers; DNS is for a static ADDRESS", .{});
+            for (try wantStrings(&ctx, c)) |s| {
+                try dns.append(arena, .{ .text = s, .addr = parseIpv4(s) orelse return ctx.refuse(c.line, "'{s}' is not an address (a.b.c.d)", .{s}) });
+            }
+        }
+        try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .dns = try dns.toOwnedSlice(arena), .rationale = d.rationale });
+    };
+
     // services
     var services: std.ArrayList(Service) = .{};
     for (decls.items) |d| if (d.kind == .SERVICE) {
@@ -678,6 +758,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .capabilities = cap_slice,
         .mounts = try mounts.toOwnedSlice(arena),
         .pins = try pins.toOwnedSlice(arena),
+        .networks = try nets.toOwnedSlice(arena),
     };
 }
 

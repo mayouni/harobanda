@@ -1,10 +1,10 @@
 -- makeen_qemu.machine -- the Makeen box as QEMU's virt machine can carry
--- it: aarch64, hosted, a persistent ext4 partition, the two worlds of the
+-- it: aarch64, hosted, a persistent ext4 partition, a network that asks
+-- for its address (QEMU's user-mode network answers: 10.0.2.15, router
+-- 10.0.2.2, dns 10.0.2.3 -- the dhcp oracle), the two worlds of the
 -- counter. makeen_box.machine (fixture A2, the box's own truth) names the
--- SD card partition and a network service that does not exist yet; this
--- sibling names what the emulator court can boot today -- the virtio disk
--- at /dev/vda, the console on the PL011 -- and differs in nothing else
--- that matters. When the box is real, the two converge or one yields.
+-- SD card partition and a static address; this sibling names what the
+-- emulator court can boot today and differs in nothing else that matters.
 
 DEFINE MACHINE makeen_qemu AS (
   PROFILE hosted,
@@ -12,7 +12,7 @@ DEFINE MACHINE makeen_qemu AS (
   KERNEL linux,
   LIBC musl,
   CONSOLE "/dev/ttyAMA0"
-) RATIONALE "The counter box, emulated: one box, no shell, no package manager, a persistent /data"
+) RATIONALE "The counter box, emulated: one box, no shell, no package manager, a persistent /data, a leased address"
 
 DEFINE CAPABILITY process AS (
   GRANT yes
@@ -21,6 +21,10 @@ DEFINE CAPABILITY process AS (
 DEFINE CAPABILITY filesystem AS (
   GRANT yes
 ) RATIONALE "Orders and stock live on the box"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "The worlds speak to the phones"
 
 DEFINE CAPABILITY gpio AS (
   GRANT no
@@ -33,15 +37,20 @@ DEFINE MOUNT data AS (
   OPTIONS [rw, noatime]
 ) RATIONALE "The persistent partition -- a virtio disk here, the SD card's second partition on the box"
 
+DEFINE NETWORK lan AS (
+  INTERFACE "eth0",
+  ADDRESS dhcp
+) RATIONALE "The emulator's network hands out the address; the court judges the lease"
+
 DEFINE SERVICE kds AS (
   RUN ["/stzr", "/app/kds.luau"],
   RESTART never,
-  NEEDS [process, filesystem]
+  NEEDS [process, filesystem, network]
 ) RATIONALE "The kitchen display world"
 
 DEFINE SERVICE poste AS (
   RUN ["/stzr", "/app/poste.luau"],
   RESTART never,
   AFTER [kds],
-  NEEDS [process, filesystem]
+  NEEDS [process, filesystem, network]
 ) RATIONALE "The counter world"

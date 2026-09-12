@@ -136,13 +136,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   against `machines/makeen_box.expected` — it is expected to differ
   exactly where the emulator lacks the hardware (Ethernet up, the
   worlds starting) and nowhere else. Then A/B slots with watchdog
-  rollback (the watchdog driver is in), and the NETWORK kind (DHCP,
-  gateway, DNS) beyond `stzos net`'s static address.
+  rollback (the watchdog driver is in).
 - The kernel rebuilt with `make CC="zig cc"` (the stated sovereignty
   destination; gcc did the first boot) and a tarball mirror inside the
   estate.
-- The NETWORK kind and the USER seat (fixture-first widenings); a
-  readiness/completion seat beside AFTER (which orders starts only).
+- The USER seat (fixture-first widening); a readiness signal for
+  daemons beside AFTER. The NETWORK kind exists since NET-1 (dhcp and
+  static; lease renewal, a resolver, the box as DHCP server and IPv6
+  are its named seams).
 - The edge profile's boot through MicroRing's substrate (Device seam).
 - The OS chapter into the Vision Corpus, with the 08-30 Ring++ turn the
   corpus still lacks; the three standing refusals ruled on by name.

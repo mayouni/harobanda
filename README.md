@@ -9,7 +9,7 @@ derived; on a hosted machine one static binary, `stzos`, executes that
 plan as PID 1 and narrates the boot as a transcript. No shell, no
 package manager, no init scripts: the declared machine IS the system.
 
-**Status: OS-4, the box has a board and a card.** The Makeen box is a
+**Status: NET-1 on top of OS-4 — the box has a board, a card, and a declared wire.** A machine declares its NETWORK as it declares a MOUNT, PID 1 brings it up before any service, and the emulator court judges a DHCP lease against QEMU's own server. The Makeen box is a
 Raspberry Pi 4 Model B (`doc/PROVENANCE.md`, the board ruling). Its
 `.machine` file names the board, and from it the pipeline derives the
 BCM2711 kernel, the card's device tree (mainline plus the mmc aliases
@@ -39,7 +39,7 @@ strategy that this repository serves is the Vision Corpus
 | the imperative half: kernel build, cpio, QEMU, the judge | `experiment/os2_image.sh` (WSL Ubuntu) | `zig-out/wsl/image_<name>.txt` |
 | the reference machines | `machines/` | `makeen_box.machine` (BOARD rpi4, fixture A2 verbatim), `qemu_hello.machine` (x86_64) and `makeen_qemu.machine` (aarch64 `virt`) all boot and are judged against their `.expected` |
 | the board's card: firmware pinned, two derived device trees, the SD image | `experiment/os2_image.sh`, `experiment/dtb_ops.py`, `vendor/rpi-firmware/PIN.txt` | the `raspi4b` boot transcript, 17 lines |
-| `stzos net`, the box's own interface bring-up | `src/net.zig` | unit tests; the boot transcript (NODEV in the emulator, by design) |
+| the NETWORK kind: PID 1 brings the declared wire up before any service, static or dhcp (a client in the one binary) | `src/netcfg.zig`, `src/net.zig` (`stzos net` by hand) | fixtures A10–A11, R36–R40; the lease in `makeen_qemu.expected` from QEMU's own DHCP server |
 
 ## Three profiles, one language
 

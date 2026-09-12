@@ -38,7 +38,7 @@ third program on the path for a declaration to reach.
 | runtime | `stzr` (stz's static binary) | **own** |
 | userland | none: no shell, no coreutils, no busybox | **none** |
 | filesystem | initramfs (cpio) holding `/stzos`, `/stzr`, `/app/*.luau`, `/etc/machine`; declared mounts for persistent data | **own** (the builder writes it) |
-| network | `stzos-net` — a service, not init's job; DHCP/static per a NETWORK kind (queued) | **own** (small) |
+| network | the NETWORK kind: PID 1 brings each declared interface up before any service — static (four ioctls and the route) or dhcp (a client in `src/netcfg.zig`); judged against QEMU's user-mode DHCP server | **own** |
 | updates | A/B image partitions, atomic pointer swap, watchdog rollback (ZinOS Edge's OTA design) | **own**, governed by refine |
 | emulator | QEMU (`-kernel bzImage -initrd initramfs.cpio -append "rdinit=/stzos ..." -nographic`) | **borrow** for the court; not shipped |
 | bootloader | the board's: the Raspberry Pi 4's own firmware (`start4.elf`, `fixup4.dat` — a vendor blob pinned by sha256 in `vendor/rpi-firmware/PIN.txt`, fetched, never committed) reads `config.txt` and loads `kernel8.img` + the initramfs; on x86 the emulator loads the kernel itself | **borrow**, stated per board in the target table |
@@ -121,7 +121,8 @@ judged so that one file describes the fleet, phone included.
 | the image, x86_64 | the QEMU serial transcript, normalised, diffed against `machines/qemu_hello.expected` | matches, 28 lines |
 | the image, aarch64 (the Makeen box on `virt`) | the same against `machines/makeen_qemu.expected`: `virt`, PL011, a virtio ext4 disk mounted at `/data`, two stzr worlds | matches, 20 lines |
 | the board's card (the Makeen box on `raspi4b`) | the same against `machines/makeen_box.expected`: the card's second partition mounted by its declared name, `stzos net` refused NODEV (no Ethernet in the emulator), the worlds never started by the readiness rule | matches, 17 lines |
-| the language | `fixtures.json` widened with BOARD: 9 accepts + 35 rejects | 44/44 |
+| the language | `fixtures.json` widened with BOARD and NETWORK: 11 accepts + 40 rejects | 51/51 |
+| the wire | `makeen_qemu.expected` carries the dhcp lease from QEMU's server; `makeen_box.expected` the static network refused NODEV in the emulator | 22 and 21 lines |
 
 ## 7. Boundaries
 

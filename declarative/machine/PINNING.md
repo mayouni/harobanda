@@ -5,10 +5,15 @@
 `fixtures.json` sha256:
 
 ```
-a7f0976ad2bcc757368e7bf86b6850c8b933c4fcbb48b2d8430b01482c5341a8
+0994dccb4bdf4b6d2dae8bfb9174c4b4df76ddc753624d30fd4105e19350bf81
 ```
 
-(Before the BOARD clause of 2026-09-12, OS-4:
+(Before the NETWORK kind of 2026-09-12 (NET-1):
+`a7f0976ad2bcc757368e7bf86b6850c8b933c4fcbb48b2d8430b01482c5341a8`,
+9 accepts + 35 rejects. The widening added A10, A11, R36–R40, put
+`networks` into every accept's counts, and made A2 the box file with
+its NETWORK and without its `network_up` service. Before the BOARD
+clause of 2026-09-12, OS-4:
 `0448842222d40d7b8d6b4866c23f42c878eda7c9ea83f6c1717eb3fb7789e9cb`,
 8 accepts + 32 rejects. The widening added A9, R33, R34, R35, put the
 defaulted board into A1/A3 and made A2 the box file verbatim with
@@ -23,7 +28,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **44/44** — 9 accepts with structural expectations, 35 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor and 43/44 on the first run of the BOARD widening: two convictions of the implementation, both on wording or check order, the fixtures kept both times) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **51/51** — 11 accepts with structural expectations, 40 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, 51/51 on the first run of the NETWORK widening) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -52,6 +57,19 @@ meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
   (A2 services 3 → 99), a wrong fragment (R5), a valid source posing as
   a reject — the court went red three times, each for its named
   reason, and exited nonzero (`experiment/PROTOCOL.md`).
+
+## The network, judged by a lease (NET-1)
+
+`machines/makeen_qemu.machine` declares `NETWORK lan` with `ADDRESS
+dhcp`; the image gives the `virt` machine a virtio NIC on QEMU's
+user-mode network, whose built-in server is the oracle. The pinned
+transcript carries the lease: `network lan -- eth0 up 10.0.2.15/24,
+gateway 10.0.2.2 (dhcp), dns [10.0.2.3]` — **22 lines, identical**.
+`makeen_box.expected` was re-pinned at 21 lines: its static NETWORK is
+refused NODEV under `raspi4b` (no Ethernet there) and the two worlds
+now run, since a network is brought up like a mount and a refused one
+does not hold services back. Both re-pins travel with the NETWORK kind
+in one commit.
 
 ## The board's image, judged by the same board emulated (OS-4)
 

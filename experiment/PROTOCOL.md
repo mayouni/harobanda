@@ -1,3 +1,72 @@
+# NET-1 — the NETWORK kind: a machine declares its wire, PID 1 brings it up, a lease judged in the emulator
+
+Ordered by the author on 2026-09-12 ("start them in order one by one",
+the NETWORK kind first), while the hardware for OS-5 is on its way.
+
+## What was built
+
+- **`DEFINE NETWORK`**, fixture-first (A10, A11, R36–R40; 51/51 on the
+  first run): `INTERFACE`, `ADDRESS dhcp | "a.b.c.d/n"`, and for a
+  static address `GATEWAY` and `DNS`. One network per interface; the
+  `network` capability must be granted; a dhcp network may not declare
+  what it learns; addresses are parsed at check time. `machine.stzu`
+  gained the declaration and a `server` form (6/5/0/3, accepted by
+  stz's meta-court). The plan carries a `network` step after the
+  capabilities and before the services.
+- **PID 1 brings the networks up** (`src/netcfg.zig`), like mounts,
+  before any service: static through four ioctls and a fifth for the
+  default route (`SIOCADDRT` with the kernel's `rtentry`, laid out by
+  hand — the stdlib has no such table); dhcp through a client written
+  here: DISCOVER, OFFER, REQUEST, ACK on a broadcast UDP socket bound to
+  the interface, three tries of three seconds, the lease's address,
+  mask, router and DNS applied. Every result is one transcript line.
+- **`stzos net`** by hand does the same: `<iface> <cidr> [gateway]` or
+  `<iface> dhcp`.
+- **The emulator's oracle**: when a machine declares a NETWORK, the
+  image gives `qemu_pc` and `qemu_virt` a virtio NIC on QEMU's
+  user-mode network (`-netdev user`), whose built-in server leases
+  `10.0.2.15` with router `10.0.2.2` and dns `10.0.2.3`. The kernel
+  fragment gains the IP stack and the NIC. The Pi has GENET already.
+- **The box's file**: `makeen_box.machine` declares `NETWORK lan` static
+  at `192.168.10.1/24`, no gateway (the box is the gateway), and the
+  `network_up` service is gone; `makeen_qemu.machine` declares
+  `ADDRESS dhcp`.
+
+## What was measured
+
+- `makeen_qemu` on `virt`: **the lease on the first try** —
+  `network lan -- eth0 up 10.0.2.15/24, gateway 10.0.2.2 (dhcp), dns
+  [10.0.2.3]`, then both worlds; pinned, 22 lines. The kernel gained
+  the IP stack and virtio-net: 2m40 for the rebuild.
+- `makeen_box` under `raspi4b`: the static network refused `NODEV` (no
+  Ethernet in the emulator), the worlds now run since a refused network
+  holds nothing back; pinned, 21 lines. `qemu_hello` unchanged, 28.
+
+## What was found
+
+1. **A NETWORK is a mount, not a service.** OS-4 had the box bring its
+   interface up through a `network_up` service, and the worlds came
+   AFTER it, so in the emulator they never started. Declaring the wire
+   as a kind of its own puts it where a mount is: before the services,
+   stated, and not a gate. The worlds now run in both emulated boxes.
+2. **The kernel's route ioctl takes a struct the Zig stdlib does not
+   carry**: `rtentry` is laid out by hand from the uapi header, 64-bit
+   fields and padding included. The emulated lease sets a default route
+   through it and the kernel accepted it; on a machine where the route
+   already exists `EEXIST` is treated as success.
+3. **QEMU's user-mode network is a complete oracle for dhcp**: a
+   deterministic lease with no hardware, and the transcript pins it.
+
+## Named seams
+
+- Lease renewal (the box takes its address once, at boot), a DNS
+  resolver, the box as a DHCP SERVER for the phones, IPv6.
+- A readiness signal for daemons; `RESTART always` worlds in
+  `makeen_box.machine` once the real worlds are daemons (the stand-ins
+  exit, so they are `never` today).
+
+---
+
 # OS-4 — the real box: a Raspberry Pi 4, its SD card image, and the same board emulated to judge it
 
 Ordered by the author on 2026-09-12 ("choose the board on my behalf and

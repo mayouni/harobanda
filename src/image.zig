@@ -55,6 +55,8 @@ const Target = struct {
     platform_cfg: []const []const u8 = &.{},
     block_cfg: []const []const u8, // for a declared block mount
     blk_device: ?[]const u8, // the QEMU virtio-blk device, or null when the board boots from a card
+    net_cfg: []const []const u8 = &.{}, // for a declared NETWORK (the emulator's NIC; a board has its own in platform_cfg)
+    net_device: ?[]const u8 = null, // the QEMU virtio-net device, or null when the board has its own NIC
     sd: bool = false,
     /// what the BOARD's tree needs that mainline's does not say (applied
     /// to the card's DTB; experiment/dtb_ops.py). Ops:
@@ -81,6 +83,8 @@ fn target(board: machine.Board) Target {
             .serial_cfg = &.{ "CONFIG_SERIAL_8250=y", "CONFIG_SERIAL_8250_CONSOLE=y", "CONFIG_KERNEL_GZIP=y" },
             .block_cfg = &.{ "CONFIG_PCI=y", "CONFIG_VIRTIO_PCI=y" },
             .blk_device = "virtio-blk-pci",
+            .net_cfg = &.{ "CONFIG_PCI=y", "CONFIG_VIRTIO_PCI=y" },
+            .net_device = "virtio-net-pci",
         },
         .qemu_virt => .{
             .kernel_arch = "arm64",
@@ -95,6 +99,8 @@ fn target(board: machine.Board) Target {
             .serial_cfg = &.{ "CONFIG_SERIAL_AMBA_PL011=y", "CONFIG_SERIAL_AMBA_PL011_CONSOLE=y" },
             .block_cfg = &.{"CONFIG_VIRTIO_MMIO=y"},
             .blk_device = "virtio-blk-device",
+            .net_cfg = &.{"CONFIG_VIRTIO_MMIO=y"},
+            .net_device = "virtio-net-device",
         },
         .rpi4 => .{
             .kernel_arch = "arm64",
@@ -292,6 +298,15 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         for (base) |l| try w.print("{s}\n", .{l});
         for (t.serial_cfg) |l| try w.print("{s}\n", .{l});
         for (t.platform_cfg) |l| try w.print("{s}\n", .{l});
+        if (m.networks.len > 0) {
+            // the wire: the IP stack, and the emulator's NIC when the board
+            // has none of its own (a real board's NIC is in platform_cfg)
+            try w.print("CONFIG_NET=y\nCONFIG_INET=y\nCONFIG_NETDEVICES=y\n", .{});
+            if (t.net_device != null) {
+                try w.print("CONFIG_VIRTIO_MENU=y\nCONFIG_VIRTIO=y\nCONFIG_VIRTIO_NET=y\n", .{});
+                for (t.net_cfg) |l| try w.print("{s}\n", .{l});
+            }
+        }
         if (block) |b| {
             // BLOCK and BLK_DEV are menus tinyconfig closes; VIRTIO_MENU
             // gates every virtio driver. Without them, olddefconfig drops
@@ -360,6 +375,9 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         } else if (block != null) {
             try w.print(" -drive if=none,file=disk0.img,format=raw,id=d0 -device {s},drive=d0", .{t.blk_device.?});
         }
+        // QEMU's user-mode network: a built-in DHCP server (router 10.0.2.2,
+        // lease 10.0.2.15, dns 10.0.2.3) -- the oracle for a dhcp NETWORK
+        if (m.networks.len > 0) if (t.net_device) |nd| try w.print(" -netdev user,id=n0 -device {s},netdev=n0", .{nd});
         // rdinit=, not init=: the root IS the initramfs. With init= the
         // kernel first looks for /init, finds none, and goes to mount a
         // root DEVICE -- which panics as soon as CONFIG_BLOCK exists. The
@@ -369,7 +387,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         try writeOut(opts.out_dir, "boot.cmd", cmd.items);
     }
 
-    try out.print("image {s} -- {s} / {s} / {s} -- {d} dir(s), {d} file(s), {s} -> {s}/\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), dirs.items.len, files.items.len, if (t.sd) "an SD card" else if (block != null) "1 disk" else "no disk", opts.out_dir });
+    try out.print("image {s} -- {s} / {s} / {s} -- {d} dir(s), {d} file(s), {s}, {d} network(s) -> {s}/\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), dirs.items.len, files.items.len, if (t.sd) "an SD card" else if (block != null) "1 disk" else "no disk", m.networks.len, opts.out_dir });
     for (files.items) |f| try out.print("  {s} <- {s}\n", .{ f.path, f.source });
     if (block) |b| try out.print("  {s} -> {s} ({s}, {d} MB) at {s}\n", .{ if (t.sd) "card p2" else "disk d0", b.device.?, @tagName(b.fs), opts.disk_mb, b.at });
     return 0;

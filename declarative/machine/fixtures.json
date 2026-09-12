@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks.",
   "accepts": [
     {
       "id": "A1",
@@ -19,7 +19,8 @@
           "services": 0,
           "capabilities": 0,
           "mounts": 0,
-          "pins": 0
+          "pins": 0,
+          "networks": 0
         },
         "order": [],
         "granted": [],
@@ -29,7 +30,7 @@
     {
       "id": "A2",
       "name": "the hosted box: the counter machine of a restaurant, whole -- machines/makeen_box.machine verbatim",
-      "source": "-- makeen_box.machine -- the box behind the counter: server, network and\n-- bridge in one. The hosted profile's reference machine (fixture A2 is\n-- this file, verbatim) and, since OS-4, the board's truth: a Raspberry\n-- Pi 4 Model B, the SD card's second partition as /data, the console on\n-- the header pins, the interface brought up by stzos itself. RestoLean's\n-- Makeen thread named the box; this declares it.\n\nDEFINE MACHINE makeen_box AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  LIBC musl,\n  BOARD rpi4,\n  CONSOLE \"/dev/ttyS1\"\n) RATIONALE \"One box, no shell, no package manager: the declared machine is the system\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"The box is the restaurant's network\"\n\nDEFINE CAPABILITY filesystem AS (\n  GRANT yes\n) RATIONALE \"Orders and stock live on the box\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT no\n) RATIONALE \"No pins on the counter box; sensors are edge machines\"\n\nDEFINE MOUNT data AS (\n  AT \"/data\",\n  FS ext4,\n  DEVICE \"/dev/mmcblk0p2\",\n  OPTIONS [rw, noatime]\n) RATIONALE \"The persistent partition: the SD card's second partition\"\n\nDEFINE SERVICE network_up AS (\n  RUN [\"/stzos\", \"net\", \"eth0\", \"192.168.10.1/24\"],\n  RESTART never,\n  NEEDS [network]\n) RATIONALE \"Bring the interface up before anything speaks; the box is the network's address\"\n\nDEFINE SERVICE kds AS (\n  RUN [\"/stzr\", \"/app/kds.luau\"],\n  RESTART always,\n  AFTER [network_up],\n  NEEDS [network, filesystem]\n) RATIONALE \"The kitchen display world\"\n\nDEFINE SERVICE poste AS (\n  RUN [\"/stzr\", \"/app/poste.luau\"],\n  RESTART always,\n  AFTER [network_up, kds],\n  NEEDS [network, filesystem]\n) RATIONALE \"The counter world\"\n",
+      "source": "-- makeen_box.machine -- the box behind the counter: server, network and\n-- bridge in one. The hosted profile's reference machine (fixture A2 is\n-- this file, verbatim) and, since OS-4, the board's truth: a Raspberry\n-- Pi 4 Model B, the SD card's second partition as /data, the console on\n-- the header pins, the network declared and brought up by PID 1 before\n-- any world speaks. RestoLean's Makeen thread named the box; this\n-- declares it.\n\nDEFINE MACHINE makeen_box AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  LIBC musl,\n  BOARD rpi4,\n  CONSOLE \"/dev/ttyS1\"\n) RATIONALE \"One box, no shell, no package manager: the declared machine is the system\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"The box is the restaurant's network\"\n\nDEFINE CAPABILITY filesystem AS (\n  GRANT yes\n) RATIONALE \"Orders and stock live on the box\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT no\n) RATIONALE \"No pins on the counter box; sensors are edge machines\"\n\nDEFINE MOUNT data AS (\n  AT \"/data\",\n  FS ext4,\n  DEVICE \"/dev/mmcblk0p2\",\n  OPTIONS [rw, noatime]\n) RATIONALE \"The persistent partition: the SD card's second partition\"\n\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"192.168.10.1/24\"\n) RATIONALE \"The box is the network's address; the phones find it here. No gateway: the box is the gateway\"\n\nDEFINE SERVICE kds AS (\n  RUN [\"/stzr\", \"/app/kds.luau\"],\n  RESTART never,\n  NEEDS [network, filesystem]\n) RATIONALE \"The kitchen display world (a stand-in that exits; the real world is a daemon, RESTART always)\"\n\nDEFINE SERVICE poste AS (\n  RUN [\"/stzr\", \"/app/poste.luau\"],\n  RESTART never,\n  AFTER [kds],\n  NEEDS [network, filesystem]\n) RATIONALE \"The counter world (a stand-in that exits; the real world is a daemon, RESTART always)\"\n",
       "expect": {
         "name": "makeen_box",
         "profile": "hosted",
@@ -39,13 +40,13 @@
         "board": "rpi4",
         "console": "/dev/ttyS1",
         "counts": {
-          "services": 3,
+          "services": 2,
           "capabilities": 3,
           "mounts": 1,
-          "pins": 0
+          "pins": 0,
+          "networks": 1
         },
         "order": [
-          "network_up",
           "kds",
           "poste"
         ],
@@ -70,7 +71,8 @@
           "services": 1,
           "capabilities": 2,
           "mounts": 1,
-          "pins": 2
+          "pins": 2,
+          "networks": 0
         },
         "order": [
           "sense"
@@ -97,7 +99,8 @@
           "services": 1,
           "capabilities": 2,
           "mounts": 0,
-          "pins": 0
+          "pins": 0,
+          "networks": 0
         },
         "order": [
           "launcher"
@@ -117,7 +120,8 @@
           "services": 3,
           "capabilities": 0,
           "mounts": 0,
-          "pins": 0
+          "pins": 0,
+          "networks": 0
         },
         "order": [
           "a",
@@ -144,7 +148,8 @@
           "services": 1,
           "capabilities": 0,
           "mounts": 0,
-          "pins": 0
+          "pins": 0,
+          "networks": 0
         }
       }
     },
@@ -157,7 +162,8 @@
           "services": 1,
           "capabilities": 1,
           "mounts": 0,
-          "pins": 0
+          "pins": 0,
+          "networks": 0
         },
         "granted": [
           "clock"
@@ -174,6 +180,37 @@
         "board": "rpi4",
         "libc": "musl",
         "console": "/dev/console"
+      }
+    },
+    {
+      "id": "A10",
+      "name": "a static network with its gateway and dns servers",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"192.168.10.1/24\",\n  GATEWAY \"192.168.10.254\",\n  DNS [\"1.1.1.1\", \"9.9.9.9\"]\n) RATIONALE \"The counter's wire\"\n",
+      "expect": {
+        "counts": {
+          "services": 0,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 1
+        },
+        "granted": [
+          "network"
+        ]
+      }
+    },
+    {
+      "id": "A11",
+      "name": "a dhcp network learns everything else",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\nDEFINE NETWORK wifi AS (INTERFACE \"wlan0\", ADDRESS dhcp) RATIONALE \"x\"\n",
+      "expect": {
+        "counts": {
+          "services": 0,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 2
+        }
       }
     }
   ],
@@ -387,6 +424,36 @@
       "name": "BOARD is a hosted machine's clause",
       "source": "DEFINE MACHINE m AS (PROFILE edge, ARCH thumbv7em, KERNEL none, BOARD rpi4) RATIONALE \"x\"\n",
       "refusal": "hosted machine's clause"
+    },
+    {
+      "id": "R36",
+      "name": "silence is refusal: a NETWORK without the network capability granted",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n",
+      "refusal": "no declaration grants"
+    },
+    {
+      "id": "R37",
+      "name": "a dhcp network learns its gateway: GATEWAY is refused",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS dhcp, GATEWAY \"10.0.0.1\") RATIONALE \"x\"\n",
+      "refusal": "learns its gateway"
+    },
+    {
+      "id": "R38",
+      "name": "an address without its prefix is refused at check time",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1\") RATIONALE \"x\"\n",
+      "refusal": "not an address/prefix"
+    },
+    {
+      "id": "R39",
+      "name": "one network per interface",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK a AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\nDEFINE NETWORK b AS (INTERFACE \"eth0\", ADDRESS \"10.0.0.2/8\") RATIONALE \"x\"\n",
+      "refusal": "already has a network"
+    },
+    {
+      "id": "R40",
+      "name": "a gateway that is not an address is refused",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.0.0.2/8\", GATEWAY \"router\") RATIONALE \"x\"\n",
+      "refusal": "not an address (a.b.c.d)"
     }
   ]
 }

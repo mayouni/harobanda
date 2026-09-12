@@ -6,10 +6,12 @@ boot: mount devtmpfs at /dev -- done
 boot: mount ext4 at /data -- done
 boot: grant process (effectful)
 boot: grant filesystem (effectful)
+boot: grant network (effectful)
 boot: refuse gpio (effectful)
+boot: network lan -- eth0 up 10.0.2.15/24, gateway 10.0.2.2 (dhcp), dns [10.0.2.3]
 boot: start kds -- pid N -- /stzr /app/kds.luau
 kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
-kds: read /etc/machine -- 7 declarations rode in the image
+kds: read /etc/machine -- 9 declarations rode in the image
 boot: kds (pid N) exited 0
 boot: start poste -- pid N -- /stzr /app/poste.luau
 poste: the counter world is up on the Makeen box, after kds

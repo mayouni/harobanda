@@ -28,6 +28,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const machine = @import("machine.zig");
 const plan = @import("plan.zig");
+const netcfg = @import("netcfg.zig");
 
 pub const Options = struct {
     rehearse: bool = false,
@@ -136,6 +137,14 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         },
         .capability => |c| try out.print("boot: {s} {s} ({s})\n", .{ if (c.granted) "grant" else "refuse", @tagName(c.name), @tagName(machine.kindOf(c.name)) }),
         .pin => |pn| try out.print("boot: pin {s} gpio {d} {s} -- declared; the hosted profile drives pins through the gpio capability of its services\n", .{ pn.name, pn.gpio, @tagName(pn.mode) }),
+        .network => |n| {
+            if (opts.rehearse) {
+                try out.print("boot: network {s} -- {s} {s} -- rehearsed, not executed\n", .{ n.name, n.interface, if (n.address == .dhcp) "dhcp" else "static" });
+                continue;
+            }
+            try out.flush();
+            _ = try netcfg.bringUp(n, out, "boot: ");
+        },
         .service => {}, // started below, when what it comes AFTER is ready
     };
     try startReady(gpa, slots.items, out);
