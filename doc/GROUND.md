@@ -107,39 +107,119 @@ floor, and what exists today. The distinction between a fact and a
 projection is kept on every line, because a document that blurs it is
 the kind of brochure this angle is against.
 
-### 4.1 CousBox and the Makeen box (RestoLean, Lyon)
+### 4.1 RestoLean (CousBox, Lyon): the platform, the constellation, the box, the fleet
 
-**The ground.** A couscous restaurant in Lyon, its owner Amor, and a
-platform for neighbourhood commerce designed with him: a customer
-remote control (scan, order, pay) as a local-first page, a kitchen
-display, a counter world, a box behind the counter that is server,
-network and bridge in one. The business model is paid on performance,
-never on onboarding, so hardware must cost nothing and be replaceable
-by the merchant: B9's verdict is a commodity board "never
-designed by us" for the network role, and used phones for everything
-else. The guarantee sheet is above.
+**The ground.** RestoLean is a platform for neighbourhood commerce,
+"the Shopify of neighbourhood commerce" in its own words, designed
+since 2024 with Amor, owner of CousBox, a couscous restaurant in Lyon
+and the platform's client zero (`restolean/kb/agents/PROJET.md`). Its
+history is the estate's in miniature: two years of rich specification
+and no deliverable, a turnaround through agentic building, a first
+iteration delivered in July 2026, and on 4 July 2026 the pivot that
+inverted the order of the platform: the customer first, with a remote
+control page (scan, order, pay) that needs no account; then the
+kitchen display and the catalogue workshop; the restaurateur's
+management world second; the supplier last. Since that day RestoLean
+is not an application but a constellation of worlds on a shared
+Commons (identity, catalogue, orders, payments, fleet), governed by
+declared norms: the customer stays anonymous, an order is born paid,
+VAT is carried by the catalogue, an out-of-stock propagates in two
+seconds, undo rather than confirm, and the Verrou itself, "admit the
+management world when V1 is in production", written into the
+architecture (`kb/agents/CONSTELLATION.md`). RestoPay follows in two
+phases, acquiring then issuing. The business partner is paid on the
+performance of the co-piloting and never on onboarding, so the
+merchant's hardware must cost nothing and be replaceable by the
+merchant. Amor's own constraints are the sharpest specification in
+the estate: French only, at most two gestures per action, usable
+offline in the storeroom, five to fifteen minutes a day, and "my
+numbers stay with me."
 
-**The machine.** `machines/makeen_box.machine` exists and boots in the
-emulator: a Raspberry Pi 4, the card's second partition as `/data`,
-the console on the header pins, a static network the phones find, two
-worlds in order, two slots. The phones stay what B9 ruled them: enslaved
-commodity Android, the touch profile, MakeenOS as posture. The fridge
-that tripped the breaker on 15 August is the ground's own request for
-the edge profile: `machines/cold_room_sensor.machine` projects a
-thermistor and a log onto MicroRing's substrate, and the HACCP evidence
-zin's fleet agents would draw from it is the commercial layer over that
-open mechanism.
+Two field events then wrote the floor's requirements. On 15 August
+2026, the first trial: the refrigerator, the breaker, the internet box
+rebooting, the DHCP lease changing, two hours of observations lost.
+The resilience brief that followed (`livrable/resilience/`) split "the
+network" into five failure domains and showed that the two which
+actually stop a restaurant are the router and the single server host,
+a laptop with a lid; that a lunch service is time-boxed and cannot be
+retried; that a tool which fails once during a rush is replaced by a
+paper pad the same afternoon; and that French cash-register law
+(inalterability, security, retention and archiving of sales records)
+holds in degraded mode too. On 22 August, the installation: the app
+reached Amor's phone through six barriers (a corporate device policy,
+Samsung's blocker, Play Protect) and the lesson was that the
+professional channel is a fleet console with silent forced install,
+the way the incumbents ship, and that the vendor's own management API
+is not sovereign because its agent, its service and its ownership of
+the enterprise stay with the vendor (`B4`, `B5`).
 
-**The bridge.** RingServ's shape is the box's server role (declared
-services, embedded SQLite, sync with local-first pages); RingScript's
-shape is the phones' faces; MicroRing is the sensor; stzr runs the
-worlds under PID 1; zin governs the fleet of boxes and phones as one
-constitution; refine's gate is how a new image reaches a card.
+**The machine.** One constellation, three floors, one language.
 
-**Today.** The box boots in QEMU with stand-in worlds that exit; the
-real kitchen and counter worlds are daemons still to be written; the
-board is on order (STZ-OS-HARDWARE-01). The guarantee sheet is not yet
-a fixture file, and it should be (§6).
+- *The Commons box.* The constellation needs, in its own words, "the
+  smallest server that keeps the promise, not a framework": the
+  catalogue, the orders flowing to the kitchen, the payment webhooks.
+  That server is the Makeen box, and `machines/makeen_box.machine`
+  declares it: a commodity board (B9's verdict, "never designed by
+  us"), the card's second partition as the durable journal, a static
+  address with no gateway because "the box is the network's address;
+  the phones find it here", the kitchen and counter worlds in order,
+  two slots. The failure domains are answered where they live: the
+  router by a box that hands out the addresses and the names itself
+  (B7: `imprimante.makeen` instead of a number to re-type, which
+  "solves a problem he has today that has nothing to do with us"); the
+  laptop by a machine with no lid, no shell, a watchdog and a boot
+  that commits only when it recognises itself; the mains by a restart
+  into the committed slot while the kitchen display keeps its local
+  queue. The sales journal's inalterability and retention begin as a
+  MOUNT and want a signed-journal seat, named, not built.
+- *The devices.* The remote control on the customer's own phone, the
+  kitchen display on a tablet, the management world on the merchant's
+  phone: enslaved commodity Android, the touch profile, MakeenOS as a
+  posture over the host. "MakeenOS Ready" as RestoLean defines it, "a
+  list of requirements verifiable at installation" rather than a
+  manufacturer's reference, is a court by another name. The fleet
+  (Paris, Lyon, the franchisees) is a set of machine files; an update
+  is an image sent by group through refine's gate, tried once per box,
+  rolled back by the box itself. That is the sovereign fleet console
+  B5 asked for, without the vendor's agent on the device.
+- *The sensors.* The refrigerator that tripped the breaker is the
+  ground's own request for the edge profile: a cold-room thermistor
+  and its log, `machines/cold_room_sensor.machine`, projected onto
+  MicroRing's substrate, and the HACCP evidence zin's fleet agents
+  would draw from it as the commercial layer over the open mechanism.
+  And RestoPay, when it comes, is the most sovereignty-sensitive world
+  of the constellation: an identity of its own (USER), an envelope of
+  its own (CAPABILITY), and a floor with no shell for an auditor of
+  cash-register software to read.
+
+**The bridge.** RingScript's shape is the remote control: the Ring VM
+resident in the page, local-first, a link or a QR as its identity.
+RingServ's shape is the Commons role: declared services, embedded
+SQLite, sync with local-first pages, one static binary, and the
+strategy note of 8 August chose stzlib's own application server as the
+Commons for the first demo. MicroRing is the sensor. stzlib gives the
+constellation its idiom (stzSuperApp: worlds, bonds, norms, a
+Commons) and its offline engine. zin's constitution is what the
+constellation's norms become at fleet altitude, and its evidence
+agents (HACCP, the cash-register law) the commercial layer. refine's
+gate is how an image reaches a franchisee's box. Zing and stzp are how
+each world stays a single-file page projected to a phone, a tablet and
+the web. And Bangalo is how the project is built: the Verrou, the
+notebook that channels new ideas instead of fighting them, and the
+project's first law, "the demo does not wait for the foundations",
+which is Bangalo's own refusal of frameworks that capture the work.
+
+**Today.** Iteration 1 delivered in July 2026 (the management world
+v0.1, the console, the showcase site). The demo of 15 August passed on
+the real CousBox catalogue, without payment, on a laptop as the
+server, a phone as the remote control and a tablet as the kitchen
+display, on the venue's Wi-Fi. The box today is a Galaxy A16 phone as
+a hotspot, with two lived limits (B9). `machines/makeen_box.machine`
+boots in the emulator with stand-in worlds that exit; the real kitchen
+and counter worlds are daemons still to be written; the Commons server
+is not yet a declared service of the machine; RestoPay is untouched;
+the board is on order (STZ-OS-HARDWARE-01). The guarantee sheet is not
+yet a fixture file, and it should be (§6).
 
 ### 4.2 DIKO Hub (ONG DIKO, Niamey; bases at Gothèye and Diffa)
 
@@ -372,7 +452,8 @@ the author orders.
 - "Shaped by the solution" is a claim about the mechanism, verified by
   fixtures and transcripts, not a claim that any of the five solutions
   has adopted it. Four of the five are proposals, partnerships or
-  designs. One, CousBox, has a machine file and a board on order.
+  designs. One, RestoLean, has a machine file for its Commons box, a
+  demo that passed on a laptop, and a board on order.
 - The ecosystem has one thing the declared machine does not: the
   hardware it runs on, with local AI in the newest phones that "no
   home-made box will ever have" (B9 §5). B9's answer stands here
