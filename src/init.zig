@@ -195,7 +195,20 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         if (!known) try out.print("boot: reaped orphan pid {d}\n", .{ended});
         try out.flush();
     }
-    try out.print("boot: init {s} -- {s}\n", .{ if (is_pid1) "would now halt the machine" else "exits", if (opts.rehearse) "rehearsal over" else "boot over" });
+    if (is_pid1 and !opts.rehearse) {
+        // PID 1 may not exit (the kernel panics); it restarts the machine.
+        // Under QEMU -no-reboot this is how a boot ends and the transcript
+        // closes. Inside a user namespace the kernel refuses it (PERM) and
+        // the transcript says so.
+        try out.print("boot: init halts the machine -- reboot(RESTART)\n", .{});
+        try out.flush();
+        linux.sync();
+        const rc = linux.reboot(.MAGIC1, .MAGIC2, .RESTART, null);
+        try out.print("boot: reboot refused by the kernel: {s} -- init exits\n", .{@tagName(linux.E.init(rc))});
+        try out.flush();
+        return 0;
+    }
+    try out.print("boot: init exits -- {s}\n", .{if (opts.rehearse) "rehearsal over" else "boot over"});
     try out.flush();
     return 0;
 }

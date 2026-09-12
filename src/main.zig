@@ -17,6 +17,7 @@ const machine = @import("machine.zig");
 const plan = @import("plan.zig");
 const court = @import("court.zig");
 const init = @import("init.zig");
+const image = @import("image.zig");
 
 pub const version = "0.1.0";
 const default_fixtures = "declarative/machine/fixtures.json";
@@ -28,6 +29,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos plan   <file.machine>
         \\  stzos court  [fixtures.json]        (default: {s})
         \\  stzos init   <file.machine> [--rehearse] [--turns N]
+        \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -84,7 +86,7 @@ pub fn main() !u8 {
         const failures = try court.run(gpa, path, out);
         return if (failures == 0) 0 else 1;
     }
-    if (std.mem.eql(u8, verb, "check") or std.mem.eql(u8, verb, "plan") or std.mem.eql(u8, verb, "init")) {
+    if (std.mem.eql(u8, verb, "check") or std.mem.eql(u8, verb, "plan") or std.mem.eql(u8, verb, "init") or std.mem.eql(u8, verb, "image")) {
         if (args.len < 3) {
             try usage(out);
             return 1;
@@ -100,6 +102,26 @@ pub fn main() !u8 {
         if (std.mem.eql(u8, verb, "plan")) {
             try plan.render(p, out);
             return 0;
+        }
+        if (std.mem.eql(u8, verb, "image")) {
+            var root: ?[]const u8 = null;
+            var out_dir: ?[]const u8 = null;
+            var j: usize = 3;
+            while (j + 1 < args.len) : (j += 2) {
+                if (std.mem.eql(u8, args[j], "--root")) {
+                    root = args[j + 1];
+                } else if (std.mem.eql(u8, args[j], "--out")) {
+                    out_dir = args[j + 1];
+                } else {
+                    try out.print("stzos: unknown option '{s}'\n", .{args[j]});
+                    return 1;
+                }
+            }
+            if (root == null or out_dir == null) {
+                try out.print("stzos: image needs --root <staging dir> and --out <image dir>\n", .{});
+                return 1;
+            }
+            return image.write(arena, p, .{ .out_dir = out_dir.?, .root = root.?, .machine_path = args[2] }, out);
         }
         var opts = init.Options{};
         var i: usize = 3;

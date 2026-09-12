@@ -29,7 +29,7 @@ The multi-call shape is deliberate: the image's boot path holds exactly
 two binaries, stzos and stzr, and the declared services. There is no
 third program on the path for a declaration to reach.
 
-## 3. The hosted image (OS-2, designed, not built)
+## 3. The hosted image (OS-2 — built and booted 2026-09-12)
 
 | part | source | verdict |
 |---|---|---|
@@ -43,14 +43,26 @@ third program on the path for a declaration to reach.
 | emulator | QEMU (`-kernel bzImage -initrd initramfs.cpio -append "init=/stzos ..." -nographic`) | **borrow** for the court; not shipped |
 | bootloader | the board's (U-Boot on ARM SBCs, the firmware's EFI stub on x86) | **borrow**; declared per machine later |
 
-`stzos image <file.machine>` would: judge the file; select the kernel
-config from the profile and the declared mounts; build the initramfs
-from the plan; emit `image/<name>/{bzImage,initramfs.cpio}`; and print
-the boot command. `stzos boot <name>` runs it in QEMU and captures the
-transcript; the fixture is the transcript.
+`stzos image <file.machine> --root <staging> --out <dir>` judges the
+file and DERIVES three texts, touching no toolchain: `initramfs.list`
+(the kernel's own gen_init_cpio description — device nodes, mount
+points, `/stzos`, every program and file the services name, each taken
+from the staging root and refused if absent, and the declaration itself
+at `/etc/machine`), `kernel.fragment` (the kconfig options the profile
+and the declared mounts require), and `boot.cmd` (the QEMU line). The
+imperative half is `experiment/os2_image.sh` on a Linux host: tinyconfig
+plus the fragment, `make -j2 bzImage`, gen_init_cpio, QEMU with the
+serial console captured, and the judge — the transcript normalised
+(firmware banner, CRs, pids) and diffed against
+`machines/<name>.expected`.
 
-**What this host cannot do today:** no QEMU, no gcc/make in WSL. The
-act needs packages installed (the author's call) or a Linux box.
+**First boot, measured (2026-09-12, WSL Ubuntu, QEMU 10.2 TCG):**
+Linux 6.12.109 at 496 options → a 1.2 MB bzImage in 78 s wall at two
+jobs; a 4.2 MB initramfs of two binaries (stzos 3.4 MB unstripped, stzr
+776 KB), one Luau file and the machine file; the boot ran PID 1 through
+four mounts, two services and a clean `reboot(RESTART)`, QEMU exiting 0
+under `-no-reboot`. The transcript matches the pinned expectation line
+for line.
 
 ## 4. The edge profile (declared; MicroRing's substrate)
 
@@ -81,7 +93,7 @@ judged so that one file describes the fleet, phone included.
 | the mechanism | Zig unit tests with negative siblings; the court probed with a mutated judge (3 reds) | green |
 | the Linux-only code | `zig build cross` (two static targets) | builds |
 | the boot | the transcript, run as PID 1 in a user namespace under WSL | ran: pids 1–10, proc mounted, sysfs/devtmpfs refused PERM, all policies exercised |
-| the image | QEMU boot transcript | OS-2, blocked on the host |
+| the image | the QEMU serial transcript, normalised, diffed against `machines/qemu_hello.expected` | matches, 28 lines |
 
 ## 7. Boundaries
 
@@ -93,6 +105,10 @@ judged so that one file describes the fleet, phone included.
 - Restart policy is a cap of 5 in v0.1 (a rehearsal guard); backoff and
   a declared budget are queued. A real machine's `always` service is
   expected to run, not to exit.
+- AFTER orders STARTS, not completions: `hello` starts after `self` has
+  been spawned, not after it has finished (the first boot shows both
+  outputs interleaved by the kernel's scheduling). A readiness or
+  completion seat is a fixture-first widening.
 - Users and identities: every service runs as the machine. The USER
   seat with a per-device Ed25519 identity (MicroRing's ALIGNMENT.md
   finding: hardware custody and algorithm are coupled) is queued.

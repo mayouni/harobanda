@@ -47,6 +47,8 @@ silently (ZinOS, Zos, MakeenOS and Device all exist in the estate —
 zig build -j2 && zig build test -j2 && zig build court -j2 && zig build cross -j2
 zig-out\bin\stzos.exe check|plan machines\<name>.machine
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/wsl_boot.sh    # then read zig-out/wsl/*.txt
+wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello   # image, kernel, QEMU boot, judge -> zig-out/wsl/image_qemu_hello.txt
+cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-x86_64-linux-musl   # stzr for the image
 ```
 
 `zig build cross` is not optional: `src/init.zig` is comptime-gated on
@@ -85,17 +87,30 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 - **Inside `unshare -Urpf`** (a user namespace without root) `proc`
   mounts, `sysfs` and `devtmpfs` are refused with PERM. That is the
   kernel's rule, not a defect; the transcript states it.
-- **No QEMU on this host, no gcc/make in WSL Ubuntu.** The image act
-  needs one of: packages installed in WSL (author's call), or a Linux
-  box. Do not download kernels or tools without asking.
+- **WSL Ubuntu has the OS-2 toolchain since 2026-09-12** (gcc 15.2,
+  make 4.4, QEMU 10.2, flex, bison, bc, libelf, libssl, cpio), installed
+  by `experiment/os2_env.sh` on the author's ruling. **Port 80 is blocked
+  on this network** (http times out, https answers): apt's sources were
+  switched to https by that script; `curl -4` over https works.
+- **Never extract or build the kernel on the Windows mount.** drvfs is
+  an order of magnitude slower; `os2_image.sh` extracts into `$HOME`
+  inside WSL. The tarball and its pin stay in `vendor/linux/`
+  (gitignored, 142 MB; `vendor/PIN.md` is the record).
+- **Invoke WSL scripts from PowerShell, never from the Bash tool** —
+  git-bash rewrites `/mnt/d/...` into `C:/Git/mnt/...`
+  (`MSYS_NO_PATHCONV=1 wsl.exe ...` is the workaround if you must).
 
 ## Next steps (author-ordered, one per session)
 
-- **OS-2 — the image**: `stzos image <file.machine>` builds a bootable
-  hosted image (a vendored kernel, an initramfs holding stzos + stzr +
-  the declared services) and boots it in QEMU; the boot transcript is
-  the fixture. Blocked on a kernel build environment (see traps).
-- The NETWORK kind and the USER seat (fixture-first widenings).
+- **OS-3 — the box**: the hosted image on real hardware and on aarch64
+  (`stzos image` refuses aarch64 today): the kernel config for a board,
+  the bootloader seam, persistent MOUNTs on a block device (virtio-blk
+  in QEMU first), A/B slots with watchdog rollback.
+- The kernel rebuilt with `make CC="zig cc"` (the stated sovereignty
+  destination; gcc did the first boot) and a tarball mirror inside the
+  estate.
+- The NETWORK kind and the USER seat (fixture-first widenings); a
+  readiness/completion seat beside AFTER (which orders starts only).
 - The edge profile's boot through MicroRing's substrate (Device seam).
 - The OS chapter into the Vision Corpus, with the 08-30 Ring++ turn the
   corpus still lacks; the three standing refusals ruled on by name.

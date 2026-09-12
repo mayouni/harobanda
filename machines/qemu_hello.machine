@@ -1,0 +1,39 @@
+-- qemu_hello.machine -- the first machine to BOOT: a hosted x86_64 box
+-- whose image (a vendored Linux 6.12 LTS over tinyconfig, an initramfs of
+-- two binaries and one Luau file, this file at /etc/machine) boots in
+-- QEMU with stzos as PID 1. Two services: the machine prints its own plan
+-- from inside itself, then stzr runs a Luau world that says hello. The
+-- serial transcript is the fixture (experiment/os2_image.sh).
+
+DEFINE MACHINE qemu_hello AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "The smallest machine that boots: kernel, PID 1, runtime, one world"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The services are processes"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The initramfs is the filesystem; /tmp is writable"
+
+DEFINE MOUNT tmp AS (
+  AT "/tmp",
+  FS tmpfs
+) RATIONALE "Somewhere writable that vanishes with the machine"
+
+DEFINE SERVICE self AS (
+  RUN ["/stzos", "plan", "/etc/machine"],
+  RESTART never,
+  NEEDS [process, filesystem]
+) RATIONALE "The machine narrates its own plan from inside itself: the declaration rode in the image"
+
+DEFINE SERVICE hello AS (
+  RUN ["/stzr", "/app/hello.luau"],
+  RESTART never,
+  AFTER [self],
+  NEEDS [process, filesystem]
+) RATIONALE "A Luau world says hello: the runtime the declared machine exists to carry"

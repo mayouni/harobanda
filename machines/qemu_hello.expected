@@ -1,0 +1,28 @@
+boot: stzos init -- machine qemu_hello (hosted / x86_64) -- pid 1
+boot: console /dev/ttyS0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: mount tmpfs at /tmp -- done
+boot: grant process (effectful)
+boot: grant filesystem (effectful)
+boot: start self -- pid N -- /stzos plan /etc/machine
+boot: start hello -- pid N -- /stzr /app/hello.luau
+machine qemu_hello -- hosted / x86_64 / kernel linux / libc musl
+  rationale: The smallest machine that boots: kernel, PID 1, runtime, one world
+console /dev/ttyS0
+mount proc at /proc (implicit, hosted)
+mount sysfs at /sys (implicit, hosted)
+mount devtmpfs at /dev (implicit, hosted)
+mount tmpfs at /tmp
+grant process (effectful)
+grant filesystem (effectful)
+start self -- /stzos plan /etc/machine -- restart never -- needs [process, filesystem]
+start hello -- /stzr /app/hello.luau -- restart never -- after [self] -- needs [process, filesystem]
+hello from a declared machine -- stzr on stzos, a Luau world under PID 1
+the machine was declared, judged, planned, imaged, booted, narrated -- and now it runs a world
+boot: hello (pid N) exited 0
+boot: self (pid N) exited 0
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)
+reboot: Restarting system

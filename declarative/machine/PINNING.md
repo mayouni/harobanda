@@ -47,7 +47,18 @@ meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
   a reject — the court went red three times, each for its named
   reason, and exited nonzero (`experiment/PROTOCOL.md`).
 
-## The boot, judged by its transcript
+## The image, judged by its boot transcript (OS-2)
+
+`machines/qemu_hello.machine` → `experiment/os2_image.sh` → Linux
+6.12.109 (pin in `vendor/PIN.md`) + initramfs → QEMU → the serial
+transcript, normalised (firmware banner, CRs, pids) and diffed against
+`machines/qemu_hello.expected`: **28 lines, identical** (2026-09-12).
+The expectation was pinned from the first boot — there was no earlier
+oracle for a machine that had never booted — and every later boot is
+judged against it; a change to the expectation travels in the same
+commit as the change that caused it.
+
+## The init, judged by its transcript under WSL (OS-1)
 
 `machines/wsl_rehearsal.machine` under WSL Ubuntu, x86_64 static
 binary, transcripts in `zig-out/wsl/` (never committed — rendered from

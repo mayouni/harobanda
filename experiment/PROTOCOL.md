@@ -1,3 +1,81 @@
+# OS-2 — the machine boots: a vendored kernel, an image derived from the plan, QEMU, the transcript judged
+
+Ordered by the author on 2026-09-12 ("install qemu, gcc and make in WSL
+and go for OS-2"), the same day as OS-1.
+
+## What was built
+
+- **`stzos image`** (`src/image.zig`): from a judged plan, three texts
+  and no toolchain — `initramfs.list` in the kernel's own gen_init_cpio
+  format (device nodes for PID 1, the mount points, `/stzos`, every
+  program and file the services name taken from a staging root and
+  REFUSED if absent, the declaration itself at `/etc/machine`),
+  `kernel.fragment` (the kconfig the profile and the declared mounts
+  need, merged over tinyconfig), `boot.cmd` (the QEMU line). Hosted and
+  x86_64 only today; the rest refused by name.
+- **The init's ending** (`src/init.zig`): PID 1 may not exit, so when
+  every service has ended it calls `reboot(RESTART)`; under QEMU
+  `-no-reboot` that closes the boot and the transcript. In a user
+  namespace the kernel refuses it and the transcript says so.
+- **The vendored kernel**: Linux 6.12.109 LTS, pinned by digest from
+  kernel.org's own `sha256sums.asc` (`vendor/PIN.md`,
+  `experiment/os2_kernel_fetch.sh`); the tarball stays out of git (over
+  the file limit) and in `vendor/linux/`.
+- **The imperative half** (`experiment/os2_image.sh`, WSL Ubuntu):
+  stage, derive, tinyconfig + fragment + olddefconfig, `make -j2
+  bzImage`, gen_init_cpio, QEMU with the serial console captured, then
+  the judge: the transcript normalised (firmware banner and control
+  bytes before PID 1's first line, CRs, pids → N) and diffed against
+  `machines/qemu_hello.expected`.
+- **stzr in the image**: stz's runtime cross-built from `D:\GitHub\stz`
+  for x86_64-linux-musl (static, 776 KB, ReleaseSmall) with one flag —
+  the first time the Softanza runtime ran on a machine the estate
+  declared.
+
+## What was measured
+
+- Kernel: 496 options on, bzImage 1,217,536 bytes, **78 s wall** at two
+  jobs (2m08 user) on WSL Ubuntu, gcc 15.2.
+- Image: initramfs 4,232,704 bytes — stzos 3.4 MB unstripped, stzr
+  776 KB, hello.luau, the machine file.
+- Boot (QEMU 10.2, TCG, 256 MB): PID 1, `proc` `sysfs` `devtmpfs`
+  `tmpfs` all mounted (`done` × 4 — the namespace refusals of OS-1 were
+  the namespace's, not the init's), `self` (pid 15) printed the
+  machine's own plan from inside the image, `hello` (pid 16) printed two
+  lines from Luau under stzr, both exited 0, `reboot(RESTART)`, QEMU
+  exit 0. **The transcript matches the pinned expectation line for
+  line, 28 lines**, on the second run (the first run IS the pin, stated
+  as such: there was no earlier oracle for a machine that had never
+  booted).
+
+## What was found
+
+1. **Port 80 is blocked on this network**: apt over http timed out on
+   every mirror address while https answered 200; the toolchain script
+   switches Ubuntu's sources to https. `Acquire::ForceIPv4` was a wrong
+   first diagnosis (the addresses shown were IPv6, the cause was the
+   port).
+2. **Extracting the kernel onto the Windows mount took longer than the
+   600 s tool budget** and the build there would have been slower
+   still; the pipeline extracts and builds in `$HOME` inside WSL, and
+   the 1.6 GB stray extraction on the mount was removed.
+3. **AFTER orders starts, not completions**: `hello` started after
+   `self` was spawned, and the two outputs interleave under the
+   scheduler. A completion/readiness seat is a fixture-first widening
+   (`doc/ARCHITECTURE.md` §7).
+4. **The Bash tool rewrites `/mnt/d/...` paths** handed to `wsl.exe`;
+   WSL scripts are invoked from PowerShell.
+
+## Named seams
+
+- aarch64 image and real hardware (the Makeen box); block devices and
+  persistent mounts (virtio-blk first); A/B slots; the bootloader.
+- `make CC="zig cc"` for the kernel; a tarball mirror in the estate.
+- The judge lives in a shell script today; folding it into `stzos
+  judge <name>` (portable, like the court) is queued.
+
+---
+
 # OS-1 — the declared machine: language, plan, and PID 1
 
 Ordered by the author on 2026-09-12: a distinct private repository for
