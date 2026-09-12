@@ -523,7 +523,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         // the profile check comes first: the court convicted the other
         // order on R35 (an edge machine naming rpi4 was refused for its
         // ARCH, the truer reason being that edge machines have no BOARD)
-        if (profile != .hosted) return ctx.refuse(c.line, "BOARD is a hosted machine's clause; a {s} machine names its board in its own substrate", .{@tagName(profile)});
+        if (profile != .hosted) return ctx.refuse(c.line, "BOARD is a hosted machine's clause; a machine of PROFILE {s} names its board in its own substrate", .{@tagName(profile)});
         const wanted_arch: ?Arch = switch (board) {
             .qemu_pc => .x86_64,
             .qemu_virt, .rpi4 => .aarch64,
