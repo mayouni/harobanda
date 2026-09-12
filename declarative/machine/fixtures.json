@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users.",
   "accepts": [
     {
       "id": "A1",
@@ -20,7 +20,8 @@
           "capabilities": 0,
           "mounts": 0,
           "pins": 0,
-          "networks": 0
+          "networks": 0,
+          "users": 0
         },
         "order": [],
         "granted": [],
@@ -44,7 +45,8 @@
           "capabilities": 3,
           "mounts": 1,
           "pins": 0,
-          "networks": 1
+          "networks": 1,
+          "users": 0
         },
         "order": [
           "kds",
@@ -73,7 +75,8 @@
           "capabilities": 2,
           "mounts": 1,
           "pins": 2,
-          "networks": 0
+          "networks": 0,
+          "users": 0
         },
         "order": [
           "sense"
@@ -101,7 +104,8 @@
           "capabilities": 2,
           "mounts": 0,
           "pins": 0,
-          "networks": 0
+          "networks": 0,
+          "users": 0
         },
         "order": [
           "launcher"
@@ -122,7 +126,8 @@
           "capabilities": 0,
           "mounts": 0,
           "pins": 0,
-          "networks": 0
+          "networks": 0,
+          "users": 0
         },
         "order": [
           "a",
@@ -150,7 +155,8 @@
           "capabilities": 0,
           "mounts": 0,
           "pins": 0,
-          "networks": 0
+          "networks": 0,
+          "users": 0
         }
       }
     },
@@ -164,7 +170,8 @@
           "capabilities": 1,
           "mounts": 0,
           "pins": 0,
-          "networks": 0
+          "networks": 0,
+          "users": 0
         },
         "granted": [
           "clock"
@@ -193,7 +200,8 @@
           "capabilities": 1,
           "mounts": 0,
           "pins": 0,
-          "networks": 1
+          "networks": 1,
+          "users": 0
         },
         "granted": [
           "network"
@@ -210,7 +218,8 @@
           "capabilities": 1,
           "mounts": 0,
           "pins": 0,
-          "networks": 2
+          "networks": 2,
+          "users": 0
         }
       }
     },
@@ -234,11 +243,30 @@
           "capabilities": 1,
           "mounts": 0,
           "pins": 0,
-          "networks": 0
+          "networks": 0,
+          "users": 0
         },
         "order": [
           "srv",
           "after_srv"
+        ]
+      }
+    },
+    {
+      "id": "A14",
+      "name": "a declared identity, and a service that runs as it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE USER kds AS (\n  UID 1000,\n  GID 1000\n) RATIONALE \"The kitchen display world owns nothing of the machine\"\nDEFINE USER poste AS (\n  UID 1001\n) RATIONALE \"The counter world; its gid follows its uid unless declared\"\nDEFINE SERVICE display AS (\n  RUN [\"/display\"],\n  USER kds,\n  NEEDS [process]\n) RATIONALE \"Runs as the identity, not as the machine\"\n",
+      "expect": {
+        "counts": {
+          "services": 1,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 0,
+          "users": 2
+        },
+        "order": [
+          "display"
         ]
       }
     }
@@ -513,6 +541,36 @@
       "name": "one path signals for one service",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE a AS (RUN [\"/a\"], RESTART always, READY \"/run/x\") RATIONALE \"x\"\nDEFINE SERVICE b AS (RUN [\"/b\"], RESTART always, READY \"/run/x\") RATIONALE \"x\"\n",
       "refusal": "already signals on /run/x"
+    },
+    {
+      "id": "R46",
+      "name": "a service runs as an identity the machine declares, or none",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], USER nobody) RATIONALE \"x\"\n",
+      "refusal": "resolves to nothing: no such USER"
+    },
+    {
+      "id": "R47",
+      "name": "uid 0 is the machine itself, never a declared identity",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER u AS (UID 0) RATIONALE \"x\"\n",
+      "refusal": "uid 0 is the machine itself"
+    },
+    {
+      "id": "R48",
+      "name": "one number, one identity",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER a AS (UID 1000) RATIONALE \"x\"\nDEFINE USER b AS (UID 1000) RATIONALE \"x\"\n",
+      "refusal": "already a's; one number, one identity"
+    },
+    {
+      "id": "R49",
+      "name": "USER is a hosted machine's declaration",
+      "source": "DEFINE MACHINE m AS (PROFILE edge, ARCH thumbv7em, KERNEL none) RATIONALE \"x\"\nDEFINE USER u AS (UID 1000) RATIONALE \"x\"\n",
+      "refusal": "hosted machine's declaration"
+    },
+    {
+      "id": "R50",
+      "name": "a uid out of range is refused",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER u AS (UID 70000) RATIONALE \"x\"\n",
+      "refusal": "out of range"
     }
   ]
 }

@@ -108,6 +108,23 @@ init; the launcher is the pack).
 | `AFTER` | name list of services | optional; each resolves (R8), never itself (R27), never a cycle (R21) |
 | `NEEDS` | name list of capabilities | optional; each must be declared AND granted (R17, R18) |
 | `READY` | string | optional, daemons only — the absolute path the service creates when it is serving (R43, R44, R45); see the readiness rule below |
+| `USER` | name | optional — a declared USER this service runs as; PID 1 drops to that uid and gid between fork and exec. A name that resolves to nothing is refused at check time (R46). Saying nothing is how a service runs as the machine itself |
+
+### DEFINE USER — a declared identity
+
+| clause | value | obligation |
+|---|---|---|
+| `UID` | number | required — 1..65534; **0 is refused** (R47), and uniqueness is enforced (R48) |
+| `GID` | number | optional — defaults to the UID; 0 refused, range enforced (R50) |
+
+Hosted machines only (R49): an edge machine runs one program and has no
+identities to hand out, and a touch machine's identities are Android's.
+A machine has no `/etc/passwd` until it declares one; then the image
+derives `passwd` and `group` from exactly the declared set plus root,
+with `/nonexistent` as every shell, because there is none. **Root is
+what a service gets by saying nothing** — there is no way to declare a
+root identity, so a service that needs the machine's own powers is
+visibly the one with no USER line.
 
 ### DEFINE NETWORK — one interface, one way to an address
 

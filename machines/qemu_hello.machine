@@ -31,9 +31,22 @@ DEFINE SERVICE self AS (
   NEEDS [process, filesystem]
 ) RATIONALE "The machine narrates its own plan from inside itself: the declaration rode in the image"
 
+DEFINE USER world AS (
+  UID 1000,
+  GID 1000
+) RATIONALE "The world runs as an identity, not as the machine: the smallest machine still says who is who"
+
+DEFINE SERVICE whoami AS (
+  RUN ["/stzos", "id"],
+  RESTART never,
+  USER world,
+  AFTER [self],
+  NEEDS [process]
+) RATIONALE "The witness of the USER seat: the identity a service actually has, read from inside the machine"
+
 DEFINE SERVICE hello AS (
   RUN ["/stzr", "/app/hello.luau"],
   RESTART never,
-  AFTER [self],
+  AFTER [whoami],
   NEEDS [process, filesystem]
 ) RATIONALE "A Luau world says hello: the runtime the declared machine exists to carry"

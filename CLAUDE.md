@@ -156,7 +156,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   without a newer zig or an LLVM-shaped attempt; the instrument and the
   six probes are kept. The estate's tarball MIRROR is a routed errand
   for the author (availability, not integrity: the digests are pinned).
-- The USER seat (fixture-first widening). The NETWORK kind exists
+- (done 2026-09-12, USR-1) The USER seat. The NETWORK kind exists
   since NET-1 (dhcp and static; lease renewal, a resolver, the box as
   DHCP server and IPv6 are its named seams) and READY since RDY-1 (a
   daemon's own signal, no timer; a bounded window for the TRIAL and a

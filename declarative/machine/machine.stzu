@@ -34,7 +34,7 @@ DEFINE DECLARATION box AS (
 
 DEFINE DECLARATION service AS (
   VERB "SERVICE",
-  SEATS [run: [word], restart: name?, after: [dependency], needs: [need], ready: text?]
+  SEATS [run: [word], restart: name?, after: [dependency], needs: [need], ready: text?, user: name?]
 ) RATIONALE "A process the machine keeps: its argv, its restart policy, what it follows, what it needs"
 
 DEFINE DECLARATION capability AS (
@@ -55,6 +55,11 @@ DEFINE DECLARATION network AS (
   VERB "NETWORK",
   SEATS [interface: text, address: text, gateway: text?, dns: [server]]
 ) RATIONALE "One interface, one way to an address (dhcp or a static address/prefix); a static one may name its gateway and dns servers, a dhcp one learns them; brought up by PID 1 before any service"
+
+DEFINE DECLARATION user AS (
+  VERB "USER",
+  SEATS [uid: number, gid: number?]
+) RATIONALE "A declared identity: a service that names one is dropped to it before it is executed, and the image derives passwd and group from the declared set; uid 0 is refused, because root is the machine itself"
 
 DEFINE DECLARATION pin AS (
   VERB "PIN",

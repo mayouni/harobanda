@@ -258,6 +258,26 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     // the declaration itself rides in the image
     try files.append(arena, .{ .path = "/etc/machine", .source = opts.machine_path });
 
+    // a machine has no /etc/passwd until it declares identities; then it
+    // has exactly the ones it declared, and root. Derived, never edited.
+    if (m.users.len > 0) {
+        var passwd: std.ArrayList(u8) = .{};
+        var group: std.ArrayList(u8) = .{};
+        const pw = passwd.writer(arena);
+        const gw = group.writer(arena);
+        try pw.print("root:x:0:0:root:/:/nonexistent\n", .{});
+        try gw.print("root:x:0:\n", .{});
+        for (m.users) |u| {
+            try pw.print("{s}:x:{d}:{d}:{s}:/:/nonexistent\n", .{ u.name, u.uid, u.gid, u.name });
+            try gw.print("{s}:x:{d}:\n", .{ u.name, u.gid });
+        }
+        // /nonexistent as the shell: there is none, and the file says so
+        try writeOut(opts.out_dir, "passwd", passwd.items);
+        try writeOut(opts.out_dir, "group", group.items);
+        try files.append(arena, .{ .path = "/etc/passwd", .source = try std.fs.path.join(arena, &.{ opts.out_dir, "passwd" }) });
+        try files.append(arena, .{ .path = "/etc/group", .source = try std.fs.path.join(arena, &.{ opts.out_dir, "group" }) });
+    }
+
     // the block devices the declared mounts need -- one in this version
     var block: ?*const machine.Mount = null;
     for (m.mounts) |*mt| {

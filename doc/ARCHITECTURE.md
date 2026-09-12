@@ -113,7 +113,7 @@ judged so that one file describes the fleet, phone included.
 
 | altitude | instrument | today |
 |---|---|---|
-| the language | `fixtures.json`, 13 accepts + 45 rejects, sha256-pinned (BOARD, NETWORK, SLOTS and READY widened it fixture-first) | 58/58 |
+| the language | `fixtures.json`, 14 accepts + 50 rejects, sha256-pinned (BOARD, NETWORK, SLOTS, READY and USER widened it fixture-first) | 64/64 |
 | the language's own declaration | `machine.stzu` judged by stz's `Stzu.luau` | accepted, 6/5/0/3 |
 | the mechanism | Zig unit tests with negative siblings; the court probed with a mutated judge (3 reds) | green |
 | the Linux-only code | `zig build cross` (two static targets) | builds |
@@ -141,6 +141,9 @@ judged so that one file describes the fleet, phone included.
   both block their dependents, and init names them. No timer: a daemon
   that never comes up keeps an A/B trial uncommitted, which is the safe
   outcome. A bounded window for the TRIAL is a named seam.
-- Users and identities: every service runs as the machine. The USER
-  seat with a per-device Ed25519 identity (MicroRing's ALIGNMENT.md
-  finding: hardware custody and algorithm are coupled) is queued.
+- Identities: a service runs as a declared USER when it names one, and
+  as the machine itself when it says nothing (USR-1). uid 0 cannot be
+  declared, so root is visible as the absence of a line rather than as
+  a choice. The per-DEVICE identity — an Ed25519 key that never leaves
+  the board (MicroRing's ALIGNMENT.md finding: hardware custody and
+  algorithm are coupled) — is a different thing and still queued.

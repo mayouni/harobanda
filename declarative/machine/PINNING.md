@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-adb8a6e6cc08ce4c5319867128ba9895d0459d06710b39f17b17959a135003ee
+f2bf476618d2c5afd9d282f1fe5eba4ce717486b43266b93374e8a53bfc6a40f
 ```
 
-(Before READY of 2026-09-12 (RDY-1):
+(Before USER of 2026-09-12 (USR-1):
+`adb8a6e6cc08ce4c5319867128ba9895d0459d06710b39f17b17959a135003ee`,
+13 accepts + 45 rejects; the widening added A14, R46-R50 and put
+`users` into every accept's counts. Before READY of 2026-09-12 (RDY-1):
 `cb031c766d74b95ac2f156447464e97986d1274c965656f8ab0d542cf3414515`,
 12 accepts + 42 rejects; the widening added A13, R43, R44, R45.
 Before SLOTS of 2026-09-12 (AB-1):
@@ -34,13 +37,13 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **58/58** — 13 accepts with structural expectations, 45 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **64/64** — 14 accepts with structural expectations, 50 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
-**accepted first run** — 6 declarations, 5 forms, 0 expressions,
-3 refusals, verbs CAPABILITY MACHINE MOUNT NETWORK PIN SERVICE (5/4/0/3
-before the NETWORK kind).
+**accepted first run** — 7 declarations, 5 forms, 0 expressions,
+3 refusals, verbs CAPABILITY MACHINE MOUNT NETWORK PIN SERVICE USER
+(5/4/0/3 at the v0.1 floor; NETWORK and USER each added a declaration).
 
 ## What conformance means here
 
@@ -64,6 +67,17 @@ before the NETWORK kind).
   (A2 services 3 → 99), a wrong fragment (R5), a valid source posing as
   a reject — the court went red three times, each for its named
   reason, and exited nonzero (`experiment/PROTOCOL.md`).
+
+## The identity, judged from inside the machine (USR-1)
+
+`machines/qemu_hello.machine` declares `USER world` and runs its
+witness service as it. The pinned transcript carries both halves: PID 1
+saying `start whoami -- pid N -- /stzos id -- as world (1000:1000)`,
+and the service's own answer from inside the machine, `id: uid=1000
+gid=1000`. The image derives `/etc/passwd` and `/etc/group` from the
+declared identities and root, so a world that asks a name service gets
+the same answer the declaration gave. **32 lines, identical**; the pin
+moved from 28 in the same commit as the seat.
 
 ## The slots, judged by the card itself (AB-1)
 

@@ -34,6 +34,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos update <dir> [--boot <mountpoint>] [--no-reboot]   (write the other slot, try it once)
         \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
+        \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -83,6 +84,16 @@ pub fn main() !u8 {
 
     if (std.mem.eql(u8, verb, "version")) {
         try out.print("stzos {s}\n", .{version});
+        return 0;
+    }
+    if (std.mem.eql(u8, verb, "id")) {
+        // who a service actually runs as, from inside the machine: the
+        // witness the USER seat is judged by (a machine has no coreutils)
+        if (builtin.os.tag != .linux) {
+            try out.print("id: a Linux act; this binary was built for {s}\n", .{@tagName(builtin.os.tag)});
+            return 2;
+        }
+        try out.print("id: uid={d} gid={d}\n", .{ std.os.linux.getuid(), std.os.linux.getgid() });
         return 0;
     }
     if (std.mem.eql(u8, verb, "net")) {

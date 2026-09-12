@@ -548,16 +548,41 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, out: *std.Io.Writer) !void 
             progressed = true;
             try out.print("boot: start {s} -- pid {d} --", .{ s.service.name, pid });
             for (s.service.run) |w| try out.print(" {s}", .{w});
+            if (s.service.user) |u| try out.print(" -- as {s} ({d}:{d})", .{ u.name, u.uid, u.gid });
             try out.print("\n", .{});
         }
     }
 }
 
 fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service) !i32 {
-    var child = std.process.Child.init(svc.run, gpa);
-    child.stdin_behavior = .Ignore;
-    child.stdout_behavior = .Inherit;
-    child.stderr_behavior = .Inherit;
-    try child.spawn();
-    return @intCast(child.id);
+    const u = svc.user orelse {
+        var child = std.process.Child.init(svc.run, gpa);
+        child.stdin_behavior = .Ignore;
+        child.stdout_behavior = .Inherit;
+        child.stderr_behavior = .Inherit;
+        try child.spawn();
+        return @intCast(child.id);
+    };
+    // a declared identity: fork by hand, drop the credentials in the child,
+    // then exec. std.process.Child has no seat for a uid, and the drop must
+    // happen between fork and exec -- the one moment where the child is
+    // still ours and not yet the program's. Group first, then user: after
+    // setuid there is no privilege left to change the group with.
+    var argv = try gpa.alloc(?[*:0]const u8, svc.run.len + 1);
+    defer gpa.free(argv);
+    for (svc.run, 0..) |a, i| argv[i] = (try gpa.dupeZ(u8, a)).ptr;
+    argv[svc.run.len] = null;
+    const path = try gpa.dupeZ(u8, svc.run[0]);
+    defer gpa.free(path);
+    const envp = [_:null]?[*:0]const u8{null};
+
+    const pid = try std.posix.fork();
+    if (pid == 0) {
+        // the child: any failure here must not return into init's loop
+        std.posix.setgid(u.gid) catch std.posix.exit(126);
+        std.posix.setuid(u.uid) catch std.posix.exit(126);
+        std.posix.execveZ(path, @ptrCast(argv.ptr), &envp) catch {};
+        std.posix.exit(127); // the program was not there, or not runnable as this identity
+    }
+    return pid;
 }

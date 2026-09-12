@@ -78,6 +78,9 @@ pub const Service = struct {
     /// path it creates when it is up. A one-shot has no use for it (its
     /// readiness is its exit 0) and is refused one.
     ready: ?[]const u8,
+    /// the declared identity this service runs as; null is the machine
+    /// itself (root), which is what a service gets only by saying nothing
+    user: ?*const User,
     rationale: []const u8,
 };
 
@@ -103,6 +106,18 @@ pub const Pin = struct {
     line: usize,
     gpio: u32,
     mode: PinMode,
+    rationale: []const u8,
+};
+
+/// A declared identity. A machine has no /etc/passwd of its own until it
+/// declares one: the image derives passwd and group from these, and PID 1
+/// drops to the uid and gid before exec. uid 0 is refused -- root is the
+/// machine itself, and a service that must be root simply declares no USER.
+pub const User = struct {
+    name: []const u8,
+    line: usize,
+    uid: u32,
+    gid: u32,
     rationale: []const u8,
 };
 
@@ -165,6 +180,7 @@ pub const Machine = struct {
     mounts: []const Mount,
     pins: []const Pin,
     networks: []const Network,
+    users: []const User,
 
     pub fn granted(self: Machine, c: Capability) bool {
         for (self.capabilities) |d| if (d.name == c) return d.granted;
@@ -345,7 +361,7 @@ const Clause = struct {
     value: Value,
 };
 
-const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK };
+const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER };
 
 const Decl = struct {
     kind: Kind,
@@ -358,11 +374,12 @@ const Decl = struct {
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
         .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "USER" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
         .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS" },
+        .USER => &.{ "UID", "GID" },
     };
 }
 
@@ -426,7 +443,7 @@ fn parseDecl(ctx: *Ctx) Error!Decl {
     const kind_tok = ctx.next();
     const kind = if (kind_tok.tag == .keyword) std.meta.stringToEnum(Kind, kind_tok.text) else null;
     if (kind == null) {
-        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the machine kinds are closed (MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK)", .{kind_tok.text});
+        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the machine kinds are closed (MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER)", .{kind_tok.text});
     }
     const name = try ctx.expect(.ident, "a lower_snake name");
     const as_tok = ctx.next();
@@ -613,6 +630,26 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         }
     }.f;
 
+    // users: declared identities, before the services that name them
+    var users: std.ArrayList(User) = .{};
+    for (decls.items) |d| if (d.kind == .USER) {
+        if (profile != .hosted) return ctx.refuse(d.line, "USER is a hosted machine's declaration; a machine of PROFILE {s} runs one program and has no identities to hand out", .{@tagName(profile)});
+        const uid = try wantNumber(&ctx, try required(&ctx, d, "UID"));
+        if (uid == 0) return ctx.refuse(d.line, "uid 0 is the machine itself; a service that must be root declares no USER rather than a root one", .{});
+        if (uid > 65534) return ctx.refuse(d.line, "uid {d} is out of range (1..65534)", .{uid});
+        var gid: u64 = uid;
+        if (find(d, "GID")) |c| {
+            gid = try wantNumber(&ctx, c);
+            if (gid == 0) return ctx.refuse(c.line, "gid 0 is the machine's own group; a service that must have it declares no USER", .{});
+            if (gid > 65534) return ctx.refuse(c.line, "gid {d} is out of range (1..65534)", .{gid});
+        }
+        for (users.items) |e| if (e.uid == uid) {
+            return ctx.refuse(d.line, "uid {d} is already {s}'s; one number, one identity", .{ uid, e.name });
+        };
+        try users.append(arena, .{ .name = d.name, .line = d.line, .uid = @intCast(uid), .gid = @intCast(gid), .rationale = d.rationale });
+    };
+    const user_slice = try users.toOwnedSlice(arena);
+
     // networks: one per interface, the network capability granted
     var nets: std.ArrayList(Network) = .{};
     for (decls.items) |d| if (d.kind == .NETWORK) {
@@ -685,7 +722,15 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             };
             ready = path;
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .rationale = d.rationale });
+        var user: ?*const User = null;
+        if (find(d, "USER")) |c| {
+            const uname = try wantIdent(&ctx, c);
+            for (user_slice) |*u| if (std.mem.eql(u8, u.name, uname)) {
+                user = u;
+            };
+            if (user == null) return ctx.refuse(c.line, "{s} runs as '{s}', which resolves to nothing: no such USER", .{ d.name, uname });
+        }
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .user = user, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
 
@@ -784,6 +829,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .mounts = try mounts.toOwnedSlice(arena),
         .pins = try pins.toOwnedSlice(arena),
         .networks = try nets.toOwnedSlice(arena),
+        .users = user_slice,
     };
 }
 

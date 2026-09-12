@@ -112,6 +112,7 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
                 .{ .k = "mounts", .n = m.mounts.len },
                 .{ .k = "pins", .n = m.pins.len },
                 .{ .k = "networks", .n = m.networks.len },
+                .{ .k = "users", .n = m.users.len },
             };
             for (got) |g| if (int(c.get(g.k))) |w| if (@as(i64, @intCast(g.n)) != w) {
                 why = try std.fmt.allocPrint(arena, "{s}: expected {d} got {d}", .{ g.k, w, g.n });

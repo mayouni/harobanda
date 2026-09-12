@@ -1,3 +1,61 @@
+# USR-1 — a declared identity: a service stops being the machine
+
+Third of the four the author ordered on 2026-09-12. Until now every
+service ran as the machine itself, which is to say as root: a world
+that only draws a kitchen display could rewrite the boot partition.
+
+## What was decided
+
+**An identity is declared, not looked up.** `DEFINE USER kds AS (UID
+1000, GID 1000)` is a kind of its own, and a service names it with
+`USER kds` — a reference resolved at check time like AFTER, so a
+service running as a nonexistent identity is refused before any boot.
+**uid 0 cannot be declared** (R47): root is the machine itself, so a
+service that needs the machine's own powers is visibly the one with NO
+user line, rather than one that asked for root. **GID defaults to the
+UID**, the convention a small machine wants and one fewer number to
+keep in step. **The image derives `/etc/passwd` and `/etc/group`** from
+exactly the declared set plus root, with `/nonexistent` for every
+shell, because a machine that has no shell should say so in its own
+files.
+
+## What was built
+
+- The USER kind and the SERVICE seat, fixture-first (A14, R46–R50;
+  **64/64 on the first run**), `machine.stzu` gaining the declaration
+  (7 declarations now, accepted by stz's meta-court), the plan printing
+  `-- as world (1000:1000)`.
+- **PID 1 drops the credentials between fork and exec** (`src/init.zig`):
+  `std.process.Child` has no seat for a uid, and the drop must happen
+  in the one moment when the child is still ours and not yet the
+  program's. So a service with an identity is forked by hand, does
+  `setgid` then `setuid` — group first, because after `setuid` there is
+  no privilege left to change the group with — and execs. A failure
+  between fork and exec exits 126 or 127 rather than returning into
+  init's loop with a second init in it.
+- **`stzos id`**, the witness: a machine has no coreutils, so the one
+  binary answers `uid=N gid=N` from inside it.
+
+## What was measured
+
+`machines/qemu_hello.machine` declares `USER world` and a service that
+runs `stzos id` as it. The boot says both halves: `start whoami -- pid
+N -- /stzos id -- as world (1000:1000)` from PID 1, and `id: uid=1000
+gid=1000` from the service. Pinned at **32 lines**, up from 28, in the
+same commit as the seat. The other two machines and the rehearsal are
+unchanged and judged identical.
+
+## Named seams
+
+- Supplementary groups, and a service's umask.
+- The per-DEVICE identity (an Ed25519 key that never leaves the board)
+  is a different thing from a per-service uid and is still queued.
+- File ownership in the image: everything is still owned by root, so an
+  identity can read what it is given and write only where the machine
+  made a writable place (`/tmp`, a declared mount).
+
+---
+
 # ZIGCC-1 — the kernel built by our own compiler: four walls named, the tree builds, the image does not boot
 
 Second of the four the author ordered on 2026-09-12. The architecture
