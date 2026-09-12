@@ -137,13 +137,17 @@ floor further (declared peripherals to synthesized silicon, comptime to
 Verilog). None of that is built; all of it is the same act repeated:
 declare, judge, project, narrate.
 
-## What is real today (2026-09-12)
+## What is real today (2026-09-12, evening)
 
 The machine language v0.1 with 40 pinned fixtures, declared in stzu and
 accepted by stz's meta-court; a boot plan derived and rendered; one
-static binary for the host and for two Linux targets; and that binary
-run as a real PID 1 in a user namespace under WSL — proc mounted, the
-refused mounts named by errno, three services spawned as argv, every
-restart policy exercised, the reaper doing PID 1's duty. The image (a
-vendored kernel around it, booted in QEMU) is the next act and is
-blocked on a Linux build environment on this host.
+static binary for the host and for two Linux targets. Two declared
+machines boot in QEMU over a vendored Linux 6.12 LTS pinned by digest:
+`qemu_hello` on x86_64, and `makeen_qemu` — the Makeen box as the
+emulator carries it — on aarch64 with a persistent ext4 partition
+mounted by PID 1 before any world spoke, and the kitchen-display and
+counter worlds run by stzr, the Softanza runtime, inside the image. Each
+boot's serial transcript is judged line for line against a pinned
+expectation. What remains between this and a box on a counter is a
+board: its kernel config, its bootloader, its SD card, and the A/B
+slots that make an update a governed refinement rather than a risk.

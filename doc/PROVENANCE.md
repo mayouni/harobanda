@@ -52,6 +52,49 @@ ruling can be one-meaning-per-word:
 - **Device** — the L2 language (ex-MicroRing's seam); PIN here is its
   first seat, and the two must converge or one must yield.
 
+## The rulings of 2026-09-12 (taken on the author's behalf, at his word)
+
+The author delegated the three waiting rows to the session
+("take decision on my behalf"). Ruled, and open to his reversal:
+
+**STZ-OS-RULING-01 — the name.** `stzos` stands, for the repository and
+the binary, until the landscape ruling; it names THE FLOOR, one word
+for one thing. The adjacent names resolve so:
+- **ZinOS** is retired as a name; its two profiles live on as the edge
+  and touch profiles of a `.machine`, and zin's documents are their
+  donors. Zin's product story keeps "the device is the job" — that is
+  experience, not a second OS.
+- **Zos** (zin's pillar 19, platform facts declared) stays zin's, at
+  zin's altitude: a Zos declaration describes the platform an
+  organization is deployed on; a `.machine` declares the machine
+  itself. Different word, different thing.
+- **MakeenOS** is retired as a name: the posture became a declaration,
+  `machines/makeen_box.machine`. RestoLean's guarantee sheet is what
+  that file's fixtures will judge.
+- **Device** (the L2 language, ex-MicroRing's seam) keeps the pins. The
+  PIN kind of `.machine` is provisional: when Device is declared in
+  stzu, a `.machine` names the Device it carries and Device declares
+  the peripherals. One language per altitude.
+
+**STZ-OS-REVERSALS-01 — the three refusals.**
+- Ring++ bare-metal dropped: **KEPT.** Ring++ stays Linux-class; the
+  edge profile is MicroRing's substrate; this repository never asks
+  Ring++ for a freestanding target.
+- MicroRing "Not an RTOS": **KEPT.** The loop is the scheduler; an edge
+  kernel, if ever, is ZinOS Edge's cooperative design written in
+  MicroRing's repository.
+- RestoLean B9 "asservir; MakeenOS a posture; no custom box":
+  **REVERSED IN ONE CLAUSE ONLY.** The box exists — as a declared,
+  imaged machine on COMMODITY aarch64 hardware (B9's own demoted
+  OpenWrt-class €100 board, "never designed by us"), never a custom
+  PCB. Phones stay enslaved commodity Android (the touch profile). The
+  posture did not lose; it gained a file.
+
+**STZ-OS-REGISTER-01 — registration with Central.** A mailbox
+(`softanza/mailbox/stzos.md`) opened in the estate's format; the
+CLAUDE-BLOCK re-stamp (`central.ps1 -Install`) is Central's own act at
+its next fold, not this session's.
+
 ## What this repository is NOT
 
 Not a kernel project. Not a distribution of packages. Not a fork of

@@ -1,0 +1,20 @@
+boot: stzos init -- machine makeen_qemu (hosted / aarch64) -- pid 1
+boot: console /dev/ttyAMA0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: mount ext4 at /data -- done
+boot: grant process (effectful)
+boot: grant filesystem (effectful)
+boot: refuse gpio (effectful)
+boot: start kds -- pid N -- /stzr /app/kds.luau
+kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
+kds: read /etc/machine -- 7 declarations rode in the image
+boot: kds (pid N) exited 0
+boot: start poste -- pid N -- /stzr /app/poste.luau
+poste: the counter world is up on the Makeen box, after kds
+poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
+boot: poste (pid N) exited 0
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)
+reboot: Restarting system

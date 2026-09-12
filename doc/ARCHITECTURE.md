@@ -21,7 +21,7 @@ passing the court on the left.
 ~3.4 MB unstripped). On the host it is the CLI — `check`, `plan`,
 `court`, later `image`. On a hosted machine the same file is PID 1 —
 `stzos init <file.machine>`, passed by the kernel command line
-(`init=/stzos` with the machine file as its argument). Cross-compiling
+(`rdinit=/stzos` with the machine file as its argument -- the root IS the initramfs). Cross-compiling
 it for the machine is one flag (`zig build cross`), Ring++'s P8 kept: no
 C toolchain is required of anyone.
 
@@ -40,7 +40,7 @@ third program on the path for a declaration to reach.
 | filesystem | initramfs (cpio) holding `/stzos`, `/stzr`, `/app/*.luau`, `/etc/machine`; declared mounts for persistent data | **own** (the builder writes it) |
 | network | `stzos-net` — a service, not init's job; DHCP/static per a NETWORK kind (queued) | **own** (small) |
 | updates | A/B image partitions, atomic pointer swap, watchdog rollback (ZinOS Edge's OTA design) | **own**, governed by refine |
-| emulator | QEMU (`-kernel bzImage -initrd initramfs.cpio -append "init=/stzos ..." -nographic`) | **borrow** for the court; not shipped |
+| emulator | QEMU (`-kernel bzImage -initrd initramfs.cpio -append "rdinit=/stzos ..." -nographic`) | **borrow** for the court; not shipped |
 | bootloader | the board's (U-Boot on ARM SBCs, the firmware's EFI stub on x86) | **borrow**; declared per machine later |
 
 `stzos image <file.machine> --root <staging> --out <dir>` judges the
@@ -63,6 +63,15 @@ jobs; a 4.2 MB initramfs of two binaries (stzos 3.4 MB unstripped, stzr
 four mounts, two services and a clean `reboot(RESTART)`, QEMU exiting 0
 under `-no-reboot`. The transcript matches the pinned expectation line
 for line.
+
+**The Makeen box, emulated (OS-3, 2026-09-12):** the same pipeline for
+aarch64 — `make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-`, the
+`virt` machine, the PL011 console, virtio-mmio — with a 64 MB ext4 disk
+declared as `MOUNT data` on `/dev/vda`: 531 options, a 3.8 MB `Image` in
+2m01 at two jobs, the disk mounted by PID 1 before any world spoke, the
+`kds` and `poste` worlds run by stzr (764 KB, aarch64 static). The real
+box differs in what `makeen_box.machine` already says: the SD card's
+partition and a network service; those are OS-4's.
 
 ## 4. The edge profile (declared; MicroRing's substrate)
 
@@ -93,7 +102,8 @@ judged so that one file describes the fleet, phone included.
 | the mechanism | Zig unit tests with negative siblings; the court probed with a mutated judge (3 reds) | green |
 | the Linux-only code | `zig build cross` (two static targets) | builds |
 | the boot | the transcript, run as PID 1 in a user namespace under WSL | ran: pids 1–10, proc mounted, sysfs/devtmpfs refused PERM, all policies exercised |
-| the image | the QEMU serial transcript, normalised, diffed against `machines/qemu_hello.expected` | matches, 28 lines |
+| the image, x86_64 | the QEMU serial transcript, normalised, diffed against `machines/qemu_hello.expected` | matches, 28 lines |
+| the image, aarch64 (the Makeen box) | the same against `machines/makeen_qemu.expected`: `virt`, PL011, a virtio ext4 disk mounted at `/data`, two stzr worlds | matches, 20 lines |
 
 ## 7. Boundaries
 
@@ -105,10 +115,11 @@ judged so that one file describes the fleet, phone included.
 - Restart policy is a cap of 5 in v0.1 (a rehearsal guard); backoff and
   a declared budget are queued. A real machine's `always` service is
   expected to run, not to exit.
-- AFTER orders STARTS, not completions: `hello` starts after `self` has
-  been spawned, not after it has finished (the first boot shows both
-  outputs interleaved by the kernel's scheduling). A readiness or
-  completion seat is a fixture-first widening.
+- AFTER waits for READINESS: a `RESTART never` service is ready when it
+  has exited 0 (a one-shot), a daemon when spawned; a failed one-shot
+  blocks its dependents and init names them. Ruled in OS-3 after the
+  x86 judge convicted the interleaving of the OS-2 rule (starts only).
+  A readiness notification for daemons (a socket, a file) is queued.
 - Users and identities: every service runs as the machine. The USER
   seat with a per-device Ed25519 identity (MicroRing's ALIGNMENT.md
   finding: hardware custody and algorithm are coupled) is queued.

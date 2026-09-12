@@ -98,6 +98,16 @@ init; the launcher is the pack).
 | `AFTER` | name list of services | optional; each resolves (R8), never itself (R27), never a cycle (R21) |
 | `NEEDS` | name list of capabilities | optional; each must be declared AND granted (R17, R18) |
 
+**AFTER waits for readiness, and the RESTART policy says what ready
+means.** A service with `RESTART never` is a one-shot: it is ready when
+it has exited 0, and if it exits otherwise, whatever comes AFTER it
+never starts (init says so by name). A service with `RESTART always` or
+`on_failure` is a daemon: it is ready as soon as it has been spawned.
+The plan's order (A5) is the order in which services BECOME ELIGIBLE;
+the boot transcript is the order in which they actually start. (Ruled
+after OS-2's transcripts interleaved: AFTER had only ordered spawns —
+`experiment/PROTOCOL.md`, OS-3.)
+
 **The boot path has no shell.** A RUN whose program is a shell (`sh`,
 `bash`, `dash`, `ash`, `zsh`, `fish`, `ksh`, `csh`, `tcsh`) is refused by
 name (R5). The real guarantee is the image's — a profile ships no

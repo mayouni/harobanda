@@ -1,3 +1,93 @@
+# OS-3 — the Makeen box: the aarch64 image, a persistent partition, and AFTER made deterministic
+
+Ordered by the author on 2026-09-12 ("take decision on my behalf on the
+waiting rows, and then go for OS-3, the aarch64 image for the Makeen
+box"). The three rulings are in `doc/PROVENANCE.md` ("The rulings of
+2026-09-12"); the mailbox is `softanza/mailbox/stzos.md`.
+
+## What was built
+
+- **`stzos image` for aarch64**: one `Target` table per architecture
+  (kernel ARCH and cross prefix, the kernel artifact, the QEMU machine,
+  the console, the serial and block kconfig, the virtio transport —
+  virtio-mmio on `virt`, virtio-pci on `pc`). The derivation now emits
+  `image.env` (what the build must be told, written from the
+  declaration alone before any staging check) and `disk.list` (the
+  block devices the declared mounts need; one per image today, a
+  second is refused by name). The boot line carries the virtio disk.
+- **`experiment/os2_image.sh` made arch-aware**: one kernel tree per
+  ARCH under `$HOME`, the cross compiler from the derived prefix, the
+  kernel artifact by its derived path, the disks made with `mkfs` from
+  `disk.list`, and a check that every option the fragment asked for
+  survived `olddefconfig` — a dropped one is named as a missing
+  dependency.
+- **`machines/makeen_qemu.machine`**: the Makeen box as QEMU's `virt`
+  can carry it — aarch64, the PL011 console, a 64 MB ext4 disk at
+  `/data` on `/dev/vda`, the `kds` and `poste` worlds as stzr services.
+  `makeen_box.machine` (fixture A2) stays the box's own truth with its
+  SD-card partition and its network service; the two converge when the
+  box is real.
+- **stzr for aarch64**: stz's runtime cross-built for aarch64-linux-musl
+  (764 KB static) with one flag; the toolchain in WSL gained
+  `gcc-aarch64-linux-gnu`, `qemu-system-arm`, `e2fsprogs`.
+- **AFTER waits for readiness** (`src/init.zig`): a one-shot (`RESTART
+  never`) is ready when it has exited 0, a daemon (`always`,
+  `on_failure`) as soon as it is spawned; a one-shot that fails blocks
+  its dependents for good and init names them (`never started -- it
+  comes AFTER x, which exited 1`). Services start when eligible, from
+  the reaper loop, in plan order. `GRAMMAR.md` carries the rule.
+
+## What was measured
+
+- arm64 kernel: 531 options, `Image` 3,768,328 bytes, **2m01 s** wall at
+  two jobs for the first build (3m27 user), 27 s for the reconfigure.
+- Boot on `virt` (cortex-a53, 512 MB, TCG): PID 1, `proc` `sysfs`
+  `devtmpfs` done, **`ext4 at /data -- done`** on the virtio disk,
+  `gpio` refused as declared, `kds` read the machine file that rode in
+  the image (7 declarations), `poste` started only after `kds` exited 0,
+  both exited 0, `reboot(RESTART)`, QEMU exit 0. Pinned:
+  `machines/makeen_qemu.expected`, 20 lines.
+- x86 re-judged under the readiness rule: `hello` now starts after
+  `self` exits, the transcript is deterministic; `qemu_hello.expected`
+  re-pinned in this commit for that named reason (28 lines).
+
+## What was found
+
+1. **`init=` was the wrong parameter and x86 booted by accident.** The
+   root IS the initramfs; with `init=` the kernel looks for `/init`,
+   finds none, and goes to mount a root DEVICE. The x86 kernel had no
+   block layer, so `mount_root` did nothing and the boot proceeded; the
+   arm64 kernel had `CONFIG_BLOCK` for its ext4 mount and panicked
+   `VFS: Unable to mount root fs on unknown-block(0,0)`. `rdinit=` is
+   the honest parameter and both machines boot with it.
+2. **Menus tinyconfig closes drop the fragment's drivers silently.**
+   `CONFIG_VIRTIO_BLK=y` and `CONFIG_VIRTIO_MMIO=y` vanished under
+   `olddefconfig` because `VIRTIO_MENU`, `BLK_DEV` and `BLOCK` were off;
+   the mount failed `NOENT` with no other symptom. The fragment now
+   names the three, and the build prints every requested option that
+   did not survive.
+3. **AFTER only ordered spawns**, and the x86 judge caught it on the
+   third boot (the exit lines of `self` and `hello` swapped). The
+   readiness rule replaces it; both expectations were re-pinned in the
+   same commit as the rule, for that stated reason.
+4. **`reboot(RESTART)` inside a pid namespace ends the namespace**: the
+   kernel sends the namespace's init SIGHUP instead of rebooting, so the
+   WSL PID 1 transcript stops at the `init halts the machine` line and
+   `unshare` exits nonzero. The kernel's rule, not a defect; the init's
+   comment says so.
+
+## Named seams
+
+- The real box: a board's kernel config and device tree, U-Boot, the SD
+  card's partitions (`makeen_box.machine` names `/dev/mmcblk0p2`), A/B
+  slots with watchdog rollback.
+- The NETWORK kind (`network_up` in A2 names a program that does not
+  exist); the USER seat.
+- `make CC="zig cc"` for both kernels; a tarball mirror in the estate.
+- The judge into `stzos judge`; one virtio disk per image today.
+
+---
+
 # OS-2 — the machine boots: a vendored kernel, an image derived from the plan, QEMU, the transcript judged
 
 Ordered by the author on 2026-09-12 ("install qemu, gcc and make in WSL

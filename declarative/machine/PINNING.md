@@ -47,6 +47,18 @@ meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
   a reject — the court went red three times, each for its named
   reason, and exited nonzero (`experiment/PROTOCOL.md`).
 
+## The Makeen box, judged by its boot transcript (OS-3)
+
+`machines/makeen_qemu.machine` (aarch64, `virt`, a virtio ext4 disk at
+`/data`) → `experiment/os2_image.sh makeen_qemu` → Linux 6.12.109 for
+arm64 → QEMU → the serial transcript, normalised and diffed against
+`machines/makeen_qemu.expected`: **20 lines, identical** (2026-09-12).
+The expectation was pinned from the first deterministic boot under the
+AFTER-readiness rule. `qemu_hello.expected` was re-pinned in the same
+commit as that rule (28 lines): `hello` now starts after `self` exits,
+where before the two exits interleaved and the judge convicted the
+flake on the third boot (`experiment/PROTOCOL.md`, OS-3 finding 3).
+
 ## The image, judged by its boot transcript (OS-2)
 
 `machines/qemu_hello.machine` → `experiment/os2_image.sh` → Linux

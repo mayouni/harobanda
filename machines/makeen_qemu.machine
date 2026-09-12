@@ -1,0 +1,47 @@
+-- makeen_qemu.machine -- the Makeen box as QEMU's virt machine can carry
+-- it: aarch64, hosted, a persistent ext4 partition, the two worlds of the
+-- counter. makeen_box.machine (fixture A2, the box's own truth) names the
+-- SD card partition and a network service that does not exist yet; this
+-- sibling names what the emulator court can boot today -- the virtio disk
+-- at /dev/vda, the console on the PL011 -- and differs in nothing else
+-- that matters. When the box is real, the two converge or one yields.
+
+DEFINE MACHINE makeen_qemu AS (
+  PROFILE hosted,
+  ARCH aarch64,
+  KERNEL linux,
+  LIBC musl,
+  CONSOLE "/dev/ttyAMA0"
+) RATIONALE "The counter box, emulated: one box, no shell, no package manager, a persistent /data"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The worlds are processes"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "Orders and stock live on the box"
+
+DEFINE CAPABILITY gpio AS (
+  GRANT no
+) RATIONALE "No pins on the counter box; sensors are edge machines"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "The persistent partition -- a virtio disk here, the SD card's second partition on the box"
+
+DEFINE SERVICE kds AS (
+  RUN ["/stzr", "/app/kds.luau"],
+  RESTART never,
+  NEEDS [process, filesystem]
+) RATIONALE "The kitchen display world"
+
+DEFINE SERVICE poste AS (
+  RUN ["/stzr", "/app/poste.luau"],
+  RESTART never,
+  AFTER [kds],
+  NEEDS [process, filesystem]
+) RATIONALE "The counter world"

@@ -9,10 +9,12 @@ derived; on a hosted machine one static binary, `stzos`, executes that
 plan as PID 1 and narrates the boot as a transcript. No shell, no
 package manager, no init scripts: the declared machine IS the system.
 
-**Status: OS-2, the machine boots.** A declared machine, imaged over a
-vendored Linux 6.12 LTS built from tinyconfig plus a derived fragment,
-booted in QEMU with stzos as PID 1 and stzr running a Luau world; the
-serial transcript is judged line for line against a pinned expectation
+**Status: OS-3, the Makeen box boots (emulated).** Two declared
+machines, x86_64 and aarch64, imaged over a vendored Linux 6.12 LTS
+built from tinyconfig plus a derived fragment, booted in QEMU with stzos
+as PID 1 and stzr running Luau worlds — the aarch64 one with a
+persistent ext4 partition mounted before any world spoke; each serial
+transcript is judged line for line against its pinned expectation
 (`experiment/os2_image.sh`). Private. The name `stzos` is
 provisional until the landscape ruling (`doc/PROVENANCE.md`). The
 strategy that this repository serves is the Vision Corpus
@@ -32,13 +34,13 @@ strategy that this repository serves is the Vision Corpus
 | the image, derived: initramfs list, kernel fragment, boot line | `src/image.zig` (`stzos image`) | the QEMU boot transcript against `machines/qemu_hello.expected` |
 | the vendored kernel, pinned by digest | `vendor/PIN.md`, `experiment/os2_kernel_fetch.sh` | sha256 from kernel.org's own sums |
 | the imperative half: kernel build, cpio, QEMU, the judge | `experiment/os2_image.sh` (WSL Ubuntu) | `zig-out/wsl/image_<name>.txt` |
-| the reference machines | `machines/` | `makeen_box.machine` is fixture A2 verbatim; `qemu_hello.machine` is the one that boots |
+| the reference machines | `machines/` | `makeen_box.machine` is fixture A2 verbatim; `qemu_hello.machine` (x86_64) and `makeen_qemu.machine` (aarch64, the box as QEMU carries it) boot and are judged |
 
 ## Three profiles, one language
 
 | profile | substrate | init | state |
 |---|---|---|---|
-| **hosted** | a vendored Linux kernel, static musl userland, this binary as PID 1 | `stzos init` | **boots**: imaged and booted in QEMU, transcript judged |
+| **hosted** | a vendored Linux kernel, static musl userland, this binary as PID 1 | `stzos init` | **boots** on x86_64 and aarch64 in QEMU, transcripts judged; the real board is next |
 | **edge** | no kernel: the binary is the device (MicroRing's substrate — MicroZig, littlefs) | the cooperative loop | declarable, judged; not yet bootable |
 | **touch** | Android's kernel and init (AOSP fork, ZinOS Touch's design) | Android's, the launcher is the pack | declarable, judged; unbuilt |
 
@@ -53,14 +55,16 @@ zig-out\bin\stzos.exe plan machines\makeen_box.machine
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/wsl_boot.sh   # rehearsal + PID 1 in a namespace, transcripts in zig-out/wsl/
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_env.sh    # once: gcc, make, qemu, flex, bison...
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_kernel_fetch.sh   # once: the pinned kernel tarball
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello  # image + kernel + QEMU boot + judge
+wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello   # x86_64: image + kernel + QEMU boot + judge
+wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh makeen_qemu  # aarch64: the Makeen box on virt, with its ext4 /data
 ```
 
-The runtime the services run is stz's, cross-built for the image from
-`D:\GitHub\stz`:
+The runtime the services run is stz's, cross-built for each image from
+`D:\GitHub\stz` (the triple is derived from the machine's ARCH):
 
 ```
 zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-x86_64-linux-musl
+zig build -Dtarget=aarch64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-aarch64-linux-musl
 ```
 
 From `D:\GitHub\stz`, the language's own declaration judged by the

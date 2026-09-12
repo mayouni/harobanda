@@ -37,11 +37,33 @@ pub const Options = struct {
 
 const is_linux = builtin.os.tag == .linux;
 
-const Child = struct {
+// One slot per service, in plan order. AFTER waits for READINESS, and
+// readiness depends on the kind of service the RESTART policy implies:
+//   RESTART never       a one-shot -- ready when it has EXITED 0; if it
+//                       exits otherwise, what waited on it never starts
+//   always / on_failure a daemon  -- ready as soon as it has been SPAWNED
+// (systemd's oneshot/simple distinction without a Type= seat; the OS-2
+// transcripts interleaved because AFTER only ordered spawns, PROTOCOL.md).
+const State = enum { pending, running, exited, never };
+
+const Slot = struct {
     service: *const machine.Service,
-    pid: i32,
+    state: State = .pending,
+    pid: i32 = 0,
+    code: u32 = 0,
+    signaled: bool = false,
     restarts: usize = 0,
-    alive: bool = true,
+
+    fn ready(self: Slot) bool {
+        return switch (self.service.restart) {
+            .never => self.state == .exited and !self.signaled and self.code == 0,
+            .always, .on_failure => self.state == .running or self.state == .exited,
+        };
+    }
+    /// a one-shot that ended badly blocks its dependents for good
+    fn failed(self: Slot) bool {
+        return self.service.restart == .never and self.state == .exited and (self.signaled or self.code != 0);
+    }
 };
 
 pub fn run(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Writer) !u8 {
@@ -72,8 +94,9 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     }
     if (opts.rehearse) try out.print("boot: rehearsal -- mounts are narrated, not executed; services are spawned\n", .{});
 
-    var children: std.ArrayList(Child) = .{};
-    defer children.deinit(gpa);
+    var slots: std.ArrayList(Slot) = .{};
+    defer slots.deinit(gpa);
+    for (p.steps) |step| if (step == .service) try slots.append(gpa, .{ .service = step.service });
 
     for (p.steps) |step| switch (step) {
         .console => |c| try out.print("boot: console {s}\n", .{c}),
@@ -113,27 +136,29 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         },
         .capability => |c| try out.print("boot: {s} {s} ({s})\n", .{ if (c.granted) "grant" else "refuse", @tagName(c.name), @tagName(machine.kindOf(c.name)) }),
         .pin => |pn| try out.print("boot: pin {s} gpio {d} {s} -- declared; the hosted profile drives pins through the gpio capability of its services\n", .{ pn.name, pn.gpio, @tagName(pn.mode) }),
-        .service => |svc| {
-            const child_pid = spawn(gpa, svc) catch |e| {
-                try out.print("boot: start {s} -- could not spawn: {s}\n", .{ svc.name, @errorName(e) });
-                continue;
-            };
-            try children.append(gpa, .{ .service = svc, .pid = child_pid });
-            try out.print("boot: start {s} -- pid {d} --", .{ svc.name, child_pid });
-            for (svc.run) |w| try out.print(" {s}", .{w});
-            try out.print("\n", .{});
-        },
+        .service => {}, // started below, when what it comes AFTER is ready
     };
+    try startReady(gpa, slots.items, out);
     try out.flush();
 
     // the reaper: PID 1's standing duty
     var turns: usize = 0;
     while (true) {
         var alive: usize = 0;
-        for (children.items) |c| if (c.alive) {
-            alive += 1;
+        var pending: usize = 0;
+        for (slots.items) |s| switch (s.state) {
+            .running => alive += 1,
+            .pending => pending += 1,
+            else => {},
         };
         if (alive == 0) {
+            if (pending > 0) {
+                // nothing runs and something still waits: name it, it will never start
+                for (slots.items) |*s| if (s.state == .pending) {
+                    s.state = .never;
+                    try out.print("boot: {s} never started -- what it comes AFTER did not become ready\n", .{s.service.name});
+                };
+            }
             try out.print("boot: every service has ended -- init has nothing left to keep alive\n", .{});
             break;
         }
@@ -158,14 +183,15 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         const ended: i32 = @intCast(rc);
         turns += 1;
         var known = false;
-        for (children.items) |*c| {
-            if (c.pid != ended or !c.alive) continue;
+        for (slots.items) |*c| {
+            if (c.pid != ended or c.state != .running) continue;
             known = true;
-            c.alive = false;
+            c.state = .exited;
             const exited = linux.W.IFEXITED(status);
-            const code: u32 = if (exited) linux.W.EXITSTATUS(status) else 0;
+            c.code = if (exited) linux.W.EXITSTATUS(status) else 0;
+            c.signaled = !exited;
             if (exited) {
-                try out.print("boot: {s} (pid {d}) exited {d}\n", .{ c.service.name, ended, code });
+                try out.print("boot: {s} (pid {d}) exited {d}\n", .{ c.service.name, ended, c.code });
             } else if (linux.W.IFSIGNALED(status)) {
                 try out.print("boot: {s} (pid {d}) killed by signal {d}\n", .{ c.service.name, ended, linux.W.TERMSIG(status) });
             } else {
@@ -174,7 +200,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             const wants_restart = switch (c.service.restart) {
                 .never => false,
                 .always => true,
-                .on_failure => !(exited and code == 0),
+                .on_failure => !(exited and c.code == 0),
             };
             if (wants_restart) {
                 if (c.restarts >= opts.max_restarts) {
@@ -186,20 +212,35 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                         break;
                     };
                     c.pid = np;
-                    c.alive = true;
+                    c.state = .running;
                     try out.print("boot: restart {s} ({s}, {d}/{d}) -- pid {d}\n", .{ c.service.name, @tagName(c.service.restart), c.restarts, opts.max_restarts, np });
                 }
             }
             break;
         }
         if (!known) try out.print("boot: reaped orphan pid {d}\n", .{ended});
+        // a one-shot that failed blocks what waited on it; a service whose
+        // AFTER just became ready starts now
+        for (slots.items) |*s| {
+            if (s.state != .pending) continue;
+            for (s.service.after) |a| {
+                for (slots.items) |d| if (std.mem.eql(u8, d.service.name, a) and d.failed()) {
+                    s.state = .never;
+                    try out.print("boot: {s} never started -- it comes AFTER {s}, which exited {d}\n", .{ s.service.name, a, d.code });
+                };
+            }
+        }
+        try startReady(gpa, slots.items, out);
         try out.flush();
     }
     if (is_pid1 and !opts.rehearse) {
         // PID 1 may not exit (the kernel panics); it restarts the machine.
         // Under QEMU -no-reboot this is how a boot ends and the transcript
-        // closes. Inside a user namespace the kernel refuses it (PERM) and
-        // the transcript says so.
+        // closes. Inside a pid namespace the kernel does not reboot: it
+        // sends this init SIGHUP and the namespace ends (reboot(2), "in a
+        // pid namespace other than the initial one") -- the WSL transcript
+        // stops at this line and unshare exits nonzero, by the kernel's
+        // rule (PROTOCOL.md, OS-3 finding 4).
         try out.print("boot: init halts the machine -- reboot(RESTART)\n", .{});
         try out.flush();
         linux.sync();
@@ -211,6 +252,37 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     try out.print("boot: init exits -- {s}\n", .{if (opts.rehearse) "rehearsal over" else "boot over"});
     try out.flush();
     return 0;
+}
+
+/// Start every pending service whose AFTER services are all ready, in
+/// plan order, until nothing more can start.
+fn startReady(gpa: std.mem.Allocator, slots: []Slot, out: *std.Io.Writer) !void {
+    var progressed = true;
+    while (progressed) {
+        progressed = false;
+        for (slots) |*s| {
+            if (s.state != .pending) continue;
+            var ok = true;
+            for (s.service.after) |a| {
+                for (slots) |d| if (std.mem.eql(u8, d.service.name, a) and !d.ready()) {
+                    ok = false;
+                };
+            }
+            if (!ok) continue;
+            const pid = spawn(gpa, s.service) catch |e| {
+                s.state = .never;
+                try out.print("boot: start {s} -- could not spawn: {s}\n", .{ s.service.name, @errorName(e) });
+                progressed = true;
+                continue;
+            };
+            s.pid = pid;
+            s.state = .running;
+            progressed = true;
+            try out.print("boot: start {s} -- pid {d} --", .{ s.service.name, pid });
+            for (s.service.run) |w| try out.print(" {s}", .{w});
+            try out.print("\n", .{});
+        }
+    }
 }
 
 fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service) !i32 {

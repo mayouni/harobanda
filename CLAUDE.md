@@ -96,16 +96,25 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   an order of magnitude slower; `os2_image.sh` extracts into `$HOME`
   inside WSL. The tarball and its pin stay in `vendor/linux/`
   (gitignored, 142 MB; `vendor/PIN.md` is the record).
+- **`rdinit=`, never `init=`, on the boot line**: the root is the
+  initramfs; `init=` sends the kernel to mount a root device, which
+  panics as soon as the kernel has a block layer (OS-3 finding 1).
+- **A kconfig fragment must open the MENUS its drivers live under**
+  (`BLOCK`, `BLK_DEV`, `VIRTIO_MENU`), or `olddefconfig` drops the
+  drivers silently; the build prints every requested option that did
+  not survive. Read that list before reading a mount refusal.
 - **Invoke WSL scripts from PowerShell, never from the Bash tool** —
   git-bash rewrites `/mnt/d/...` into `C:/Git/mnt/...`
   (`MSYS_NO_PATHCONV=1 wsl.exe ...` is the workaround if you must).
 
 ## Next steps (author-ordered, one per session)
 
-- **OS-3 — the box**: the hosted image on real hardware and on aarch64
-  (`stzos image` refuses aarch64 today): the kernel config for a board,
-  the bootloader seam, persistent MOUNTs on a block device (virtio-blk
-  in QEMU first), A/B slots with watchdog rollback.
+- **OS-4 — the real box**: the aarch64 image (booting on QEMU `virt`
+  since OS-3 with a virtio ext4 `/data`) onto a commodity ARM board —
+  the board's kernel config and device tree, U-Boot, the SD card's
+  partitions (`makeen_box.machine` names `/dev/mmcblk0p2`), A/B slots
+  with watchdog rollback. The board is the author's choice (B9's
+  OpenWrt-class €100 board, never designed by us).
 - The kernel rebuilt with `make CC="zig cc"` (the stated sovereignty
   destination; gcc did the first boot) and a tarball mirror inside the
   estate.

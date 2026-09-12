@@ -11,13 +11,14 @@ mkdir -p zig-out/wsl
   sed -i "s#http://#https://#g" /etc/apt/sources.list.d/ubuntu.sources
   apt-get -o Acquire::ForceIPv4=true update -qq
   apt-get -o Acquire::ForceIPv4=true install -y -qq --no-install-recommends \
-    qemu-system-x86 gcc make flex bison bc libelf-dev libssl-dev cpio xz-utils curl ca-certificates perl python3 file
+    qemu-system-x86 qemu-system-arm gcc make flex bison bc libelf-dev libssl-dev cpio xz-utils curl ca-certificates perl python3 file \
+    gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu e2fsprogs dosfstools
   echo "=== versions ==="
   gcc --version | head -1
   make --version | head -1
   qemu-system-x86_64 --version | head -1
   flex --version; bison --version | head -1; bc --version | head -1
-  which cpio xz curl
+  aarch64-linux-gnu-gcc --version | head -1; qemu-system-aarch64 --version | head -1; which cpio xz curl mkfs.ext4
   echo "exit $?"
 } > zig-out/wsl/env.txt 2>&1
 tail -12 zig-out/wsl/env.txt
