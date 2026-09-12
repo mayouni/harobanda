@@ -1,8 +1,9 @@
 -- wsl_rehearsal.machine -- a hosted machine whose services exist on any
--- Linux (coreutils), so the init can be exercised under WSL: as a
--- rehearsal from an ordinary pid, and as PID 1 inside a user namespace
--- (`unshare -Urpf --mount-proc`). Every RESTART policy is represented,
--- so the reaper's three branches all print.
+-- Linux (coreutils and util-linux), so the init can be exercised under
+-- WSL: as a rehearsal from an ordinary pid, and as PID 1 inside a user
+-- namespace (`unshare -Urpf --mount-proc`). Every RESTART policy is
+-- represented, so the reaper's three branches all print, and both sides
+-- of READY are here: a daemon that signals and one that never does.
 
 DEFINE MACHINE wsl_rehearsal AS (
   PROFILE hosted,
@@ -33,3 +34,31 @@ DEFINE SERVICE steady AS (
   AFTER [once],
   NEEDS [process]
 ) RATIONALE "Sleeps a second and is always restarted"
+
+DEFINE SERVICE signals AS (
+  RUN ["/usr/bin/flock", "/tmp/stzos-signals.ready", "/bin/sleep", "30"],
+  RESTART always,
+  READY "/tmp/stzos-signals.ready",
+  NEEDS [process]
+) RATIONALE "A daemon stand-in that creates its signal and stays alive, as a real world does"
+
+DEFINE SERVICE after_signals AS (
+  RUN ["/bin/true"],
+  RESTART never,
+  AFTER [signals],
+  NEEDS [process]
+) RATIONALE "Starts on the signal, not on the spawn"
+
+DEFINE SERVICE mute AS (
+  RUN ["/bin/sleep", "30"],
+  RESTART always,
+  READY "/tmp/stzos-mute.ready",
+  NEEDS [process]
+) RATIONALE "A daemon stand-in that runs and never signals: the negative sibling"
+
+DEFINE SERVICE after_mute AS (
+  RUN ["/bin/true"],
+  RESTART never,
+  AFTER [mute],
+  NEEDS [process]
+) RATIONALE "Never starts: what it comes after never said it was serving"

@@ -113,7 +113,7 @@ judged so that one file describes the fleet, phone included.
 
 | altitude | instrument | today |
 |---|---|---|
-| the language | `fixtures.json`, 12 accepts + 42 rejects, sha256-pinned (BOARD, NETWORK and SLOTS widened it fixture-first) | 54/54 |
+| the language | `fixtures.json`, 13 accepts + 45 rejects, sha256-pinned (BOARD, NETWORK, SLOTS and READY widened it fixture-first) | 58/58 |
 | the language's own declaration | `machine.stzu` judged by stz's `Stzu.luau` | accepted, 6/5/0/3 |
 | the mechanism | Zig unit tests with negative siblings; the court probed with a mutated judge (3 reds) | green |
 | the Linux-only code | `zig build cross` (two static targets) | builds |
@@ -135,10 +135,12 @@ judged so that one file describes the fleet, phone included.
   a declared budget are queued. A real machine's `always` service is
   expected to run, not to exit.
 - AFTER waits for READINESS: a `RESTART never` service is ready when it
-  has exited 0 (a one-shot), a daemon when spawned; a failed one-shot
-  blocks its dependents and init names them. Ruled in OS-3 after the
-  x86 judge convicted the interleaving of the OS-2 rule (starts only).
-  A readiness notification for daemons (a socket, a file) is queued.
+  has exited 0 (a one-shot); a daemon when spawned, or — if it declares
+  `READY "<path>"` — when it creates that path, its own word that it is
+  serving (RDY-1). A failed one-shot and a daemon that never signals
+  both block their dependents, and init names them. No timer: a daemon
+  that never comes up keeps an A/B trial uncommitted, which is the safe
+  outcome. A bounded window for the TRIAL is a named seam.
 - Users and identities: every service runs as the machine. The USER
   seat with a per-device Ed25519 identity (MicroRing's ALIGNMENT.md
   finding: hardware custody and algorithm are coupled) is queued.

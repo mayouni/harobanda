@@ -123,9 +123,17 @@ const is_linux = builtin.os.tag == .linux;
 // readiness depends on the kind of service the RESTART policy implies:
 //   RESTART never       a one-shot -- ready when it has EXITED 0; if it
 //                       exits otherwise, what waited on it never starts
-//   always / on_failure a daemon  -- ready as soon as it has been SPAWNED
+//   always / on_failure a daemon  -- ready as soon as it has been SPAWNED,
+//                       unless it declares READY "<path>", in which case
+//                       it is ready when it CREATES that path: its own
+//                       word that it is serving, not the kernel's word
+//                       that it was started. A daemon that never signals
+//                       never becomes ready: its dependents never start
+//                       and an A/B trial never commits -- the safe
+//                       outcome, and the reason there is no timer here
+//                       (a timer would race a boot; the wait does not).
 // (systemd's oneshot/simple distinction without a Type= seat; the OS-2
-// transcripts interleaved because AFTER only ordered spawns, PROTOCOL.md).
+// transcripts interleaved because AFTER only ordered spawns, PROTOCOL.md.)
 const State = enum { pending, running, exited, never };
 
 const Slot = struct {
@@ -133,14 +141,22 @@ const Slot = struct {
     state: State = .pending,
     pid: i32 = 0,
     code: u32 = 0,
-    signaled: bool = false,
+    signaled: bool = false, // killed by a signal (the kernel's word)
+    signalled_ready: bool = false, // its READY path has been seen (its own word)
     restarts: usize = 0,
 
     fn ready(self: Slot) bool {
         return switch (self.service.restart) {
             .never => self.state == .exited and !self.signaled and self.code == 0,
-            .always, .on_failure => self.state == .running or self.state == .exited,
+            .always, .on_failure => if (self.service.ready != null)
+                self.signalled_ready
+            else
+                self.state == .running or self.state == .exited,
         };
+    }
+    /// still waiting for a declared signal
+    fn awaiting(self: Slot) bool {
+        return self.service.ready != null and !self.signalled_ready and self.state == .running;
     }
     /// a one-shot that ended badly blocks its dependents for good
     fn failed(self: Slot) bool {
@@ -338,10 +354,17 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         };
         if (alive == 0) {
             if (pending > 0) {
-                // nothing runs and something still waits: name it, it will never start
+                // nothing runs and something still waits: name it, and name
+                // the declared signal that never came, if that is the reason
                 for (slots.items) |*s| if (s.state == .pending) {
                     s.state = .never;
-                    try out.print("boot: {s} never started -- what it comes AFTER did not become ready\n", .{s.service.name});
+                    var why: []const u8 = "what it comes AFTER did not become ready";
+                    for (s.service.after) |a| {
+                        for (slots.items) |d| if (std.mem.eql(u8, d.service.name, a) and d.service.ready != null and !d.signalled_ready) {
+                            why = "what it comes AFTER never signalled ready";
+                        };
+                    }
+                    try out.print("boot: {s} never started -- {s}\n", .{ s.service.name, why });
                 };
             }
             try out.print("boot: every service has ended -- init has nothing left to keep alive\n", .{});
@@ -349,11 +372,26 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         }
         if (opts.turns) |t| if (turns >= t) {
             try out.print("boot: --turns {d} reached with {d} service(s) still running -- the instrument ends what a real init never would\n", .{ turns, alive });
+            // what the bound cut short: a service still waiting, and the
+            // declared signal that never came, so the negative case is read
+            // off the transcript rather than inferred from its silence
+            for (slots.items) |s| if (s.state == .pending) {
+                var why: []const u8 = "what it comes AFTER is not ready yet";
+                for (s.service.after) |a| {
+                    for (slots.items) |d| if (std.mem.eql(u8, d.service.name, a) and d.service.ready != null and !d.signalled_ready) {
+                        why = "what it comes AFTER has not signalled ready";
+                    };
+                }
+                try out.print("boot: {s} has not started -- {s}\n", .{ s.service.name, why });
+            };
             break;
         };
+        const awaiting = try pollReady(slots.items, out);
+        if (awaiting) try startReady(gpa, slots.items, out);
+        const polling = ab != null or awaiting;
         var status: u32 = 0;
-        const rc = linux.wait4(-1, &status, if (ab != null) linux.W.NOHANG else 0, null);
-        if (ab != null and rc == 0) {
+        const rc = linux.wait4(-1, &status, if (polling) linux.W.NOHANG else 0, null);
+        if (polling and rc == 0) {
             // nothing exited: feed, wait a quarter second, look again
             const ts: linux.timespec = .{ .sec = 0, .nsec = 250_000_000 };
             _ = linux.nanosleep(&ts, null);
@@ -465,6 +503,23 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     try out.print("boot: init exits -- {s}\n", .{if (opts.rehearse) "rehearsal over" else "boot over"});
     try out.flush();
     return 0;
+}
+
+/// Look for the declared signals that have appeared since the last look.
+/// Returns true if any service is still awaiting one.
+fn pollReady(slots: []Slot, out: *std.Io.Writer) !bool {
+    var awaiting = false;
+    for (slots) |*s| {
+        if (!s.awaiting()) continue;
+        const path = s.service.ready.?;
+        if (std.fs.cwd().access(path, .{})) |_| {
+            s.signalled_ready = true;
+            try out.print("boot: {s} -- ready ({s})\n", .{ s.service.name, path });
+        } else |_| {
+            awaiting = true;
+        }
+    }
+    return awaiting;
 }
 
 /// Start every pending service whose AFTER services are all ready, in

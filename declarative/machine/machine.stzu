@@ -34,7 +34,7 @@ DEFINE DECLARATION box AS (
 
 DEFINE DECLARATION service AS (
   VERB "SERVICE",
-  SEATS [run: [word], restart: name?, after: [dependency], needs: [need]]
+  SEATS [run: [word], restart: name?, after: [dependency], needs: [need], ready: text?]
 ) RATIONALE "A process the machine keeps: its argv, its restart policy, what it follows, what it needs"
 
 DEFINE DECLARATION capability AS (

@@ -152,10 +152,11 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 - The kernel rebuilt with `make CC="zig cc"` (the stated sovereignty
   destination; gcc did the first boot) and a tarball mirror inside the
   estate.
-- The USER seat (fixture-first widening); a readiness signal for
-  daemons beside AFTER. The NETWORK kind exists since NET-1 (dhcp and
-  static; lease renewal, a resolver, the box as DHCP server and IPv6
-  are its named seams).
+- The USER seat (fixture-first widening). The NETWORK kind exists
+  since NET-1 (dhcp and static; lease renewal, a resolver, the box as
+  DHCP server and IPv6 are its named seams) and READY since RDY-1 (a
+  daemon's own signal, no timer; a bounded window for the TRIAL and a
+  health seat are its seams).
 - The edge profile's boot through MicroRing's substrate (Device seam).
 - (done 2026-09-12) The OS chapter is `softanza/vision/07-SYSTEM.md`
   (v0.1 DRAFT, unratified) with the corpus amended for the 08-30 Ring++

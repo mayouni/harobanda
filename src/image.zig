@@ -223,6 +223,11 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     for ([_][]const u8{ "/dev", "/proc", "/sys", "/etc", "/tmp" }) |d| try addDir(arena, &dirs, d);
     for (m.mounts) |mt| try addDir(arena, &dirs, mt.at);
     if (m.slots != null) try addDir(arena, &dirs, "/boot"); // where PID 1 mounts the boot partition to read and commit the slot
+    // where a daemon creates its READY signal: the initramfs root is RAM
+    // and writable, so the directory is all the image owes it
+    for (m.services) |svc| if (svc.ready) |r| {
+        if (std.fs.path.dirnamePosix(r)) |d| if (d.len > 1) try addDir(arena, &dirs, d);
+    };
 
     // /stzos: this binary, cross-built, staged at the root
     const stzos_src = (try staged(arena, opts.root, "/stzos")) orelse {

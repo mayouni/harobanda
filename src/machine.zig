@@ -74,6 +74,10 @@ pub const Service = struct {
     restart: Restart,
     after: []const []const u8,
     needs: []const Capability,
+    /// a daemon's own signal that it is SERVING, not merely spawned: the
+    /// path it creates when it is up. A one-shot has no use for it (its
+    /// readiness is its exit 0) and is refused one.
+    ready: ?[]const u8,
     rationale: []const u8,
 };
 
@@ -354,7 +358,7 @@ const Decl = struct {
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
         .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
@@ -671,7 +675,17 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
                 try needs.append(arena, cap);
             }
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .rationale = d.rationale });
+        var ready: ?[]const u8 = null;
+        if (find(d, "READY")) |c| {
+            if (restart == .never) return ctx.refuse(c.line, "READY is a daemon's signal; {s} is a one-shot (RESTART never) and its readiness is its exit 0", .{d.name});
+            const path = try wantString(&ctx, c);
+            if (path.len == 0 or path[0] != '/') return ctx.refuse(c.line, "READY is the absolute path the service creates when it is serving, not '{s}'", .{path});
+            for (services.items) |e| if (e.ready) |other| if (std.mem.eql(u8, other, path)) {
+                return ctx.refuse(c.line, "{s} already signals on {s}; one path signals for one service", .{ e.name, path });
+            };
+            ready = path;
+        }
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
 

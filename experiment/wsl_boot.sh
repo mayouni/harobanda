@@ -10,6 +10,9 @@ cd "$(dirname "$0")/.." || exit 1
 mkdir -p zig-out/wsl
 B=zig-out/cross/x86_64-linux-musl/stzos
 M=machines/wsl_rehearsal.machine
+# the declared signals are files: a run must not inherit the last run's
+# (a stale signal would make a daemon ready before it ever started)
+rm -f /tmp/stzos-signals.ready /tmp/stzos-mute.ready
 
 {
   $B version; echo "exit $?"
@@ -19,9 +22,11 @@ M=machines/wsl_rehearsal.machine
   $B init $M; echo "exit $?"
 } > zig-out/wsl/rehearsal.txt 2>&1
 
+rm -f /tmp/stzos-signals.ready /tmp/stzos-mute.ready
 {
   echo "=== 3. PID 1 inside a user+pid+mount namespace ==="
   timeout 20 unshare -Urpf --mount-proc $B init $M --turns 8; echo "exit $?"
 } > zig-out/wsl/pid1.txt 2>&1
+rm -f /tmp/stzos-signals.ready /tmp/stzos-mute.ready
 
 echo "wsl_boot: transcripts in zig-out/wsl/"

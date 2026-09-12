@@ -107,6 +107,7 @@ init; the launcher is the pack).
 | `RESTART` | `never` \| `always` \| `on_failure` | optional, default `never` (R25) |
 | `AFTER` | name list of services | optional; each resolves (R8), never itself (R27), never a cycle (R21) |
 | `NEEDS` | name list of capabilities | optional; each must be declared AND granted (R17, R18) |
+| `READY` | string | optional, daemons only — the absolute path the service creates when it is serving (R43, R44, R45); see the readiness rule below |
 
 ### DEFINE NETWORK — one interface, one way to an address
 
@@ -133,7 +134,16 @@ for the phones, IPv6.
 means.** A service with `RESTART never` is a one-shot: it is ready when
 it has exited 0, and if it exits otherwise, whatever comes AFTER it
 never starts (init says so by name). A service with `RESTART always` or
-`on_failure` is a daemon: it is ready as soon as it has been spawned.
+`on_failure` is a daemon: it is ready as soon as it has been spawned —
+**unless it declares `READY "<path>"`**, and then it is ready when it
+CREATES that path: its own word that it is serving, rather than the
+kernel's word that it was started. A daemon that never signals never
+becomes ready; its dependents never start and are named at the end,
+and an A/B trial never commits. There is no timer, by design: a timer
+would race a boot, and a box that refuses to commit an update whose
+world never came up is behaving correctly. READY is refused on a
+one-shot (R43), must be absolute (R44), and one path signals for one
+service (R45).
 The plan's order (A5) is the order in which services BECOME ELIGIBLE;
 the boot transcript is the order in which they actually start. (Ruled
 after OS-2's transcripts interleaved: AFTER had only ordered spawns —

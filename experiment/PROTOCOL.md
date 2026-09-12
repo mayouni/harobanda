@@ -1,3 +1,76 @@
+# RDY-1 — a daemon's own word: READY, and the hole it closes in the A/B trial
+
+Ordered by the author on 2026-09-12 ("take whatever decision you think
+suitable on my behalf, and then do the tasks in the order you
+suggested"), first of four. The decisions taken, and open to reversal:
+**the signal is a file**, not a socket — any program in any language
+can create a path, and it is visible from outside; **there is no
+timer** — a timer would race a boot, while a wait does not, and a box
+that will not commit an update whose world never came up is behaving
+correctly; **READY is refused on a one-shot**, whose readiness is
+already its exit 0; **the court is the rehearsal**, where a live
+daemon is natural and no kernel is needed.
+
+## The hole it closes
+
+AB-1 left a daemon ready the moment it was SPAWNED. The box's real
+worlds will be daemons, so under that rule an A/B trial could commit
+itself while the kitchen display was still opening its socket — an
+update judged good by a machine that had not yet served anyone. The
+commit condition is `every service is ready`; giving a daemon a way to
+say when that is true closes it without touching the commit rule.
+
+## What was built
+
+- **`READY "<path>"`** on SERVICE, fixture-first (A13, R43, R44, R45;
+  **58/58 on the first run**): the absolute path the service creates
+  when it is serving. Refused on a one-shot, refused if not absolute,
+  and one path signals for one service. `machine.stzu` gained the seat
+  (counts unchanged: it is a seat, not a kind).
+- **PID 1 waits for the word** (`src/init.zig`): a daemon with READY
+  is ready when the path appears, never before; the reaper polls for
+  it a quarter second at a time, prints `boot: <name> -- ready
+  (<path>)` when it comes, and starts what waited. A daemon that never
+  signals never becomes ready: its dependents never start, are named
+  at the end (`what it comes AFTER never signalled ready`), and the
+  A/B commit never happens.
+- **The instrument names what it cut short**: with `--turns`, the run
+  now also prints each service still waiting and why, so the negative
+  case is read off the transcript instead of inferred from silence.
+- **The image gives the signal a home**: the parent directory of each
+  READY path joins the initramfs (the root is RAM and writable, so a
+  directory is all the image owes it).
+- **The rehearsal is the court** (`machines/wsl_rehearsal.machine`):
+  `signals` is a daemon stand-in that creates its path and stays alive
+  (`flock <path> sleep 30` — creating the path IS what flock does
+  before running its command), `after_signals` starts on the signal;
+  `mute` runs and never signals, `after_mute` never starts. The script
+  removes both paths before each run: a stale signal would make a
+  daemon ready before it ever started.
+
+## What was measured
+
+- The rehearsal and the namespace PID 1: `signals -- ready
+  (/tmp/stzos-signals.ready)` followed by `start after_signals`, and
+  at the end `after_mute has not started -- what it comes AFTER has
+  not signalled ready`. Both sides print.
+- The three images unchanged and judged identical: 28, 22, 49 lines.
+  None of them declares READY yet — the box's worlds are stand-ins
+  that exit, so they are one-shots — which is why the pins did not
+  move. When the real worlds arrive as daemons, they declare READY and
+  the pins move with them.
+
+## Named seams
+
+- A bounded window for a trial (deliberately not a per-service
+  timeout): if the box should give up on an update after some minutes,
+  that belongs to the trial, not to the service.
+- Health beyond "it said it was serving": a health seat, and the
+  question of whether a signal should be withdrawn when a world stops
+  serving without exiting.
+
+---
+
 # AB-1 — two slots: an update is a trial before it is a commitment, and the card is the witness
 
 Ordered by the author on 2026-09-12 ("start them in order one by one",

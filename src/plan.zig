@@ -142,6 +142,7 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
                 for (svc.needs, 0..) |n, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", @tagName(n) });
                 try out.print("]", .{});
             }
+            if (svc.ready) |r| try out.print(" -- ready on {s}", .{r});
             try out.print("\n", .{});
         },
     };

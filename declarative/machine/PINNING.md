@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-cb031c766d74b95ac2f156447464e97986d1274c965656f8ab0d542cf3414515
+adb8a6e6cc08ce4c5319867128ba9895d0459d06710b39f17b17959a135003ee
 ```
 
-(Before SLOTS of 2026-09-12 (AB-1):
+(Before READY of 2026-09-12 (RDY-1):
+`cb031c766d74b95ac2f156447464e97986d1274c965656f8ab0d542cf3414515`,
+12 accepts + 42 rejects; the widening added A13, R43, R44, R45.
+Before SLOTS of 2026-09-12 (AB-1):
 `0994dccb4bdf4b6d2dae8bfb9174c4b4df76ddc753624d30fd4105e19350bf81`,
 11 accepts + 40 rejects; the widening added A12, R41, R42 and gave A2
 its `SLOTS`. Before the NETWORK kind of 2026-09-12 (NET-1):
@@ -31,7 +34,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **54/54** — 12 accepts with structural expectations, 42 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, 51/51 NETWORK, 54/54 SLOTS) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **58/58** — 13 accepts with structural expectations, 45 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -136,3 +139,8 @@ the run):
 - PID 1 inside `unshare -Urpf --mount-proc`: pid 1, children 2–10,
   `proc` mounted, `sysfs` and `devtmpfs` refused by the kernel with
   `PERM`, the same reaper behaviour, `init would now halt the machine`.
+- since RDY-1, both sides of READY: `signals -- ready
+  (/tmp/stzos-signals.ready)` and then `start after_signals`, against
+  `after_mute has not started -- what it comes AFTER has not signalled
+  ready`. The script removes the signal paths before each run; a stale
+  signal would make a daemon ready before it ever started.

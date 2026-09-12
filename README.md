@@ -40,6 +40,7 @@ strategy that this repository serves is the Vision Corpus
 | the reference machines | `machines/` | `makeen_box.machine` (BOARD rpi4, fixture A2 verbatim), `qemu_hello.machine` (x86_64) and `makeen_qemu.machine` (aarch64 `virt`) all boot and are judged against their `.expected` |
 | the board's card: firmware pinned, two derived device trees, the SD image | `experiment/os2_image.sh`, `experiment/dtb_ops.py`, `vendor/rpi-firmware/PIN.txt` | the `raspi4b` boot transcript, 17 lines |
 | the NETWORK kind: PID 1 brings the declared wire up before any service, static or dhcp (a client in the one binary) | `src/netcfg.zig`, `src/net.zig` (`stzos net` by hand) | fixtures A10–A11, R36–R40; the lease in `makeen_qemu.expected` from QEMU's own DHCP server |
+| READY: a daemon's own word that it is serving, so an A/B trial cannot commit before the worlds are up | `src/init.zig` | fixtures A13, R43–R45; both sides in the rehearsal transcript |
 | A/B slots: an update is a trial before it is a commitment; PID 1 commits only once every service has started, under the watchdog; `stzos update` writes the other slot | `src/init.zig` (the slot logic), `src/update.zig` | fixtures A12, R41–R42; the card read back after a trial and after a held trial, in `makeen_box.expected` |
 
 ## Three profiles, one language

@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45.",
   "accepts": [
     {
       "id": "A1",
@@ -222,6 +222,24 @@
         "name": "box",
         "board": "rpi4",
         "slots": "/dev/mmcblk0p1"
+      }
+    },
+    {
+      "id": "A13",
+      "name": "a daemon signals when it is serving; what comes after it waits for the signal",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE srv AS (\n  RUN [\"/srv\"],\n  RESTART always,\n  READY \"/run/srv.ready\",\n  NEEDS [process]\n) RATIONALE \"It says when it is serving, not the kernel\"\nDEFINE SERVICE after_srv AS (\n  RUN [\"/after\"],\n  RESTART never,\n  AFTER [srv]\n) RATIONALE \"Starts on the signal, not on the spawn\"\n",
+      "expect": {
+        "counts": {
+          "services": 2,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 0
+        },
+        "order": [
+          "srv",
+          "after_srv"
+        ]
       }
     }
   ],
@@ -477,6 +495,24 @@
       "name": "SLOTS is a device path",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH aarch64, KERNEL linux, BOARD rpi4, SLOTS \"mmcblk0p1\") RATIONALE \"x\"\n",
       "refusal": "absolute path"
+    },
+    {
+      "id": "R43",
+      "name": "READY is a daemon's signal: a one-shot's readiness is its exit",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART never, READY \"/run/s.ready\") RATIONALE \"x\"\n",
+      "refusal": "its readiness is its exit 0"
+    },
+    {
+      "id": "R44",
+      "name": "READY is an absolute path: the service creates it where init can see it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"s.ready\") RATIONALE \"x\"\n",
+      "refusal": "absolute path the service creates"
+    },
+    {
+      "id": "R45",
+      "name": "one path signals for one service",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE a AS (RUN [\"/a\"], RESTART always, READY \"/run/x\") RATIONALE \"x\"\nDEFINE SERVICE b AS (RUN [\"/b\"], RESTART always, READY \"/run/x\") RATIONALE \"x\"\n",
+      "refusal": "already signals on /run/x"
     }
   ]
 }
