@@ -16,9 +16,6 @@ an emulator before a board. Nothing on the right can be reached without
 passing the court on the left. And the last arrow judges itself: the
 image carries the boot it EXPECTS (`/etc/expected`, derived from the
 plan), PID 1 records what it says and judges the two when every service
-is ready, and an A/B trial commits only on a match (JDG-1). And the last arrow judges itself: the
-image carries the boot it EXPECTS (`/etc/expected`, derived from the
-plan), PID 1 records what it says and judges the two when every service
 is ready, and an A/B trial commits only on a match (JDG-1).
 
 ## 2. One binary, every role
@@ -169,16 +166,6 @@ judged so that one file describes the fleet, phone included.
   both block their dependents, and init names them. No timer: a daemon
   that never comes up keeps an A/B trial uncommitted, which is the safe
   outcome. A bounded window for the TRIAL is a named seam.
-- The machine judges its own BOOT, not its life: the verdict comes once,
-  when every service is ready, over what init said about the machine
-  until then (mounts, capabilities, networks, the watchdog, starts,
-  exits). The card's state (a trial, or steady), the instrument, the
-  verdict itself and everything after readiness are not judged by the
-  machine; the court's transcript judges those. Order is not judged
-  (AFTER enforces it); count is. No expectation in the image is no
-  verdict, and a trial without a verdict is not committed. A health
-  seat beyond the boot -- a service's own word later in its life -- is a
-  named seam (JDG-1).
 - The machine judges its own BOOT, not its life: the verdict comes once,
   when every service is ready, over what init said about the machine
   until then (mounts, capabilities, networks, the watchdog, starts,

@@ -6,7 +6,8 @@ The operating layer of the Softanza vertical: the machine beneath stz.
 Private; created 2026-09-12 on the author's ruling to push the sovereign
 stack below Ring++ to the operating system, then MicroRing, then the
 PCB. **Read `doc/VISION.md` and `doc/PROVENANCE.md` before any
-strategic claim**; the ratified strategy of the whole estate is the
+strategic claim**, and `doc/GROUND.md` for what the machine is FOR (the
+solutions it is the floor of, and the tools that meet at that floor); the ratified strategy of the whole estate is the
 Vision Corpus at `D:\GitHub\softanza\vision` (amended 2026-09-12 for the
 Ring++ turn of 08-30 -- Amended blocks beside the superseded sentences --
 and carrying the floor as `07-SYSTEM.md`, v0.1 DRAFT, unratified). Daily memos go to
@@ -65,13 +66,6 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   wrong in the same way and the court stays green. QEMU judges the
   images; MicroRing judges the projection (PRJ-2, where a diff passed a
   file Ring could not parse).
-- **The machine judges its own boot** (JDG-1): the image carries
-  `/etc/expected`, derived from the plan; PID 1 records what it says
-  and judges the two when every service is ready; a trial commits only
-  on a match, and no expectation is no commit. Each judged line is
-  worded ONCE in `src/expect.zig` for init and the derivation alike --
-  never reword one side. The emulator's lacks are a `Lens` per board
-  (`qemu_lens`), never a loosened comparison.
 - **The machine judges its own boot** (JDG-1): the image carries
   `/etc/expected`, derived from the plan; PID 1 records what it says
   and judges the two when every service is ready; a trial commits only
