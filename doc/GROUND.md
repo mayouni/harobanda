@@ -115,7 +115,7 @@ remote control (scan, order, pay) as a local-first page, a kitchen
 display, a counter world, a box behind the counter that is server,
 network and bridge in one. The business model is paid on performance,
 never on onboarding, so hardware must cost nothing and be replaceable
-by the merchant himself: B9's verdict is a commodity board "never
+by the merchant: B9's verdict is a commodity board "never
 designed by us" for the network role, and used phones for everything
 else. The guarantee sheet is above.
 
