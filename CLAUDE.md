@@ -7,9 +7,9 @@ Private; created 2026-09-12 on the author's ruling to push the sovereign
 stack below Ring++ to the operating system, then MicroRing, then the
 PCB. **Read `doc/VISION.md` and `doc/PROVENANCE.md` before any
 strategic claim**; the ratified strategy of the whole estate is the
-Vision Corpus at `D:\GitHub\softanza\vision` (its README still says the
-stack is Luau; the memos of 2026-08-30 onward supersede it with Ring++,
-and the memo of 2026-09-12 11:02 opens the OS turn). Daily memos go to
+Vision Corpus at `D:\GitHub\softanza\vision` (amended 2026-09-12 for the
+Ring++ turn of 08-30 -- Amended blocks beside the superseded sentences --
+and carrying the floor as `07-SYSTEM.md`, v0.1 DRAFT, unratified). Daily memos go to
 `D:\GitHub\softanza\memos\YYYY-MM-DD.md` in the estate's yaml style,
 `by:` stamp read from the clock, never composed.
 
