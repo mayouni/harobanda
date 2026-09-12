@@ -157,5 +157,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   static; lease renewal, a resolver, the box as DHCP server and IPv6
   are its named seams).
 - The edge profile's boot through MicroRing's substrate (Device seam).
-- The OS chapter into the Vision Corpus, with the 08-30 Ring++ turn the
-  corpus still lacks; the three standing refusals ruled on by name.
+- (done 2026-09-12) The OS chapter is `softanza/vision/07-SYSTEM.md`
+  (v0.1 DRAFT, unratified) with the corpus amended for the 08-30 Ring++
+  turn; the three refusals are ruled in `doc/PROVENANCE.md`. Both wait
+  on the author's ratification; the author reverses by name.
