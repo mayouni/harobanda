@@ -1,3 +1,98 @@
+# ZIGCC-1 — the kernel built by our own compiler: four walls named, the tree builds, the image does not boot
+
+Second of the four the author ordered on 2026-09-12. The architecture
+table has said since OS-2 that `make CC="zig cc"` is the destination
+and gcc was the stand-in. This measures it. **The answer is no, not
+with zig 0.15.2** — and the four walls are named, two of them zig
+defects worth reporting upstream.
+
+## What was decided
+
+A Linux zig is needed: the Windows one cross-compiles stzos but cannot
+drive `make` inside WSL. It is fetched ONCE and **pinned by digest**
+(`experiment/zigcc_fetch.sh`, `vendor/zig/PIN.txt`, sha256 from
+ziglang.org's own index), exactly as the kernel tarball and the board
+firmware are. The experiment lives behind `STZOS_CC=zigcc` on
+`os2_image.sh`, in its OWN kernel tree per architecture, so the two
+toolchains never share an object and the default stays gcc.
+
+## The four walls, in the order they appeared
+
+1. **`-mtune=generic` stops the first object.** zig cc parses
+   `-march`/`-mcpu`/`-mtune` itself, into zig's own CPU model, and
+   knows no CPU named "generic". Dropped in the wrapper: a scheduling
+   hint, never a meaning.
+2. **Unused arguments are errors.** zig cc makes
+   `-Wunused-command-line-argument` an error and the kernel's assembly
+   rule passes flags that phase does not consume.
+   `-Wno-unused-command-line-argument` added.
+3. **Assembly plus a dependency file produces NOTHING, and exits 0.**
+   Asked for `-S` together with a depfile in either spelling
+   (`-Wp,-MMD,P` or `-MMD -MF P`), zig cc writes the depfile, writes no
+   assembly, and reports success; the kernel then stops at "cannot open
+   devicetable-offsets.s". Isolated flag by flag on the kernel's own
+   failing command (`zigcc_probe3.sh`). **A zig defect**, and the
+   nastiest kind: silence with a zero exit. The wrapper splits it into
+   two truthful passes — the assembly alone, then the preprocessor
+   alone for the dependencies — and the depfile still lists every one
+   of the hundred headers the source includes. Nothing forged.
+4. **PIC is decided by the target and cannot be argued with.** Under
+   PIC a symbol's address is not an immediate, so the kernel's per-CPU
+   accessors fail with "invalid operand for inline asm constraint 'i'"
+   — but on every LINUX target zig refuses `-fno-pic` outright ("the
+   selected target requires position independent code"). Only zig's
+   FREESTANDING target accepts it, and there the kernel's own sources
+   compile clean, integrated assembler and per-CPU accessors included
+   (`zigcc_probe6.sh`). So the wrapper sends non-PIC compilations to
+   `<arch>-freestanding` and leaves PIC ones (the VDSO, a real shared
+   object that asks for `-fPIC`) on the Linux target, where zig's
+   requirement is exactly what the VDSO wants. Getting that division
+   wrong shows up as "R_X86_64_32 against hidden symbol" at the VDSO
+   link. Real mode asks for non-PIC in the third spelling, `-fno-pic`.
+
+## What was measured
+
+- **The tree builds.** After the four concessions: 478 options (gcc's
+  configuration of the same fragment has 483 — the kernel's own Kconfig
+  differs for clang), **bzImage 1,446,912 bytes in 1m40** at two jobs
+  (gcc: 1,217,536 bytes, 78 s).
+- **The image does not boot.** Under QEMU it prints nothing at all —
+  not even `earlyprintk` from the decompressor, which speaks before any
+  console exists (`zigcc_boot_diag.sh`). It dies in the 16-bit setup
+  code, the part this wrapper pushed onto a target the kernel never
+  intended.
+
+## The verdict, and the claim narrowed
+
+gcc keeps building the kernel of every image. The architecture table no
+longer says `zig cc` builds it; it says gcc does, that zig cc was
+attempted on this date, and where it stopped. A compiler that produces
+an unbootable image is not a sovereignty gain, and saying otherwise
+would be the kind of claim this repository exists to refuse.
+
+What is kept: the instrument, whole — `zigcc_fetch.sh` (pinned),
+`zigcc_wrapper.sh` (every concession stated in its own comments),
+`zigcc_kernel.sh`, the six probes, and `STZOS_CC=zigcc` in the image
+pipeline. A later zig, or an `LLVM=1`-shaped attempt with lld and the
+LLVM binutils, starts where this stopped rather than from nothing.
+
+## Named seams
+
+- The 16-bit setup code is the suspect: the freestanding target is a
+  poor fit for `-m16 -march=i386`. A next attempt should keep the
+  kernel's own target and find another way past the PIC requirement
+  (a zig that allows `-fno-pic` on Linux targets would end it).
+- `ld.lld` is not a zig subcommand, so a full LLVM build is not
+  reachable through zig alone; the linker and binutils would stay the
+  distribution's in any case.
+- **The estate's own mirror of the kernel tarball** is a ROUTED ERRAND,
+  not done: 148 MB exceeds a git file limit, so availability needs
+  storage the author picks (a private release asset, a bucket, a second
+  machine). Integrity is already sovereign — the digest is pinned and
+  verified on every fetch — and this errand is about availability only.
+
+---
+
 # RDY-1 — a daemon's own word: READY, and the hole it closes in the A/B trial
 
 Ordered by the author on 2026-09-12 ("take whatever decision you think

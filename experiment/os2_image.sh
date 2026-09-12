@@ -38,25 +38,40 @@ mkdir -p "$OUT" zig-out/wsl
   "$HOST_STZOS" image "$M" --root "$ROOT" --out "$OUT" || { echo "derive refused"; exit 1; }
   for f in image.env initramfs.list kernel.fragment disk.list sd.list config.txt cmdline.txt boot.cmd; do [ -f "$OUT/$f" ] && { echo "--- $f"; cat "$OUT/$f"; }; done
   echo "=== kernel ==="
-  PIN=$(cat vendor/linux/PIN.txt); TARBALL=${PIN%% *}; SRC=$K/$ARCH/${TARBALL%.tar.xz}
+  # STZOS_CC=zigcc builds the kernel with OUR compiler (ZIGCC-1) in its own
+  # tree, so the two toolchains never share objects and either can be asked
+  # for the same image; the default stays the host's gcc.
+  CCARGS=""; KSUB=$ARCH
+  if [ "${STZOS_CC:-gcc}" = zigcc ]; then
+    ZIGBIN=$HOME/stzos-zig/zig-x86_64-linux-0.15.2/zig
+    [ -x "$ZIGBIN" ] || { echo "STZOS_CC=zigcc but no zig -- run experiment/zigcc_fetch.sh"; exit 1; }
+    mkdir -p "$HOME/stzos-zig/bin"; cp experiment/zigcc_wrapper.sh "$HOME/stzos-zig/bin/zigcc"; chmod +x "$HOME/stzos-zig/bin/zigcc"
+    export ZIGCC_REAL="$ZIGBIN"
+    CCARGS="CC=$HOME/stzos-zig/bin/zigcc HOSTCC=gcc"; KSUB=zigcc-$ARCH
+    echo "compiler: $("$HOME/stzos-zig/bin/zigcc" --version | head -1) (zig $("$ZIGBIN" version))"
+  else
+    echo "compiler: $(${CROSS_COMPILE}gcc --version | head -1)"
+  fi
+  PIN=$(cat vendor/linux/PIN.txt); TARBALL=${PIN%% *}; SRC=$K/$KSUB/${TARBALL%.tar.xz}
   echo "pin: $PIN"
-  mkdir -p "$K/$ARCH"
-  if [ ! -d "$SRC" ]; then echo "extracting into $K/$ARCH"; tar -xJf "vendor/linux/$TARBALL" -C "$K/$ARCH" || { echo "extract failed"; exit 1; }; fi
+  mkdir -p "$K/$KSUB"
+  if [ ! -d "$SRC" ]; then echo "extracting into $K/$KSUB"; tar -xJf "vendor/linux/$TARBALL" -C "$K/$KSUB" || { echo "extract failed"; exit 1; }; fi
   cp "$OUT/kernel.fragment" "$SRC/stzos.fragment"
   (
     cd "$SRC" || exit 1
     export ARCH CROSS_COMPILE
-    make -s tinyconfig || exit 1
+    # shellcheck disable=SC2086 -- CCARGS is empty or two plain assignments
+    make -s $CCARGS tinyconfig || exit 1
     scripts/kconfig/merge_config.sh -m .config stzos.fragment > /dev/null || exit 1
-    make -s olddefconfig || exit 1
+    make -s $CCARGS olddefconfig || exit 1
     echo "config: $(grep -c '=y' .config) options on"
     # every option the fragment asked for must survive olddefconfig; one that
     # did not is a dependency the fragment forgot, and it is named here
     grep -E '^CONFIG_[A-Z0-9_]+=y' stzos.fragment | while read -r want; do
       grep -q "^$want\$" .config && echo "  $want" || echo "  $want DROPPED by olddefconfig -- a dependency is missing from the fragment"
     done
-    time make -j2 "$(basename "$KERNEL_ARTIFACT")" 2>&1 | tail -3
-    if [ -n "$DTB" ]; then make -j2 dtbs 2>&1 | tail -1; fi
+    time make -j2 $CCARGS "$(basename "$KERNEL_ARTIFACT")" 2>&1 | tail -3
+    if [ -n "$DTB" ]; then make -j2 $CCARGS dtbs 2>&1 | tail -1; fi
     make -s usr/gen_init_cpio || exit 1
   ) || { echo "kernel build failed"; exit 1; }
   cp "$SRC/$KERNEL_ARTIFACT" "$OUT/$KERNEL_IMAGE" || exit 1

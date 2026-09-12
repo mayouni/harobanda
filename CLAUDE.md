@@ -149,9 +149,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   countdown (the emulator cannot arm it); and the tryboot flag, which
   needs a small vendored patch to `bcm2835_wdt.c` (mainline ignores the
   restart argument) -- until then a trial is requested by hand.
-- The kernel rebuilt with `make CC="zig cc"` (the stated sovereignty
-  destination; gcc did the first boot) and a tarball mirror inside the
-  estate.
+- (attempted 2026-09-12, ZIGCC-1) The kernel with `make CC="zig cc"`:
+  behind `STZOS_CC=zigcc`, four concessions named in
+  `experiment/zigcc_wrapper.sh`, the tree builds, **the image does not
+  boot** (it dies in the 16-bit setup code). gcc stays. Do not reopen
+  without a newer zig or an LLVM-shaped attempt; the instrument and the
+  six probes are kept. The estate's tarball MIRROR is a routed errand
+  for the author (availability, not integrity: the digests are pinned).
 - The USER seat (fixture-first widening). The NETWORK kind exists
   since NET-1 (dhcp and static; lease renewal, a resolver, the box as
   DHCP server and IPv6 are its named seams) and READY since RDY-1 (a

@@ -22,3 +22,27 @@ that verdict and is not done.
 
 Changing the pin means changing this file, `os2_kernel_fetch.sh`'s
 version pattern, and the first boot transcript in the same commit.
+
+## The Linux Zig, pinned the same way (ZIGCC-1)
+
+`experiment/zigcc_fetch.sh` fetches the Linux zig toolchain once and
+verifies it before anything runs; `vendor/zig/PIN.txt` records what it
+took. It exists for the experiment of building the kernel with our own
+compiler, which today builds but does not boot (`experiment/PROTOCOL.md`,
+ZIGCC-1); nothing in the shipped images depends on it.
+
+| what | value |
+|---|---|
+| tarball | `zig-x86_64-linux-0.15.2.tar.xz` |
+| sha256 | `02aa270f183da276e5b5920b1dac44a63f1a49e55050ebde3aecc9eb82f93239` |
+| source of the digest | ziglang.org's own `download/index.json`, fetched 2026-09-12 |
+| version | 0.15.2, the same the Windows toolchain builds stzos with; its C front end reports clang 20.1.2 |
+
+## What is NOT pinned: availability
+
+A digest makes a tarball's CONTENT sovereign, not its EXISTENCE. Both
+tarballs are fetched from their upstream and would have to be fetched
+again on a new machine. An estate mirror is a routed errand for the
+author (the kernel's 148 MB exceeds a git file limit, so it needs
+storage he picks); until then the honest statement is: integrity ours,
+availability theirs.

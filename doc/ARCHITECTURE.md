@@ -33,7 +33,7 @@ third program on the path for a declaration to reach.
 
 | part | source | verdict |
 |---|---|---|
-| kernel | Linux LTS, vendored as source, built with `make CC="zig cc"` on a Linux host; config minimal per machine (no modules: the declared FS, NIC, console only) | **keep vendored** — rebuilt by our toolchain, as Ring 1.27's VM was |
+| kernel | Linux LTS, vendored as source and pinned by digest; config minimal per machine (no modules: the declared FS, NIC, console only). Built by the host's **gcc**. `make CC="zig cc"` was attempted on 2026-09-12 (ZIGCC-1) and is behind `STZOS_CC=zigcc`: after four named concessions the tree builds, and the image does not boot — it dies in the 16-bit setup code | **keep vendored**, rebuilt from source by a compiler we do not yet own; the instrument for owning it is kept |
 | init | `stzos init` | **own** |
 | runtime | `stzr` (stz's static binary) | **own** |
 | userland | none: no shell, no coreutils, no busybox | **none** |

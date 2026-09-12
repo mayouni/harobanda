@@ -4,3 +4,4 @@ zig-cache/
 *.pdb
 vendor/linux/
 vendor/rpi-firmware/
+vendor/zig/
