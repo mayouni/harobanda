@@ -64,6 +64,7 @@ mkdir -p "$OUT" zig-out/wsl
   # .config belongs to whichever machine of this ARCH was built last, and a
   # diagnostic that read the tree answered for the wrong machine (OS-4)
   cp "$SRC/.config" "$OUT/kernel.config"
+  cp "$SRC/System.map" "$OUT/System.map"   # the symbol map of THIS kernel, for os4_syms.sh
   if [ -n "$DTB" ]; then
     cp "$SRC/$DTB" "$OUT/$(basename "$DTB")" || { echo "no dtb built: $DTB"; exit 1; }
     # two trees from mainline's: the CARD's (mainline + DTB_OPS: what the
