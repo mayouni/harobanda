@@ -5,10 +5,14 @@
 `fixtures.json` sha256:
 
 ```
-f2bf476618d2c5afd9d282f1fe5eba4ce717486b43266b93374e8a53bfc6a40f
+826ab41fea0333d6f347763610e31803a9173c1253ac56cc0709d0aa14545750
 ```
 
-(Before USER of 2026-09-12 (USR-1):
+(Before the edge boards of 2026-09-12 (PRJ-1):
+`f2bf476618d2c5afd9d282f1fe5eba4ce717486b43266b93374e8a53bfc6a40f`,
+14 accepts + 50 rejects; the widening added A15, R51, R52, made A3 the
+sensor file verbatim with `BOARD pico2`, and re-aimed R34/R35 at the
+per-profile board menus. Before USER of 2026-09-12 (USR-1):
 `adb8a6e6cc08ce4c5319867128ba9895d0459d06710b39f17b17959a135003ee`,
 13 accepts + 45 rejects; the widening added A14, R46-R50 and put
 `users` into every accept's counts. Before READY of 2026-09-12 (RDY-1):
@@ -37,7 +41,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **64/64** — 14 accepts with structural expectations, 50 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **67/67** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -67,6 +71,18 @@ meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
   (A2 services 3 → 99), a wrong fragment (R5), a valid source posing as
   a reject — the court went red three times, each for its named
   reason, and exited nonzero (`experiment/PROTOCOL.md`).
+
+## The edge projection, judged as text (PRJ-1)
+
+`machines/cold_room_sensor.machine` (fixture A3 verbatim, `BOARD
+pico2`) → `stzos project` → a real MicroRing project: a folder with a
+`device.ring` whose `Device([...])` carries the board and both pins.
+Diffed against `machines/cold_room_sensor.device.ring.expected` by
+`experiment/judge_project.sh`: **20 lines, identical**. Its negatives
+are the two refusals: projecting a hosted machine, and imaging an edge
+one. What does not cross over is printed rather than dropped — the
+flash mount (the substrate's), the capabilities (the machine's
+envelope), each service's behaviour (the Device language's).
 
 ## The identity, judged from inside the machine (USR-1)
 

@@ -23,13 +23,26 @@ const Allocator = std.mem.Allocator;
 // ---- the closed menus --------------------------------------------------
 
 pub const Profile = enum { hosted, edge, touch };
-pub const Arch = enum { x86_64, aarch64, riscv32, riscv64, thumbv7em };
+pub const Arch = enum { x86_64, aarch64, riscv32, riscv64, thumbv7em, thumbv8m };
 pub const Kernel = enum { linux, none, android };
 pub const Libc = enum { musl, none, bionic };
-/// The board a hosted machine is imaged for. qemu_pc and qemu_virt are the
-/// emulator court's machines; rpi4 is the Raspberry Pi 4 Model B -- the
-/// commodity board chosen 2026-09-12 (doc/PROVENANCE.md). Defaults by ARCH.
-pub const Board = enum { qemu_pc, qemu_virt, rpi4 };
+/// The board a machine is built for, hosted or edge. Each profile has its
+/// own menu and its own emulator board, and a board of the other profile
+/// is refused by name:
+///   hosted: qemu_pc, qemu_virt (the emulator court) and rpi4, the
+///           Raspberry Pi 4 Model B chosen 2026-09-12 (doc/PROVENANCE.md)
+///   edge:   sim (MicroRing's own simulator board) and the boards its
+///           tiers name -- pico2/pico2w (RP2350, tier 2, its flagship)
+///           and esp32c6 (tier 3). A touch machine's device is the phone
+///           and declares no board.
+pub const Board = enum { qemu_pc, qemu_virt, rpi4, sim, pico2, pico2w, esp32c6 };
+
+pub fn boardProfile(b: Board) Profile {
+    return switch (b) {
+        .qemu_pc, .qemu_virt, .rpi4 => .hosted,
+        .sim, .pico2, .pico2w, .esp32c6 => .edge,
+    };
+}
 pub const Restart = enum { never, always, on_failure };
 pub const PinMode = enum { in, out };
 pub const Fs = enum { proc, sysfs, devtmpfs, tmpfs, ext4, vfat, littlefs };
@@ -581,19 +594,26 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         libc = try wantEnum(&ctx, Libc, c, "musl, none or bionic");
         if (libc != default_libc) return ctx.refuse(c.line, "PROFILE {s} contradicts LIBC {s}: a machine of PROFILE {s} links LIBC {s}", .{ @tagName(profile), @tagName(libc), @tagName(profile), @tagName(default_libc) });
     }
-    var board: Board = switch (arch) {
-        .x86_64 => .qemu_pc,
-        else => .qemu_virt,
+    var board: Board = switch (profile) {
+        .hosted => if (arch == .x86_64) Board.qemu_pc else Board.qemu_virt,
+        .edge => Board.sim, // the emulator board of the edge profile, MicroRing's own
+        .touch => Board.qemu_virt, // unused: a touch machine's device is the phone
     };
     if (find(md, "BOARD")) |c| {
-        board = try wantEnum(&ctx, Board, c, "qemu_pc, qemu_virt or rpi4");
+        board = try wantEnum(&ctx, Board, c, "qemu_pc, qemu_virt, rpi4 (hosted) or sim, pico2, pico2w, esp32c6 (edge)");
         // the profile check comes first: the court convicted the other
-        // order on R35 (an edge machine naming rpi4 was refused for its
-        // ARCH, the truer reason being that edge machines have no BOARD)
-        if (profile != .hosted) return ctx.refuse(c.line, "BOARD is a hosted machine's clause; a machine of PROFILE {s} names its board in its own substrate", .{@tagName(profile)});
+        // order on R35 (an edge machine naming a hosted board was refused
+        // for its ARCH, the truer reason being the profile)
+        if (profile == .touch) return ctx.refuse(c.line, "BOARD is for a hosted or an edge machine; a touch machine's device is the phone the pack is installed on", .{});
+        if (boardProfile(board) != profile) {
+            return ctx.refuse(c.line, "PROFILE {s} contradicts BOARD {s}: that is a board of the {s} profile", .{ @tagName(profile), @tagName(board), @tagName(boardProfile(board)) });
+        }
         const wanted_arch: ?Arch = switch (board) {
             .qemu_pc => .x86_64,
             .qemu_virt, .rpi4 => .aarch64,
+            .pico2, .pico2w => .thumbv8m,
+            .esp32c6 => .riscv32,
+            .sim => null, // the simulator runs whatever the machine declares
         };
         if (wanted_arch) |wa| if (wa != arch) {
             return ctx.refuse(c.line, "ARCH {s} contradicts BOARD {s}: that board is {s}", .{ @tagName(arch), @tagName(board), @tagName(wa) });

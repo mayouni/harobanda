@@ -1,0 +1,20 @@
+-- device.ring -- DERIVED by stzos project from the declared machine
+-- cold_room_sensor. Do not edit: edit the machine and project it again.
+--
+-- A thermistor, a log, a radio: the binary is the device
+--
+-- What crossed over from the declaration: the board and every PIN.
+-- What did NOT, and why:
+--   MOUNT log (littlefs at /log) -- the substrate's: MicroRing mounts the flash
+--   CAPABILITY gpio granted -- the machine's envelope; MicroRing has no such gate
+--   CAPABILITY clock granted -- the machine's envelope; MicroRing has no such gate
+--   SERVICE sense (sense) -- its BEHAVIOUR is the Device language's, not the machine's:
+--     write its every/on handler beside this file until that language exists
+
+Device([
+    :board = "pico2",
+    :pins = [
+        :led = [ :gpio = 25, :mode = :out ],
+        :probe = [ :gpio = 4, :mode = :in ]
+    ]
+])

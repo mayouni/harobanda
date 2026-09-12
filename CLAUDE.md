@@ -161,7 +161,11 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   DHCP server and IPv6 are its named seams) and READY since RDY-1 (a
   daemon's own signal, no timer; a bounded window for the TRIAL and a
   health seat are its seams).
-- The edge profile's boot through MicroRing's substrate (Device seam).
+- (done 2026-09-12, PRJ-1) The edge profile's projection onto
+  MicroRing's substrate: `stzos project` writes a real `device.ring`,
+  judged by `experiment/judge_project.sh`. What remains is the Device
+  LANGUAGE (behaviour: the every/on handlers), which is an L2 member
+  and not this repository's to invent.
 - (done 2026-09-12) The OS chapter is `softanza/vision/07-SYSTEM.md`
   (v0.1 DRAFT, unratified) with the corpus amended for the 08-30 Ring++
   turn; the three refusals are ruled in `doc/PROVENANCE.md`. Both wait

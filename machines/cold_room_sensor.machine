@@ -1,0 +1,43 @@
+-- cold_room_sensor.machine -- the edge profile's reference machine, and
+-- fixture A3 verbatim: the HACCP probe of RestoLean's cold room, the
+-- sensor the Makeen box listens to. It is declared here and PROJECTED
+-- onto MicroRing's substrate (`stzos project`), never imaged and never
+-- booted here: `stzos init` refuses the edge profile by name and says
+-- whose it is. MicroRing owns the firmware, the tiers and the loop.
+
+DEFINE MACHINE cold_room_sensor AS (
+  PROFILE edge,
+  ARCH thumbv8m,
+  KERNEL none,
+  BOARD pico2
+) RATIONALE "A thermistor, a log, a radio: the binary is the device"
+
+DEFINE CAPABILITY gpio AS (
+  GRANT yes
+) RATIONALE "The probe and the LED are pins"
+
+DEFINE CAPABILITY clock AS (
+  GRANT yes
+) RATIONALE "Readings are timestamped"
+
+DEFINE PIN led AS (
+  GPIO 25,
+  MODE out
+) RATIONALE "Heartbeat: the board's own LED, so a cold room says it is alive"
+
+DEFINE PIN probe AS (
+  GPIO 4,
+  MODE in
+) RATIONALE "The thermistor"
+
+DEFINE MOUNT log AS (
+  AT "/log",
+  FS littlefs,
+  DEVICE "flash0"
+) RATIONALE "Power-loss safe, wear-levelled: a reading survives the power going out"
+
+DEFINE SERVICE sense AS (
+  RUN ["sense"],
+  RESTART always,
+  NEEDS [gpio, clock]
+) RATIONALE "Read, log, sleep -- the behaviour itself is the Device language's, projected as a named seam"

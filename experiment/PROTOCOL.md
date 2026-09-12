@@ -1,3 +1,68 @@
+# PRJ-1 — the edge profile projected: a MicroRing project, written and judged
+
+Fourth and last of the four the author ordered on 2026-09-12, and the
+only one that reaches into another repository's territory — so it was
+read first: MicroRing's own templates, `Device()` seam and examples say
+exactly what it consumes, and nothing here was invented.
+
+## What MicroRing is owed, and what it owns
+
+A MicroRing project IS a folder with a `device.ring` in it (its CLI
+says so by refusing anything else), and that file holds one
+`Device([...])` declaration: `:board`, `:pins` (each `[:gpio, :mode]`),
+and the behaviour — `:every`, `:on`, `:parts`. The first two are
+exactly what a `.machine` file declares. The behaviour is not, and this
+repository does not invent it: it belongs to the **Device language**,
+an L2 member of the alphabet, and until that exists the every/on
+handlers are the author's own Ring code beside the generated file.
+
+MicroRing's standing refusals are untouched: not an RTOS, not a new
+language, the firmware and the tiers are its own. `stzos project`
+writes text and hands it over.
+
+## What was built
+
+- **The edge boards, fixture-first** (A15, R51, R52; A3 re-pinned as
+  `machines/cold_room_sensor.machine` verbatim; **67/67**): each
+  profile has its own board menu and its own emulator board — hosted
+  keeps `qemu_pc`/`qemu_virt`/`rpi4`, edge gets MicroRing's own words,
+  `sim` (its simulator, and the edge default), `pico2`/`pico2w` (tier
+  2, its flagship) and `esp32c6` (tier 3). A board of the other
+  profile is refused BY PROFILE, which is what R35 always meant; the
+  earlier reading ("an edge machine names its board in its own
+  substrate") was written before MicroRing had been read and is
+  corrected here. `thumbv8m` joins the architectures, because the
+  RP2350 is a Cortex-M33 and the fixture should not lie about it.
+- **`stzos project <file.machine> --out <dir>`** (`src/project.zig`):
+  the `device.ring`, and a printed account of what did NOT cross over —
+  the flash MOUNT (the substrate mounts it), the capabilities (the
+  machine's envelope, which MicroRing has no gate for), each service's
+  behaviour (the Device language's). The generated file carries the
+  same account in its own comments, so it is legible where it lands.
+- **Both refusals**: `stzos project` refuses a hosted machine, and
+  `stzos image` refuses an edge one, each naming the other verb.
+
+## What was measured
+
+`machines/cold_room_sensor.device.ring.expected`, 20 lines, identical
+under `experiment/judge_project.sh`. The projected file is real
+MicroRing source: `Device([ :board = "pico2", :pins = [ :led = [ :gpio
+= 25, :mode = :out ], :probe = [ :gpio = 4, :mode = :in ] ] ])`.
+
+## Named seams
+
+- The Device LANGUAGE itself (behaviour: every/on/parts as declared
+  sentences rather than Ring code) — an L2 member, not this
+  repository's to declare.
+- `:parts` (a sensor's type, an ADC channel) has no seat in the machine
+  language yet; a PART kind is a fixture-first widening when a real
+  sensor needs it.
+- Running the projection through MicroRing itself (`microring run`) on
+  this host: MicroRing's desktop runtime is built and closed, so this
+  is a real next step rather than a wish.
+
+---
+
 # USR-1 — a declared identity: a service stops being the machine
 
 Third of the four the author ordered on 2026-09-12. Until now every

@@ -68,8 +68,11 @@ const Target = struct {
     qemu_dtb_ops: []const []const u8 = &.{},
 };
 
-fn target(board: machine.Board) Target {
+fn target(board: machine.Board) ?Target {
     return switch (board) {
+        // the edge boards have no image here: their substrate is
+        // MicroRing's and `stzos project` hands them over (PRJ-1)
+        .sim, .pico2, .pico2w, .esp32c6 => null,
         .qemu_pc => .{
             .kernel_arch = "x86_64",
             .cross = "",
@@ -186,14 +189,17 @@ fn staged(arena: std.mem.Allocator, root: []const u8, path: []const u8) !?[]cons
 pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Writer) !u8 {
     const m = p.machine;
     if (m.profile != .hosted) {
-        try out.print("image: refused -- only the hosted profile has an image here; a {s} machine is projected by its own substrate\n", .{@tagName(m.profile)});
+        try out.print("image: refused -- only the hosted profile has an image here; a machine of PROFILE {s} is projected by its own substrate (stzos project)\n", .{@tagName(m.profile)});
         return 2;
     }
     if (m.arch != .x86_64 and m.arch != .aarch64) {
         try out.print("image: refused -- the {s} image is queued; x86_64 and aarch64 boot today\n", .{@tagName(m.arch)});
         return 2;
     }
-    const t = target(m.board);
+    const t = target(m.board) orelse {
+        try out.print("image: refused -- {s} is an edge board; an edge machine is projected onto MicroRing's substrate, not imaged here (stzos project)\n", .{@tagName(m.board)});
+        return 2;
+    };
 
     // image.env first: it derives from the declaration alone, so the build
     // can learn the target before anything is staged

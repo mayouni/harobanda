@@ -89,9 +89,26 @@ net` refused with NODEV and the two worlds never started; the board
 will show them start. That is the one place the two are allowed to
 differ.
 
-## 4. The edge profile (declared; MicroRing's substrate)
+## 4. The edge profile (declared here, projected onto MicroRing)
 
-The `.machine` file declares the sensor; the projection is MicroRing's:
+**`stzos project <file.machine> --out <dir>` (PRJ-1, 2026-09-12).** A
+MicroRing project is a folder with a `device.ring` in it, whose
+`Device([...])` declaration carries a board and the pins — exactly the
+half a `.machine` file declares. The verb writes that file and nothing
+MicroRing owns, and it prints what did NOT cross over and why: a flash
+MOUNT (the substrate mounts it), the capabilities (the machine's
+envelope, which MicroRing has no gate for), and each service's
+BEHAVIOUR (the Device language's, an L2 member; until that language
+exists the every/on handlers are the author's Ring code beside the
+generated file, and the generated file names them rather than
+inventing them). The edge boards are MicroRing's own words: `sim`,
+`pico2`, `pico2w`, `esp32c6`. Judged by
+`machines/cold_room_sensor.device.ring.expected`
+(`experiment/judge_project.sh`), with both refusals as its negatives:
+projecting a hosted machine, and imaging an edge one.
+
+The `.machine` file declares the sensor; the rest of the projection is
+MicroRing's:
 MicroZig HAL, littlefs on SPI flash, the cooperative loop as the
 scheduler, comptime board selection, A/B slots. `stzos init` refuses
 the edge profile by name and says whose it is. The edge kernel of

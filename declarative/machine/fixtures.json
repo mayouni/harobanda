@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile.",
   "accepts": [
     {
       "id": "A1",
@@ -61,14 +61,15 @@
     },
     {
       "id": "A3",
-      "name": "the edge sensor: no kernel, no libc, pins and a flash log",
-      "source": "DEFINE MACHINE cold_room_sensor AS (\n  PROFILE edge,\n  ARCH thumbv7em,\n  KERNEL none\n) RATIONALE \"A thermistor, a log, a radio: the binary is the device\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT yes\n) RATIONALE \"The probe and the LED are pins\"\n\nDEFINE CAPABILITY clock AS (\n  GRANT yes\n) RATIONALE \"Readings are timestamped\"\n\nDEFINE PIN led AS (\n  GPIO 17,\n  MODE out\n) RATIONALE \"Heartbeat\"\n\nDEFINE PIN probe AS (\n  GPIO 4,\n  MODE in\n) RATIONALE \"The thermistor\"\n\nDEFINE MOUNT log AS (\n  AT \"/log\",\n  FS littlefs,\n  DEVICE \"flash0\"\n) RATIONALE \"Power-loss safe, wear-levelled\"\n\nDEFINE SERVICE sense AS (\n  RUN [\"sense\"],\n  RESTART always,\n  NEEDS [gpio, clock]\n) RATIONALE \"Read, log, sleep\"\n",
+      "name": "the edge sensor: no kernel, no libc, pins and a flash log -- machines/cold_room_sensor.machine verbatim",
+      "source": "-- cold_room_sensor.machine -- the edge profile's reference machine, and\n-- fixture A3 verbatim: the HACCP probe of RestoLean's cold room, the\n-- sensor the Makeen box listens to. It is declared here and PROJECTED\n-- onto MicroRing's substrate (`stzos project`), never imaged and never\n-- booted here: `stzos init` refuses the edge profile by name and says\n-- whose it is. MicroRing owns the firmware, the tiers and the loop.\n\nDEFINE MACHINE cold_room_sensor AS (\n  PROFILE edge,\n  ARCH thumbv8m,\n  KERNEL none,\n  BOARD pico2\n) RATIONALE \"A thermistor, a log, a radio: the binary is the device\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT yes\n) RATIONALE \"The probe and the LED are pins\"\n\nDEFINE CAPABILITY clock AS (\n  GRANT yes\n) RATIONALE \"Readings are timestamped\"\n\nDEFINE PIN led AS (\n  GPIO 25,\n  MODE out\n) RATIONALE \"Heartbeat: the board's own LED, so a cold room says it is alive\"\n\nDEFINE PIN probe AS (\n  GPIO 4,\n  MODE in\n) RATIONALE \"The thermistor\"\n\nDEFINE MOUNT log AS (\n  AT \"/log\",\n  FS littlefs,\n  DEVICE \"flash0\"\n) RATIONALE \"Power-loss safe, wear-levelled: a reading survives the power going out\"\n\nDEFINE SERVICE sense AS (\n  RUN [\"sense\"],\n  RESTART always,\n  NEEDS [gpio, clock]\n) RATIONALE \"Read, log, sleep -- the behaviour itself is the Device language's, projected as a named seam\"\n",
       "expect": {
         "name": "cold_room_sensor",
         "profile": "edge",
-        "arch": "thumbv7em",
+        "arch": "thumbv8m",
         "kernel": "none",
         "libc": "none",
+        "board": "pico2",
         "console": "uart0",
         "counts": {
           "services": 1,
@@ -84,8 +85,7 @@
         "granted": [
           "clock",
           "gpio"
-        ],
-        "board": "qemu_virt"
+        ]
       }
     },
     {
@@ -268,6 +268,15 @@
         "order": [
           "display"
         ]
+      }
+    },
+    {
+      "id": "A15",
+      "name": "an edge machine's board defaults to the simulator, as a hosted one's defaults to an emulator",
+      "source": "DEFINE MACHINE s AS (PROFILE edge, ARCH thumbv7em, KERNEL none) RATIONALE \"x\"\n",
+      "expect": {
+        "board": "sim",
+        "profile": "edge"
       }
     }
   ],
@@ -474,13 +483,13 @@
       "id": "R34",
       "name": "the board menu is closed",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH aarch64, KERNEL linux, BOARD banana) RATIONALE \"x\"\n",
-      "refusal": "qemu_pc, qemu_virt or rpi4"
+      "refusal": "qemu_pc, qemu_virt, rpi4 (hosted) or sim, pico2, pico2w, esp32c6 (edge)"
     },
     {
       "id": "R35",
-      "name": "BOARD is a hosted machine's clause",
+      "name": "an edge machine cannot name a hosted board",
       "source": "DEFINE MACHINE m AS (PROFILE edge, ARCH thumbv7em, KERNEL none, BOARD rpi4) RATIONALE \"x\"\n",
-      "refusal": "hosted machine's clause"
+      "refusal": "a board of the hosted profile"
     },
     {
       "id": "R36",
@@ -571,6 +580,18 @@
       "name": "a uid out of range is refused",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER u AS (UID 70000) RATIONALE \"x\"\n",
       "refusal": "out of range"
+    },
+    {
+      "id": "R51",
+      "name": "a hosted machine cannot name an edge board",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH aarch64, KERNEL linux, BOARD pico2) RATIONALE \"x\"\n",
+      "refusal": "a board of the edge profile"
+    },
+    {
+      "id": "R52",
+      "name": "an edge board still owes its architecture",
+      "source": "DEFINE MACHINE m AS (PROFILE edge, ARCH thumbv7em, KERNEL none, BOARD pico2) RATIONALE \"x\"\n",
+      "refusal": "that board is thumbv8m"
     }
   ]
 }

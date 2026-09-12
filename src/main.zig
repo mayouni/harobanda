@@ -20,6 +20,7 @@ const init = @import("init.zig");
 const image = @import("image.zig");
 const net = @import("net.zig");
 const update = @import("update.zig");
+const project = @import("project.zig");
 
 pub const version = "0.1.0";
 const default_fixtures = "declarative/machine/fixtures.json";
@@ -33,6 +34,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos init   <file.machine> [--rehearse] [--turns N] [--hold]
         \\  stzos update <dir> [--boot <mountpoint>] [--no-reboot]   (write the other slot, try it once)
         \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
+        \\  stzos project <file.machine> --out <dir>     (an edge machine, onto MicroRing's substrate)
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos version
@@ -107,7 +109,7 @@ pub fn main() !u8 {
         const failures = try court.run(gpa, path, out);
         return if (failures == 0) 0 else 1;
     }
-    if (std.mem.eql(u8, verb, "check") or std.mem.eql(u8, verb, "plan") or std.mem.eql(u8, verb, "init") or std.mem.eql(u8, verb, "image")) {
+    if (std.mem.eql(u8, verb, "check") or std.mem.eql(u8, verb, "plan") or std.mem.eql(u8, verb, "init") or std.mem.eql(u8, verb, "image") or std.mem.eql(u8, verb, "project")) {
         if (args.len < 3) {
             try usage(out);
             return 1;
@@ -123,6 +125,23 @@ pub fn main() !u8 {
         if (std.mem.eql(u8, verb, "plan")) {
             try plan.render(p, out);
             return 0;
+        }
+        if (std.mem.eql(u8, verb, "project")) {
+            var out_dir: ?[]const u8 = null;
+            var j: usize = 3;
+            while (j + 1 < args.len) : (j += 2) {
+                if (std.mem.eql(u8, args[j], "--out")) {
+                    out_dir = args[j + 1];
+                } else {
+                    try out.print("stzos: unknown option '{s}'\n", .{args[j]});
+                    return 1;
+                }
+            }
+            if (out_dir == null) {
+                try out.print("stzos: project needs --out <dir>\n", .{});
+                return 1;
+            }
+            return project.write(arena, p, .{ .out_dir = out_dir.? }, out);
         }
         if (std.mem.eql(u8, verb, "image")) {
             var root: ?[]const u8 = null;

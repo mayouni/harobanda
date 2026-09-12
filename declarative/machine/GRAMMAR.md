@@ -81,12 +81,20 @@ clause outside its kind's table is refused naming the allowed set
 | `ARCH` | `x86_64` \| `aarch64` \| `riscv32` \| `riscv64` \| `thumbv7em` | required (R11) |
 | `KERNEL` | `linux` \| `none` \| `android` | required; must agree with the profile (R15) |
 | `LIBC` | `musl` \| `none` \| `bionic` | optional; defaults by profile; a contradiction is refused (R31) |
-| `BOARD` | `qemu_pc` \| `qemu_virt` \| `rpi4` | optional, hosted only (R35); defaults by ARCH (`x86_64` → `qemu_pc`, else `qemu_virt`); a board of another architecture is refused (R33); an unknown board is refused (R34) |
+| `BOARD` | hosted: `qemu_pc` \| `qemu_virt` \| `rpi4`; edge: `sim` \| `pico2` \| `pico2w` \| `esp32c6` | optional; each profile has its own menu and its own emulator board, and a board of the other profile is refused by name (R35, R51). A touch machine's device is the phone and declares none. Defaults: hosted by ARCH (`x86_64` → `qemu_pc`, else `qemu_virt`), edge → `sim` (A15). A board of another architecture is refused (R33, R52); an unknown board is refused (R34) |
 | `SLOTS` | string, the boot partition's device (`"/dev/mmcblk0p1"`) | optional — the machine updates A/B: two slots on that partition, `config.txt` naming the committed one and, under `[tryboot]`, the other; PID 1 reads which slot it booted (`stzos.slot=` on the cmdline), arms the watchdog, and commits a trial only once every service has started. Needs a board whose firmware can try a slot (`rpi4`; R41); an absolute device path (R42) |
 | `CONSOLE` | string | optional; defaults `/dev/console`, `uart0`, `logcat` by profile |
 
-The BOARD names what the image is built for: the emulator court's
-machines (`qemu_pc` on x86_64, `qemu_virt` on aarch64) or a real board.
+The BOARD names what the machine is built for. An edge machine's board
+is MicroRing's vocabulary verbatim (`sim` is its simulator, `pico2` and
+`pico2w` its tier-2 flagship, `esp32c6` its tier 3), because an edge
+machine is PROJECTED onto that substrate and never imaged here:
+`stzos project` writes the `device.ring` a MicroRing project is, and
+refuses a hosted machine; `stzos image` refuses an edge one.
+
+For a hosted machine the BOARD is what the image is built for: the
+emulator court's machines (`qemu_pc` on x86_64, `qemu_virt` on aarch64)
+or a real board.
 `rpi4` is the Raspberry Pi 4 Model B — the commodity board chosen on
 2026-09-12 for the Makeen box (`doc/PROVENANCE.md`): mainline kernel
 support, an SD card, Ethernet, QEMU emulation of the same board so the
