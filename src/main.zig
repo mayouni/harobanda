@@ -21,6 +21,7 @@ const image = @import("image.zig");
 const net = @import("net.zig");
 const update = @import("update.zig");
 const project = @import("project.zig");
+const expect = @import("expect.zig");
 
 pub const version = "0.1.0";
 const default_fixtures = "declarative/machine/fixtures.json";
@@ -192,4 +193,5 @@ test {
     _ = plan;
     _ = net;
     _ = init;
+    _ = expect;
 }

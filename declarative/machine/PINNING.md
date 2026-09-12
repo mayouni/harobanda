@@ -72,6 +72,52 @@ meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
   a reject — the court went red three times, each for its named
   reason, and exited nonzero (`experiment/PROTOCOL.md`).
 
+## The boot, judged by the machine itself (JDG-1)
+
+Every image carries `/etc/expected`: the init lines a faithful boot of
+the declared machine prints, DERIVED by `stzos image` from the plan.
+PID 1 records what it says and, when every service is ready, judges
+its own ledger against that text in its own words — `judge -- the boot
+matches its expectation (/etc/expected, 14 lines)` — and an A/B trial
+is committed only on a match. A board the court emulates carries a
+second text through the emulator's lens (`/etc/expected.emulator`,
+selected by `stzos.expect=emulator` on the emulator's boot line and
+never on the card's); the diff of the two is the list of the emulator's
+lacks, printed at build time. The three pinned transcripts carry the
+verdicts: **33, 23 and 75 lines, identical** (from 32, 22 and 49). The
+box's 75 hold three card boots: the trial through the emulator's lens
+committed, the held trial not committed, and the NEGATIVE — the same
+trial judged through the board's lens, which the emulator cannot meet:
+`differs from its expectation (/etc/expected): 2 line(s) expected and
+not said, 2 said and not expected`, the four lines named, `held ...
+not committed ... the next boot is A`, and the card read back still
+booting A. Each judged line is worded once, in `src/expect.zig`, for
+init and for the derivation alike; five unit tests pin the derivation
+and the judge's negatives.
+
+## The boot, judged by the machine itself (JDG-1)
+
+Every image carries `/etc/expected`: the init lines a faithful boot of
+the declared machine prints, DERIVED by `stzos image` from the plan.
+PID 1 records what it says and, when every service is ready, judges
+its own ledger against that text in its own words — `judge -- the boot
+matches its expectation (/etc/expected, 14 lines)` — and an A/B trial
+is committed only on a match. A board the court emulates carries a
+second text through the emulator's lens (`/etc/expected.emulator`,
+selected by `stzos.expect=emulator` on the emulator's boot line and
+never on the card's); the diff of the two is the list of the emulator's
+lacks, printed at build time. The three pinned transcripts carry the
+verdicts: **33, 23 and 75 lines, identical** (from 32, 22 and 49). The
+box's 75 hold three card boots: the trial through the emulator's lens
+committed, the held trial not committed, and the NEGATIVE — the same
+trial judged through the board's lens, which the emulator cannot meet:
+`differs from its expectation (/etc/expected): 2 line(s) expected and
+not said, 2 said and not expected`, the four lines named, `held ...
+not committed ... the next boot is A`, and the card read back still
+booting A. Each judged line is worded once, in `src/expect.zig`, for
+init and for the derivation alike; five unit tests pin the derivation
+and the judge's negatives.
+
 ## The edge projection, judged as text (PRJ-1)
 
 `machines/cold_room_sensor.machine` (fixture A3 verbatim, `BOARD

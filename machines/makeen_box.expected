@@ -9,7 +9,7 @@ boot: grant network (effectful)
 boot: grant filesystem (effectful)
 boot: refuse gpio (effectful)
 boot: network lan -- eth0: no such interface (NODEV)
-boot: slot B -- a trial (committed is A); the watchdog holds the rollback until every service has started
+boot: slot B -- a trial (committed is A); the watchdog holds the rollback until the boot is judged
 boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
 boot: start kds -- pid N -- /stzr /app/kds.luau
 kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
@@ -19,7 +19,8 @@ boot: start poste -- pid N -- /stzr /app/poste.luau
 poste: the counter world is up on the Makeen box, after kds
 poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
 boot: poste (pid N) exited 0
-boot: slot B -- committed: every service is ready; config.txt now boots B, A is the fallback
+boot: judge -- the boot matches its expectation (/etc/expected.emulator, 16 lines)
+boot: slot B -- committed: every service is ready and the boot matches its expectation; config.txt now boots B, A is the fallback
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system
@@ -28,7 +29,7 @@ card: os_prefix=slots/B/
 card: [tryboot]
 card: os_prefix=slots/A/
 hold: the same trial on a pristine card, held:
-hold: boot: slot B -- a trial (committed is A); the watchdog holds the rollback until every service has started
+hold: boot: slot B -- a trial (committed is A); the watchdog holds the rollback until the boot is judged
 hold: boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
 hold: boot: start kds -- pid N -- /stzr /app/kds.luau
 hold: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
@@ -38,12 +39,37 @@ hold: boot: start poste -- pid N -- /stzr /app/poste.luau
 hold: poste: the counter world is up on the Makeen box, after kds
 hold: poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
 hold: boot: poste (pid N) exited 0
+hold: boot: judge -- the boot matches its expectation (/etc/expected.emulator, 16 lines)
 hold: boot: every service has ended -- init has nothing left to keep alive
 hold: boot: --hold: the trial is held, not committed
 hold: boot: --hold: no watchdog to answer here; the trial ends without a commit, the next boot is the committed slot
 hold: boot: init halts the machine -- reboot(RESTART)
 hold: reboot: Restarting system
 card: config.txt after the held trial:
+card: os_prefix=slots/A/
+card: [tryboot]
+card: os_prefix=slots/B/
+unmet: the same trial on a pristine card, judged by the board's expectation:
+unmet: boot: slot B -- a trial (committed is A); the watchdog holds the rollback until the boot is judged
+unmet: boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
+unmet: boot: start kds -- pid N -- /stzr /app/kds.luau
+unmet: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
+unmet: kds: read /etc/machine -- 8 declarations rode in the image
+unmet: boot: kds (pid N) exited 0
+unmet: boot: start poste -- pid N -- /stzr /app/poste.luau
+unmet: poste: the counter world is up on the Makeen box, after kds
+unmet: poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
+unmet: boot: poste (pid N) exited 0
+unmet: boot: judge -- the boot differs from its expectation (/etc/expected): 2 line(s) expected and not said, 2 said and not expected
+unmet: boot: judge -- expected, not said: network lan -- eth0 up 192.168.10.1/24
+unmet: boot: judge -- expected, not said: watchdog armed (/dev/watchdog)
+unmet: boot: judge -- said, not expected: network lan -- eth0: no such interface (NODEV)
+unmet: boot: judge -- said, not expected: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
+unmet: boot: slot B -- held: every service is ready but the boot is not the one expected; not committed, the watchdog is no longer fed -- the next boot is A
+unmet: boot: every service has ended -- init has nothing left to keep alive
+unmet: boot: init halts the machine -- reboot(RESTART)
+unmet: reboot: Restarting system
+card: config.txt after the unmet trial:
 card: os_prefix=slots/A/
 card: [tryboot]
 card: os_prefix=slots/B/

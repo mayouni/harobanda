@@ -29,6 +29,7 @@
 const std = @import("std");
 const machine = @import("machine.zig");
 const plan = @import("plan.zig");
+const expect = @import("expect.zig");
 
 pub const Options = struct {
     out_dir: []const u8,
@@ -66,6 +67,11 @@ const Target = struct {
     /// model (disabled), the host it plugs the card into (opened, and
     /// aliased so the declared device name holds in both worlds)
     qemu_dtb_ops: []const []const u8 = &.{},
+    /// the boot EXPECTED through the emulator's eyes, when the emulator
+    /// lacks what the board has: each lack a field, each field a line of
+    /// /etc/expected.emulator that differs from /etc/expected (JDG-1).
+    /// Null for a board that IS an emulator: one expectation, one lens.
+    qemu_lens: ?expect.Lens = null,
 };
 
 fn target(board: machine.Board) ?Target {
@@ -140,6 +146,10 @@ fn target(board: machine.Board) ?Target {
                 "alias:mmc0:/soc/mmc@7e300000",          "alias:mmc1:/emmc2bus/mmc@7e340000",
             },
             .memory_mb = 0,
+            // raspi4b models no GENET, so a declared NETWORK is NODEV there;
+            // and it resets the board the moment the watchdog is armed, so
+            // the emulator's boot line turns it off. Two lacks, two lines.
+            .qemu_lens = .{ .watchdog = .off, .network_absent = true },
             // the emulator's PL011 sits on the header pins; the board's
             // PL011 goes to Bluetooth and its mini-UART (ttyS1) to the pins
             .console_qemu = "ttyAMA0",
@@ -284,6 +294,25 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         try files.append(arena, .{ .path = "/etc/group", .source = try std.fs.path.join(arena, &.{ opts.out_dir, "group" }) });
     }
 
+    // /etc/expected -- the boot, EXPECTED: the init lines a faithful boot
+    // of this machine prints, derived from the plan, carried in the image
+    // and judged by PID 1 itself once every service is ready; a trial is
+    // committed only on a match (JDG-1). A board the court emulates gets a
+    // second text through the emulator's lens -- what it lacks, named per
+    // line -- selected by stzos.expect=emulator on the emulator's boot line
+    // and never on the card's. The diff of the two texts IS the list of
+    // the emulator's lacks, and os2_image.sh prints it at build time.
+    {
+        const board = try expect.derive(arena, p, .{});
+        try writeOut(opts.out_dir, "expected", board);
+        try files.append(arena, .{ .path = "/etc/expected", .source = try std.fs.path.join(arena, &.{ opts.out_dir, "expected" }) });
+        if (t.qemu_lens) |lens| {
+            const emu = try expect.derive(arena, p, lens);
+            try writeOut(opts.out_dir, "expected.emulator", emu);
+            try files.append(arena, .{ .path = "/etc/expected.emulator", .source = try std.fs.path.join(arena, &.{ opts.out_dir, "expected.emulator" }) });
+        }
+    }
+
     // the block devices the declared mounts need -- one in this version
     var block: ?*const machine.Mount = null;
     for (m.mounts) |*mt| {
@@ -309,7 +338,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             try w.print("dir {s} 0755 0 0\n", .{d});
         }
         for (files.items) |f| {
-            const mode: []const u8 = if (std.mem.eql(u8, f.path, "/etc/machine")) "0644" else "0755";
+            const mode: []const u8 = if (std.mem.startsWith(u8, f.path, "/etc/")) "0644" else "0755";
             try w.print("file {s} {s} {s} 0 0\n", .{ f.path, f.source, mode });
         }
         try writeOut(opts.out_dir, "initramfs.list", list.items);
@@ -456,13 +485,22 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         // line says so and PID 1 states the consequence. The card's own
         // cmdline.txt never carries it.
         const slot_arg: []const u8 = if (m.slots != null) " stzos.slot=B stzos.watchdog=off" else "";
-        try w.print(" -append \"console={s} quiet loglevel=3{s} rdinit=/stzos -- init /etc/machine\"\n", .{ t.console_qemu, slot_arg });
+        // ... and judged through the emulator's lens, when it has one
+        const lens_arg: []const u8 = if (t.qemu_lens != null) " stzos.expect=emulator" else "";
+        try w.print(" -append \"console={s} quiet loglevel=3{s}{s} rdinit=/stzos -- init /etc/machine\"\n", .{ t.console_qemu, slot_arg, lens_arg });
         try writeOut(opts.out_dir, "boot.cmd", cmd.items);
         if (m.slots != null) {
             // the rollback instrument: the same trial, held -- never committed,
             // the watchdog not fed. What follows is the hardware's answer.
             const hold = try std.mem.replaceOwned(u8, arena, cmd.items, "-- init /etc/machine\"", "-- init /etc/machine --hold\"");
             try writeOut(opts.out_dir, "boot_hold.cmd", hold);
+            // the judge's negative: the same trial judged by the BOARD's
+            // expectation, which the emulator cannot meet. PID 1 must name
+            // the lines and hold the trial; the card must still boot A.
+            if (t.qemu_lens != null) {
+                const unmet = try std.mem.replaceOwned(u8, arena, cmd.items, " stzos.expect=emulator", "");
+                try writeOut(opts.out_dir, "boot_unmet.cmd", unmet);
+            }
         }
     }
 

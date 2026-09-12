@@ -17,6 +17,7 @@ boot: start poste -- pid N -- /stzr /app/poste.luau
 poste: the counter world is up on the Makeen box, after kds
 poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
 boot: poste (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 15 lines)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system

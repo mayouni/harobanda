@@ -13,7 +13,13 @@
 Every arrow is text-before-act: a declaration is judged before a plan
 exists, a plan is printed before an image is built, an image boots in
 an emulator before a board. Nothing on the right can be reached without
-passing the court on the left.
+passing the court on the left. And the last arrow judges itself: the
+image carries the boot it EXPECTS (`/etc/expected`, derived from the
+plan), PID 1 records what it says and judges the two when every service
+is ready, and an A/B trial commits only on a match (JDG-1). And the last arrow judges itself: the
+image carries the boot it EXPECTS (`/etc/expected`, derived from the
+plan), PID 1 records what it says and judges the two when every service
+is ready, and an A/B trial commits only on a match (JDG-1).
 
 ## 2. One binary, every role
 
@@ -39,7 +45,8 @@ third program on the path for a declaration to reach.
 | userland | none: no shell, no coreutils, no busybox | **none** |
 | filesystem | initramfs (cpio) holding `/stzos`, `/stzr`, `/app/*.luau`, `/etc/machine`; declared mounts for persistent data | **own** (the builder writes it) |
 | network | the NETWORK kind: PID 1 brings each declared interface up before any service — static (four ioctls and the route) or dhcp (a client in `src/netcfg.zig`); judged against QEMU's user-mode DHCP server | **own** |
-| updates | two slots on the boot partition (`SLOTS`), `config.txt` naming the committed one and the firmware's `[tryboot]` naming the other; PID 1 commits a trial only once every service has started, under the hardware watchdog; `stzos update` writes the other slot and asks for one trial (the tryboot flag waits on a driver patch, AB-1) | **own**, governed by refine |
+| updates | two slots on the boot partition (`SLOTS`), `config.txt` naming the committed one and the firmware's `[tryboot]` naming the other; PID 1 commits a trial only once every service is ready AND its own boot matches the expectation the image carries (JDG-1), under the hardware watchdog; a boot that differs names the lines and holds itself; `stzos update` writes the other slot and asks for one trial (the tryboot flag waits on a driver patch, AB-1) | **own**, governed by refine |
+| the expected boot | `/etc/expected`, derived by `stzos image` from the plan: the init lines a faithful boot prints, pids as `N`, a dhcp lease as `*`; for a board the court emulates, `/etc/expected.emulator` through the emulator's lens, and the diff of the two is the emulator's lacks, printed at build time | **own**, derived |
 | emulator | QEMU (`-kernel bzImage -initrd initramfs.cpio -append "rdinit=/stzos ..." -nographic`) | **borrow** for the court; not shipped |
 | bootloader | the board's: the Raspberry Pi 4's own firmware (`start4.elf`, `fixup4.dat` — a vendor blob pinned by sha256 in `vendor/rpi-firmware/PIN.txt`, fetched, never committed) reads `config.txt` and loads `kernel8.img` + the initramfs; on x86 the emulator loads the kernel itself | **borrow**, stated per board in the target table |
 | device tree | mainline's `bcm2711-rpi-4-b.dtb`, plus the derived mmc aliases (`DTB_OPS`) for the card and the derived emulator ops (`QEMU_DTB_OPS`) for the court; `experiment/dtb_ops.py` applies, every op printed | **keep vendored**, two derived variants |
@@ -138,11 +145,12 @@ judged so that one file describes the fleet, phone included.
 | the mechanism | Zig unit tests with negative siblings; the court probed with a mutated judge (3 reds) | green |
 | the Linux-only code | `zig build cross` (two static targets) | builds |
 | the boot | the transcript, run as PID 1 in a user namespace under WSL | ran: pids 1–10, proc mounted, sysfs/devtmpfs refused PERM, all policies exercised |
-| the image, x86_64 | the QEMU serial transcript, normalised, diffed against `machines/qemu_hello.expected` | matches, 28 lines |
-| the image, aarch64 (the Makeen box on `virt`) | the same against `machines/makeen_qemu.expected`: `virt`, PL011, a virtio ext4 disk mounted at `/data`, two stzr worlds | matches, 20 lines |
-| the board's card (the Makeen box on `raspi4b`) | the same against `machines/makeen_box.expected`: the card's second partition mounted by its declared name, `stzos net` refused NODEV (no Ethernet in the emulator), the worlds never started by the readiness rule | matches, 17 lines |
-| the wire | `makeen_qemu.expected` carries the dhcp lease from QEMU's server; `makeen_box.expected` the static network refused NODEV in the emulator | 22 lines; part of 49 |
-| the slots | `makeen_box.expected`: a trial of B committed, the card read back boots B; the same trial held on a pristine card, not committed, that card still boots A | 49 lines |
+| the image, x86_64 | the QEMU serial transcript, normalised, diffed against `machines/qemu_hello.expected` | matches, 33 lines |
+| the image, aarch64 (the Makeen box on `virt`) | the same against `machines/makeen_qemu.expected`: `virt`, PL011, a virtio ext4 disk mounted at `/data`, two stzr worlds | matches, 23 lines |
+| the board's card (the Makeen box on `raspi4b`) | the same against `machines/makeen_box.expected`: the card's second partition mounted by its declared name, the network refused NODEV (no Ethernet in the emulator), the two worlds run | matches, part of 75 |
+| the wire | `makeen_qemu.expected` carries the dhcp lease from QEMU's server; `makeen_box.expected` the static network refused NODEV in the emulator | part of 23 and 75 |
+| the slots | `makeen_box.expected`: a trial of B committed, the card read back boots B; the same trial held on a pristine card, not committed, that card still boots A | part of 75 |
+| the machine's own judge | every transcript carries PID 1's verdict on its own boot against `/etc/expected` (`matches ... 14 lines`, `15`, `16`); `makeen_box.expected` adds the negative: the trial judged through the board's lens differs on exactly the emulator's two lacks, holds itself, and the card still boots A; `src/expect.zig` pins the derivation and the judge's negatives in five unit tests | 75 lines; 11/11 tests |
 
 ## 7. Boundaries
 
@@ -161,6 +169,26 @@ judged so that one file describes the fleet, phone included.
   both block their dependents, and init names them. No timer: a daemon
   that never comes up keeps an A/B trial uncommitted, which is the safe
   outcome. A bounded window for the TRIAL is a named seam.
+- The machine judges its own BOOT, not its life: the verdict comes once,
+  when every service is ready, over what init said about the machine
+  until then (mounts, capabilities, networks, the watchdog, starts,
+  exits). The card's state (a trial, or steady), the instrument, the
+  verdict itself and everything after readiness are not judged by the
+  machine; the court's transcript judges those. Order is not judged
+  (AFTER enforces it); count is. No expectation in the image is no
+  verdict, and a trial without a verdict is not committed. A health
+  seat beyond the boot -- a service's own word later in its life -- is a
+  named seam (JDG-1).
+- The machine judges its own BOOT, not its life: the verdict comes once,
+  when every service is ready, over what init said about the machine
+  until then (mounts, capabilities, networks, the watchdog, starts,
+  exits). The card's state (a trial, or steady), the instrument, the
+  verdict itself and everything after readiness are not judged by the
+  machine; the court's transcript judges those. Order is not judged
+  (AFTER enforces it); count is. No expectation in the image is no
+  verdict, and a trial without a verdict is not committed. A health
+  seat beyond the boot -- a service's own word later in its life -- is a
+  named seam (JDG-1).
 - Identities: a service runs as a declared USER when it names one, and
   as the machine itself when it says nothing (USR-1). uid 0 cannot be
   declared, so root is visible as the absence of a line rather than as

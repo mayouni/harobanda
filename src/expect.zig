@@ -1,0 +1,346 @@
+// expect.zig -- the boot, expected and judged by the machine itself (JDG-1).
+//
+// Until today every boot was judged from OUTSIDE: QEMU's serial transcript,
+// normalised and diffed against machines/<name>.expected by a script. The
+// machine did not know what its own boot should look like, so an A/B trial
+// was committed on "every service is ready" and nothing else -- and the
+// Makeen box's emulated trial committed with its network refused NODEV.
+//
+// This module closes the loop. `stzos image` DERIVES the init lines a
+// faithful boot prints -- from the plan and a LENS: the board's, or the
+// emulator's, which lacks what the board has and says so per line -- and
+// the image carries them as /etc/expected. PID 1 records what it says, and
+// when every service is ready it judges its own ledger against that text,
+// in its own words. A trial commits only on a match; a boot that differs
+// names the lines, is not committed, and the next boot is the committed
+// slot. The expectation, the ledger and the verdict are the same text a
+// person reads on the console and an agent reads in the pinned transcript.
+//
+// Two rules keep the comparison honest without a timer or a diff:
+//   - the pids the kernel hands out are normalised to N; `pid 1` stays
+//     literal, because that init IS PID 1 is a claim the judge must be
+//     able to convict (the script's judge keeps it for the same reason);
+//   - a line the declaration cannot fully know (a dhcp lease) ends in `*`
+//     in the expectation and matches by prefix. Nothing else is loose.
+// The lines are compared as a SET, not a sequence: AFTER already enforces
+// the order that matters, and two daemons signalling ready in either order
+// are the same boot.
+//
+// Each judged line is worded ONCE, here: init prints with these and
+// derive() writes the same. A line worded twice would drift, and a drift
+// is exactly the false alarm a self-judging machine must never raise.
+
+const std = @import("std");
+const machine = @import("machine.zig");
+const plan = @import("plan.zig");
+
+pub const fmt_banner = "boot: stzos init -- machine {s} ({s} / {s} / {s}) -- pid {d}{s}\n";
+pub const fmt_console = "boot: console {s}\n";
+pub const fmt_slots = "boot: slots on {s} -- A and B\n";
+pub const fmt_mount_done = "boot: mount {s} at {s} -- done\n";
+pub const fmt_capability = "boot: {s} {s} ({s})\n";
+pub const fmt_pin = "boot: pin {s} gpio {d} {s} -- declared; the hosted profile drives pins through the gpio capability of its services\n";
+pub const fmt_network_nodev = "{s}network {s} -- {s}: no such interface (NODEV)\n";
+pub const fmt_watchdog_armed = "boot: watchdog armed (/dev/watchdog)\n";
+pub const fmt_watchdog_off = "boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here\n";
+pub const fmt_exited = "boot: {s} (pid {s}) exited {d}\n";
+pub const fmt_ready = "boot: {s} -- ready ({s})\n";
+
+/// the start line, in pieces: the service, its pid, its words, its identity
+pub fn startLine(w: *std.Io.Writer, s: *const machine.Service, pid: []const u8) !void {
+    try w.print("boot: start {s} -- pid {s} --", .{ s.name, pid });
+    for (s.run) |word| try w.print(" {s}", .{word});
+    if (s.user) |u| try w.print(" -- as {s} ({d}:{d})", .{ u.name, u.uid, u.gid });
+    try w.print("\n", .{});
+}
+
+pub const Watchdog = enum { armed, off };
+
+/// Through which eyes the boot is expected. The board's lens is the
+/// default: everything declared comes up. The emulator's lens names what
+/// the emulator lacks, one field per lack, so the difference between the
+/// two derived texts IS the list of the emulator's lacks -- printed at
+/// build time, never inferred from a failing boot.
+pub const Lens = struct {
+    watchdog: Watchdog = .armed,
+    /// the emulator has no NIC behind the declared interface: NODEV
+    network_absent: bool = false,
+};
+
+fn fmtIp(buf: *[16]u8, ip: u32) []const u8 {
+    return std.fmt.bufPrint(buf, "{d}.{d}.{d}.{d}", .{ ip >> 24 & 0xff, ip >> 16 & 0xff, ip >> 8 & 0xff, ip & 0xff }) catch "?";
+}
+
+/// The init lines a faithful boot prints, up to the point where every
+/// service is ready -- the point where PID 1 judges and, on a trial,
+/// commits. What comes after (the exits of daemons, the halt) is the
+/// court's to judge, not the machine's.
+pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
+    var aw = std.Io.Writer.Allocating.init(arena);
+    const w = &aw.writer;
+    const m = p.machine;
+    try w.print(fmt_banner, .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), @as(i32, 1), "" });
+    for (p.steps) |step| switch (step) {
+        .console => |c| try w.print(fmt_console, .{c}),
+        .slots => |dev| try w.print(fmt_slots, .{dev}),
+        .mount => |mt| try w.print(fmt_mount_done, .{ @tagName(mt.fs), mt.at }),
+        .capability => |c| try w.print(fmt_capability, .{ if (c.granted) "grant" else "refuse", @tagName(c.name), @tagName(machine.kindOf(c.name)) }),
+        .pin => |pn| try w.print(fmt_pin, .{ pn.name, pn.gpio, @tagName(pn.mode) }),
+        .network => |n| {
+            if (lens.network_absent) {
+                try w.print(fmt_network_nodev, .{ "boot: ", n.name, n.interface });
+            } else switch (n.address) {
+                // the lease is the server's to give: the line is known up to it
+                .dhcp => try w.print("boot: network {s} -- {s} up *\n", .{ n.name, n.interface }),
+                // netcfg.zig prints the address it set, piece by piece; this
+                // is the same wording, with the declared values in its place
+                .static => |s| {
+                    var ipb: [16]u8 = undefined;
+                    try w.print("boot: network {s} -- {s} up {s}/{d}", .{ n.name, n.interface, fmtIp(&ipb, s.ip), s.prefix });
+                    if (n.gateway) |g| {
+                        var gb: [16]u8 = undefined;
+                        try w.print(", gateway {s}", .{fmtIp(&gb, g.addr)});
+                    }
+                    if (n.dns.len > 0) {
+                        try w.print(", dns [", .{});
+                        for (n.dns, 0..) |d, i| try w.print("{s}{s}", .{ if (i > 0) ", " else "", d.text });
+                        try w.print("]", .{});
+                    }
+                    try w.print("\n", .{});
+                },
+            }
+        },
+        .service => {},
+    };
+    // the slot's own state (a trial, or steady) is the CARD's to say, not
+    // the declaration's: it is not expected and init does not record it.
+    // The watchdog is: armed on the board, off in the emulator's lens.
+    if (m.slots != null) switch (lens.watchdog) {
+        .armed => try w.writeAll(fmt_watchdog_armed),
+        .off => try w.writeAll(fmt_watchdog_off),
+    };
+    // every service starts; a one-shot is ready when it has exited 0, a
+    // daemon when spawned or, if it declares READY, when it has signalled
+    for (p.steps) |step| if (step == .service) {
+        const s = step.service;
+        try startLine(w, s, "N");
+        switch (s.restart) {
+            .never => try w.print(fmt_exited, .{ s.name, "N", @as(u32, 0) }),
+            .always, .on_failure => if (s.ready) |path| try w.print(fmt_ready, .{ s.name, path }),
+        }
+    };
+    return aw.written();
+}
+
+/// `pid <digits>` -> `pid N`, except `pid 1`, which stays literal
+pub fn normalisePids(src: []const u8, dst: []u8) []const u8 {
+    var o: usize = 0;
+    var i: usize = 0;
+    while (i < src.len and o < dst.len) {
+        if (i + 4 < src.len and std.mem.eql(u8, src[i .. i + 4], "pid ") and std.ascii.isDigit(src[i + 4])) {
+            var j = i + 4;
+            while (j < src.len and std.ascii.isDigit(src[j])) : (j += 1) {}
+            const rep: []const u8 = if (std.mem.eql(u8, src[i + 4 .. j], "1")) "pid 1" else "pid N";
+            const n = @min(rep.len, dst.len - o);
+            @memcpy(dst[o .. o + n], rep[0..n]);
+            o += n;
+            i = j;
+            continue;
+        }
+        dst[o] = src[i];
+        o += 1;
+        i += 1;
+    }
+    return dst[0..o];
+}
+
+/// the same line: pids normalised on both sides, a trailing `*` on the
+/// expected side matching whatever the world put there
+pub fn same(expected: []const u8, said: []const u8) bool {
+    var eb: [1024]u8 = undefined;
+    var sb: [1024]u8 = undefined;
+    const e = normalisePids(expected, &eb);
+    const s = normalisePids(said, &sb);
+    if (e.len > 0 and e[e.len - 1] == '*') return std.mem.startsWith(u8, s, e[0 .. e.len - 1]);
+    return std.mem.eql(u8, e, s);
+}
+
+pub const Verdict = struct {
+    expected: usize,
+    said: usize,
+    /// expected, not said
+    missing: []const []const u8,
+    /// said, not expected
+    unexpected: []const []const u8,
+
+    pub fn matches(v: Verdict) bool {
+        return v.missing.len == 0 and v.unexpected.len == 0;
+    }
+};
+
+fn lines(arena: std.mem.Allocator, text: []const u8) ![]const []const u8 {
+    var list: std.ArrayList([]const u8) = .{};
+    var it = std.mem.splitScalar(u8, text, '\n');
+    while (it.next()) |raw| {
+        const l = std.mem.trimRight(u8, raw, "\r");
+        if (l.len > 0) try list.append(arena, l);
+    }
+    return list.toOwnedSlice(arena);
+}
+
+/// Judge what init said against what was expected: each expected line must
+/// have been said once, and nothing else said. Order is not judged (AFTER
+/// is enforced by init, not by this); count is.
+pub fn judge(arena: std.mem.Allocator, expected: []const u8, said: []const u8) !Verdict {
+    const exp = try lines(arena, expected);
+    const got = try lines(arena, said);
+    const used = try arena.alloc(bool, got.len);
+    @memset(used, false);
+    var missing: std.ArrayList([]const u8) = .{};
+    var unexpected: std.ArrayList([]const u8) = .{};
+    for (exp) |e| {
+        var found = false;
+        for (got, 0..) |s, i| {
+            if (used[i]) continue;
+            if (same(e, s)) {
+                used[i] = true;
+                found = true;
+                break;
+            }
+        }
+        if (!found) try missing.append(arena, e);
+    }
+    for (got, 0..) |s, i| if (!used[i]) try unexpected.append(arena, s);
+    return .{
+        .expected = exp.len,
+        .said = got.len,
+        .missing = try missing.toOwnedSlice(arena),
+        .unexpected = try unexpected.toOwnedSlice(arena),
+    };
+}
+
+/// a line as the verdict quotes it: without the `boot: ` the console shows
+pub fn bare(line: []const u8) []const u8 {
+    return if (std.mem.startsWith(u8, line, "boot: ")) line["boot: ".len..] else line;
+}
+
+// ---- tests: the derivation pinned, the judge and its negatives ------------
+
+const box_src =
+    \\DEFINE MACHINE box AS (
+    \\  PROFILE hosted, ARCH aarch64, KERNEL linux, LIBC musl, BOARD rpi4,
+    \\  CONSOLE "/dev/ttyS1", SLOTS "/dev/mmcblk0p1"
+    \\) RATIONALE "the expectation, derived"
+    \\DEFINE CAPABILITY network AS ( GRANT yes ) RATIONALE "wire"
+    \\DEFINE CAPABILITY gpio AS ( GRANT no ) RATIONALE "no pins"
+    \\DEFINE MOUNT data AS ( AT "/data", FS ext4, DEVICE "/dev/mmcblk0p2" ) RATIONALE "disk"
+    \\DEFINE NETWORK lan AS ( INTERFACE "eth0", ADDRESS "192.168.10.1/24", GATEWAY "192.168.10.254", DNS ["1.1.1.1"] ) RATIONALE "static"
+    \\DEFINE USER world AS ( UID 1000 ) RATIONALE "an identity"
+    \\DEFINE SERVICE once AS ( RUN ["/stzos", "id"], RESTART never, NEEDS [network], USER world ) RATIONALE "a one-shot"
+    \\DEFINE SERVICE serve AS ( RUN ["/stzr", "/app/serve.luau"], RESTART always, AFTER [once], NEEDS [network], READY "/run/serve.ready" ) RATIONALE "a daemon"
+    \\
+;
+
+fn boxPlan(arena: std.mem.Allocator) !plan.Plan {
+    var refusal = machine.Refusal{};
+    const m = try arena.create(machine.Machine);
+    m.* = machine.declare(arena, box_src, &refusal) catch |e| {
+        std.debug.print("refused (line {d}): {s}\n", .{ refusal.line, refusal.message });
+        return e;
+    };
+    return plan.derive(arena, m);
+}
+
+test "the board's expectation is derived from the declaration, line for line" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const p = try boxPlan(arena);
+    const text = try derive(arena, p, .{});
+    try std.testing.expectEqualStrings(
+        \\boot: stzos init -- machine box (hosted / aarch64 / rpi4) -- pid 1
+        \\boot: console /dev/ttyS1
+        \\boot: slots on /dev/mmcblk0p1 -- A and B
+        \\boot: mount proc at /proc -- done
+        \\boot: mount sysfs at /sys -- done
+        \\boot: mount devtmpfs at /dev -- done
+        \\boot: mount ext4 at /data -- done
+        \\boot: grant network (effectful)
+        \\boot: refuse gpio (effectful)
+        \\boot: network lan -- eth0 up 192.168.10.1/24, gateway 192.168.10.254, dns [1.1.1.1]
+        \\boot: watchdog armed (/dev/watchdog)
+        \\boot: start once -- pid N -- /stzos id -- as world (1000:1000)
+        \\boot: once (pid N) exited 0
+        \\boot: start serve -- pid N -- /stzr /app/serve.luau
+        \\boot: serve -- ready (/run/serve.ready)
+        \\
+    , text);
+}
+
+test "the emulator's lens differs from the board's exactly where the emulator lacks the hardware" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const p = try boxPlan(arena);
+    const board = try derive(arena, p, .{});
+    const emu = try derive(arena, p, .{ .watchdog = .off, .network_absent = true });
+    const v = try judge(arena, board, emu);
+    try std.testing.expectEqual(@as(usize, 2), v.missing.len);
+    try std.testing.expectEqual(@as(usize, 2), v.unexpected.len);
+    try std.testing.expectEqualStrings("boot: network lan -- eth0 up 192.168.10.1/24, gateway 192.168.10.254, dns [1.1.1.1]", v.missing[0]);
+    try std.testing.expectEqualStrings("boot: watchdog armed (/dev/watchdog)", v.missing[1]);
+    try std.testing.expectEqualStrings("boot: network lan -- eth0: no such interface (NODEV)", v.unexpected[0]);
+    try std.testing.expectEqualStrings(std.mem.trimRight(u8, fmt_watchdog_off, "\n"), v.unexpected[1]);
+}
+
+test "a boot that said the expected lines matches, whatever pids the kernel gave and in whatever order daemons signalled" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const expected =
+        \\boot: stzos init -- machine m (hosted / x86_64 / qemu_pc) -- pid 1
+        \\boot: start a -- pid N -- /a
+        \\boot: a -- ready (/run/a)
+        \\boot: start b -- pid N -- /b
+        \\boot: b -- ready (/run/b)
+        \\
+    ;
+    const said =
+        \\boot: stzos init -- machine m (hosted / x86_64 / qemu_pc) -- pid 1
+        \\boot: start a -- pid 17 -- /a
+        \\boot: start b -- pid 18 -- /b
+        \\boot: b -- ready (/run/b)
+        \\boot: a -- ready (/run/a)
+        \\
+    ;
+    const v = try judge(arena, expected, said);
+    try std.testing.expect(v.matches());
+    try std.testing.expectEqual(@as(usize, 5), v.expected);
+    try std.testing.expectEqual(@as(usize, 5), v.said);
+}
+
+test "a line said twice, a line not said, a line not expected: each is named" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const expected = "boot: mount ext4 at /data -- done\nboot: start a -- pid N -- /a\nboot: a (pid N) exited 0\n";
+    const said = "boot: mount ext4 at /data -- refused by the kernel: NODEV\nboot: start a -- pid 5 -- /a\nboot: a (pid 5) exited 1\nboot: restart a (on_failure, 1/5) -- pid 6\nboot: a (pid 6) exited 0\n";
+    const v = try judge(arena, expected, said);
+    try std.testing.expect(!v.matches());
+    try std.testing.expectEqual(@as(usize, 1), v.missing.len);
+    try std.testing.expectEqualStrings("boot: mount ext4 at /data -- done", v.missing[0]);
+    try std.testing.expectEqual(@as(usize, 3), v.unexpected.len);
+    try std.testing.expectEqualStrings("boot: mount ext4 at /data -- refused by the kernel: NODEV", v.unexpected[0]);
+    try std.testing.expectEqualStrings("boot: a (pid 5) exited 1", v.unexpected[1]);
+    try std.testing.expectEqualStrings("boot: restart a (on_failure, 1/5) -- pid 6", v.unexpected[2]);
+}
+
+test "a dhcp lease matches by prefix; pid 1 is never normalised away" {
+    try std.testing.expect(same("boot: network lan -- eth0 up *", "boot: network lan -- eth0 up 10.0.2.15/24, gateway 10.0.2.2 (dhcp), dns [10.0.2.3]"));
+    try std.testing.expect(!same("boot: network lan -- eth0 up *", "boot: network lan -- eth0: no such interface (NODEV)"));
+    try std.testing.expect(same("boot: start a -- pid N -- /a", "boot: start a -- pid 4711 -- /a"));
+    try std.testing.expect(!same("boot: stzos init -- pid 1", "boot: stzos init -- pid 2"));
+    try std.testing.expect(same("boot: stzos init -- pid 1", "boot: stzos init -- pid 1"));
+    var buf: [64]u8 = undefined;
+    try std.testing.expectEqualStrings("a (pid N) and pid 1 and pid N.", normalisePids("a (pid 12) and pid 1 and pid 100.", &buf));
+}

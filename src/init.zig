@@ -29,6 +29,7 @@ const builtin = @import("builtin");
 const machine = @import("machine.zig");
 const plan = @import("plan.zig");
 const netcfg = @import("netcfg.zig");
+const expect = @import("expect.zig");
 
 pub const Options = struct {
     rehearse: bool = false,
@@ -47,10 +48,12 @@ pub const Options = struct {
 // for with the tryboot flag, once. PID 1 learns which slot it booted from
 // the cmdline (stzos.slot=), reads which one is committed, arms the
 // hardware watchdog, and -- on a trial -- commits by rewriting config.txt
-// only when every service has started. A trial that never gets there is
-// not committed: the watchdog resets the board and the firmware boots the
-// committed slot. Nothing here decides what "healthy" means beyond "every
-// declared service started"; a health seat is a named seam.
+// only when every service is ready AND the boot matches the expectation
+// the image carries (JDG-1: the machine judges its own boot). A trial that
+// never gets there, or is judged different, is not committed: the watchdog
+// is no longer fed, the board resets, and the firmware boots the committed
+// slot. "Healthy" means "the boot the declaration expected"; a health seat
+// beyond the boot (a service's own word later in its life) is a named seam.
 
 const Slots = struct {
     dev: []const u8,
@@ -60,6 +63,97 @@ const Slots = struct {
     wd_fd: ?i32 = null,
     done: bool = false, // committed, or steady from the start
 };
+
+// ---- the ledger: what init said, to be judged against what was expected --
+//
+// Every judged line is printed THROUGH the ledger: written to it first,
+// then echoed to the console, so the console and the record cannot
+// disagree. Lines about the card's state (a trial, steady), the instrument
+// (--hold) and the verdict itself go to the console alone: the expectation
+// is derived from the declaration, which knows none of them.
+const Ledger = struct {
+    aw: std.Io.Writer.Allocating,
+    out: *std.Io.Writer,
+    mark: usize = 0,
+
+    fn init(gpa: std.mem.Allocator, out: *std.Io.Writer) Ledger {
+        return .{ .aw = std.Io.Writer.Allocating.init(gpa), .out = out };
+    }
+    fn deinit(self: *Ledger) void {
+        self.aw.deinit();
+    }
+    fn w(self: *Ledger) *std.Io.Writer {
+        return &self.aw.writer;
+    }
+    /// echo to the console what was recorded since the last echo
+    fn echo(self: *Ledger) !void {
+        const all = self.aw.written();
+        try self.out.writeAll(all[self.mark..]);
+        self.mark = all.len;
+    }
+    fn say(self: *Ledger, comptime fmt: []const u8, args: anytype) !void {
+        try self.w().print(fmt, args);
+        try self.echo();
+    }
+    fn said(self: *Ledger) []const u8 {
+        return self.aw.written();
+    }
+};
+
+/// the value after `<key>` on the kernel command line, or null
+fn cmdlineValue(gpa: std.mem.Allocator, key: []const u8) ?[]u8 {
+    const cmdline = std.fs.cwd().readFileAlloc(gpa, "/proc/cmdline", 4096) catch return null;
+    defer gpa.free(cmdline);
+    const i = std.mem.indexOf(u8, cmdline, key) orelse return null;
+    const rest = cmdline[i + key.len ..];
+    const end = std.mem.indexOfAny(u8, rest, " \n") orelse rest.len;
+    if (end == 0) return null;
+    return gpa.dupe(u8, rest[0..end]) catch null;
+}
+
+/// The machine judges its own boot: the ledger against /etc/expected -- or
+/// /etc/expected.<lens> when the boot line names one with stzos.expect=
+/// (the emulator's court does; a card's cmdline.txt never does). The
+/// verdict is said on the console, in the machine's words, and returned.
+/// No expectation is no verdict: nothing to judge by is nothing to commit
+/// on (JDG-1).
+fn judgeBoot(gpa: std.mem.Allocator, led: *Ledger, out: *std.Io.Writer) !bool {
+    var path_buf: [80]u8 = undefined;
+    var path: []const u8 = "/etc/expected";
+    if (cmdlineValue(gpa, "stzos.expect=")) |lens| {
+        defer gpa.free(lens);
+        path = std.fmt.bufPrint(&path_buf, "/etc/expected.{s}", .{lens}) catch path;
+    }
+    const expected = std.fs.cwd().readFileAlloc(gpa, path, 1 << 20) catch |e| {
+        try out.print("boot: judge -- no expectation at {s} ({s}); the boot is not judged\n", .{ path, @errorName(e) });
+        return false;
+    };
+    defer gpa.free(expected);
+    var arena_state = std.heap.ArenaAllocator.init(gpa);
+    defer arena_state.deinit();
+    const v = try expect.judge(arena_state.allocator(), expected, led.said());
+    if (v.matches()) {
+        try out.print("boot: judge -- the boot matches its expectation ({s}, {d} lines)\n", .{ path, v.expected });
+        return true;
+    }
+    try out.print("boot: judge -- the boot differs from its expectation ({s}): {d} line(s) expected and not said, {d} said and not expected\n", .{ path, v.missing.len, v.unexpected.len });
+    const cap = 8;
+    for (v.missing, 0..) |l, i| {
+        if (i == cap) {
+            try out.print("boot: judge -- ... and {d} more expected\n", .{v.missing.len - cap});
+            break;
+        }
+        try out.print("boot: judge -- expected, not said: {s}\n", .{expect.bare(l)});
+    }
+    for (v.unexpected, 0..) |l, i| {
+        if (i == cap) {
+            try out.print("boot: judge -- ... and {d} more said\n", .{v.unexpected.len - cap});
+            break;
+        }
+        try out.print("boot: judge -- said, not expected: {s}\n", .{expect.bare(l)});
+    }
+    return false;
+}
 
 fn bootedSlot(gpa: std.mem.Allocator) ?u8 {
     const cmdline = std.fs.cwd().readFileAlloc(gpa, "/proc/cmdline", 4096) catch return null;
@@ -178,8 +272,10 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     const m = p.machine;
     const pid: i32 = @intCast(linux.getpid());
     const is_pid1 = pid == 1;
+    var led = Ledger.init(gpa, out);
+    defer led.deinit();
 
-    try out.print("boot: stzos init -- machine {s} ({s} / {s} / {s}) -- pid {d}{s}\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), pid, if (is_pid1) "" else " (not PID 1)" });
+    try led.say(expect.fmt_banner, .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), pid, if (is_pid1) "" else " (not PID 1)" });
     if (m.profile != .hosted) {
         try out.print("boot: refused -- init boots the hosted profile only; a {s} machine boots from its own substrate\n", .{@tagName(m.profile)});
         try out.flush();
@@ -200,14 +296,14 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     if (opts.hold and ab != null) try out.print("boot: --hold: a trial will not be committed and the watchdog will not be fed -- the rollback instrument\n", .{});
 
     for (p.steps) |step| switch (step) {
-        .console => |c| try out.print("boot: console {s}\n", .{c}),
+        .console => |c| try led.say(expect.fmt_console, .{c}),
         .slots => |dev| {
             if (opts.rehearse) {
                 try out.print("boot: slots on {s} -- rehearsed, not read\n", .{dev});
                 continue;
             }
             // proc is not mounted yet at this step: the cmdline is read after the mounts
-            try out.print("boot: slots on {s} -- A and B\n", .{dev});
+            try led.say(expect.fmt_slots, .{dev});
         },
         .mount => |mt| {
             if (opts.rehearse) {
@@ -238,20 +334,21 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             };
             const rc = linux.mount(special.ptr, dir.ptr, fstype.ptr, flags, 0);
             switch (linux.E.init(rc)) {
-                .SUCCESS => try out.print("boot: mount {s} at {s} -- done\n", .{ @tagName(mt.fs), mt.at }),
-                .BUSY => try out.print("boot: mount {s} at {s} -- already mounted (EBUSY), kept\n", .{ @tagName(mt.fs), mt.at }),
-                else => |e| try out.print("boot: mount {s} at {s} -- refused by the kernel: {s}\n", .{ @tagName(mt.fs), mt.at, @tagName(e) }),
+                .SUCCESS => try led.say(expect.fmt_mount_done, .{ @tagName(mt.fs), mt.at }),
+                .BUSY => try led.say("boot: mount {s} at {s} -- already mounted (EBUSY), kept\n", .{ @tagName(mt.fs), mt.at }),
+                else => |e| try led.say("boot: mount {s} at {s} -- refused by the kernel: {s}\n", .{ @tagName(mt.fs), mt.at, @tagName(e) }),
             }
         },
-        .capability => |c| try out.print("boot: {s} {s} ({s})\n", .{ if (c.granted) "grant" else "refuse", @tagName(c.name), @tagName(machine.kindOf(c.name)) }),
-        .pin => |pn| try out.print("boot: pin {s} gpio {d} {s} -- declared; the hosted profile drives pins through the gpio capability of its services\n", .{ pn.name, pn.gpio, @tagName(pn.mode) }),
+        .capability => |c| try led.say(expect.fmt_capability, .{ if (c.granted) "grant" else "refuse", @tagName(c.name), @tagName(machine.kindOf(c.name)) }),
+        .pin => |pn| try led.say(expect.fmt_pin, .{ pn.name, pn.gpio, @tagName(pn.mode) }),
         .network => |n| {
             if (opts.rehearse) {
                 try out.print("boot: network {s} -- {s} {s} -- rehearsed, not executed\n", .{ n.name, n.interface, if (n.address == .dhcp) "dhcp" else "static" });
                 continue;
             }
             try out.flush();
-            _ = try netcfg.bringUp(n, out, "boot: ");
+            _ = try netcfg.bringUp(n, led.w(), "boot: ");
+            try led.echo();
         },
         .service => {}, // started below, when what it comes AFTER is ready
     };
@@ -278,7 +375,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                         try out.print("boot: slot {c} -- committed, steady\n", .{c});
                         s.done = true;
                     } else {
-                        try out.print("boot: slot {c} -- a trial (committed is {c}); the watchdog holds the rollback until every service has started\n", .{ s.booted.?, c });
+                        try out.print("boot: slot {c} -- a trial (committed is {c}); the watchdog holds the rollback until the boot is judged\n", .{ s.booted.?, c });
                     }
                 } else {
                     try out.print("boot: slot {c} -- config.txt names no committed slot; nothing can be committed\n", .{s.booted.?});
@@ -292,57 +389,72 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         // resets on it must not take the transcript with it.
         try out.flush();
         if (watchdogOff(gpa)) {
-            try out.print("boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here\n", .{});
+            try led.say(expect.fmt_watchdog_off, .{});
         } else {
             const wd = linux.open("/dev/watchdog", .{ .ACCMODE = .WRONLY }, 0);
             switch (linux.E.init(wd)) {
                 .SUCCESS => {
                     s.wd_fd = @intCast(wd);
-                    try out.print("boot: watchdog armed (/dev/watchdog)\n", .{});
+                    try led.say(expect.fmt_watchdog_armed, .{});
                 },
-                else => |e| try out.print("boot: watchdog -- /dev/watchdog refused: {s}; a trial cannot roll back by hardware\n", .{@tagName(e)}),
+                else => |e| try led.say("boot: watchdog -- /dev/watchdog refused: {s}; a trial cannot roll back by hardware\n", .{@tagName(e)}),
             }
         }
         try out.flush();
     };
 
-    try startReady(gpa, slots.items, out);
+    try startReady(gpa, slots.items, &led);
     try out.flush();
 
     // the reaper: PID 1's standing duty -- polled, so the watchdog is fed
     // between exits and a trial is committed the moment it is earned
     var turns: usize = 0;
+    var judged = false; // the verdict is given once
+    var held = false; // a trial the judge refused: not committed, the watchdog no longer fed
     while (true) {
-        if (ab) |*s| {
-            if (!opts.hold) feedWatchdog(s);
-            if (!s.done and !opts.hold) {
-                // the commit is earned when every service is READY -- a
-                // one-shot exited 0, a daemon spawned -- never merely started:
-                // a one-shot that fails, or a service its failure held back,
-                // keeps the trial uncommitted, and the rollback is the answer.
-                // (Committing on "started" also raced the last one-shot's
-                // output with the commit line in the transcript.)
-                var all_ready = true;
-                for (slots.items) |sl| if (!sl.ready()) {
-                    all_ready = false;
-                };
-                if (all_ready) {
-                    if (std.fs.cwd().readFileAlloc(gpa, "/boot/config.txt", 1 << 16)) |cfg| {
-                        defer gpa.free(cfg);
-                        if (commitText(gpa, cfg, s.committed.?, s.booted.?)) |new_cfg| {
-                            defer gpa.free(new_cfg);
-                            if (std.fs.cwd().createFile("/boot/config.txt", .{ .truncate = true })) |f| {
-                                defer f.close();
-                                f.writeAll(new_cfg) catch {};
-                                f.sync() catch {};
-                                linux.sync();
-                                try out.print("boot: slot {c} -- committed: every service is ready; config.txt now boots {c}, {c} is the fallback\n", .{ s.booted.?, s.booted.?, s.committed.? });
-                            } else |e| try out.print("boot: slot {c} -- commit refused: config.txt: {s}\n", .{ s.booted.?, @errorName(e) });
-                        } else |e| try out.print("boot: slot {c} -- commit refused: {s}\n", .{ s.booted.?, @errorName(e) });
-                    } else |e| try out.print("boot: slot {c} -- commit refused: config.txt unreadable: {s}\n", .{ s.booted.?, @errorName(e) });
+        if (ab) |*s| if (!opts.hold and !held) feedWatchdog(s);
+        if (!judged and !opts.rehearse) {
+            // the verdict comes when every service is READY -- a one-shot
+            // exited 0, a daemon spawned or signalled -- never merely started:
+            // a one-shot that fails, or a service its failure held back, keeps
+            // a trial uncommitted, and the rollback is the answer. (Committing
+            // on "started" also raced the last one-shot's output with the
+            // commit line in the transcript.) Then the machine judges its own
+            // ledger against the expectation the image carries, and a trial
+            // is committed only on a match (JDG-1).
+            var all_ready = true;
+            for (slots.items) |sl| if (!sl.ready()) {
+                all_ready = false;
+            };
+            if (all_ready) {
+                judged = true;
+                const matches = try judgeBoot(gpa, &led, out);
+                if (ab) |*s| if (!s.done and !opts.hold) {
+                    if (matches) {
+                        if (std.fs.cwd().readFileAlloc(gpa, "/boot/config.txt", 1 << 16)) |cfg| {
+                            defer gpa.free(cfg);
+                            if (commitText(gpa, cfg, s.committed.?, s.booted.?)) |new_cfg| {
+                                defer gpa.free(new_cfg);
+                                if (std.fs.cwd().createFile("/boot/config.txt", .{ .truncate = true })) |f| {
+                                    defer f.close();
+                                    f.writeAll(new_cfg) catch {};
+                                    f.sync() catch {};
+                                    linux.sync();
+                                    try out.print("boot: slot {c} -- committed: every service is ready and the boot matches its expectation; config.txt now boots {c}, {c} is the fallback\n", .{ s.booted.?, s.booted.?, s.committed.? });
+                                } else |e| try out.print("boot: slot {c} -- commit refused: config.txt: {s}\n", .{ s.booted.?, @errorName(e) });
+                            } else |e| try out.print("boot: slot {c} -- commit refused: {s}\n", .{ s.booted.?, @errorName(e) });
+                        } else |e| try out.print("boot: slot {c} -- commit refused: config.txt unreadable: {s}\n", .{ s.booted.?, @errorName(e) });
+                    } else {
+                        // the judge's answer is the rollback's: the watchdog is
+                        // no longer fed, the board resets, the firmware boots
+                        // the committed slot (the emulator, which cannot arm
+                        // it, runs on to the halt and boots it next)
+                        held = true;
+                        try out.print("boot: slot {c} -- held: every service is ready but the boot is not the one expected; not committed, the watchdog is no longer fed -- the next boot is {c}\n", .{ s.booted.?, s.committed.? });
+                    }
                     s.done = true;
-                    try out.flush();
-                }
+                };
+                try out.flush();
             }
         }
         var alive: usize = 0;
@@ -364,7 +476,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                             why = "what it comes AFTER never signalled ready";
                         };
                     }
-                    try out.print("boot: {s} never started -- {s}\n", .{ s.service.name, why });
+                    try led.say("boot: {s} never started -- {s}\n", .{ s.service.name, why });
                 };
             }
             try out.print("boot: every service has ended -- init has nothing left to keep alive\n", .{});
@@ -386,8 +498,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             };
             break;
         };
-        const awaiting = try pollReady(slots.items, out);
-        if (awaiting) try startReady(gpa, slots.items, out);
+        const awaiting = try pollReady(slots.items, &led);
+        if (awaiting) try startReady(gpa, slots.items, &led);
         const polling = ab != null or awaiting;
         var status: u32 = 0;
         const rc = linux.wait4(-1, &status, if (polling) linux.W.NOHANG else 0, null);
@@ -419,12 +531,14 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             const exited = linux.W.IFEXITED(status);
             c.code = if (exited) linux.W.EXITSTATUS(status) else 0;
             c.signaled = !exited;
+            var pb: [16]u8 = undefined;
+            const pids = std.fmt.bufPrint(&pb, "{d}", .{ended}) catch "?";
             if (exited) {
-                try out.print("boot: {s} (pid {d}) exited {d}\n", .{ c.service.name, ended, c.code });
+                try led.say(expect.fmt_exited, .{ c.service.name, pids, c.code });
             } else if (linux.W.IFSIGNALED(status)) {
-                try out.print("boot: {s} (pid {d}) killed by signal {d}\n", .{ c.service.name, ended, linux.W.TERMSIG(status) });
+                try led.say("boot: {s} (pid {s}) killed by signal {d}\n", .{ c.service.name, pids, linux.W.TERMSIG(status) });
             } else {
-                try out.print("boot: {s} (pid {d}) ended (status {d})\n", .{ c.service.name, ended, status });
+                try led.say("boot: {s} (pid {s}) ended (status {d})\n", .{ c.service.name, pids, status });
             }
             const wants_restart = switch (c.service.restart) {
                 .never => false,
@@ -433,21 +547,21 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             };
             if (wants_restart) {
                 if (c.restarts >= opts.max_restarts) {
-                    try out.print("boot: {s} -- restart {s}, but gave up after {d} restarts\n", .{ c.service.name, @tagName(c.service.restart), c.restarts });
+                    try led.say("boot: {s} -- restart {s}, but gave up after {d} restarts\n", .{ c.service.name, @tagName(c.service.restart), c.restarts });
                 } else {
                     c.restarts += 1;
                     const np = spawn(gpa, c.service) catch |e| {
-                        try out.print("boot: restart {s} -- could not spawn: {s}\n", .{ c.service.name, @errorName(e) });
+                        try led.say("boot: restart {s} -- could not spawn: {s}\n", .{ c.service.name, @errorName(e) });
                         break;
                     };
                     c.pid = np;
                     c.state = .running;
-                    try out.print("boot: restart {s} ({s}, {d}/{d}) -- pid {d}\n", .{ c.service.name, @tagName(c.service.restart), c.restarts, opts.max_restarts, np });
+                    try led.say("boot: restart {s} ({s}, {d}/{d}) -- pid {d}\n", .{ c.service.name, @tagName(c.service.restart), c.restarts, opts.max_restarts, np });
                 }
             }
             break;
         }
-        if (!known) try out.print("boot: reaped orphan pid {d}\n", .{ended});
+        if (!known) try led.say("boot: reaped orphan pid {d}\n", .{ended});
         // a one-shot that failed blocks what waited on it; a service whose
         // AFTER just became ready starts now
         for (slots.items) |*s| {
@@ -455,11 +569,11 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             for (s.service.after) |a| {
                 for (slots.items) |d| if (std.mem.eql(u8, d.service.name, a) and d.failed()) {
                     s.state = .never;
-                    try out.print("boot: {s} never started -- it comes AFTER {s}, which exited {d}\n", .{ s.service.name, a, d.code });
+                    try led.say("boot: {s} never started -- it comes AFTER {s}, which exited {d}\n", .{ s.service.name, a, d.code });
                 };
             }
         }
-        try startReady(gpa, slots.items, out);
+        try startReady(gpa, slots.items, &led);
         try out.flush();
     }
     if (is_pid1 and !opts.rehearse) {
@@ -507,14 +621,14 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
 
 /// Look for the declared signals that have appeared since the last look.
 /// Returns true if any service is still awaiting one.
-fn pollReady(slots: []Slot, out: *std.Io.Writer) !bool {
+fn pollReady(slots: []Slot, led: *Ledger) !bool {
     var awaiting = false;
     for (slots) |*s| {
         if (!s.awaiting()) continue;
         const path = s.service.ready.?;
         if (std.fs.cwd().access(path, .{})) |_| {
             s.signalled_ready = true;
-            try out.print("boot: {s} -- ready ({s})\n", .{ s.service.name, path });
+            try led.say(expect.fmt_ready, .{ s.service.name, path });
         } else |_| {
             awaiting = true;
         }
@@ -524,7 +638,7 @@ fn pollReady(slots: []Slot, out: *std.Io.Writer) !bool {
 
 /// Start every pending service whose AFTER services are all ready, in
 /// plan order, until nothing more can start.
-fn startReady(gpa: std.mem.Allocator, slots: []Slot, out: *std.Io.Writer) !void {
+fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
     var progressed = true;
     while (progressed) {
         progressed = false;
@@ -539,17 +653,16 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, out: *std.Io.Writer) !void 
             if (!ok) continue;
             const pid = spawn(gpa, s.service) catch |e| {
                 s.state = .never;
-                try out.print("boot: start {s} -- could not spawn: {s}\n", .{ s.service.name, @errorName(e) });
+                try led.say("boot: start {s} -- could not spawn: {s}\n", .{ s.service.name, @errorName(e) });
                 progressed = true;
                 continue;
             };
             s.pid = pid;
             s.state = .running;
             progressed = true;
-            try out.print("boot: start {s} -- pid {d} --", .{ s.service.name, pid });
-            for (s.service.run) |w| try out.print(" {s}", .{w});
-            if (s.service.user) |u| try out.print(" -- as {s} ({d}:{d})", .{ u.name, u.uid, u.gid });
-            try out.print("\n", .{});
+            var pb: [16]u8 = undefined;
+            try expect.startLine(led.w(), s.service, std.fmt.bufPrint(&pb, "{d}", .{pid}) catch "?");
+            try led.echo();
         }
     }
 }

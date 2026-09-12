@@ -22,6 +22,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const machine = @import("machine.zig");
+const expect = @import("expect.zig");
 
 const linux = std.os.linux;
 
@@ -106,7 +107,7 @@ fn bringUpLinux(n: *const machine.Network, out: *std.Io.Writer, prefix: []const 
     switch (errOf(linux.ioctl(fd, linux.SIOCGIFFLAGS, @intFromPtr(&ifr)))) {
         .SUCCESS => {},
         .NODEV => {
-            try out.print("{s}network {s} -- {s}: no such interface (NODEV)\n", .{ prefix, n.name, iface });
+            try out.print(expect.fmt_network_nodev, .{ prefix, n.name, iface });
             return false;
         },
         else => |e| {

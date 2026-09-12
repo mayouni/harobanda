@@ -65,6 +65,20 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   wrong in the same way and the court stays green. QEMU judges the
   images; MicroRing judges the projection (PRJ-2, where a diff passed a
   file Ring could not parse).
+- **The machine judges its own boot** (JDG-1): the image carries
+  `/etc/expected`, derived from the plan; PID 1 records what it says
+  and judges the two when every service is ready; a trial commits only
+  on a match, and no expectation is no commit. Each judged line is
+  worded ONCE in `src/expect.zig` for init and the derivation alike --
+  never reword one side. The emulator's lacks are a `Lens` per board
+  (`qemu_lens`), never a loosened comparison.
+- **The machine judges its own boot** (JDG-1): the image carries
+  `/etc/expected`, derived from the plan; PID 1 records what it says
+  and judges the two when every service is ready; a trial commits only
+  on a match, and no expectation is no commit. Each judged line is
+  worded ONCE in `src/expect.zig` for init and the derivation alike --
+  never reword one side. The emulator's lacks are a `Lens` per board
+  (`qemu_lens`), never a loosened comparison.
 - **Assert the mechanism** — the court was probed with a mutated judge
   in fresh processes (wrong count, wrong fragment, valid source posing
   as reject → three reds) before its scoreboard was written.
@@ -147,10 +161,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 - **OS-5 — the card meets the board**: flash `zig-out/image/makeen_box/
   sd.img` to a card, boot a Raspberry Pi 4 with the mini-UART on the
-  header pins (GPIO 14/15, 115200), and judge the real transcript
-  against `machines/makeen_box.expected` — it is expected to differ
-  exactly where the emulator lacks the hardware (Ethernet up, the
-  worlds starting) and nowhere else; the hardware watchdog's real
+  header pins (GPIO 14/15, 115200), and read two verdicts: the board's
+  own (`judge -- the boot matches its expectation (/etc/expected, 16
+  lines)`, the text `zig-out/image/makeen_box/expected` derived through
+  the board's lens), and the court's, the real transcript against
+  `machines/makeen_box.expected` — expected to differ exactly where the
+  emulator lacks the hardware (the network up, the watchdog armed: the
+  two lines the build prints as the emulator's lacks) and nowhere else,
+  which the board's own verdict now states; the hardware watchdog's real
   countdown (the emulator cannot arm it); and the tryboot flag, which
   needs a small vendored patch to `bcm2835_wdt.c` (mainline ignores the
   restart argument) -- until then a trial is requested by hand.

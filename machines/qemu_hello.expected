@@ -27,6 +27,7 @@ boot: start hello -- pid N -- /stzr /app/hello.luau
 hello from a declared machine -- stzr on stzos, a Luau world under PID 1
 the machine was declared, judged, planned, imaged, booted, narrated -- and now it runs a world
 boot: hello (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system

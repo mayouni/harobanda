@@ -36,7 +36,15 @@ mkdir -p "$OUT" zig-out/wsl
   cp app/*.luau "$ROOT/app/" 2>/dev/null && echo "app staged"
   echo "=== derive ==="
   "$HOST_STZOS" image "$M" --root "$ROOT" --out "$OUT" || { echo "derive refused"; exit 1; }
-  for f in image.env initramfs.list kernel.fragment disk.list sd.list config.txt cmdline.txt boot.cmd; do [ -f "$OUT/$f" ] && { echo "--- $f"; cat "$OUT/$f"; }; done
+  for f in image.env initramfs.list kernel.fragment disk.list sd.list config.txt cmdline.txt boot.cmd expected expected.emulator; do [ -f "$OUT/$f" ] && { echo "--- $f"; cat "$OUT/$f"; }; done
+  # the boot, EXPECTED, rides in the image and is judged by PID 1 itself
+  # (JDG-1). A board the court emulates carries a second text through the
+  # emulator's lens; the diff of the two IS the list of the emulator's lacks,
+  # said here at build time rather than inferred from a failing boot.
+  if [ -f "$OUT/expected.emulator" ]; then
+    echo "--- the emulator's lacks (expected vs expected.emulator):"
+    diff "$OUT/expected" "$OUT/expected.emulator" | grep '^[<>]' | sed 's/^</  the board: /; s/^>/  the emulator: /'
+  fi
   echo "=== kernel ==="
   # STZOS_CC=zigcc builds the kernel with OUR compiler (ZIGCC-1) in its own
   # tree, so the two toolchains never share objects and either can be asked
@@ -175,6 +183,20 @@ mkdir -p "$OUT" zig-out/wsl
     sed -e 's/\r$//' "$OUT/transcript_hold.txt" | sed -n '/^.*boot: slot [AB] -- /,$p' | sed -e 's/^.*boot: slot \([AB]\) -- /boot: slot \1 -- /' | grep -v '^qemu exit' | sed 's/^/hold: /' >> "$OUT/transcript.txt"
     echo "card: config.txt after the held trial:" >> "$OUT/transcript.txt"
     mcopy -i "$OUT/sd.hold.img@@$((2048*512))" ::config.txt - 2>/dev/null | grep -E 'os_prefix|tryboot' | sed 's/^/card: /' >> "$OUT/transcript.txt"
+  fi
+  if [ "$SD" = yes ] && [ -f "$OUT/boot_unmet.cmd" ]; then
+    # the judge's negative (JDG-1), on a pristine card again: the same trial
+    # judged by the BOARD's expectation, which the emulator cannot meet (no
+    # NIC it models, no watchdog it can arm). PID 1 must name the lines it
+    # expected and did not say, hold the trial, and the card must still
+    # boot A. A machine that committed here would be a machine that cannot
+    # tell its own boot from another.
+    cp "$OUT/sd.pristine.img" "$OUT/sd.unmet.img"
+    ( cd "$OUT" && timeout --foreground 60 bash <(sed 's/sd\.img/sd.unmet.img/' boot_unmet.cmd) < /dev/null > transcript_unmet.txt 2>&1; echo "qemu exit $?" >> transcript_unmet.txt )
+    echo "unmet: the same trial on a pristine card, judged by the board's expectation:" >> "$OUT/transcript.txt"
+    sed -e 's/\r$//' "$OUT/transcript_unmet.txt" | sed -n '/^.*boot: slot [AB] -- /,$p' | sed -e 's/^.*boot: slot \([AB]\) -- /boot: slot \1 -- /' | grep -v '^qemu exit' | sed 's/^/unmet: /' >> "$OUT/transcript.txt"
+    echo "card: config.txt after the unmet trial:" >> "$OUT/transcript.txt"
+    mcopy -i "$OUT/sd.unmet.img@@$((2048*512))" ::config.txt - 2>/dev/null | grep -E 'os_prefix|tryboot' | sed 's/^/card: /' >> "$OUT/transcript.txt"
   fi
   echo "--- transcript"; cat "$OUT/transcript.txt"
   echo "=== judge ==="
