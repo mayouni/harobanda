@@ -60,6 +60,10 @@ mkdir -p "$OUT" zig-out/wsl
     make -s usr/gen_init_cpio || exit 1
   ) || { echo "kernel build failed"; exit 1; }
   cp "$SRC/$KERNEL_ARTIFACT" "$OUT/$KERNEL_IMAGE" || exit 1
+  # the config this image's kernel was built with, kept beside it: the tree's
+  # .config belongs to whichever machine of this ARCH was built last, and a
+  # diagnostic that read the tree answered for the wrong machine (OS-4)
+  cp "$SRC/.config" "$OUT/kernel.config"
   if [ -n "$DTB" ]; then
     cp "$SRC/$DTB" "$OUT/$(basename "$DTB")" || { echo "no dtb built: $DTB"; exit 1; }
     # two trees from mainline's: the CARD's (mainline + DTB_OPS: what the
