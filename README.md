@@ -9,7 +9,7 @@ derived; on a hosted machine one static binary, `stzos`, executes that
 plan as PID 1 and narrates the boot as a transcript. No shell, no
 package manager, no init scripts: the declared machine IS the system.
 
-**Status: NET-1 on top of OS-4 — the box has a board, a card, and a declared wire.** A machine declares its NETWORK as it declares a MOUNT, PID 1 brings it up before any service, and the emulator court judges a DHCP lease against QEMU's own server. The Makeen box is a
+**Status: AB-1 on top of NET-1 and OS-4 — the box has a board, a card, a declared wire, and two slots.** A machine declares its NETWORK as it declares a MOUNT and PID 1 brings it up before any service; the card carries two slots, an update is tried once and committed only when every service has started, and the emulator court reads the card back to judge both the commit and the rollback. The Makeen box is a
 Raspberry Pi 4 Model B (`doc/PROVENANCE.md`, the board ruling). Its
 `.machine` file names the board, and from it the pipeline derives the
 BCM2711 kernel, the card's device tree (mainline plus the mmc aliases
@@ -40,6 +40,7 @@ strategy that this repository serves is the Vision Corpus
 | the reference machines | `machines/` | `makeen_box.machine` (BOARD rpi4, fixture A2 verbatim), `qemu_hello.machine` (x86_64) and `makeen_qemu.machine` (aarch64 `virt`) all boot and are judged against their `.expected` |
 | the board's card: firmware pinned, two derived device trees, the SD image | `experiment/os2_image.sh`, `experiment/dtb_ops.py`, `vendor/rpi-firmware/PIN.txt` | the `raspi4b` boot transcript, 17 lines |
 | the NETWORK kind: PID 1 brings the declared wire up before any service, static or dhcp (a client in the one binary) | `src/netcfg.zig`, `src/net.zig` (`stzos net` by hand) | fixtures A10–A11, R36–R40; the lease in `makeen_qemu.expected` from QEMU's own DHCP server |
+| A/B slots: an update is a trial before it is a commitment; PID 1 commits only once every service has started, under the watchdog; `stzos update` writes the other slot | `src/init.zig` (the slot logic), `src/update.zig` | fixtures A12, R41–R42; the card read back after a trial and after a held trial, in `makeen_box.expected` |
 
 ## Three profiles, one language
 

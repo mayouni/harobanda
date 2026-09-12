@@ -39,7 +39,7 @@ third program on the path for a declaration to reach.
 | userland | none: no shell, no coreutils, no busybox | **none** |
 | filesystem | initramfs (cpio) holding `/stzos`, `/stzr`, `/app/*.luau`, `/etc/machine`; declared mounts for persistent data | **own** (the builder writes it) |
 | network | the NETWORK kind: PID 1 brings each declared interface up before any service — static (four ioctls and the route) or dhcp (a client in `src/netcfg.zig`); judged against QEMU's user-mode DHCP server | **own** |
-| updates | A/B image partitions, atomic pointer swap, watchdog rollback (ZinOS Edge's OTA design) | **own**, governed by refine |
+| updates | two slots on the boot partition (`SLOTS`), `config.txt` naming the committed one and the firmware's `[tryboot]` naming the other; PID 1 commits a trial only once every service has started, under the hardware watchdog; `stzos update` writes the other slot and asks for one trial (the tryboot flag waits on a driver patch, AB-1) | **own**, governed by refine |
 | emulator | QEMU (`-kernel bzImage -initrd initramfs.cpio -append "rdinit=/stzos ..." -nographic`) | **borrow** for the court; not shipped |
 | bootloader | the board's: the Raspberry Pi 4's own firmware (`start4.elf`, `fixup4.dat` — a vendor blob pinned by sha256 in `vendor/rpi-firmware/PIN.txt`, fetched, never committed) reads `config.txt` and loads `kernel8.img` + the initramfs; on x86 the emulator loads the kernel itself | **borrow**, stated per board in the target table |
 | device tree | mainline's `bcm2711-rpi-4-b.dtb`, plus the derived mmc aliases (`DTB_OPS`) for the card and the derived emulator ops (`QEMU_DTB_OPS`) for the court; `experiment/dtb_ops.py` applies, every op printed | **keep vendored**, two derived variants |
@@ -113,16 +113,16 @@ judged so that one file describes the fleet, phone included.
 
 | altitude | instrument | today |
 |---|---|---|
-| the language | `fixtures.json`, 8 accepts + 32 rejects, sha256-pinned | 40/40 |
-| the language's own declaration | `machine.stzu` judged by stz's `Stzu.luau` | accepted, 5/4/0/3 |
+| the language | `fixtures.json`, 12 accepts + 42 rejects, sha256-pinned (BOARD, NETWORK and SLOTS widened it fixture-first) | 54/54 |
+| the language's own declaration | `machine.stzu` judged by stz's `Stzu.luau` | accepted, 6/5/0/3 |
 | the mechanism | Zig unit tests with negative siblings; the court probed with a mutated judge (3 reds) | green |
 | the Linux-only code | `zig build cross` (two static targets) | builds |
 | the boot | the transcript, run as PID 1 in a user namespace under WSL | ran: pids 1–10, proc mounted, sysfs/devtmpfs refused PERM, all policies exercised |
 | the image, x86_64 | the QEMU serial transcript, normalised, diffed against `machines/qemu_hello.expected` | matches, 28 lines |
 | the image, aarch64 (the Makeen box on `virt`) | the same against `machines/makeen_qemu.expected`: `virt`, PL011, a virtio ext4 disk mounted at `/data`, two stzr worlds | matches, 20 lines |
 | the board's card (the Makeen box on `raspi4b`) | the same against `machines/makeen_box.expected`: the card's second partition mounted by its declared name, `stzos net` refused NODEV (no Ethernet in the emulator), the worlds never started by the readiness rule | matches, 17 lines |
-| the language | `fixtures.json` widened with BOARD and NETWORK: 11 accepts + 40 rejects | 51/51 |
-| the wire | `makeen_qemu.expected` carries the dhcp lease from QEMU's server; `makeen_box.expected` the static network refused NODEV in the emulator | 22 and 21 lines |
+| the wire | `makeen_qemu.expected` carries the dhcp lease from QEMU's server; `makeen_box.expected` the static network refused NODEV in the emulator | 22 lines; part of 49 |
+| the slots | `makeen_box.expected`: a trial of B committed, the card read back boots B; the same trial held on a pristine card, not committed, that card still boots A | 49 lines |
 
 ## 7. Boundaries
 

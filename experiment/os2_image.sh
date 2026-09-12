@@ -120,7 +120,11 @@ mkdir -p "$OUT" zig-out/wsl
     } | sfdisk -q "$OUT/sd.img" || { echo "sfdisk failed"; exit 1; }
     rm -f "$OUT/boot.img"; truncate -s "${P1MB}M" "$OUT/boot.img"; mkfs.vfat -F 32 -n BOOT "$OUT/boot.img" > /dev/null
     grep '^boot ' "$OUT/sd.list" | while read -r _ name src; do
-      if [ -f "$OUT/$src" ]; then mcopy -i "$OUT/boot.img" "$OUT/$src" "::$name" && echo "boot: $name <- $src"; else echo "boot: $name -- $src missing, skipped"; fi
+      # mtools asks on stdin when a name clashes (mmd on an existing directory
+      # did, and the run hung 33 minutes on a pipe that never closes): -D s
+      # skips a clash, -D o overwrites one, and stdin is /dev/null regardless
+      case "$name" in */*) d=$(dirname "$name"); p=""; for seg in ${d//\// }; do p="$p/$seg"; mmd -D s -i "$OUT/boot.img" "::${p#/}" < /dev/null > /dev/null 2>&1; done ;; esac
+      if [ -f "$OUT/$src" ]; then mcopy -D o -i "$OUT/boot.img" "$OUT/$src" "::$name" < /dev/null && echo "boot: $name <- $src"; else echo "boot: $name -- $src missing, skipped"; fi
     done
     dd if="$OUT/boot.img" of="$OUT/sd.img" bs=512 seek=2048 conv=notrunc status=none
     if [ "$P2S" -gt 0 ]; then
@@ -130,6 +134,7 @@ mkdir -p "$OUT" zig-out/wsl
       echo "card: p2 $P2FS ${P2MB}M"
     fi
     sfdisk -l "$OUT/sd.img" | tail -3
+    cp "$OUT/sd.img" "$OUT/sd.pristine.img"   # the card as flashed, before any boot wrote to it
   fi
   ls -la "$OUT" | grep -v '^total' | grep -v ' root$\| empty$\| firmware$'
   echo "=== boot ==="
@@ -139,6 +144,23 @@ mkdir -p "$OUT" zig-out/wsl
   # the timeout kills it (the author's first run, 2026-09-12). With no tty
   # on stdin it never touches the terminal.
   ( cd "$OUT" && timeout --foreground 180 bash boot.cmd < /dev/null > transcript.txt 2>&1; echo "qemu exit $?" >> transcript.txt )
+  if [ "$SD" = yes ] && [ -f "$OUT/boot_hold.cmd" ]; then
+    # the second witness of an A/B machine: the card's config.txt after the
+    # trial boot (the commit rewrote it, or did not), read from the image
+    echo "card: config.txt after the trial:" >> "$OUT/transcript.txt"
+    mcopy -i "$OUT/sd.img@@$((2048*512))" ::config.txt - 2>/dev/null | grep -E 'os_prefix|tryboot' | sed 's/^/card: /' >> "$OUT/transcript.txt"
+    # the rollback instrument, on a PRISTINE copy of the card (the first boot
+    # committed B on sd.img; a hold on that card would be steady, not a
+    # trial -- the first run of this instrument showed exactly that): the same
+    # trial held -- never committed, the watchdog unfed; then whatever the
+    # hardware (here: the emulator, which cannot arm it) answered
+    cp "$OUT/sd.pristine.img" "$OUT/sd.hold.img"
+    ( cd "$OUT" && timeout --foreground 60 bash <(sed 's/sd\.img/sd.hold.img/' boot_hold.cmd) < /dev/null > transcript_hold.txt 2>&1; echo "qemu exit $?" >> transcript_hold.txt )
+    echo "hold: the same trial on a pristine card, held:" >> "$OUT/transcript.txt"
+    sed -e 's/\r$//' "$OUT/transcript_hold.txt" | sed -n '/^.*boot: slot [AB] -- /,$p' | sed -e 's/^.*boot: slot \([AB]\) -- /boot: slot \1 -- /' | grep -v '^qemu exit' | sed 's/^/hold: /' >> "$OUT/transcript.txt"
+    echo "card: config.txt after the held trial:" >> "$OUT/transcript.txt"
+    mcopy -i "$OUT/sd.hold.img@@$((2048*512))" ::config.txt - 2>/dev/null | grep -E 'os_prefix|tryboot' | sed 's/^/card: /' >> "$OUT/transcript.txt"
+  fi
   echo "--- transcript"; cat "$OUT/transcript.txt"
   echo "=== judge ==="
   # The transcript is the fixture. Normalise what no two boots share -- the
@@ -151,7 +173,7 @@ mkdir -p "$OUT" zig-out/wsl
   sed -e 's/\r$//' "$OUT/transcript.txt" \
     | sed -n '/^.*boot: stzos init/,$p' | sed -e 's/^.*boot: stzos init/boot: stzos init/' \
     | sed -E 's/pid ([2-9]|[1-9][0-9]+)\b/pid N/g' \
-    | sed -e '/^qemu exit/d' > "$OUT/transcript.normalised"
+    | sed -e '/^qemu exit$/d; /^qemu exit [0-9]*$/d' > "$OUT/transcript.normalised"
   if [ ! -f "machines/$NAME.expected" ]; then
     echo "JUDGED: no expectation pinned for $NAME yet -- machines/$NAME.expected is missing; this boot's normalised transcript is at $OUT/transcript.normalised"
   elif diff -u "machines/$NAME.expected" "$OUT/transcript.normalised" > "$OUT/transcript.diff"; then

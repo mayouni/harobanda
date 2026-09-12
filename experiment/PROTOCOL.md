@@ -1,3 +1,106 @@
+# AB-1 — two slots: an update is a trial before it is a commitment, and the card is the witness
+
+Ordered by the author on 2026-09-12 ("start them in order one by one",
+second: A/B slots with watchdog rollback).
+
+## What was built
+
+- **`SLOTS "<device>"`** on MACHINE, fixture-first (A12, R41, R42;
+  54/54): the boot partition that holds `config.txt` and two slots.
+  Needs a board whose firmware can try a slot (`rpi4`); the emulator
+  boards load the kernel directly and are refused by name. The plan
+  carries a `slots` step; `makeen_box.machine` declares
+  `SLOTS "/dev/mmcblk0p1"`.
+- **The card's layout** (`src/image.zig`): `slots/A/` and `slots/B/`
+  each hold `kernel8.img`, the dtb, `initramfs.cpio` and a
+  `cmdline.txt` carrying `stzos.slot=A|B`; `config.txt` names the
+  committed slot in `os_prefix` and, under the firmware's own
+  `[tryboot]` filter, the other. The same image fills both slots at
+  first.
+- **PID 1's slot logic** (`src/init.zig`): after the mounts it reads
+  which slot booted (`stzos.slot=` on `/proc/cmdline`), mounts the
+  boot partition, reads which slot is committed, and says whether this
+  boot is steady or a trial. It arms the hardware watchdog by opening
+  `/dev/watchdog`, feeds it from a polled reaper loop (a quarter
+  second between looks), and on a trial COMMITS — rewriting
+  `config.txt` so the two prefixes swap, synced — only once every
+  service is READY (a one-shot exited 0, a daemon spawned): a
+  one-shot that fails, or a service its failure held back, keeps the
+  trial uncommitted and the rollback is the answer. A steady boot
+  commits nothing. The magic close
+  disarms the watchdog before a clean restart. `--hold` is the
+  rollback instrument: never commit; with a watchdog armed, stop
+  feeding it and let the hardware answer; without one, restart as any
+  uncommitted trial ends.
+- **`stzos update <dir>`** (`src/update.zig`): the file half — read the
+  committed slot from `config.txt`, refuse unless every file of the
+  new image is present, write the OTHER slot, sync — and the reboot
+  half, a restart with the argument `0 tryboot`. `--boot <dir>`
+  rehearses the file half on any directory; `--no-reboot` stops after
+  writing. Rehearsed on the host with its negative (a missing file
+  refuses before a byte is written).
+- **The judge**, doubled: after the trial boot the script reads
+  `config.txt` back from the card image; then boots a PRISTINE copy of
+  the card with the trial held and reads that card back too. Both
+  readings are lines of the pinned transcript.
+
+## What was measured
+
+- The trial boot under `raspi4b`: `slot B -- a trial (committed is
+  A)`, the worlds run, **`slot B -- committed: every service is
+  ready; config.txt now boots B, A is the fallback`**, and the card
+  read back says `os_prefix=slots/B/` first. The held trial on the
+  pristine copy: the same trial, `held, not committed`, a restart,
+  and that card still says `os_prefix=slots/A/`. Pinned, 49 lines.
+- `stzos update` on a fake boot partition: slot B written (four
+  files), `config.txt` untouched; with `cmdline.txt` removed, refused
+  whole.
+
+## What was found
+
+1. **QEMU's raspi4b resets the board the moment the watchdog is
+   armed.** Its power-management model has no countdown and reads the
+   driver's "full reset on expiry" bit as "reset now"; the first trial
+   boot vanished after the capability lines with its buffered output,
+   and the card was unchanged. The emulator's boot line now carries
+   `stzos.watchdog=off` (never the card's `cmdline.txt`), PID 1 states
+   that a trial cannot roll back by hardware there, and everything said
+   before arming is flushed first, so a board that resets on arming can
+   never take the transcript with it.
+2. **mtools asks on stdin when a name clashes.** `mmd` on a directory
+   that already existed opened its interactive clash prompt on a pipe
+   that never closes; the card assembly hung thirty-three minutes.
+   Every mtools call now runs with `-D s` or `-D o` and stdin from
+   `/dev/null`; `wsl_cleanup.sh` ends what it left behind.
+3. **The held trial must run on a pristine card.** The first hold ran
+   on the card the trial had just committed, so it was steady, not a
+   trial, and the instrument measured nothing. The card is copied
+   before any boot writes to it.
+4. **Mainline's watchdog driver ignores the restart argument**, so
+   `0 tryboot` is a plain restart on this kernel: the firmware's
+   tryboot flag cannot be raised from it without a patch to
+   `bcm2835_wdt.c`. The file half of an update is complete; the
+   one-shot trial request is the board's first task.
+5. **A half-written slot is refused before it is written.** The
+   rehearsal's negative left three files behind; every source is now
+   checked first.
+6. **Committing on "started" raced the transcript**: the commit line
+   landed between the last one-shot's output and its exit, on timing.
+   Committing on "ready" (exited 0 for a one-shot) is both the
+   deterministic order and the right rule: a failed one-shot never
+   commits.
+
+## Named seams
+
+- The tryboot flag: a vendored patch to the watchdog driver (parse
+  the restart argument, set the flag in `PM_RSTS`), done with the
+  board and the firmware documentation in hand.
+- Health beyond "every service started": a health seat, and a bounded
+  window for a trial.
+- The hardware watchdog's real countdown, on the board.
+
+---
+
 # NET-1 — the NETWORK kind: a machine declares its wire, PID 1 brings it up, a lease judged in the emulator
 
 Ordered by the author on 2026-09-12 ("start them in order one by one",

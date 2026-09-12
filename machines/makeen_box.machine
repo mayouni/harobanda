@@ -3,7 +3,8 @@
 -- this file, verbatim) and, since OS-4, the board's truth: a Raspberry
 -- Pi 4 Model B, the SD card's second partition as /data, the console on
 -- the header pins, the network declared and brought up by PID 1 before
--- any world speaks. RestoLean's Makeen thread named the box; this
+-- any world speaks, and two boot slots: an update is tried once under
+-- the watchdog and committed only when every world has started. RestoLean's Makeen thread named the box; this
 -- declares it.
 
 DEFINE MACHINE makeen_box AS (
@@ -12,8 +13,9 @@ DEFINE MACHINE makeen_box AS (
   KERNEL linux,
   LIBC musl,
   BOARD rpi4,
-  CONSOLE "/dev/ttyS1"
-) RATIONALE "One box, no shell, no package manager: the declared machine is the system"
+  CONSOLE "/dev/ttyS1",
+  SLOTS "/dev/mmcblk0p1"
+) RATIONALE "One box, no shell, no package manager: the declared machine is the system; two slots, so an update is a trial before it is a commitment"
 
 DEFINE CAPABILITY network AS (
   GRANT yes

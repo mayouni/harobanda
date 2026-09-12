@@ -222,6 +222,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     var files: std.ArrayList(Entry) = .{};
     for ([_][]const u8{ "/dev", "/proc", "/sys", "/etc", "/tmp" }) |d| try addDir(arena, &dirs, d);
     for (m.mounts) |mt| try addDir(arena, &dirs, mt.at);
+    if (m.slots != null) try addDir(arena, &dirs, "/boot"); // where PID 1 mounts the boot partition to read and commit the slot
 
     // /stzos: this binary, cross-built, staged at the root
     const stzos_src = (try staged(arena, opts.root, "/stzos")) orelse {
@@ -307,6 +308,11 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
                 for (t.net_cfg) |l| try w.print("{s}\n", .{l});
             }
         }
+        if (m.slots != null) {
+            // the boot partition is FAT (the firmware's), mounted by PID 1 to
+            // read the committed slot and to commit a trial
+            try w.print("CONFIG_VFAT_FS=y\nCONFIG_NLS_CODEPAGE_437=y\nCONFIG_NLS_ISO8859_1=y\n", .{});
+        }
         if (block) |b| {
             // BLOCK and BLK_DEV are menus tinyconfig closes; VIRTIO_MENU
             // gates every virtio driver. Without them, olddefconfig drops
@@ -335,17 +341,6 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
 
     // sd.list + config.txt + cmdline.txt -- a board that boots from a card
     if (t.sd) {
-        const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 rdinit=/stzos -- init /etc/machine\n", .{t.console_board});
-        try writeOut(opts.out_dir, "cmdline.txt", cmdline);
-        const config = try std.fmt.allocPrint(arena,
-            \\# config.txt -- derived by stzos image for {s} ({s}); read by the board's firmware
-            \\arm_64bit=1
-            \\kernel=kernel8.img
-            \\initramfs initramfs.cpio followkernel
-            \\enable_uart=1
-            \\
-        , .{ m.name, @tagName(m.board) });
-        try writeOut(opts.out_dir, "config.txt", config);
         var sd: std.ArrayList(u8) = .{};
         const w = sd.writer(arena);
         try w.print("# sd.list -- derived by stzos image: the card's partitions (part id fs size_mb label) and the boot partition's files (boot name source)\n", .{});
@@ -354,12 +349,51 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             try w.print("part p2 {s} {d} {s}\n", .{ @tagName(b.fs), opts.disk_mb, b.name });
         }
         try w.print("boot config.txt config.txt\n", .{});
-        try w.print("boot cmdline.txt cmdline.txt\n", .{});
-        try w.print("boot kernel8.img {s}\n", .{t.image_name});
-        try w.print("boot bcm2711-rpi-4-b.dtb bcm2711-rpi-4-b.dtb\n", .{});
-        try w.print("boot initramfs.cpio initramfs.cpio\n", .{});
         try w.print("boot start4.elf firmware/start4.elf\n", .{});
         try w.print("boot fixup4.dat firmware/fixup4.dat\n", .{});
+        if (m.slots != null) {
+            // A/B: the same image in both slots at first; an update writes the
+            // other slot and asks the firmware to try it once. config.txt's
+            // [tryboot] section is the firmware's own mechanism: it passes only
+            // on a boot requested with the tryboot flag, so the trial slot's
+            // prefix applies once, and a reset falls back to the committed one.
+            const config = try std.fmt.allocPrint(arena,
+                \\# config.txt -- derived by stzos image for {s} ({s}); read by the board's firmware
+                \\arm_64bit=1
+                \\kernel=kernel8.img
+                \\initramfs initramfs.cpio followkernel
+                \\enable_uart=1
+                \\os_prefix=slots/A/
+                \\[tryboot]
+                \\os_prefix=slots/B/
+                \\
+            , .{ m.name, @tagName(m.board) });
+            try writeOut(opts.out_dir, "config.txt", config);
+            for ([_][]const u8{ "A", "B" }) |slot| {
+                const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 stzos.slot={s} rdinit=/stzos -- init /etc/machine\n", .{ t.console_board, slot });
+                try writeOut(opts.out_dir, try std.fmt.allocPrint(arena, "cmdline.{s}.txt", .{slot}), cmdline);
+                try w.print("boot slots/{s}/cmdline.txt cmdline.{s}.txt\n", .{ slot, slot });
+                try w.print("boot slots/{s}/kernel8.img {s}\n", .{ slot, t.image_name });
+                try w.print("boot slots/{s}/bcm2711-rpi-4-b.dtb bcm2711-rpi-4-b.dtb\n", .{slot});
+                try w.print("boot slots/{s}/initramfs.cpio initramfs.cpio\n", .{slot});
+            }
+        } else {
+            const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 rdinit=/stzos -- init /etc/machine\n", .{t.console_board});
+            try writeOut(opts.out_dir, "cmdline.txt", cmdline);
+            const config = try std.fmt.allocPrint(arena,
+                \\# config.txt -- derived by stzos image for {s} ({s}); read by the board's firmware
+                \\arm_64bit=1
+                \\kernel=kernel8.img
+                \\initramfs initramfs.cpio followkernel
+                \\enable_uart=1
+                \\
+            , .{ m.name, @tagName(m.board) });
+            try writeOut(opts.out_dir, "config.txt", config);
+            try w.print("boot cmdline.txt cmdline.txt\n", .{});
+            try w.print("boot kernel8.img {s}\n", .{t.image_name});
+            try w.print("boot bcm2711-rpi-4-b.dtb bcm2711-rpi-4-b.dtb\n", .{});
+            try w.print("boot initramfs.cpio initramfs.cpio\n", .{});
+        }
         try writeOut(opts.out_dir, "sd.list", sd.items);
     }
 
@@ -383,8 +417,22 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         // root DEVICE -- which panics as soon as CONFIG_BLOCK exists. The
         // x86 boot of OS-2 worked only because its kernel had no block
         // layer to try (PROTOCOL.md, OS-3 finding 1).
-        try w.print(" -append \"console={s} quiet loglevel=3 rdinit=/stzos -- init /etc/machine\"\n", .{t.console_qemu});
+        // an A/B machine is booted by the court as a TRIAL of slot B while
+        // the card commits A: the transcript shows the trial and the commit,
+        // and the card's config.txt after the boot is the second witness
+        // ... and with the watchdog off: QEMU's raspi4b resets the board the
+        // moment it is armed (no countdown in its model), so the emulator's
+        // line says so and PID 1 states the consequence. The card's own
+        // cmdline.txt never carries it.
+        const slot_arg: []const u8 = if (m.slots != null) " stzos.slot=B stzos.watchdog=off" else "";
+        try w.print(" -append \"console={s} quiet loglevel=3{s} rdinit=/stzos -- init /etc/machine\"\n", .{ t.console_qemu, slot_arg });
         try writeOut(opts.out_dir, "boot.cmd", cmd.items);
+        if (m.slots != null) {
+            // the rollback instrument: the same trial, held -- never committed,
+            // the watchdog not fed. What follows is the hardware's answer.
+            const hold = try std.mem.replaceOwned(u8, arena, cmd.items, "-- init /etc/machine\"", "-- init /etc/machine --hold\"");
+            try writeOut(opts.out_dir, "boot_hold.cmd", hold);
+        }
     }
 
     try out.print("image {s} -- {s} / {s} / {s} -- {d} dir(s), {d} file(s), {s}, {d} network(s) -> {s}/\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), dirs.items.len, files.items.len, if (t.sd) "an SD card" else if (block != null) "1 disk" else "no disk", m.networks.len, opts.out_dir });

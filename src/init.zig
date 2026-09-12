@@ -34,7 +34,88 @@ pub const Options = struct {
     rehearse: bool = false,
     turns: ?usize = null,
     max_restarts: usize = 5,
+    /// the rollback instrument: on a trial boot, never commit and stop
+    /// feeding the watchdog, so the hardware's answer is what follows
+    hold: bool = false,
 };
+
+// ---- A/B slots ------------------------------------------------------------
+//
+// The card's boot partition holds config.txt and two slots. config.txt
+// names the committed slot in its os_prefix and, under [tryboot], the
+// other; the firmware applies the [tryboot] section only on a boot asked
+// for with the tryboot flag, once. PID 1 learns which slot it booted from
+// the cmdline (stzos.slot=), reads which one is committed, arms the
+// hardware watchdog, and -- on a trial -- commits by rewriting config.txt
+// only when every service has started. A trial that never gets there is
+// not committed: the watchdog resets the board and the firmware boots the
+// committed slot. Nothing here decides what "healthy" means beyond "every
+// declared service started"; a health seat is a named seam.
+
+const Slots = struct {
+    dev: []const u8,
+    booted: ?u8 = null, // 'A' or 'B'
+    committed: ?u8 = null,
+    mounted: bool = false,
+    wd_fd: ?i32 = null,
+    done: bool = false, // committed, or steady from the start
+};
+
+fn bootedSlot(gpa: std.mem.Allocator) ?u8 {
+    const cmdline = std.fs.cwd().readFileAlloc(gpa, "/proc/cmdline", 4096) catch return null;
+    defer gpa.free(cmdline);
+    const i = std.mem.indexOf(u8, cmdline, "stzos.slot=") orelse return null;
+    const c = cmdline[i + "stzos.slot=".len ..];
+    if (c.len == 0) return null;
+    return if (c[0] == 'A' or c[0] == 'B') c[0] else null;
+}
+
+/// `stzos.watchdog=off` on the cmdline: the emulator court's lens. QEMU's
+/// raspi4b resets the board the moment the watchdog is ARMED (its
+/// power-management model has no countdown and reads the driver's
+/// "full reset on expiry" as "reset now"), so the emulator's boot line
+/// says so and PID 1 states that a trial cannot roll back by hardware
+/// there. The card's cmdline.txt never carries it.
+fn watchdogOff(gpa: std.mem.Allocator) bool {
+    const cmdline = std.fs.cwd().readFileAlloc(gpa, "/proc/cmdline", 4096) catch return false;
+    defer gpa.free(cmdline);
+    return std.mem.indexOf(u8, cmdline, "stzos.watchdog=off") != null;
+}
+
+/// the committed slot: the first os_prefix=slots/X/ before [tryboot]
+fn committedSlot(text: []const u8) ?u8 {
+    const head = if (std.mem.indexOf(u8, text, "[tryboot]")) |t| text[0..t] else text;
+    const i = std.mem.indexOf(u8, head, "os_prefix=slots/") orelse return null;
+    const c = head[i + "os_prefix=slots/".len ..];
+    if (c.len == 0) return null;
+    return if (c[0] == 'A' or c[0] == 'B') c[0] else null;
+}
+
+/// rewrite config.txt so that `to` is committed and the other slot is the
+/// tryboot one; returns the new text
+fn commitText(gpa: std.mem.Allocator, text: []const u8, from: u8, to: u8) ![]u8 {
+    const t = std.mem.indexOf(u8, text, "[tryboot]") orelse return error.NoTryboot;
+    const head = try std.mem.replaceOwned(u8, gpa, text[0..t], &[_]u8{ 's', 'l', 'o', 't', 's', '/', from, '/' }, &[_]u8{ 's', 'l', 'o', 't', 's', '/', to, '/' });
+    defer gpa.free(head);
+    const tail = try std.mem.replaceOwned(u8, gpa, text[t..], &[_]u8{ 's', 'l', 'o', 't', 's', '/', to, '/' }, &[_]u8{ 's', 'l', 'o', 't', 's', '/', from, '/' });
+    defer gpa.free(tail);
+    return std.mem.concat(gpa, u8, &.{ head, tail });
+}
+
+fn feedWatchdog(s: *Slots) void {
+    if (s.wd_fd) |fd| _ = std.os.linux.write(fd, "\x00", 1);
+}
+
+test "the committed slot is read from config.txt and a commit swaps the two prefixes" {
+    const cfg = "arm_64bit=1\nos_prefix=slots/A/\n[tryboot]\nos_prefix=slots/B/\n";
+    try std.testing.expectEqual(@as(?u8, 'A'), committedSlot(cfg));
+    const after = try commitText(std.testing.allocator, cfg, 'A', 'B');
+    defer std.testing.allocator.free(after);
+    try std.testing.expectEqualStrings("arm_64bit=1\nos_prefix=slots/B/\n[tryboot]\nos_prefix=slots/A/\n", after);
+    try std.testing.expectEqual(@as(?u8, 'B'), committedSlot(after));
+    try std.testing.expectEqual(@as(?u8, null), committedSlot("kernel=kernel8.img\n"));
+    try std.testing.expectError(error.NoTryboot, commitText(std.testing.allocator, "os_prefix=slots/A/\n", 'A', 'B'));
+}
 
 const is_linux = builtin.os.tag == .linux;
 
@@ -99,8 +180,19 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     defer slots.deinit(gpa);
     for (p.steps) |step| if (step == .service) try slots.append(gpa, .{ .service = step.service });
 
+    var ab: ?Slots = if (m.slots) |dev| Slots{ .dev = dev } else null;
+    if (opts.hold and ab != null) try out.print("boot: --hold: a trial will not be committed and the watchdog will not be fed -- the rollback instrument\n", .{});
+
     for (p.steps) |step| switch (step) {
         .console => |c| try out.print("boot: console {s}\n", .{c}),
+        .slots => |dev| {
+            if (opts.rehearse) {
+                try out.print("boot: slots on {s} -- rehearsed, not read\n", .{dev});
+                continue;
+            }
+            // proc is not mounted yet at this step: the cmdline is read after the mounts
+            try out.print("boot: slots on {s} -- A and B\n", .{dev});
+        },
         .mount => |mt| {
             if (opts.rehearse) {
                 try out.print("boot: mount {s} at {s} -- rehearsed, not executed\n", .{ @tagName(mt.fs), mt.at });
@@ -147,12 +239,96 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         },
         .service => {}, // started below, when what it comes AFTER is ready
     };
+    // the slots, once proc and dev exist: which one booted, which is committed, the watchdog
+    if (ab) |*s| if (!opts.rehearse) {
+        s.booted = bootedSlot(gpa);
+        if (s.booted == null) {
+            try out.print("boot: slot -- no stzos.slot on the cmdline: a single boot, nothing to commit\n", .{});
+            s.done = true;
+        } else {
+            const devz = try gpa.dupeZ(u8, s.dev);
+            defer gpa.free(devz);
+            switch (linux.E.init(linux.mount(devz.ptr, "/boot", "vfat", 0, 0))) {
+                .SUCCESS => s.mounted = true,
+                else => |e| try out.print("boot: slot {c} -- the boot partition {s} refused: {s}; nothing can be committed\n", .{ s.booted.?, s.dev, @tagName(e) }),
+            }
+            if (s.mounted) {
+                if (std.fs.cwd().readFileAlloc(gpa, "/boot/config.txt", 1 << 16)) |cfg| {
+                    defer gpa.free(cfg);
+                    s.committed = committedSlot(cfg);
+                } else |e| try out.print("boot: slot {c} -- /boot/config.txt unreadable: {s}\n", .{ s.booted.?, @errorName(e) });
+                if (s.committed) |c| {
+                    if (c == s.booted.?) {
+                        try out.print("boot: slot {c} -- committed, steady\n", .{c});
+                        s.done = true;
+                    } else {
+                        try out.print("boot: slot {c} -- a trial (committed is {c}); the watchdog holds the rollback until every service has started\n", .{ s.booted.?, c });
+                    }
+                } else {
+                    try out.print("boot: slot {c} -- config.txt names no committed slot; nothing can be committed\n", .{s.booted.?});
+                    s.done = true;
+                }
+            } else s.done = true;
+        }
+        // the watchdog: armed by opening it; fed from the reaper loop; the
+        // magic close disarms it before a clean restart. Everything said so
+        // far is flushed first: arming is a hardware act, and a board that
+        // resets on it must not take the transcript with it.
+        try out.flush();
+        if (watchdogOff(gpa)) {
+            try out.print("boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here\n", .{});
+        } else {
+            const wd = linux.open("/dev/watchdog", .{ .ACCMODE = .WRONLY }, 0);
+            switch (linux.E.init(wd)) {
+                .SUCCESS => {
+                    s.wd_fd = @intCast(wd);
+                    try out.print("boot: watchdog armed (/dev/watchdog)\n", .{});
+                },
+                else => |e| try out.print("boot: watchdog -- /dev/watchdog refused: {s}; a trial cannot roll back by hardware\n", .{@tagName(e)}),
+            }
+        }
+        try out.flush();
+    };
+
     try startReady(gpa, slots.items, out);
     try out.flush();
 
-    // the reaper: PID 1's standing duty
+    // the reaper: PID 1's standing duty -- polled, so the watchdog is fed
+    // between exits and a trial is committed the moment it is earned
     var turns: usize = 0;
     while (true) {
+        if (ab) |*s| {
+            if (!opts.hold) feedWatchdog(s);
+            if (!s.done and !opts.hold) {
+                // the commit is earned when every service is READY -- a
+                // one-shot exited 0, a daemon spawned -- never merely started:
+                // a one-shot that fails, or a service its failure held back,
+                // keeps the trial uncommitted, and the rollback is the answer.
+                // (Committing on "started" also raced the last one-shot's
+                // output with the commit line in the transcript.)
+                var all_ready = true;
+                for (slots.items) |sl| if (!sl.ready()) {
+                    all_ready = false;
+                };
+                if (all_ready) {
+                    if (std.fs.cwd().readFileAlloc(gpa, "/boot/config.txt", 1 << 16)) |cfg| {
+                        defer gpa.free(cfg);
+                        if (commitText(gpa, cfg, s.committed.?, s.booted.?)) |new_cfg| {
+                            defer gpa.free(new_cfg);
+                            if (std.fs.cwd().createFile("/boot/config.txt", .{ .truncate = true })) |f| {
+                                defer f.close();
+                                f.writeAll(new_cfg) catch {};
+                                f.sync() catch {};
+                                linux.sync();
+                                try out.print("boot: slot {c} -- committed: every service is ready; config.txt now boots {c}, {c} is the fallback\n", .{ s.booted.?, s.booted.?, s.committed.? });
+                            } else |e| try out.print("boot: slot {c} -- commit refused: config.txt: {s}\n", .{ s.booted.?, @errorName(e) });
+                        } else |e| try out.print("boot: slot {c} -- commit refused: {s}\n", .{ s.booted.?, @errorName(e) });
+                    } else |e| try out.print("boot: slot {c} -- commit refused: config.txt unreadable: {s}\n", .{ s.booted.?, @errorName(e) });
+                    s.done = true;
+                    try out.flush();
+                }
+            }
+        }
         var alive: usize = 0;
         var pending: usize = 0;
         for (slots.items) |s| switch (s.state) {
@@ -176,7 +352,13 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             break;
         };
         var status: u32 = 0;
-        const rc = linux.wait4(-1, &status, 0, null);
+        const rc = linux.wait4(-1, &status, if (ab != null) linux.W.NOHANG else 0, null);
+        if (ab != null and rc == 0) {
+            // nothing exited: feed, wait a quarter second, look again
+            const ts: linux.timespec = .{ .sec = 0, .nsec = 250_000_000 };
+            _ = linux.nanosleep(&ts, null);
+            continue;
+        }
         switch (linux.E.init(rc)) {
             .SUCCESS => {},
             .INTR => continue,
@@ -250,6 +432,28 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         // pid namespace other than the initial one") -- the WSL transcript
         // stops at this line and unshare exits nonzero, by the kernel's
         // rule (PROTOCOL.md, OS-3 finding 4).
+        if (ab) |*s| {
+            if (opts.hold) {
+                // the instrument: the trial is held -- never committed. With a
+                // watchdog armed, it stays unfed and the hardware answers (a
+                // reset, then the firmware boots the committed slot). Without
+                // one, the trial ends as any uncommitted trial does: a restart,
+                // and the next boot is the committed slot.
+                try out.print("boot: --hold: the trial is held, not committed\n", .{});
+                if (s.wd_fd != null) {
+                    try out.print("boot: --hold: the watchdog stays armed and unfed; what follows is the hardware's answer\n", .{});
+                    try out.flush();
+                    while (true) {
+                        const ts: linux.timespec = .{ .sec = 5, .nsec = 0 };
+                        _ = linux.nanosleep(&ts, null);
+                    }
+                }
+                try out.print("boot: --hold: no watchdog to answer here; the trial ends without a commit, the next boot is the committed slot\n", .{});
+            } else if (s.wd_fd) |fd| {
+                _ = linux.write(fd, "V", 1); // the magic close: disarmed before a clean restart
+                _ = linux.close(fd);
+            }
+        }
         try out.print("boot: init halts the machine -- reboot(RESTART)\n", .{});
         try out.flush();
         linux.sync();

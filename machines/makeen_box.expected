@@ -1,5 +1,6 @@
 boot: stzos init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
 boot: console /dev/ttyS1
+boot: slots on /dev/mmcblk0p1 -- A and B
 boot: mount proc at /proc -- done
 boot: mount sysfs at /sys -- done
 boot: mount devtmpfs at /dev -- done
@@ -8,6 +9,8 @@ boot: grant network (effectful)
 boot: grant filesystem (effectful)
 boot: refuse gpio (effectful)
 boot: network lan -- eth0: no such interface (NODEV)
+boot: slot B -- a trial (committed is A); the watchdog holds the rollback until every service has started
+boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
 boot: start kds -- pid N -- /stzr /app/kds.luau
 kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 kds: read /etc/machine -- 8 declarations rode in the image
@@ -16,6 +19,31 @@ boot: start poste -- pid N -- /stzr /app/poste.luau
 poste: the counter world is up on the Makeen box, after kds
 poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
 boot: poste (pid N) exited 0
+boot: slot B -- committed: every service is ready; config.txt now boots B, A is the fallback
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system
+card: config.txt after the trial:
+card: os_prefix=slots/B/
+card: [tryboot]
+card: os_prefix=slots/A/
+hold: the same trial on a pristine card, held:
+hold: boot: slot B -- a trial (committed is A); the watchdog holds the rollback until every service has started
+hold: boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
+hold: boot: start kds -- pid N -- /stzr /app/kds.luau
+hold: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
+hold: kds: read /etc/machine -- 8 declarations rode in the image
+hold: boot: kds (pid N) exited 0
+hold: boot: start poste -- pid N -- /stzr /app/poste.luau
+hold: poste: the counter world is up on the Makeen box, after kds
+hold: poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
+hold: boot: poste (pid N) exited 0
+hold: boot: every service has ended -- init has nothing left to keep alive
+hold: boot: --hold: the trial is held, not committed
+hold: boot: --hold: no watchdog to answer here; the trial ends without a commit, the next boot is the committed slot
+hold: boot: init halts the machine -- reboot(RESTART)
+hold: reboot: Restarting system
+card: config.txt after the held trial:
+card: os_prefix=slots/A/
+card: [tryboot]
+card: os_prefix=slots/B/

@@ -19,6 +19,7 @@ const court = @import("court.zig");
 const init = @import("init.zig");
 const image = @import("image.zig");
 const net = @import("net.zig");
+const update = @import("update.zig");
 
 pub const version = "0.1.0";
 const default_fixtures = "declarative/machine/fixtures.json";
@@ -29,7 +30,8 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos check  <file.machine>
         \\  stzos plan   <file.machine>
         \\  stzos court  [fixtures.json]        (default: {s})
-        \\  stzos init   <file.machine> [--rehearse] [--turns N]
+        \\  stzos init   <file.machine> [--rehearse] [--turns N] [--hold]
+        \\  stzos update <dir> [--boot <mountpoint>] [--no-reboot]   (write the other slot, try it once)
         \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos version
@@ -86,6 +88,9 @@ pub fn main() !u8 {
     if (std.mem.eql(u8, verb, "net")) {
         return net.run(arena, args[2..], out);
     }
+    if (std.mem.eql(u8, verb, "update")) {
+        return update.run(gpa, args[2..], out);
+    }
     if (std.mem.eql(u8, verb, "court")) {
         const path = if (args.len > 2) args[2] else default_fixtures;
         const failures = try court.run(gpa, path, out);
@@ -133,6 +138,8 @@ pub fn main() !u8 {
         while (i < args.len) : (i += 1) {
             if (std.mem.eql(u8, args[i], "--rehearse")) {
                 opts.rehearse = true;
+            } else if (std.mem.eql(u8, args[i], "--hold")) {
+                opts.hold = true;
             } else if (std.mem.eql(u8, args[i], "--turns") and i + 1 < args.len) {
                 i += 1;
                 opts.turns = std.fmt.parseInt(usize, args[i], 10) catch {
@@ -154,4 +161,5 @@ test {
     _ = machine;
     _ = plan;
     _ = net;
+    _ = init;
 }

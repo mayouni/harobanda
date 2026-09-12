@@ -11,6 +11,7 @@ const Machine = machine.Machine;
 
 pub const Step = union(enum) {
     console: []const u8,
+    slots: []const u8,
     mount: struct { at: []const u8, fs: machine.Fs, device: ?[]const u8, options: []const machine.MountOption, implicit: bool },
     capability: struct { name: machine.Capability, granted: bool },
     pin: struct { name: []const u8, gpio: u32, mode: machine.PinMode },
@@ -51,6 +52,7 @@ fn lessThan(_: void, a: []const u8, b: []const u8) bool {
 pub fn derive(arena: std.mem.Allocator, m: *const Machine) !Plan {
     var steps: std.ArrayList(Step) = .{};
     try steps.append(arena, .{ .console = m.console });
+    if (m.slots) |dev| try steps.append(arena, .{ .slots = dev });
 
     if (m.profile == .hosted) {
         try steps.append(arena, .{ .mount = .{ .at = "/proc", .fs = .proc, .device = null, .options = &.{}, .implicit = true } });
@@ -97,6 +99,7 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
     try out.print("  rationale: {s}\n", .{m.rationale});
     for (plan.steps) |s| switch (s) {
         .console => |c| try out.print("console {s}\n", .{c}),
+        .slots => |dev| try out.print("slots on {s} -- A and B; the committed one boots, the other is tried under the watchdog\n", .{dev}),
         .mount => |mt| {
             try out.print("mount {s}", .{@tagName(mt.fs)});
             if (mt.device) |d| try out.print(" {s}", .{d});

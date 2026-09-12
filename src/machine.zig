@@ -152,6 +152,9 @@ pub const Machine = struct {
     libc: Libc,
     board: Board,
     console: []const u8,
+    /// the boot partition that holds config.txt and the two slots, when
+    /// the machine updates A/B (SLOTS "/dev/mmcblk0p1"); null: single boot
+    slots: ?[]const u8,
     rationale: []const u8,
     services: []const Service,
     capabilities: []const CapDecl,
@@ -350,7 +353,7 @@ const Decl = struct {
 
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
-        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE" },
+        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS" },
         .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
@@ -581,6 +584,13 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .touch => "logcat",
     };
     if (find(md, "CONSOLE")) |c| console = try wantString(&ctx, c);
+    var slots: ?[]const u8 = null;
+    if (find(md, "SLOTS")) |c| {
+        const dev = try wantString(&ctx, c);
+        if (dev.len == 0 or dev[0] != '/') return ctx.refuse(c.line, "SLOTS is the boot partition's device, an absolute path, not '{s}'", .{dev});
+        if (board != .rpi4) return ctx.refuse(c.line, "SLOTS needs a board that boots from a card under a firmware that can try a slot (rpi4); {s} loads the kernel directly", .{@tagName(board)});
+        slots = dev;
+    }
 
     // capabilities first (services and pins refer to them)
     var caps: std.ArrayList(CapDecl) = .{};
@@ -753,6 +763,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .libc = libc,
         .board = board,
         .console = console,
+        .slots = slots,
         .rationale = md.rationale,
         .services = svc_slice,
         .capabilities = cap_slice,

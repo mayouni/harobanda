@@ -114,6 +114,16 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   emmc2; mainline gives that host to the Wi-Fi SDIO. The emulator's
   tree opens it and aliases mmc0 to it; the card's tree aliases mmc0 to
   emmc2. Both derived, both printed at build time.
+- **QEMU's raspi4b resets the board the moment `/dev/watchdog` is
+  opened**: its power-management model has no countdown and reads the
+  driver's "full reset on expiry" bit as "reset now". The emulator's
+  boot line carries `stzos.watchdog=off` (derived; never the card's
+  cmdline.txt) and PID 1 flushes before arming. A boot that ends
+  silently right after the capability lines is this.
+- **mtools asks on stdin when a name clashes** (`mmd` on an existing
+  directory, `mcopy` over a file): on a pipe that never closes it hangs
+  forever (33 minutes, AB-1). Every mtools call runs with `-D s`/`-D o`
+  and `< /dev/null`; `wsl_cleanup.sh` ends a stuck one.
 - **A one-line `bash -c` through `wsl.exe` loses `$` and `&`** whichever
   tool sends it. Every WSL act is a script file under `experiment/`.
 - **QEMU under `timeout` from a real terminal STOPS silently.** With a
@@ -135,8 +145,10 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   header pins (GPIO 14/15, 115200), and judge the real transcript
   against `machines/makeen_box.expected` — it is expected to differ
   exactly where the emulator lacks the hardware (Ethernet up, the
-  worlds starting) and nowhere else. Then A/B slots with watchdog
-  rollback (the watchdog driver is in).
+  worlds starting) and nowhere else; the hardware watchdog's real
+  countdown (the emulator cannot arm it); and the tryboot flag, which
+  needs a small vendored patch to `bcm2835_wdt.c` (mainline ignores the
+  restart argument) -- until then a trial is requested by hand.
 - The kernel rebuilt with `make CC="zig cc"` (the stated sovereignty
   destination; gcc did the first boot) and a tarball mirror inside the
   estate.

@@ -95,6 +95,9 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
         if (str(expect.get("board"))) |w| if (!std.mem.eql(u8, @tagName(m.board), w)) {
             why = try std.fmt.allocPrint(arena, "board: expected {s} got {s}", .{ w, @tagName(m.board) });
         };
+        if (str(expect.get("slots"))) |w| if (m.slots == null or !std.mem.eql(u8, m.slots.?, w)) {
+            why = try std.fmt.allocPrint(arena, "slots: expected {s} got {s}", .{ w, m.slots orelse "none" });
+        };
         if (str(expect.get("console"))) |w| if (!std.mem.eql(u8, m.console, w)) {
             why = try std.fmt.allocPrint(arena, "console: expected {s} got {s}", .{ w, m.console });
         };

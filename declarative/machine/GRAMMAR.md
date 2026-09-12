@@ -82,6 +82,7 @@ clause outside its kind's table is refused naming the allowed set
 | `KERNEL` | `linux` \| `none` \| `android` | required; must agree with the profile (R15) |
 | `LIBC` | `musl` \| `none` \| `bionic` | optional; defaults by profile; a contradiction is refused (R31) |
 | `BOARD` | `qemu_pc` \| `qemu_virt` \| `rpi4` | optional, hosted only (R35); defaults by ARCH (`x86_64` → `qemu_pc`, else `qemu_virt`); a board of another architecture is refused (R33); an unknown board is refused (R34) |
+| `SLOTS` | string, the boot partition's device (`"/dev/mmcblk0p1"`) | optional — the machine updates A/B: two slots on that partition, `config.txt` naming the committed one and, under `[tryboot]`, the other; PID 1 reads which slot it booted (`stzos.slot=` on the cmdline), arms the watchdog, and commits a trial only once every service has started. Needs a board whose firmware can try a slot (`rpi4`; R41); an absolute device path (R42) |
 | `CONSOLE` | string | optional; defaults `/dev/console`, `uart0`, `logcat` by profile |
 
 The BOARD names what the image is built for: the emulator court's

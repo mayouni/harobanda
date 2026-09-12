@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-0994dccb4bdf4b6d2dae8bfb9174c4b4df76ddc753624d30fd4105e19350bf81
+cb031c766d74b95ac2f156447464e97986d1274c965656f8ab0d542cf3414515
 ```
 
-(Before the NETWORK kind of 2026-09-12 (NET-1):
+(Before SLOTS of 2026-09-12 (AB-1):
+`0994dccb4bdf4b6d2dae8bfb9174c4b4df76ddc753624d30fd4105e19350bf81`,
+11 accepts + 40 rejects; the widening added A12, R41, R42 and gave A2
+its `SLOTS`. Before the NETWORK kind of 2026-09-12 (NET-1):
 `a7f0976ad2bcc757368e7bf86b6850c8b933c4fcbb48b2d8430b01482c5341a8`,
 9 accepts + 35 rejects. The widening added A10, A11, R36–R40, put
 `networks` into every accept's counts, and made A2 the box file with
@@ -28,12 +31,13 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **51/51** — 11 accepts with structural expectations, 40 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, 51/51 on the first run of the NETWORK widening) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **54/54** — 12 accepts with structural expectations, 42 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, 51/51 NETWORK, 54/54 SLOTS) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
-**accepted first run** — 5 declarations, 4 forms, 0 expressions,
-3 refusals, verbs CAPABILITY MACHINE MOUNT PIN SERVICE.
+**accepted first run** — 6 declarations, 5 forms, 0 expressions,
+3 refusals, verbs CAPABILITY MACHINE MOUNT NETWORK PIN SERVICE (5/4/0/3
+before the NETWORK kind).
 
 ## What conformance means here
 
@@ -57,6 +61,19 @@ meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
   (A2 services 3 → 99), a wrong fragment (R5), a valid source posing as
   a reject — the court went red three times, each for its named
   reason, and exited nonzero (`experiment/PROTOCOL.md`).
+
+## The slots, judged by the card itself (AB-1)
+
+`machines/makeen_box.machine` declares `SLOTS "/dev/mmcblk0p1"`. The
+court boots the card as a trial of slot B (`stzos.slot=B` on the
+emulator's line, `stzos.watchdog=off` because the emulator resets on
+arming) and the pinned transcript carries three witnesses: PID 1's own
+lines (`a trial (committed is A)` … `committed: every service is
+ready; config.txt now boots B`), the card's `config.txt` read back after the
+boot (`os_prefix=slots/B/` first), and a second boot of a PRISTINE copy
+of the card with the trial held — not committed, restarted — whose
+card still says `os_prefix=slots/A/`. **49 lines, identical.** The
+hardware watchdog's answer is the board's to give.
 
 ## The network, judged by a lease (NET-1)
 
