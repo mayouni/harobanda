@@ -128,7 +128,12 @@ mkdir -p "$OUT" zig-out/wsl
   fi
   ls -la "$OUT" | grep -v '^total' | grep -v ' root$\| empty$\| firmware$'
   echo "=== boot ==="
-  ( cd "$OUT" && timeout 180 bash boot.cmd > transcript.txt 2>&1; echo "qemu exit $?" >> transcript.txt )
+  # stdin from /dev/null and --foreground: run from a real terminal, QEMU
+  # -nographic tries to put the tty into raw mode; under `timeout` it sits
+  # in a background process group, gets SIGTTOU, and STOPS silently until
+  # the timeout kills it (the author's first run, 2026-09-12). With no tty
+  # on stdin it never touches the terminal.
+  ( cd "$OUT" && timeout --foreground 180 bash boot.cmd < /dev/null > transcript.txt 2>&1; echo "qemu exit $?" >> transcript.txt )
   echo "--- transcript"; cat "$OUT/transcript.txt"
   echo "=== judge ==="
   # The transcript is the fixture. Normalise what no two boots share -- the
@@ -150,5 +155,7 @@ mkdir -p "$OUT" zig-out/wsl
     echo "JUDGED: FAIL -- the transcript differs from machines/$NAME.expected:"; cat "$OUT/transcript.diff"
   fi
   echo "exit 0"
-} > "$LOG" 2>&1
-tail -3 "$LOG"
+} 2>&1 | tee "$LOG"
+# everything above streams to the terminal AND to the log, so a run from
+# a real terminal shows its progress (the first run looked hung: it wrote
+# only the log, and its QEMU was stopped on the tty -- see the boot step)

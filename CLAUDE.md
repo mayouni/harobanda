@@ -116,6 +116,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   emmc2. Both derived, both printed at build time.
 - **A one-line `bash -c` through `wsl.exe` loses `$` and `&`** whichever
   tool sends it. Every WSL act is a script file under `experiment/`.
+- **QEMU under `timeout` from a real terminal STOPS silently.** With a
+  tty on stdin, `-nographic` sets raw mode; in `timeout`'s background
+  process group that is SIGTTOU, and QEMU sits stopped until the timeout
+  kills it -- the author's first run showed nothing for three minutes.
+  `os2_image.sh` now runs QEMU with stdin from /dev/null under `timeout
+  --foreground`, streams its log to the terminal through `tee`, and
+  `experiment/os2_tty_probe.sh` proves it under a pseudo-terminal (22 s).
+  `experiment/wsl_cleanup.sh` ends what a closed terminal left behind.
 - **Invoke WSL scripts from PowerShell, never from the Bash tool** —
   git-bash rewrites `/mnt/d/...` into `C:/Git/mnt/...`
   (`MSYS_NO_PATHCONV=1 wsl.exe ...` is the workaround if you must).
