@@ -1,14 +1,17 @@
 -- makeen_box.machine -- the box behind the counter: server, network and
 -- bridge in one. The hosted profile's reference machine (fixture A2 is
--- this file, verbatim). RestoLean's Makeen thread named the box; this
--- declares it.
+-- this file, verbatim) and, since OS-4, the board's truth: a Raspberry
+-- Pi 4 Model B, the SD card's second partition as /data, the console on
+-- the header pins, the interface brought up by stzos itself. RestoLean's
+-- Makeen thread named the box; this declares it.
 
 DEFINE MACHINE makeen_box AS (
   PROFILE hosted,
   ARCH aarch64,
   KERNEL linux,
   LIBC musl,
-  CONSOLE "/dev/ttyS0"
+  BOARD rpi4,
+  CONSOLE "/dev/ttyS1"
 ) RATIONALE "One box, no shell, no package manager: the declared machine is the system"
 
 DEFINE CAPABILITY network AS (
@@ -28,13 +31,13 @@ DEFINE MOUNT data AS (
   FS ext4,
   DEVICE "/dev/mmcblk0p2",
   OPTIONS [rw, noatime]
-) RATIONALE "The persistent partition"
+) RATIONALE "The persistent partition: the SD card's second partition"
 
 DEFINE SERVICE network_up AS (
-  RUN ["/stzos-net", "eth0"],
-  RESTART on_failure,
+  RUN ["/stzos", "net", "eth0", "192.168.10.1/24"],
+  RESTART never,
   NEEDS [network]
-) RATIONALE "Bring the interface up before anything speaks"
+) RATIONALE "Bring the interface up before anything speaks; the box is the network's address"
 
 DEFINE SERVICE kds AS (
   RUN ["/stzr", "/app/kds.luau"],

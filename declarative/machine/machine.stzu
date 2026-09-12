@@ -29,8 +29,8 @@ DEFINE FORM option AS (
 
 DEFINE DECLARATION box AS (
   VERB "MACHINE",
-  SEATS [profile: name, arch: name, kernel: name, libc: name?, console: text?]
-) RATIONALE "The one identity declaration, first in the file: profile, architecture, kernel; libc and console default by profile"
+  SEATS [profile: name, arch: name, kernel: name, libc: name?, board: name?, console: text?]
+) RATIONALE "The one identity declaration, first in the file: profile, architecture, kernel; libc and console default by profile, the board by architecture"
 
 DEFINE DECLARATION service AS (
   VERB "SERVICE",

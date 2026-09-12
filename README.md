@@ -9,13 +9,16 @@ derived; on a hosted machine one static binary, `stzos`, executes that
 plan as PID 1 and narrates the boot as a transcript. No shell, no
 package manager, no init scripts: the declared machine IS the system.
 
-**Status: OS-3, the Makeen box boots (emulated).** Two declared
-machines, x86_64 and aarch64, imaged over a vendored Linux 6.12 LTS
-built from tinyconfig plus a derived fragment, booted in QEMU with stzos
-as PID 1 and stzr running Luau worlds — the aarch64 one with a
-persistent ext4 partition mounted before any world spoke; each serial
-transcript is judged line for line against its pinned expectation
-(`experiment/os2_image.sh`). Private. The name `stzos` is
+**Status: OS-4, the box has a board and a card.** The Makeen box is a
+Raspberry Pi 4 Model B (`doc/PROVENANCE.md`, the board ruling). Its
+`.machine` file names the board, and from it the pipeline derives the
+BCM2711 kernel, the card's device tree (mainline plus the mmc aliases
+that make `/dev/mmcblk0p2` a fact), the emulator's tree, and a flashable
+256 MiB SD image with the board's firmware, the kernel, the initramfs
+and an ext4 `/data`. The same board emulated by QEMU (`raspi4b`) boots
+that image and is judged against a pinned transcript; two other
+declared machines (x86_64 and aarch64 `virt`) boot and are judged the
+same way, with stzr running Luau worlds inside. Private. The name `stzos` is
 provisional until the landscape ruling (`doc/PROVENANCE.md`). The
 strategy that this repository serves is the Vision Corpus
 (`D:\GitHub\softanza\vision`); the OS chapter it proposes is
@@ -34,13 +37,15 @@ strategy that this repository serves is the Vision Corpus
 | the image, derived: initramfs list, kernel fragment, boot line | `src/image.zig` (`stzos image`) | the QEMU boot transcript against `machines/qemu_hello.expected` |
 | the vendored kernel, pinned by digest | `vendor/PIN.md`, `experiment/os2_kernel_fetch.sh` | sha256 from kernel.org's own sums |
 | the imperative half: kernel build, cpio, QEMU, the judge | `experiment/os2_image.sh` (WSL Ubuntu) | `zig-out/wsl/image_<name>.txt` |
-| the reference machines | `machines/` | `makeen_box.machine` is fixture A2 verbatim; `qemu_hello.machine` (x86_64) and `makeen_qemu.machine` (aarch64, the box as QEMU carries it) boot and are judged |
+| the reference machines | `machines/` | `makeen_box.machine` (BOARD rpi4, fixture A2 verbatim), `qemu_hello.machine` (x86_64) and `makeen_qemu.machine` (aarch64 `virt`) all boot and are judged against their `.expected` |
+| the board's card: firmware pinned, two derived device trees, the SD image | `experiment/os2_image.sh`, `experiment/dtb_ops.py`, `vendor/rpi-firmware/PIN.txt` | the `raspi4b` boot transcript, 17 lines |
+| `stzos net`, the box's own interface bring-up | `src/net.zig` | unit tests; the boot transcript (NODEV in the emulator, by design) |
 
 ## Three profiles, one language
 
 | profile | substrate | init | state |
 |---|---|---|---|
-| **hosted** | a vendored Linux kernel, static musl userland, this binary as PID 1 | `stzos init` | **boots** on x86_64 and aarch64 in QEMU, transcripts judged; the real board is next |
+| **hosted** | a vendored Linux kernel, static musl userland, this binary as PID 1 | `stzos init` | **boots** on x86_64 and aarch64 in QEMU and as the Raspberry Pi 4 image under `raspi4b`, transcripts judged; the card has not met a Pi yet |
 | **edge** | no kernel: the binary is the device (MicroRing's substrate — MicroZig, littlefs) | the cooperative loop | declarable, judged; not yet bootable |
 | **touch** | Android's kernel and init (AOSP fork, ZinOS Touch's design) | Android's, the launcher is the pack | declarable, judged; unbuilt |
 
@@ -57,6 +62,13 @@ wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_env.sh    # once: gcc, 
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_kernel_fetch.sh   # once: the pinned kernel tarball
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello   # x86_64: image + kernel + QEMU boot + judge
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh makeen_qemu  # aarch64: the Makeen box on virt, with its ext4 /data
+wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh makeen_box   # the Raspberry Pi 4 card: zig-out/image/makeen_box/sd.img, judged under raspi4b
+```
+
+To flash the card (from any Linux, the device being the whole card):
+
+```
+dd if=zig-out/image/makeen_box/sd.img of=/dev/sdX bs=4M conv=fsync
 ```
 
 The runtime the services run is stz's, cross-built for each image from

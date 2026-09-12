@@ -90,6 +90,23 @@ for one thing. The adjacent names resolve so:
   PCB. Phones stay enslaved commodity Android (the touch profile). The
   posture did not lose; it gained a file.
 
+**STZ-OS-BOARD-01 — the board (ruled on the author's delegation, OS-4).**
+The Makeen box is a **Raspberry Pi 4 Model B**. Because: mainline Linux
+6.12 carries its device tree (`bcm2711-rpi-4-b.dts`) and every driver the
+box needs (SD via sdhci-iproc, Ethernet via bcmgenet, the mini-UART, the
+watchdog that restarts it), so the vendored kernel boots it with no
+vendor tree; QEMU 10.2 emulates the same board (`raspi4b`) with an SD
+card, so the flashable image is judged before the hardware arrives;
+MicroRing's tier 1 already runs on the Pi, so the device seam converges;
+it is a commodity board sold everywhere the estate's customers are, at
+B9's price, and exactly B9's "never designed by us". What is borrowed
+with it: the board's boot firmware (`start4.elf`, `fixup4.dat`, a vendor
+blob pinned by digest, not shipped in the repository) and the SoC. The
+Wi-Fi firmware is a second blob and is NOT taken: the box speaks
+Ethernet. A later board changes one entry in `src/image.zig`'s target
+table and one BOARD word in the machine file; the declaration otherwise
+stands.
+
 **STZ-OS-REGISTER-01 — registration with Central.** A mailbox
 (`softanza/mailbox/stzos.md`) opened in the estate's format; the
 CLAUDE-BLOCK re-stamp (`central.ps1 -Install`) is Central's own act at

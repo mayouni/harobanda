@@ -1,4 +1,4 @@
-boot: stzos init -- machine makeen_qemu (hosted / aarch64) -- pid 1
+boot: stzos init -- machine makeen_qemu (hosted / aarch64 / qemu_virt) -- pid 1
 boot: console /dev/ttyAMA0
 boot: mount proc at /proc -- done
 boot: mount sysfs at /sys -- done

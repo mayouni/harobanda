@@ -91,7 +91,7 @@ pub fn derive(arena: std.mem.Allocator, m: *const Machine) !Plan {
 /// (the StzNarration law: outputs are rendered from the run, not kept).
 pub fn render(plan: Plan, out: *std.Io.Writer) !void {
     const m = plan.machine;
-    try out.print("machine {s} -- {s} / {s} / kernel {s} / libc {s}\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.kernel), @tagName(m.libc) });
+    try out.print("machine {s} -- {s} / {s} / board {s} / kernel {s} / libc {s}\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), @tagName(m.kernel), @tagName(m.libc) });
     try out.print("  rationale: {s}\n", .{m.rationale});
     for (plan.steps) |s| switch (s) {
         .console => |c| try out.print("console {s}\n", .{c}),

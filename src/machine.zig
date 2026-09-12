@@ -26,6 +26,10 @@ pub const Profile = enum { hosted, edge, touch };
 pub const Arch = enum { x86_64, aarch64, riscv32, riscv64, thumbv7em };
 pub const Kernel = enum { linux, none, android };
 pub const Libc = enum { musl, none, bionic };
+/// The board a hosted machine is imaged for. qemu_pc and qemu_virt are the
+/// emulator court's machines; rpi4 is the Raspberry Pi 4 Model B -- the
+/// commodity board chosen 2026-09-12 (doc/PROVENANCE.md). Defaults by ARCH.
+pub const Board = enum { qemu_pc, qemu_virt, rpi4 };
 pub const Restart = enum { never, always, on_failure };
 pub const PinMode = enum { in, out };
 pub const Fs = enum { proc, sysfs, devtmpfs, tmpfs, ext4, vfat, littlefs };
@@ -105,6 +109,7 @@ pub const Machine = struct {
     arch: Arch,
     kernel: Kernel,
     libc: Libc,
+    board: Board,
     console: []const u8,
     rationale: []const u8,
     services: []const Service,
@@ -303,7 +308,7 @@ const Decl = struct {
 
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
-        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "CONSOLE" },
+        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE" },
         .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
@@ -509,6 +514,24 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         libc = try wantEnum(&ctx, Libc, c, "musl, none or bionic");
         if (libc != default_libc) return ctx.refuse(c.line, "PROFILE {s} contradicts LIBC {s}: a machine of PROFILE {s} links LIBC {s}", .{ @tagName(profile), @tagName(libc), @tagName(profile), @tagName(default_libc) });
     }
+    var board: Board = switch (arch) {
+        .x86_64 => .qemu_pc,
+        else => .qemu_virt,
+    };
+    if (find(md, "BOARD")) |c| {
+        board = try wantEnum(&ctx, Board, c, "qemu_pc, qemu_virt or rpi4");
+        // the profile check comes first: the court convicted the other
+        // order on R35 (an edge machine naming rpi4 was refused for its
+        // ARCH, the truer reason being that edge machines have no BOARD)
+        if (profile != .hosted) return ctx.refuse(c.line, "BOARD is a hosted machine's clause; a {s} machine names its board in its own substrate", .{@tagName(profile)});
+        const wanted_arch: ?Arch = switch (board) {
+            .qemu_pc => .x86_64,
+            .qemu_virt, .rpi4 => .aarch64,
+        };
+        if (wanted_arch) |wa| if (wa != arch) {
+            return ctx.refuse(c.line, "ARCH {s} contradicts BOARD {s}: that board is {s}", .{ @tagName(arch), @tagName(board), @tagName(wa) });
+        };
+    }
     var console: []const u8 = switch (profile) {
         .hosted => "/dev/console",
         .edge => "uart0",
@@ -648,6 +671,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .arch = arch,
         .kernel = kernel,
         .libc = libc,
+        .board = board,
         .console = console,
         .rationale = md.rationale,
         .services = svc_slice,

@@ -81,7 +81,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     const pid: i32 = @intCast(linux.getpid());
     const is_pid1 = pid == 1;
 
-    try out.print("boot: stzos init -- machine {s} ({s} / {s}) -- pid {d}{s}\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), pid, if (is_pid1) "" else " (not PID 1)" });
+    try out.print("boot: stzos init -- machine {s} ({s} / {s} / {s}) -- pid {d}{s}\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), pid, if (is_pid1) "" else " (not PID 1)" });
     if (m.profile != .hosted) {
         try out.print("boot: refused -- init boots the hosted profile only; a {s} machine boots from its own substrate\n", .{@tagName(m.profile)});
         try out.flush();

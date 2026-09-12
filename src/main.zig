@@ -18,6 +18,7 @@ const plan = @import("plan.zig");
 const court = @import("court.zig");
 const init = @import("init.zig");
 const image = @import("image.zig");
+const net = @import("net.zig");
 
 pub const version = "0.1.0";
 const default_fixtures = "declarative/machine/fixtures.json";
@@ -30,6 +31,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos court  [fixtures.json]        (default: {s})
         \\  stzos init   <file.machine> [--rehearse] [--turns N]
         \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
+        \\  stzos net    <iface> <a.b.c.d>/<prefix>      (a service of the machine)
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -80,6 +82,9 @@ pub fn main() !u8 {
     if (std.mem.eql(u8, verb, "version")) {
         try out.print("stzos {s}\n", .{version});
         return 0;
+    }
+    if (std.mem.eql(u8, verb, "net")) {
+        return net.run(args[2..], out);
     }
     if (std.mem.eql(u8, verb, "court")) {
         const path = if (args.len > 2) args[2] else default_fixtures;
@@ -148,4 +153,5 @@ pub fn main() !u8 {
 test {
     _ = machine;
     _ = plan;
+    _ = net;
 }

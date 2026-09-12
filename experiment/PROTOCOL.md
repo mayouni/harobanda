@@ -1,3 +1,100 @@
+# OS-4 — the real box: a Raspberry Pi 4, its SD card image, and the same board emulated to judge it
+
+Ordered by the author on 2026-09-12 ("choose the board on my behalf and
+go for OS-4"). The board ruling is in `doc/PROVENANCE.md`
+(STZ-OS-BOARD-01): the Raspberry Pi 4 Model B.
+
+## What was built
+
+- **The BOARD clause**, fixture-first: `qemu_pc`, `qemu_virt`, `rpi4`,
+  defaulting by ARCH, hosted-only, coherent with ARCH; A9, R33, R34, R35
+  are the board's own, A1/A3 carry the defaults, A2 is
+  `machines/makeen_box.machine` verbatim with `BOARD rpi4`. **44/44**;
+  the court convicted the implementation once on R35 (the ARCH check
+  ran before the profile check; reordered, the fixture kept).
+  `machine.stzu` carries the seat; the plan and the init print the board.
+- **`stzos net <iface> <a.b.c.d>/<n>`** (`src/net.zig`): a role of the one
+  binary — four ioctls on a datagram socket, every result stated, no
+  DHCP, no gateway, no DNS. The box's `network_up` service is now a
+  program that exists: `RUN ["/stzos", "net", "eth0", "192.168.10.1/24"]`.
+- **The rpi4 target** (`src/image.zig`): the arm64 kernel with the
+  BCM2711 platform, the mini-UART and PL011, the mailbox and firmware
+  driver, the watchdog (which is also how the board restarts), SDHCI
+  for the card, GENET for Ethernet; the device tree
+  `bcm2711-rpi-4-b.dtb`; two consoles (`ttyAMA0` for the emulator's
+  PL011 on the header pins, `ttyS1,115200` for the board's mini-UART
+  there); `sd.list` (the card's partitions and the boot partition's
+  files), `config.txt` and `cmdline.txt` written by the derivation.
+- **Two device trees from mainline's, both derived** (`DTB_OPS` and
+  `QEMU_DTB_OPS` in `image.env`, applied by `experiment/dtb_ops.py`,
+  every op printed): the CARD's tree adds the mmc aliases mainline
+  lacks, so `/dev/mmcblk0p2` is a fact and not a probe-order race; the
+  EMULATOR's tree disables the two AON blocks QEMU does not model and
+  opens the legacy SDHCI where QEMU plugs the card, aliased as mmc0 so
+  the declared device name holds in both worlds.
+- **The SD card image** (`experiment/os2_image.sh`): a 256 MiB card
+  (QEMU wants a power of two), p1 FAT32 64 MiB with the firmware's
+  `start4.elf`/`fixup4.dat` (raspberrypi/firmware, tag `1.20260907`,
+  pinned by sha256 in `vendor/rpi-firmware/PIN.txt`, gitignored),
+  `config.txt`, `cmdline.txt`, `kernel8.img`, the card's DTB, the
+  initramfs; p2 ext4 64 MiB, the declared `/data`. `sd.img` is what a
+  card gets `dd`'d with.
+- **The judge**, unchanged: the same board under QEMU `raspi4b`, the
+  transcript against `machines/makeen_box.expected`.
+
+## What was measured
+
+- arm64 kernel for the board: 689 options, `Image` 5.6 MB, **2m50** wall
+  at two jobs for the first build; the card 256 MiB; the initramfs
+  4.4 MB.
+- Boot under `raspi4b` (QEMU 10.2 TCG): `Machine model: Raspberry Pi 4
+  Model B`; PID 1; `proc` `sysfs` `devtmpfs` done; **`mmcblk0: p1 p2`,
+  `ext4 at /data -- done`** on the card's second partition by its
+  declared name; `gpio` refused as declared; `network_up` ran `stzos
+  net eth0` and got **`no such interface (NODEV)`** — QEMU disables
+  GENET itself, the emulator has no Ethernet — so `kds` and `poste`
+  **never started** by the readiness rule, named; `reboot(RESTART)`
+  through the BCM2835 watchdog; QEMU exit 0. Pinned, 17 lines: the
+  emulator's truth. On the board, Ethernet exists and the worlds start;
+  that difference is OS-5's first finding, expected and stated.
+
+## What was found
+
+1. **QEMU's raspi4b faults on the AON block.** The first boot printed
+   nothing: `brcmstb_l2_intc_of_init` took a synchronous external abort
+   at 0x7ef00100 (the AON L2 interrupt controller); with it disabled,
+   `clk_disable_unused` took the same abort in `clk_gate_readl` on the
+   DVP clock at 0x7ef00000. Found with `earlycon=pl011,mmio32,0xfe201000`,
+   `initcall_debug`, and `System.map` (tinyconfig has no KALLSYMS;
+   `experiment/os4_syms.sh` resolves the addresses). QEMU disables pcie,
+   rng, thermal and genet on its own; these two it misses. Both are
+   named in the emulator's tree and nowhere else.
+2. **QEMU plugs the card into the legacy SDHCI**, not into emmc2 where
+   the board's card sits; mainline gives that host to the Wi-Fi SDIO
+   (non-removable, with a power sequence). The emulator's tree opens it
+   as a plain removable host. `mmc0: SDHCI controller on fe300000.mmc`,
+   `mmcblk0: mmc0:2804 QEMU! 256 MiB`.
+3. **Mainline's rpi-4-b tree has no mmc aliases**, so the card's index
+   is probe order once the Wi-Fi host probes too. The board's tree pins
+   `mmc0` to emmc2. A declared device name must be a fact.
+4. **The mini-UART driver hides behind two menus** (`SERIAL_8250_EXTENDED`,
+   `SERIAL_8250_SHARE_IRQ`); the build's dropped-option check named it.
+5. **QEMU's SD model wants a power-of-two card**; the first 130 MiB
+   image was refused. 256 MiB, partitions at the front.
+6. **The Bash tool cannot pass `$` or `&` through `wsl.exe`** in a
+   one-line `bash -c`; every WSL act is a script file.
+
+## Named seams
+
+- The board itself: this card has not touched a Pi. The first real boot
+  will differ from the pin where the emulator lacks the hardware
+  (Ethernet, the AON block) and nowhere else, or that is a finding.
+- The Wi-Fi firmware blob (not taken); DHCP, gateway, DNS (the NETWORK
+  kind); A/B slots with watchdog rollback (the watchdog driver is in);
+  `make CC="zig cc"`; the judge into `stzos judge`.
+
+---
+
 # OS-3 — the Makeen box: the aarch64 image, a persistent partition, and AFTER made deterministic
 
 Ordered by the author on 2026-09-12 ("take decision on my behalf on the

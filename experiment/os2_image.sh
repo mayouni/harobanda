@@ -1,10 +1,11 @@
 #!/bin/bash
 # os2_image.sh -- the imperative half of the image, on a Linux host (WSL
 # Ubuntu here). Stages the root, lets `stzos image` DERIVE the artifacts,
-# builds the vendored kernel over tinyconfig + the derived fragment for the
-# derived ARCH, packs the initramfs with the kernel's own gen_init_cpio,
-# makes the declared disks, boots QEMU with the serial console captured,
-# and judges the transcript against machines/<name>.expected.
+# builds the vendored kernel (and the board's device tree) over tinyconfig
+# + the derived fragment for the derived ARCH, packs the initramfs with the
+# kernel's own gen_init_cpio, makes the declared disks or the SD card,
+# boots QEMU with the serial console captured, and judges the transcript
+# against machines/<name>.expected.
 #
 #   wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh [machine-name]
 #
@@ -21,13 +22,13 @@ K=$HOME/stzos-kernel
 HOST_STZOS=zig-out/cross/x86_64-linux-musl/stzos
 mkdir -p "$OUT" zig-out/wsl
 {
-  echo "=== derive (arch) ==="
-  # a first derivation with an empty root only to learn the triple; refused is expected
+  echo "=== derive (target) ==="
   mkdir -p "$OUT/empty"
   "$HOST_STZOS" image "$M" --root "$OUT/empty" --out "$OUT" > /dev/null 2>&1 || true
   if [ ! -f "$OUT/image.env" ]; then "$HOST_STZOS" image "$M" --root "$OUT/empty" --out "$OUT"; echo "derive refused before staging"; exit 1; fi
   . "$OUT/image.env"
-  echo "arch $ARCH, triple $TRIPLE, cross '${CROSS_COMPILE}', kernel $KERNEL_ARTIFACT"
+  DTB=${DTB:-}; SD=${SD:-no}
+  echo "arch $ARCH, board $BOARD, triple $TRIPLE, cross '${CROSS_COMPILE}', kernel $KERNEL_ARTIFACT, dtb '${DTB}', sd $SD"
   echo "=== stage ==="
   ROOT=$OUT/root; rm -rf "$ROOT"; mkdir -p "$ROOT/app"
   cp "zig-out/cross/$TRIPLE/stzos" "$ROOT/stzos" || { echo "no stzos for $TRIPLE (zig build cross)"; exit 1; }
@@ -35,7 +36,7 @@ mkdir -p "$OUT" zig-out/wsl
   cp app/*.luau "$ROOT/app/" 2>/dev/null && echo "app staged"
   echo "=== derive ==="
   "$HOST_STZOS" image "$M" --root "$ROOT" --out "$OUT" || { echo "derive refused"; exit 1; }
-  for f in initramfs.list kernel.fragment image.env disk.list boot.cmd; do echo "--- $f"; cat "$OUT/$f"; done
+  for f in image.env initramfs.list kernel.fragment disk.list sd.list config.txt cmdline.txt boot.cmd; do [ -f "$OUT/$f" ] && { echo "--- $f"; cat "$OUT/$f"; }; done
   echo "=== kernel ==="
   PIN=$(cat vendor/linux/PIN.txt); TARBALL=${PIN%% *}; SRC=$K/$ARCH/${TARBALL%.tar.xz}
   echo "pin: $PIN"
@@ -55,9 +56,24 @@ mkdir -p "$OUT" zig-out/wsl
       grep -q "^$want\$" .config && echo "  $want" || echo "  $want DROPPED by olddefconfig -- a dependency is missing from the fragment"
     done
     time make -j2 "$(basename "$KERNEL_ARTIFACT")" 2>&1 | tail -3
+    if [ -n "$DTB" ]; then make -j2 dtbs 2>&1 | tail -1; fi
     make -s usr/gen_init_cpio || exit 1
   ) || { echo "kernel build failed"; exit 1; }
   cp "$SRC/$KERNEL_ARTIFACT" "$OUT/$KERNEL_IMAGE" || exit 1
+  if [ -n "$DTB" ]; then
+    cp "$SRC/$DTB" "$OUT/$(basename "$DTB")" || { echo "no dtb built: $DTB"; exit 1; }
+    # two trees from mainline's: the CARD's (mainline + DTB_OPS: what the
+    # board needs mainline does not say, e.g. the mmc aliases that make the
+    # declared /dev/mmcblk0p2 hold) and the EMULATOR's (the card's +
+    # QEMU_DTB_OPS: the blocks QEMU does not model, the host it plugs the
+    # card into). Both derived into image.env; experiment/dtb_ops.py applies.
+    DTC="$SRC/scripts/dtc/dtc"; BDTB="$OUT/$(basename "$DTB")"; QDTB="$OUT/$(basename "${DTB%.dtb}").qemu.dtb"
+    "$DTC" -q -I dtb -O dts -o "$OUT/mainline.dts" "$BDTB" || { echo "dtc failed"; exit 1; }
+    echo "-- the card's tree:"; python3 experiment/dtb_ops.py "$OUT/mainline.dts" "$OUT/board.dts" ${DTB_OPS:-}
+    "$DTC" -q -I dts -O dtb -o "$BDTB" "$OUT/board.dts" || { echo "dtc (board) failed"; exit 1; }
+    echo "-- the emulator's tree:"; python3 experiment/dtb_ops.py "$OUT/board.dts" "$OUT/qemu.dts" ${QEMU_DTB_OPS:-}
+    "$DTC" -q -I dts -O dtb -o "$QDTB" "$OUT/qemu.dts" || { echo "dtc (qemu) failed"; exit 1; }
+  fi
   echo "=== initramfs ==="
   "$SRC/usr/gen_init_cpio" "$OUT/initramfs.list" > "$OUT/initramfs.cpio" || { echo "cpio failed"; exit 1; }
   echo "=== disks ==="
@@ -70,7 +86,47 @@ mkdir -p "$OUT" zig-out/wsl
     esac
     echo "$id: $img $fs ${size}M -> $dev"
   done
-  ls -la "$OUT" | grep -v '^total' | grep -v ' root$\| empty$'
+  if [ "$SD" = yes ]; then
+    echo "=== sd card ==="
+    # the board's firmware, pinned by digest after the first fetch (vendor/rpi-firmware/, gitignored)
+    FW=vendor/rpi-firmware; mkdir -p "$FW"; mkdir -p "$OUT/firmware"
+    if [ ! -f "$FW/start4.elf" ] || [ ! -f "$FW/fixup4.dat" ]; then
+      TAG=$(curl -4 -sSf https://api.github.com/repos/raspberrypi/firmware/releases/latest | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+      echo "firmware: raspberrypi/firmware tag ${TAG:-?}"
+      for f in start4.elf fixup4.dat; do
+        curl -4 -sSf -o "$FW/$f" "https://raw.githubusercontent.com/raspberrypi/firmware/$TAG/boot/$f" || echo "firmware: $f NOT fetched"
+      done
+      [ -f "$FW/start4.elf" ] && { echo "$TAG" > "$FW/TAG.txt"; (cd "$FW" && sha256sum start4.elf fixup4.dat > PIN.txt); }
+    fi
+    [ -f "$FW/PIN.txt" ] && { echo "firmware pin ($(cat "$FW/TAG.txt")):"; cat "$FW/PIN.txt"; }
+    cp "$FW"/start4.elf "$FW"/fixup4.dat "$OUT/firmware/" 2>/dev/null || echo "firmware: blobs missing -- the card boots in QEMU (which loads the kernel itself) but not on the board"
+    # partitions: p1 at sector 2048, then p2 right after; sizes from sd.list
+    P1MB=$(awk '$1=="part" && $2=="p1"{print $4}' "$OUT/sd.list"); P2FS=$(awk '$1=="part" && $2=="p2"{print $3}' "$OUT/sd.list"); P2MB=$(awk '$1=="part" && $2=="p2"{print $4}' "$OUT/sd.list")
+    P1S=$((P1MB*2048)); P2S=$(( ${P2MB:-0} * 2048 ))
+    # QEMU's SD model wants a power-of-two card; the partitions sit at the
+    # front and the rest is unallocated, as on any real card larger than its
+    # image (the first raspi4b run refused a 130 MiB card)
+    NEED=$((2048 + P1S + P2S + 2048)); TOTAL=$((256*2048)); while [ "$TOTAL" -lt "$NEED" ]; do TOTAL=$((TOTAL*2)); done
+    rm -f "$OUT/sd.img"; truncate -s $((TOTAL*512)) "$OUT/sd.img"
+    {
+      echo "label: dos"; echo "unit: sectors"
+      echo "p1 : start=2048, size=$P1S, type=c, bootable"
+      [ "$P2S" -gt 0 ] && echo "p2 : start=$((2048+P1S)), size=$P2S, type=83"
+    } | sfdisk -q "$OUT/sd.img" || { echo "sfdisk failed"; exit 1; }
+    rm -f "$OUT/boot.img"; truncate -s "${P1MB}M" "$OUT/boot.img"; mkfs.vfat -F 32 -n BOOT "$OUT/boot.img" > /dev/null
+    grep '^boot ' "$OUT/sd.list" | while read -r _ name src; do
+      if [ -f "$OUT/$src" ]; then mcopy -i "$OUT/boot.img" "$OUT/$src" "::$name" && echo "boot: $name <- $src"; else echo "boot: $name -- $src missing, skipped"; fi
+    done
+    dd if="$OUT/boot.img" of="$OUT/sd.img" bs=512 seek=2048 conv=notrunc status=none
+    if [ "$P2S" -gt 0 ]; then
+      rm -f "$OUT/data.img"; truncate -s "${P2MB}M" "$OUT/data.img"
+      case "$P2FS" in ext4) mkfs.ext4 -F -q -L data "$OUT/data.img" ;; vfat) mkfs.vfat -n DATA "$OUT/data.img" > /dev/null ;; esac
+      dd if="$OUT/data.img" of="$OUT/sd.img" bs=512 seek=$((2048+P1S)) conv=notrunc status=none
+      echo "card: p2 $P2FS ${P2MB}M"
+    fi
+    sfdisk -l "$OUT/sd.img" | tail -3
+  fi
+  ls -la "$OUT" | grep -v '^total' | grep -v ' root$\| empty$\| firmware$'
   echo "=== boot ==="
   ( cd "$OUT" && timeout 180 bash boot.cmd > transcript.txt 2>&1; echo "qemu exit $?" >> transcript.txt )
   echo "--- transcript"; cat "$OUT/transcript.txt"

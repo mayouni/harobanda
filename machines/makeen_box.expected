@@ -1,0 +1,17 @@
+boot: stzos init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
+boot: console /dev/ttyS1
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: mount ext4 at /data -- done
+boot: grant network (effectful)
+boot: grant filesystem (effectful)
+boot: refuse gpio (effectful)
+boot: start network_up -- pid N -- /stzos net eth0 192.168.10.1/24
+net: eth0 -- no such interface (NODEV)
+boot: network_up (pid N) exited 2
+boot: kds never started -- it comes AFTER network_up, which exited 2
+boot: poste never started -- it comes AFTER network_up, which exited 2
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)
+reboot: Restarting system

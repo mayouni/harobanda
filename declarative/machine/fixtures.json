@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board.",
   "accepts": [
     {
       "id": "A1",
@@ -15,25 +15,44 @@
         "libc": "musl",
         "console": "/dev/console",
         "rationale": "The smallest declarable machine",
-        "counts": { "services": 0, "capabilities": 0, "mounts": 0, "pins": 0 },
+        "counts": {
+          "services": 0,
+          "capabilities": 0,
+          "mounts": 0,
+          "pins": 0
+        },
         "order": [],
-        "granted": []
+        "granted": [],
+        "board": "qemu_pc"
       }
     },
     {
       "id": "A2",
-      "name": "the hosted box: the counter machine of a restaurant, whole",
-      "source": "-- makeen.machine -- the box behind the counter: server, network and bridge in one\n\nDEFINE MACHINE makeen_box AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  LIBC musl,\n  CONSOLE \"/dev/ttyS0\"\n) RATIONALE \"One box, no shell, no package manager: the declared machine is the system\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"The box is the restaurant's network\"\n\nDEFINE CAPABILITY filesystem AS (\n  GRANT yes\n) RATIONALE \"Orders and stock live on the box\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT no\n) RATIONALE \"No pins on the counter box; sensors are edge machines\"\n\nDEFINE MOUNT data AS (\n  AT \"/data\",\n  FS ext4,\n  DEVICE \"/dev/mmcblk0p2\",\n  OPTIONS [rw, noatime]\n) RATIONALE \"The persistent partition\"\n\nDEFINE SERVICE network_up AS (\n  RUN [\"/stzos-net\", \"eth0\"],\n  RESTART on_failure,\n  NEEDS [network]\n) RATIONALE \"Bring the interface up before anything speaks\"\n\nDEFINE SERVICE kds AS (\n  RUN [\"/stzr\", \"/app/kds.luau\"],\n  RESTART always,\n  AFTER [network_up],\n  NEEDS [network, filesystem]\n) RATIONALE \"The kitchen display world\"\n\nDEFINE SERVICE poste AS (\n  RUN [\"/stzr\", \"/app/poste.luau\"],\n  RESTART always,\n  AFTER [network_up, kds],\n  NEEDS [network, filesystem]\n) RATIONALE \"The counter world\"\n",
+      "name": "the hosted box: the counter machine of a restaurant, whole -- machines/makeen_box.machine verbatim",
+      "source": "-- makeen_box.machine -- the box behind the counter: server, network and\n-- bridge in one. The hosted profile's reference machine (fixture A2 is\n-- this file, verbatim) and, since OS-4, the board's truth: a Raspberry\n-- Pi 4 Model B, the SD card's second partition as /data, the console on\n-- the header pins, the interface brought up by stzos itself. RestoLean's\n-- Makeen thread named the box; this declares it.\n\nDEFINE MACHINE makeen_box AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  LIBC musl,\n  BOARD rpi4,\n  CONSOLE \"/dev/ttyS1\"\n) RATIONALE \"One box, no shell, no package manager: the declared machine is the system\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"The box is the restaurant's network\"\n\nDEFINE CAPABILITY filesystem AS (\n  GRANT yes\n) RATIONALE \"Orders and stock live on the box\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT no\n) RATIONALE \"No pins on the counter box; sensors are edge machines\"\n\nDEFINE MOUNT data AS (\n  AT \"/data\",\n  FS ext4,\n  DEVICE \"/dev/mmcblk0p2\",\n  OPTIONS [rw, noatime]\n) RATIONALE \"The persistent partition: the SD card's second partition\"\n\nDEFINE SERVICE network_up AS (\n  RUN [\"/stzos\", \"net\", \"eth0\", \"192.168.10.1/24\"],\n  RESTART never,\n  NEEDS [network]\n) RATIONALE \"Bring the interface up before anything speaks; the box is the network's address\"\n\nDEFINE SERVICE kds AS (\n  RUN [\"/stzr\", \"/app/kds.luau\"],\n  RESTART always,\n  AFTER [network_up],\n  NEEDS [network, filesystem]\n) RATIONALE \"The kitchen display world\"\n\nDEFINE SERVICE poste AS (\n  RUN [\"/stzr\", \"/app/poste.luau\"],\n  RESTART always,\n  AFTER [network_up, kds],\n  NEEDS [network, filesystem]\n) RATIONALE \"The counter world\"\n",
       "expect": {
         "name": "makeen_box",
         "profile": "hosted",
         "arch": "aarch64",
         "kernel": "linux",
         "libc": "musl",
-        "console": "/dev/ttyS0",
-        "counts": { "services": 3, "capabilities": 3, "mounts": 1, "pins": 0 },
-        "order": ["network_up", "kds", "poste"],
-        "granted": ["filesystem", "network"]
+        "board": "rpi4",
+        "console": "/dev/ttyS1",
+        "counts": {
+          "services": 3,
+          "capabilities": 3,
+          "mounts": 1,
+          "pins": 0
+        },
+        "order": [
+          "network_up",
+          "kds",
+          "poste"
+        ],
+        "granted": [
+          "filesystem",
+          "network"
+        ]
       }
     },
     {
@@ -47,9 +66,20 @@
         "kernel": "none",
         "libc": "none",
         "console": "uart0",
-        "counts": { "services": 1, "capabilities": 2, "mounts": 1, "pins": 2 },
-        "order": ["sense"],
-        "granted": ["clock", "gpio"]
+        "counts": {
+          "services": 1,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 2
+        },
+        "order": [
+          "sense"
+        ],
+        "granted": [
+          "clock",
+          "gpio"
+        ],
+        "board": "qemu_virt"
       }
     },
     {
@@ -63,9 +93,19 @@
         "kernel": "android",
         "libc": "bionic",
         "console": "logcat",
-        "counts": { "services": 1, "capabilities": 2, "mounts": 0, "pins": 0 },
-        "order": ["launcher"],
-        "granted": ["inference", "network"]
+        "counts": {
+          "services": 1,
+          "capabilities": 2,
+          "mounts": 0,
+          "pins": 0
+        },
+        "order": [
+          "launcher"
+        ],
+        "granted": [
+          "inference",
+          "network"
+        ]
       }
     },
     {
@@ -73,8 +113,17 @@
       "name": "AFTER orders the services; declaration order breaks ties",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"order\"\nDEFINE SERVICE c AS (RUN [\"c\"], AFTER [a, b]) RATIONALE \"third\"\nDEFINE SERVICE b AS (RUN [\"b\"], AFTER [a]) RATIONALE \"second\"\nDEFINE SERVICE a AS (RUN [\"a\"]) RATIONALE \"first\"\n",
       "expect": {
-        "counts": { "services": 3, "capabilities": 0, "mounts": 0, "pins": 0 },
-        "order": ["a", "b", "c"]
+        "counts": {
+          "services": 3,
+          "capabilities": 0,
+          "mounts": 0,
+          "pins": 0
+        },
+        "order": [
+          "a",
+          "b",
+          "c"
+        ]
       }
     },
     {
@@ -91,7 +140,12 @@
       "source": "DEFINE MACHINE m AS (\r\n  PROFILE hosted,\r\n  ARCH x86_64,\r\n  KERNEL linux\r\n) RATIONALE \"crlf\"\r\nDEFINE SERVICE s AS (\r\n  RUN [\"s\"]\r\n) RATIONALE \"one\"\r\n",
       "expect": {
         "name": "m",
-        "counts": { "services": 1, "capabilities": 0, "mounts": 0, "pins": 0 }
+        "counts": {
+          "services": 1,
+          "capabilities": 0,
+          "mounts": 0,
+          "pins": 0
+        }
       }
     },
     {
@@ -99,8 +153,27 @@
       "name": "comments anywhere, trailing commas everywhere, an empty list",
       "source": "-- a comment before anything\nDEFINE MACHINE m AS ( -- after a paren\n  PROFILE hosted, -- after a clause\n  ARCH x86_64,\n  KERNEL linux,\n) RATIONALE \"commas\"\nDEFINE CAPABILITY clock AS (GRANT yes,) RATIONALE \"tick\"\nDEFINE SERVICE s AS (\n  RUN [\"s\", \"--flag\",],\n  AFTER [],\n  NEEDS [clock,],\n) RATIONALE \"lists\"\n-- a comment at the end, no newline",
       "expect": {
-        "counts": { "services": 1, "capabilities": 1, "mounts": 0, "pins": 0 },
-        "granted": ["clock"]
+        "counts": {
+          "services": 1,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0
+        },
+        "granted": [
+          "clock"
+        ]
+      }
+    },
+    {
+      "id": "A9",
+      "name": "a board declared: the Raspberry Pi 4 is an aarch64 board",
+      "source": "DEFINE MACHINE box AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  BOARD rpi4\n) RATIONALE \"The commodity board\"\n",
+      "expect": {
+        "name": "box",
+        "arch": "aarch64",
+        "board": "rpi4",
+        "libc": "musl",
+        "console": "/dev/console"
       }
     }
   ],
@@ -296,6 +369,24 @@
       "name": "an empty file declares nothing",
       "source": "-- nothing but a comment\n",
       "refusal": "declares nothing"
+    },
+    {
+      "id": "R33",
+      "name": "a board of another architecture is refused",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, BOARD rpi4) RATIONALE \"x\"\n",
+      "refusal": "contradicts BOARD"
+    },
+    {
+      "id": "R34",
+      "name": "the board menu is closed",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH aarch64, KERNEL linux, BOARD banana) RATIONALE \"x\"\n",
+      "refusal": "qemu_pc, qemu_virt or rpi4"
+    },
+    {
+      "id": "R35",
+      "name": "BOARD is a hosted machine's clause",
+      "source": "DEFINE MACHINE m AS (PROFILE edge, ARCH thumbv7em, KERNEL none, BOARD rpi4) RATIONALE \"x\"\n",
+      "refusal": "hosted machine's clause"
     }
   ]
 }

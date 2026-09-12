@@ -103,18 +103,33 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   (`BLOCK`, `BLK_DEV`, `VIRTIO_MENU`), or `olddefconfig` drops the
   drivers silently; the build prints every requested option that did
   not survive. Read that list before reading a mount refusal.
+- **QEMU's raspi4b does not model the AON block at 0x7ef00000** (the L2
+  interrupt controller, the DVP clock): a driver touching it takes a
+  synchronous external abort with NO console output. The emulator's
+  device tree (`QEMU_DTB_OPS`, derived) disables those nodes; the
+  card's tree does not. To diagnose a silent raspi4b boot:
+  `experiment/os4_diag.sh` (earlycon, full log, `initcall_debug`) and
+  `experiment/os4_syms.sh <addr>` against `System.map`.
+- **QEMU plugs the SD card into the legacy SDHCI at 0x7e300000**, not
+  emmc2; mainline gives that host to the Wi-Fi SDIO. The emulator's
+  tree opens it and aliases mmc0 to it; the card's tree aliases mmc0 to
+  emmc2. Both derived, both printed at build time.
+- **A one-line `bash -c` through `wsl.exe` loses `$` and `&`** whichever
+  tool sends it. Every WSL act is a script file under `experiment/`.
 - **Invoke WSL scripts from PowerShell, never from the Bash tool** —
   git-bash rewrites `/mnt/d/...` into `C:/Git/mnt/...`
   (`MSYS_NO_PATHCONV=1 wsl.exe ...` is the workaround if you must).
 
 ## Next steps (author-ordered, one per session)
 
-- **OS-4 — the real box**: the aarch64 image (booting on QEMU `virt`
-  since OS-3 with a virtio ext4 `/data`) onto a commodity ARM board —
-  the board's kernel config and device tree, U-Boot, the SD card's
-  partitions (`makeen_box.machine` names `/dev/mmcblk0p2`), A/B slots
-  with watchdog rollback. The board is the author's choice (B9's
-  OpenWrt-class €100 board, never designed by us).
+- **OS-5 — the card meets the board**: flash `zig-out/image/makeen_box/
+  sd.img` to a card, boot a Raspberry Pi 4 with the mini-UART on the
+  header pins (GPIO 14/15, 115200), and judge the real transcript
+  against `machines/makeen_box.expected` — it is expected to differ
+  exactly where the emulator lacks the hardware (Ethernet up, the
+  worlds starting) and nowhere else. Then A/B slots with watchdog
+  rollback (the watchdog driver is in), and the NETWORK kind (DHCP,
+  gateway, DNS) beyond `stzos net`'s static address.
 - The kernel rebuilt with `make CC="zig cc"` (the stated sovereignty
   destination; gcc did the first boot) and a tarball mirror inside the
   estate.

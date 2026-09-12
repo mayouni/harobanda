@@ -1,4 +1,4 @@
-boot: stzos init -- machine qemu_hello (hosted / x86_64) -- pid 1
+boot: stzos init -- machine qemu_hello (hosted / x86_64 / qemu_pc) -- pid 1
 boot: console /dev/ttyS0
 boot: mount proc at /proc -- done
 boot: mount sysfs at /sys -- done
@@ -7,7 +7,7 @@ boot: mount tmpfs at /tmp -- done
 boot: grant process (effectful)
 boot: grant filesystem (effectful)
 boot: start self -- pid N -- /stzos plan /etc/machine
-machine qemu_hello -- hosted / x86_64 / kernel linux / libc musl
+machine qemu_hello -- hosted / x86_64 / board qemu_pc / kernel linux / libc musl
   rationale: The smallest machine that boots: kernel, PID 1, runtime, one world
 console /dev/ttyS0
 mount proc at /proc (implicit, hosted)

@@ -2,23 +2,28 @@
 // writes declarative artifacts into an output directory and touches no
 // toolchain:
 //
+//   image.env        what the build must be told: the kernel ARCH, the
+//                    cross prefix, the artifacts, the board (written from
+//                    the declaration alone, before any staging check)
 //   initramfs.list   the kernel's own gen_init_cpio description of the
 //                    root filesystem: the mount points, the device nodes
 //                    PID 1 needs, /etc/machine (the declaration itself),
 //                    /stzos, and every program and file the services name
 //                    -- each taken from a STAGING ROOT and refused if absent
-//   kernel.fragment  the kconfig options the profile, the architecture and
-//                    the declared mounts require, merged over tinyconfig
-//   image.env        what the build must be told: the kernel ARCH, the
-//                    cross prefix, the kernel artifact's path
-//   disk.list        the block devices the declared mounts need (one per
-//                    line: id, device, fs, size) -- the build creates them
-//   boot.cmd         the QEMU line that boots the image with this binary
-//                    as PID 1 and the serial console as the transcript
+//   kernel.fragment  the kconfig options the profile, the board and the
+//                    declared mounts require, merged over tinyconfig
+//   disk.list        the virtio disks the declared mounts need (emulator
+//                    boards; one per image today)
+//   sd.list          for a board that boots from an SD card: the card's
+//                    partitions and the boot partition's files, with the
+//                    firmware's config.txt and cmdline.txt written beside
+//   boot.cmd         the QEMU line that boots the image (the same board,
+//                    emulated) with this binary as PID 1 and the serial
+//                    console as the transcript
 //
 // The imperative act -- building the vendored kernel, packing the cpio,
-// making the disks, running QEMU -- is experiment/os2_image.sh on a
-// Linux host. The derivation is here so it is portable, judged, and
+// making the disks and the card, running QEMU -- is experiment/os2_image.sh
+// on a Linux host. The derivation is here so it is portable, judged, and
 // printed before it is run: the image is text before it is an act.
 
 const std = @import("std");
@@ -34,50 +39,119 @@ pub const Options = struct {
 
 const Entry = struct { path: []const u8, source: []const u8 };
 
-/// What each supported architecture needs, in one place.
+/// What each board needs, in one place.
 const Target = struct {
     kernel_arch: []const u8, // make ARCH=
     cross: []const u8, // make CROSS_COMPILE=
     artifact: []const u8, // path of the kernel image inside the tree
     image_name: []const u8, // its name in the output dir
+    dtb: ?[]const u8 = null, // device tree inside the tree, for a real board
     qemu: []const u8,
     machine_args: []const u8,
-    console: []const u8,
-    memory_mb: u32,
+    memory_mb: u32, // 0: the board's own, fixed
+    console_qemu: []const u8,
+    console_board: []const u8,
     serial_cfg: []const []const u8,
-    block_cfg: []const []const u8,
-    blk_device: []const u8, // the QEMU virtio-blk device for this machine type
+    platform_cfg: []const []const u8 = &.{},
+    block_cfg: []const []const u8, // for a declared block mount
+    blk_device: ?[]const u8, // the QEMU virtio-blk device, or null when the board boots from a card
+    sd: bool = false,
+    /// what the BOARD's tree needs that mainline's does not say (applied
+    /// to the card's DTB; experiment/dtb_ops.py). Ops:
+    /// disable:<node>  okay:<node>  drop:<node>:<property>  alias:<name>:<path>
+    dtb_ops: []const []const u8 = &.{},
+    /// what the EMULATOR's tree needs on top: the blocks it does not
+    /// model (disabled), the host it plugs the card into (opened, and
+    /// aliased so the declared device name holds in both worlds)
+    qemu_dtb_ops: []const []const u8 = &.{},
 };
 
-fn target(arch: machine.Arch) ?Target {
-    return switch (arch) {
-        .x86_64 => .{
+fn target(board: machine.Board) Target {
+    return switch (board) {
+        .qemu_pc => .{
             .kernel_arch = "x86_64",
             .cross = "",
             .artifact = "arch/x86/boot/bzImage",
             .image_name = "bzImage",
             .qemu = "qemu-system-x86_64",
             .machine_args = "-M pc -cpu max",
-            .console = "ttyS0",
             .memory_mb = 256,
+            .console_qemu = "ttyS0",
+            .console_board = "ttyS0",
             .serial_cfg = &.{ "CONFIG_SERIAL_8250=y", "CONFIG_SERIAL_8250_CONSOLE=y", "CONFIG_KERNEL_GZIP=y" },
             .block_cfg = &.{ "CONFIG_PCI=y", "CONFIG_VIRTIO_PCI=y" },
             .blk_device = "virtio-blk-pci",
         },
-        .aarch64 => .{
+        .qemu_virt => .{
             .kernel_arch = "arm64",
             .cross = "aarch64-linux-gnu-",
             .artifact = "arch/arm64/boot/Image",
             .image_name = "Image",
             .qemu = "qemu-system-aarch64",
             .machine_args = "-M virt -cpu cortex-a53",
-            .console = "ttyAMA0",
             .memory_mb = 512,
+            .console_qemu = "ttyAMA0",
+            .console_board = "ttyAMA0",
             .serial_cfg = &.{ "CONFIG_SERIAL_AMBA_PL011=y", "CONFIG_SERIAL_AMBA_PL011_CONSOLE=y" },
             .block_cfg = &.{"CONFIG_VIRTIO_MMIO=y"},
             .blk_device = "virtio-blk-device",
         },
-        else => null,
+        .rpi4 => .{
+            .kernel_arch = "arm64",
+            .cross = "aarch64-linux-gnu-",
+            .artifact = "arch/arm64/boot/Image",
+            .image_name = "Image",
+            .dtb = "arch/arm64/boot/dts/broadcom/bcm2711-rpi-4-b.dtb",
+            .qemu = "qemu-system-aarch64",
+            .machine_args = "-M raspi4b -dtb bcm2711-rpi-4-b.qemu.dtb",
+            // QEMU 10.2's raspi4b does not model the AON L2 interrupt
+            // controller at 0x7ef00100; brcmstb_l2_intc_of_init takes a
+            // synchronous external abort there (OS-4 finding). It disables
+            // pcie, rng, thermal and genet itself; this one it misses.
+            // The whole AON block at 0x7ef00000 is absent from the emulator:
+            // after the L2 intc, clk_disable_unused took the same abort in
+            // clk_gate_readl on the DVP clock (clock@7ef00000). Two nodes,
+            // each found by its own fault, each named here. And the card:
+            // QEMU plugs it into the legacy SDHCI at 0x7e300000 (mainline
+            // gives that host to the Wi-Fi SDIO, with a power sequence and
+            // non-removable), not into emmc2 where the board's card sits --
+            // so the emulator's DTB opens that host as a plain removable one
+            // and aliases mmc0 to it, so /dev/mmcblk0p2 names the same
+            // partition in both worlds.
+            // Mainline's rpi-4-b tree carries NO mmc aliases, so the card's
+            // index is probe order: with two hosts (emmc2 for the card, the
+            // legacy SDHCI for the Wi-Fi SDIO) /dev/mmcblk0 is a race. The
+            // board's tree pins mmc0 to emmc2 -- the declared device name
+            // is a fact, not a hope.
+            .dtb_ops = &.{ "alias:mmc0:/emmc2bus/mmc@7e340000", "alias:mmc1:/soc/mmc@7e300000" },
+            .qemu_dtb_ops = &.{
+                "disable:interrupt-controller@7ef00100", "disable:clock@7ef00000",
+                "okay:mmc@7e300000",                     "drop:mmc@7e300000:mmc-pwrseq",
+                "drop:mmc@7e300000:non-removable",       "drop:mmc@7e300000:vmmc-supply",
+                "alias:mmc0:/soc/mmc@7e300000",          "alias:mmc1:/emmc2bus/mmc@7e340000",
+            },
+            .memory_mb = 0,
+            // the emulator's PL011 sits on the header pins; the board's
+            // PL011 goes to Bluetooth and its mini-UART (ttyS1) to the pins
+            .console_qemu = "ttyAMA0",
+            .console_board = "ttyS1,115200",
+            // the mini-UART driver sits behind SERIAL_8250_EXTENDED and
+            // SHARE_IRQ; without them olddefconfig drops it (first rpi4 build)
+            .serial_cfg = &.{ "CONFIG_SERIAL_8250=y", "CONFIG_SERIAL_8250_CONSOLE=y", "CONFIG_SERIAL_8250_EXTENDED=y", "CONFIG_SERIAL_8250_SHARE_IRQ=y", "CONFIG_SERIAL_8250_BCM2835AUX=y", "CONFIG_SERIAL_AMBA_PL011=y", "CONFIG_SERIAL_AMBA_PL011_CONSOLE=y" },
+            .platform_cfg = &.{
+                "CONFIG_ARCH_BCM=y",            "CONFIG_ARCH_BCM2835=y",        "CONFIG_RASPBERRYPI_FIRMWARE=y",
+                "CONFIG_MAILBOX=y",             "CONFIG_BCM2835_MBOX=y",        "CONFIG_WATCHDOG=y",
+                "CONFIG_BCM2835_WDT=y",         "CONFIG_BLOCK=y",               "CONFIG_BLK_DEV=y",
+                "CONFIG_MMC=y",                 "CONFIG_MMC_BLOCK=y",           "CONFIG_MMC_SDHCI=y",
+                "CONFIG_MMC_SDHCI_PLTFM=y",     "CONFIG_MMC_SDHCI_IPROC=y",     "CONFIG_MMC_BCM2835=y",
+                "CONFIG_NET=y",                 "CONFIG_INET=y",                "CONFIG_NETDEVICES=y",
+                "CONFIG_ETHERNET=y",            "CONFIG_NET_VENDOR_BROADCOM=y", "CONFIG_BCMGENET=y",
+                "CONFIG_PHYLIB=y",              "CONFIG_BROADCOM_PHY=y",
+            },
+            .block_cfg = &.{},
+            .blk_device = null,
+            .sd = true,
+        },
     };
 }
 
@@ -109,18 +183,33 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         try out.print("image: refused -- only the hosted profile has an image here; a {s} machine is projected by its own substrate\n", .{@tagName(m.profile)});
         return 2;
     }
-    const t = target(m.arch) orelse {
-        try out.print("image: refused -- the {s} image is queued; x86_64 and aarch64 boot in QEMU today\n", .{@tagName(m.arch)});
+    if (m.arch != .x86_64 and m.arch != .aarch64) {
+        try out.print("image: refused -- the {s} image is queued; x86_64 and aarch64 boot today\n", .{@tagName(m.arch)});
         return 2;
-    };
+    }
+    const t = target(m.board);
 
     // image.env first: it derives from the declaration alone, so the build
     // can learn the target before anything is staged
     try std.fs.cwd().makePath(opts.out_dir);
     {
-        const env = try std.fmt.allocPrint(arena,
-            "# image.env -- derived by stzos image; sourced by experiment/os2_image.sh\nARCH={s}\nCROSS_COMPILE={s}\nKERNEL_ARTIFACT={s}\nKERNEL_IMAGE={s}\nTRIPLE={s}-linux-musl\n", .{ t.kernel_arch, t.cross, t.artifact, t.image_name, @tagName(m.arch) });
-        try writeOut(opts.out_dir, "image.env", env);
+        var env: std.ArrayList(u8) = .{};
+        const w = env.writer(arena);
+        try w.print("# image.env -- derived by stzos image; sourced by experiment/os2_image.sh\n", .{});
+        try w.print("ARCH={s}\nCROSS_COMPILE={s}\nKERNEL_ARTIFACT={s}\nKERNEL_IMAGE={s}\nTRIPLE={s}-linux-musl\nBOARD={s}\n", .{ t.kernel_arch, t.cross, t.artifact, t.image_name, @tagName(m.arch), @tagName(m.board) });
+        if (t.dtb) |d| try w.print("DTB={s}\n", .{d});
+        try w.print("SD={s}\n", .{if (t.sd) "yes" else "no"});
+        if (t.dtb_ops.len > 0) {
+            try w.print("DTB_OPS=\"", .{});
+            for (t.dtb_ops, 0..) |n, i| try w.print("{s}{s}", .{ if (i > 0) " " else "", n });
+            try w.print("\"\n", .{});
+        }
+        if (t.qemu_dtb_ops.len > 0) {
+            try w.print("QEMU_DTB_OPS=\"", .{});
+            for (t.qemu_dtb_ops, 0..) |n, i| try w.print("{s}{s}", .{ if (i > 0) " " else "", n });
+            try w.print("\"\n", .{});
+        }
+        try writeOut(opts.out_dir, "image.env", env.items);
     }
 
     var dirs: std.ArrayList([]const u8) = .{};
@@ -162,7 +251,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     for (m.mounts) |*mt| {
         if (mt.fs == .ext4 or mt.fs == .vfat) {
             if (block != null) {
-                try out.print("image: refused -- two block mounts ({s} and {s}); one virtio disk per image today\n", .{ block.?.name, mt.name });
+                try out.print("image: refused -- two block mounts ({s} and {s}); one disk per image today\n", .{ block.?.name, mt.name });
                 return 2;
             }
             block = mt;
@@ -192,7 +281,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     {
         var frag: std.ArrayList(u8) = .{};
         const w = frag.writer(arena);
-        try w.print("# kernel.fragment -- derived by stzos image from {s} for {s}; merged over tinyconfig\n", .{ opts.machine_path, t.kernel_arch });
+        try w.print("# kernel.fragment -- derived by stzos image from {s} for {s} ({s}); merged over tinyconfig\n", .{ opts.machine_path, t.kernel_arch, @tagName(m.board) });
         const base = [_][]const u8{
             "CONFIG_64BIT=y",       "CONFIG_PRINTK=y",    "CONFIG_TTY=y",        "CONFIG_BLK_DEV_INITRD=y",
             "CONFIG_BINFMT_ELF=y",  "CONFIG_PROC_FS=y",   "CONFIG_SYSFS=y",      "CONFIG_DEVTMPFS=y",
@@ -202,12 +291,14 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         };
         for (base) |l| try w.print("{s}\n", .{l});
         for (t.serial_cfg) |l| try w.print("{s}\n", .{l});
+        for (t.platform_cfg) |l| try w.print("{s}\n", .{l});
         if (block) |b| {
             // BLOCK and BLK_DEV are menus tinyconfig closes; VIRTIO_MENU
-            // gates every virtio driver. Without the three, olddefconfig
-            // drops VIRTIO_BLK silently and the mount fails NOENT -- the
-            // Makeen box's first boot (PROTOCOL.md, OS-3 finding 2).
-            try w.print("CONFIG_BLOCK=y\nCONFIG_BLK_DEV=y\nCONFIG_VIRTIO_MENU=y\nCONFIG_VIRTIO=y\nCONFIG_VIRTIO_BLK=y\n", .{});
+            // gates every virtio driver. Without them, olddefconfig drops
+            // the drivers silently and the mount fails NOENT -- the Makeen
+            // box's first emulated boot (PROTOCOL.md, OS-3 finding 2).
+            try w.print("CONFIG_BLOCK=y\nCONFIG_BLK_DEV=y\n", .{});
+            if (t.blk_device != null) try w.print("CONFIG_VIRTIO_MENU=y\nCONFIG_VIRTIO=y\nCONFIG_VIRTIO_BLK=y\n", .{});
             for (t.block_cfg) |l| try w.print("{s}\n", .{l});
             switch (b.fs) {
                 .ext4 => try w.print("CONFIG_EXT4_FS=y\n", .{}),
@@ -218,33 +309,69 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         try writeOut(opts.out_dir, "kernel.fragment", frag.items);
     }
 
-    // disk.list -- the block devices to create
+    // disk.list -- the virtio disks to create (emulator boards)
     {
         var disks: std.ArrayList(u8) = .{};
         const w = disks.writer(arena);
         try w.print("# disk.list -- derived by stzos image: id device fs size_mb image\n", .{});
-        if (block) |b| try w.print("d0 {s} {s} {d} disk0.img\n", .{ b.device.?, @tagName(b.fs), opts.disk_mb });
+        if (block) |b| if (t.blk_device != null) try w.print("d0 {s} {s} {d} disk0.img\n", .{ b.device.?, @tagName(b.fs), opts.disk_mb });
         try writeOut(opts.out_dir, "disk.list", disks.items);
     }
 
-    // boot.cmd
+    // sd.list + config.txt + cmdline.txt -- a board that boots from a card
+    if (t.sd) {
+        const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 rdinit=/stzos -- init /etc/machine\n", .{t.console_board});
+        try writeOut(opts.out_dir, "cmdline.txt", cmdline);
+        const config = try std.fmt.allocPrint(arena,
+            \\# config.txt -- derived by stzos image for {s} ({s}); read by the board's firmware
+            \\arm_64bit=1
+            \\kernel=kernel8.img
+            \\initramfs initramfs.cpio followkernel
+            \\enable_uart=1
+            \\
+        , .{ m.name, @tagName(m.board) });
+        try writeOut(opts.out_dir, "config.txt", config);
+        var sd: std.ArrayList(u8) = .{};
+        const w = sd.writer(arena);
+        try w.print("# sd.list -- derived by stzos image: the card's partitions (part id fs size_mb label) and the boot partition's files (boot name source)\n", .{});
+        try w.print("part p1 fat32 64 boot\n", .{});
+        if (block) |b| {
+            try w.print("part p2 {s} {d} {s}\n", .{ @tagName(b.fs), opts.disk_mb, b.name });
+        }
+        try w.print("boot config.txt config.txt\n", .{});
+        try w.print("boot cmdline.txt cmdline.txt\n", .{});
+        try w.print("boot kernel8.img {s}\n", .{t.image_name});
+        try w.print("boot bcm2711-rpi-4-b.dtb bcm2711-rpi-4-b.dtb\n", .{});
+        try w.print("boot initramfs.cpio initramfs.cpio\n", .{});
+        try w.print("boot start4.elf firmware/start4.elf\n", .{});
+        try w.print("boot fixup4.dat firmware/fixup4.dat\n", .{});
+        try writeOut(opts.out_dir, "sd.list", sd.items);
+    }
+
+    // boot.cmd -- the same board, emulated
     {
         var cmd: std.ArrayList(u8) = .{};
         const w = cmd.writer(arena);
-        try w.print("{s} {s} -m {d}M -nographic -no-reboot -kernel {s} -initrd initramfs.cpio", .{ t.qemu, t.machine_args, t.memory_mb, t.image_name });
-        if (block != null) try w.print(" -drive if=none,file=disk0.img,format=raw,id=d0 -device {s},drive=d0", .{t.blk_device});
+        try w.print("{s} {s}", .{ t.qemu, t.machine_args });
+        if (t.memory_mb > 0) try w.print(" -m {d}M", .{t.memory_mb});
+        try w.print(" -nographic -no-reboot -kernel {s} -initrd initramfs.cpio", .{t.image_name});
+        if (t.sd) {
+            try w.print(" -drive file=sd.img,if=sd,format=raw", .{});
+        } else if (block != null) {
+            try w.print(" -drive if=none,file=disk0.img,format=raw,id=d0 -device {s},drive=d0", .{t.blk_device.?});
+        }
         // rdinit=, not init=: the root IS the initramfs. With init= the
         // kernel first looks for /init, finds none, and goes to mount a
         // root DEVICE -- which panics as soon as CONFIG_BLOCK exists. The
         // x86 boot of OS-2 worked only because its kernel had no block
         // layer to try (PROTOCOL.md, OS-3 finding 1).
-        try w.print(" -append \"console={s} quiet loglevel=3 rdinit=/stzos -- init /etc/machine\"\n", .{t.console});
+        try w.print(" -append \"console={s} quiet loglevel=3 rdinit=/stzos -- init /etc/machine\"\n", .{t.console_qemu});
         try writeOut(opts.out_dir, "boot.cmd", cmd.items);
     }
 
-    try out.print("image {s} -- {s} / {s} -- {d} dir(s), {d} file(s), {d} disk(s) -> {s}/{{initramfs.list,kernel.fragment,image.env,disk.list,boot.cmd}}\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), dirs.items.len, files.items.len, @as(u8, if (block != null) 1 else 0), opts.out_dir });
+    try out.print("image {s} -- {s} / {s} / {s} -- {d} dir(s), {d} file(s), {s} -> {s}/\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), dirs.items.len, files.items.len, if (t.sd) "an SD card" else if (block != null) "1 disk" else "no disk", opts.out_dir });
     for (files.items) |f| try out.print("  {s} <- {s}\n", .{ f.path, f.source });
-    if (block) |b| try out.print("  disk d0 -> {s} ({s}, {d} MB) at {s}\n", .{ b.device.?, @tagName(b.fs), opts.disk_mb, b.at });
+    if (block) |b| try out.print("  {s} -> {s} ({s}, {d} MB) at {s}\n", .{ if (t.sd) "card p2" else "disk d0", b.device.?, @tagName(b.fs), opts.disk_mb, b.at });
     return 0;
 }
 

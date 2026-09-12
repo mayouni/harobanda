@@ -81,7 +81,16 @@ clause outside its kind's table is refused naming the allowed set
 | `ARCH` | `x86_64` \| `aarch64` \| `riscv32` \| `riscv64` \| `thumbv7em` | required (R11) |
 | `KERNEL` | `linux` \| `none` \| `android` | required; must agree with the profile (R15) |
 | `LIBC` | `musl` \| `none` \| `bionic` | optional; defaults by profile; a contradiction is refused (R31) |
+| `BOARD` | `qemu_pc` \| `qemu_virt` \| `rpi4` | optional, hosted only (R35); defaults by ARCH (`x86_64` → `qemu_pc`, else `qemu_virt`); a board of another architecture is refused (R33); an unknown board is refused (R34) |
 | `CONSOLE` | string | optional; defaults `/dev/console`, `uart0`, `logcat` by profile |
+
+The BOARD names what the image is built for: the emulator court's
+machines (`qemu_pc` on x86_64, `qemu_virt` on aarch64) or a real board.
+`rpi4` is the Raspberry Pi 4 Model B — the commodity board chosen on
+2026-09-12 for the Makeen box (`doc/PROVENANCE.md`): mainline kernel
+support, an SD card, Ethernet, QEMU emulation of the same board so the
+image is judged before the hardware is. Widening the menu is a
+fixture-first act (A9, R33, R34 are the board's own).
 
 The profile fixes the substrate: **hosted** runs on KERNEL linux with
 LIBC musl (a vendored kernel, a static image, this binary as PID 1);

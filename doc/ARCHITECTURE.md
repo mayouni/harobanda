@@ -41,7 +41,9 @@ third program on the path for a declaration to reach.
 | network | `stzos-net` — a service, not init's job; DHCP/static per a NETWORK kind (queued) | **own** (small) |
 | updates | A/B image partitions, atomic pointer swap, watchdog rollback (ZinOS Edge's OTA design) | **own**, governed by refine |
 | emulator | QEMU (`-kernel bzImage -initrd initramfs.cpio -append "rdinit=/stzos ..." -nographic`) | **borrow** for the court; not shipped |
-| bootloader | the board's (U-Boot on ARM SBCs, the firmware's EFI stub on x86) | **borrow**; declared per machine later |
+| bootloader | the board's: the Raspberry Pi 4's own firmware (`start4.elf`, `fixup4.dat` — a vendor blob pinned by sha256 in `vendor/rpi-firmware/PIN.txt`, fetched, never committed) reads `config.txt` and loads `kernel8.img` + the initramfs; on x86 the emulator loads the kernel itself | **borrow**, stated per board in the target table |
+| device tree | mainline's `bcm2711-rpi-4-b.dtb`, plus the derived mmc aliases (`DTB_OPS`) for the card and the derived emulator ops (`QEMU_DTB_OPS`) for the court; `experiment/dtb_ops.py` applies, every op printed | **keep vendored**, two derived variants |
+| Wi-Fi | not taken: a second vendor blob; the box speaks Ethernet (GENET, mainline) | **none** |
 
 `stzos image <file.machine> --root <staging> --out <dir>` judges the
 file and DERIVES three texts, touching no toolchain: `initramfs.list`
@@ -73,6 +75,20 @@ declared as `MOUNT data` on `/dev/vda`: 531 options, a 3.8 MB `Image` in
 box differs in what `makeen_box.machine` already says: the SD card's
 partition and a network service; those are OS-4's.
 
+**The board (OS-4, 2026-09-12):** `BOARD rpi4` in `makeen_box.machine`
+selects the target: the BCM2711 platform in the kernel fragment (689
+options; the mini-UART, the mailbox and firmware driver, the watchdog
+that restarts the board, SDHCI, GENET), the device tree, two consoles
+(the emulator's PL011 on the header pins as `ttyAMA0`, the board's
+mini-UART there as `ttyS1`), and `sd.list`: a 256 MiB card, p1 FAT32
+with the firmware, `config.txt`, `cmdline.txt`, `kernel8.img`, the DTB
+and the initramfs, p2 ext4 as the declared `/data`. QEMU's `raspi4b`
+boots the same image and finds `mmcblk0: p1 p2` by the declared name.
+The emulator has no Ethernet, so the pinned transcript shows `stzos
+net` refused with NODEV and the two worlds never started; the board
+will show them start. That is the one place the two are allowed to
+differ.
+
 ## 4. The edge profile (declared; MicroRing's substrate)
 
 The `.machine` file declares the sensor; the projection is MicroRing's:
@@ -103,7 +119,9 @@ judged so that one file describes the fleet, phone included.
 | the Linux-only code | `zig build cross` (two static targets) | builds |
 | the boot | the transcript, run as PID 1 in a user namespace under WSL | ran: pids 1–10, proc mounted, sysfs/devtmpfs refused PERM, all policies exercised |
 | the image, x86_64 | the QEMU serial transcript, normalised, diffed against `machines/qemu_hello.expected` | matches, 28 lines |
-| the image, aarch64 (the Makeen box) | the same against `machines/makeen_qemu.expected`: `virt`, PL011, a virtio ext4 disk mounted at `/data`, two stzr worlds | matches, 20 lines |
+| the image, aarch64 (the Makeen box on `virt`) | the same against `machines/makeen_qemu.expected`: `virt`, PL011, a virtio ext4 disk mounted at `/data`, two stzr worlds | matches, 20 lines |
+| the board's card (the Makeen box on `raspi4b`) | the same against `machines/makeen_box.expected`: the card's second partition mounted by its declared name, `stzos net` refused NODEV (no Ethernet in the emulator), the worlds never started by the readiness rule | matches, 17 lines |
+| the language | `fixtures.json` widened with BOARD: 9 accepts + 35 rejects | 44/44 |
 
 ## 7. Boundaries
 

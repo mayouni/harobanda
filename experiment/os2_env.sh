@@ -12,7 +12,7 @@ mkdir -p zig-out/wsl
   apt-get -o Acquire::ForceIPv4=true update -qq
   apt-get -o Acquire::ForceIPv4=true install -y -qq --no-install-recommends \
     qemu-system-x86 qemu-system-arm gcc make flex bison bc libelf-dev libssl-dev cpio xz-utils curl ca-certificates perl python3 file \
-    gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu e2fsprogs dosfstools
+    gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu e2fsprogs dosfstools mtools
   echo "=== versions ==="
   gcc --version | head -1
   make --version | head -1

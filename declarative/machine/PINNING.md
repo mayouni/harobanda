@@ -5,8 +5,14 @@
 `fixtures.json` sha256:
 
 ```
-0448842222d40d7b8d6b4866c23f42c878eda7c9ea83f6c1717eb3fb7789e9cb
+a7f0976ad2bcc757368e7bf86b6850c8b933c4fcbb48b2d8430b01482c5341a8
 ```
+
+(Before the BOARD clause of 2026-09-12, OS-4:
+`0448842222d40d7b8d6b4866c23f42c878eda7c9ea83f6c1717eb3fb7789e9cb`,
+8 accepts + 32 rejects. The widening added A9, R33, R34, R35, put the
+defaulted board into A1/A3 and made A2 the box file verbatim with
+`BOARD rpi4`.)
 
 The machine language's canonical home is THIS repository (like W and
 stzu in stz): the fixtures are born here and forked nowhere. Changing
@@ -17,7 +23,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **40/40** — 8 accepts with structural expectations, 32 rejects with expected refusal fragments (39/40 on the first run: see the conviction below) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **44/44** — 9 accepts with structural expectations, 35 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor and 43/44 on the first run of the BOARD widening: two convictions of the implementation, both on wording or check order, the fixtures kept both times) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -46,6 +52,19 @@ meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
   (A2 services 3 → 99), a wrong fragment (R5), a valid source posing as
   a reject — the court went red three times, each for its named
   reason, and exited nonzero (`experiment/PROTOCOL.md`).
+
+## The board's image, judged by the same board emulated (OS-4)
+
+`machines/makeen_box.machine` (BOARD rpi4) → `experiment/os2_image.sh
+makeen_box` → the arm64 kernel for BCM2711, the card's tree, the
+emulator's tree, a 256 MiB SD image → QEMU `raspi4b` → the transcript
+against `machines/makeen_box.expected`: **17 lines, identical**
+(2026-09-12). The pin is the EMULATOR's truth and says so in its lines:
+`ext4 at /data -- done` on `/dev/mmcblk0p2` by its declared name, and
+`net: eth0 -- no such interface (NODEV)` with the two worlds `never
+started` — the emulator has no Ethernet. The board's first boot is
+judged against this pin and is expected to differ there and nowhere
+else.
 
 ## The Makeen box, judged by its boot transcript (OS-3)
 
