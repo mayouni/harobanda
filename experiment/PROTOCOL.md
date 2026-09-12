@@ -1,3 +1,47 @@
+# PRJ-2 — the consumer convicts what the diff could not: Ring's comment is '#'
+
+The author said: run the projected `device.ring` through MicroRing. It
+was refused on the first try, and the refusal is the point of this
+entry.
+
+```
+Error (S1) In file: eval
+In Line (11) Literal not closed
+```
+
+**Line 11 of the projection was a COMMENT** — and Ring's comment
+character is `#`, not `--`. `--` is the machine language's, which is
+Lua's, and I had carried it across without checking MicroRing's own
+files (its template and every example open with `#`). Ring therefore
+saw no comment at all, read the prose as code, and the apostrophe in
+"the Device language's" opened a string literal that never closed.
+
+**The judge could not have caught it.** `judge_project.sh` diffed the
+projection against an expectation taken from the same generator: both
+sides were wrong in the same way, and the court was green. Only the
+CONSUMER could convict, and it did, in one line, the first time it was
+asked. So the consumer is now part of the judge: after the diff,
+`judge_project.sh` runs MicroRing on the projection when a binary is
+found beside the repository, and says so when there is none.
+
+With `#`, MicroRing accepts and runs the projected file unchanged:
+
+```
+[microring] pico2 . 2 pin(s) . 2000ms
+[microring] done at 2000ms
+```
+
+Two pins and the declared board, read out of a file this repository
+wrote from a `.machine` declaration. The expectation is re-pinned in
+the same commit as the fix.
+
+**The law this pays for:** a generated artifact is judged by the thing
+that consumes it, not by a diff against yesterday's output of the same
+generator. The transcripts have always had that property — QEMU is a
+real consumer — and the projection did not until now.
+
+---
+
 # PRJ-1 — the edge profile projected: a MicroRing project, written and judged
 
 Fourth and last of the four the author ordered on 2026-09-12, and the

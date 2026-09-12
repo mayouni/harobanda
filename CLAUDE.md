@@ -60,6 +60,11 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.
+- **A generated artifact is judged by what CONSUMES it**, never only by
+  a diff against the same generator's earlier output: both sides can be
+  wrong in the same way and the court stays green. QEMU judges the
+  images; MicroRing judges the projection (PRJ-2, where a diff passed a
+  file Ring could not parse).
 - **Assert the mechanism** — the court was probed with a mutated judge
   in fresh processes (wrong count, wrong fragment, valid source posing
   as reject → three reds) before its scoreboard was written.

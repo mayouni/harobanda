@@ -103,9 +103,12 @@ exists the every/on handlers are the author's Ring code beside the
 generated file, and the generated file names them rather than
 inventing them). The edge boards are MicroRing's own words: `sim`,
 `pico2`, `pico2w`, `esp32c6`. Judged by
-`machines/cold_room_sensor.device.ring.expected`
-(`experiment/judge_project.sh`), with both refusals as its negatives:
-projecting a hosted machine, and imaging an edge one.
+`machines/cold_room_sensor.device.ring.expected` AND by MicroRing
+itself (`experiment/judge_project.sh` runs the binary when it is beside
+this repository), with both refusals as its negatives: projecting a
+hosted machine, and imaging an edge one. The consumer joined the judge
+in PRJ-2, when a projection that passed the diff was refused by Ring
+for a comment character.
 
 The `.machine` file declares the sensor; the rest of the projection is
 MicroRing's:

@@ -38,22 +38,29 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
 
     var dev: std.ArrayList(u8) = .{};
     const w = dev.writer(arena);
-    try w.print("-- device.ring -- DERIVED by stzos project from the declared machine\n", .{});
-    try w.print("-- {s}. Do not edit: edit the machine and project it again.\n--\n", .{m.name});
-    try w.print("-- {s}\n--\n", .{m.rationale});
-    try w.print("-- What crossed over from the declaration: the board and every PIN.\n", .{});
-    try w.print("-- What did NOT, and why:\n", .{});
+    // Ring's comment character is '#'. The machine language's is '--',
+    // which is Lua's, and writing it into a Ring file made MicroRing stop
+    // at "Literal not closed" the first time it ran one of these: Ring saw
+    // no comment at all, so an apostrophe in the prose ("the Device
+    // language's") opened a string literal. Found by running the
+    // projection through its consumer, which is the only judge that could
+    // have found it -- a diff against our own output cannot (PRJ-2).
+    try w.print("# device.ring -- DERIVED by stzos project from the declared machine\n", .{});
+    try w.print("# {s}. Do not edit: edit the machine and project it again.\n#\n", .{m.name});
+    try w.print("# {s}\n#\n", .{m.rationale});
+    try w.print("# What crossed over from the declaration: the board and every PIN.\n", .{});
+    try w.print("# What did NOT, and why:\n", .{});
     for (m.mounts) |mt| {
-        try w.print("--   MOUNT {s} ({s} at {s}) -- the substrate's: MicroRing mounts the flash\n", .{ mt.name, @tagName(mt.fs), mt.at });
+        try w.print("#   MOUNT {s} ({s} at {s}) -- the substrate's: MicroRing mounts the flash\n", .{ mt.name, @tagName(mt.fs), mt.at });
     }
     for (m.capabilities) |c| {
-        try w.print("--   CAPABILITY {s} {s} -- the machine's envelope; MicroRing has no such gate\n", .{ @tagName(c.name), if (c.granted) "granted" else "refused" });
+        try w.print("#   CAPABILITY {s} {s} -- the machine's envelope; MicroRing has no such gate\n", .{ @tagName(c.name), if (c.granted) "granted" else "refused" });
     }
     for (m.services) |s| {
-        try w.print("--   SERVICE {s} (", .{s.name});
+        try w.print("#   SERVICE {s} (", .{s.name});
         for (s.run, 0..) |word, i| try w.print("{s}{s}", .{ if (i > 0) " " else "", word });
-        try w.print(") -- its BEHAVIOUR is the Device language's, not the machine's:\n", .{});
-        try w.print("--     write its every/on handler beside this file until that language exists\n", .{});
+        try w.print(") -- its BEHAVIOUR belongs to the Device language:\n", .{});
+        try w.print("#     write its every/on handler beside this file until that language exists\n", .{});
     }
     try w.print("\nDevice([\n", .{});
     try w.print("    :board = \"{s}\",\n", .{@tagName(m.board)});

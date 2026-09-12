@@ -78,9 +78,15 @@ meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
 pico2`) → `stzos project` → a real MicroRing project: a folder with a
 `device.ring` whose `Device([...])` carries the board and both pins.
 Diffed against `machines/cold_room_sensor.device.ring.expected` by
-`experiment/judge_project.sh`: **20 lines, identical**. Its negatives
-are the two refusals: projecting a hosted machine, and imaging an edge
-one. What does not cross over is printed rather than dropped — the
+`experiment/judge_project.sh`: **20 lines, identical** — and then run
+through MicroRing itself, which prints `pico2 . 2 pin(s) . 2000ms` and
+`done`. The consumer is part of the judge since PRJ-2, when the first
+projection passed the diff and was REFUSED by MicroRing: its comments
+were written with the machine language's `--` where Ring's is `#`, so
+Ring read the prose as code and an apostrophe opened a string literal.
+A diff against our own generator could never have found that. Its other
+negatives are the two refusals: projecting a hosted machine, and
+imaging an edge one. What does not cross over is printed rather than dropped — the
 flash mount (the substrate's), the capabilities (the machine's
 envelope), each service's behaviour (the Device language's).
 
