@@ -1,0 +1,51 @@
+-- makeen_box.machine -- the box behind the counter: server, network and
+-- bridge in one. The hosted profile's reference machine (fixture A2 is
+-- this file, verbatim). RestoLean's Makeen thread named the box; this
+-- declares it.
+
+DEFINE MACHINE makeen_box AS (
+  PROFILE hosted,
+  ARCH aarch64,
+  KERNEL linux,
+  LIBC musl,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "One box, no shell, no package manager: the declared machine is the system"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "The box is the restaurant's network"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "Orders and stock live on the box"
+
+DEFINE CAPABILITY gpio AS (
+  GRANT no
+) RATIONALE "No pins on the counter box; sensors are edge machines"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/mmcblk0p2",
+  OPTIONS [rw, noatime]
+) RATIONALE "The persistent partition"
+
+DEFINE SERVICE network_up AS (
+  RUN ["/stzos-net", "eth0"],
+  RESTART on_failure,
+  NEEDS [network]
+) RATIONALE "Bring the interface up before anything speaks"
+
+DEFINE SERVICE kds AS (
+  RUN ["/stzr", "/app/kds.luau"],
+  RESTART always,
+  AFTER [network_up],
+  NEEDS [network, filesystem]
+) RATIONALE "The kitchen display world"
+
+DEFINE SERVICE poste AS (
+  RUN ["/stzr", "/app/poste.luau"],
+  RESTART always,
+  AFTER [network_up, kds],
+  NEEDS [network, filesystem]
+) RATIONALE "The counter world"

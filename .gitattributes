@@ -1,0 +1,7 @@
+# LF everywhere, on every checkout: the fixture file is sha256-pinned
+# (declarative/machine/PINNING.md) and a CRLF conversion would silently
+# change the digest; the WSL script must stay bash-readable; the
+# .machine and .stzu fixtures accept CRLF by grammar but are born LF.
+* text=auto eol=lf
+*.png binary
+*.jpg binary

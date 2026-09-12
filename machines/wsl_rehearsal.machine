@@ -1,0 +1,35 @@
+-- wsl_rehearsal.machine -- a hosted machine whose services exist on any
+-- Linux (coreutils), so the init can be exercised under WSL: as a
+-- rehearsal from an ordinary pid, and as PID 1 inside a user namespace
+-- (`unshare -Urpf --mount-proc`). Every RESTART policy is represented,
+-- so the reaper's three branches all print.
+
+DEFINE MACHINE wsl_rehearsal AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux
+) RATIONALE "The init exercised on the only Linux this host has"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The services are processes and nothing more"
+
+DEFINE SERVICE once AS (
+  RUN ["/bin/true"],
+  RESTART never,
+  NEEDS [process]
+) RATIONALE "Exits 0 and is never restarted"
+
+DEFINE SERVICE flaky AS (
+  RUN ["/bin/false"],
+  RESTART on_failure,
+  AFTER [once],
+  NEEDS [process]
+) RATIONALE "Exits 1 and is restarted until init gives up"
+
+DEFINE SERVICE steady AS (
+  RUN ["/bin/sleep", "1"],
+  RESTART always,
+  AFTER [once],
+  NEEDS [process]
+) RATIONALE "Sleeps a second and is always restarted"

@@ -1,0 +1,65 @@
+-- machine.stzu -- the machine declaration language, declared in stzu.
+-- Judged by stz's own meta-court (face/stz/Stzu.luau) through
+-- experiment/judge_machine_stzu.luau: the OS's language is a citizen of
+-- the family from its first day, and when stzf forges, this file is
+-- what it consumes.
+
+DEFINE LANGUAGE machine AS (
+  VERSION "0.1",
+  GRAMMAR "0.1",
+  COURT "declarative/machine/fixtures.json",
+  EXTENSION ".machine"
+) RATIONALE "A machine declared whole -- profile, capabilities, mounts, pins, services -- with no shell on its boot path"
+
+DEFINE FORM word AS (
+  SEATS [value: text]
+) RATIONALE "One word of a service's argv; a service is an argv, never a shell line"
+
+DEFINE FORM need AS (
+  SEATS [capability: name]
+) RATIONALE "One capability a service needs; the name is drawn from stzlib's nine-name lattice"
+
+DEFINE FORM dependency AS (
+  SEATS [service: name]
+) RATIONALE "One service that must have started first"
+
+DEFINE FORM option AS (
+  SEATS [flag: name]
+) RATIONALE "One mount option from the closed menu"
+
+DEFINE DECLARATION box AS (
+  VERB "MACHINE",
+  SEATS [profile: name, arch: name, kernel: name, libc: name?, console: text?]
+) RATIONALE "The one identity declaration, first in the file: profile, architecture, kernel; libc and console default by profile"
+
+DEFINE DECLARATION service AS (
+  VERB "SERVICE",
+  SEATS [run: [word], restart: name?, after: [dependency], needs: [need]]
+) RATIONALE "A process the machine keeps: its argv, its restart policy, what it follows, what it needs"
+
+DEFINE DECLARATION capability AS (
+  VERB "CAPABILITY",
+  SEATS [grant: flag]
+) RATIONALE "The name IS the capability; the declaration only grants or refuses it -- silence refuses"
+
+DEFINE DECLARATION mount AS (
+  VERB "MOUNT",
+  SEATS [at: text, fs: name, device: text?, options: [option]]
+) RATIONALE "A filesystem of the profile at an absolute path"
+
+DEFINE DECLARATION pin AS (
+  VERB "PIN",
+  SEATS [gpio: number, mode: name]
+) RATIONALE "A GPIO line, granted through the gpio capability"
+
+DEFINE REFUSAL unknown_verb AS (
+  MESSAGE "The machine verb set is closed (DEFINE)."
+) RATIONALE "The closure speaks when an alien verb arrives"
+
+DEFINE REFUSAL dangling_reference AS (
+  MESSAGE "This name resolves to nothing in the declared machine."
+) RATIONALE "AFTER and NEEDS resolve at check time, never at boot"
+
+DEFINE REFUSAL duplicate_name AS (
+  MESSAGE "This name is already declared; one namespace, no duplicates."
+) RATIONALE "Two services with one name would be one service with two argvs"

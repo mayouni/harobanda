@@ -1,0 +1,301 @@
+{
+  "grammar": "machine",
+  "version": "0.1",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone.",
+  "accepts": [
+    {
+      "id": "A1",
+      "name": "the minimal machine: one MACHINE declaration, defaults stated",
+      "source": "DEFINE MACHINE hello AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux\n) RATIONALE \"The smallest declarable machine\"\n",
+      "expect": {
+        "name": "hello",
+        "profile": "hosted",
+        "arch": "x86_64",
+        "kernel": "linux",
+        "libc": "musl",
+        "console": "/dev/console",
+        "rationale": "The smallest declarable machine",
+        "counts": { "services": 0, "capabilities": 0, "mounts": 0, "pins": 0 },
+        "order": [],
+        "granted": []
+      }
+    },
+    {
+      "id": "A2",
+      "name": "the hosted box: the counter machine of a restaurant, whole",
+      "source": "-- makeen.machine -- the box behind the counter: server, network and bridge in one\n\nDEFINE MACHINE makeen_box AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  LIBC musl,\n  CONSOLE \"/dev/ttyS0\"\n) RATIONALE \"One box, no shell, no package manager: the declared machine is the system\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"The box is the restaurant's network\"\n\nDEFINE CAPABILITY filesystem AS (\n  GRANT yes\n) RATIONALE \"Orders and stock live on the box\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT no\n) RATIONALE \"No pins on the counter box; sensors are edge machines\"\n\nDEFINE MOUNT data AS (\n  AT \"/data\",\n  FS ext4,\n  DEVICE \"/dev/mmcblk0p2\",\n  OPTIONS [rw, noatime]\n) RATIONALE \"The persistent partition\"\n\nDEFINE SERVICE network_up AS (\n  RUN [\"/stzos-net\", \"eth0\"],\n  RESTART on_failure,\n  NEEDS [network]\n) RATIONALE \"Bring the interface up before anything speaks\"\n\nDEFINE SERVICE kds AS (\n  RUN [\"/stzr\", \"/app/kds.luau\"],\n  RESTART always,\n  AFTER [network_up],\n  NEEDS [network, filesystem]\n) RATIONALE \"The kitchen display world\"\n\nDEFINE SERVICE poste AS (\n  RUN [\"/stzr\", \"/app/poste.luau\"],\n  RESTART always,\n  AFTER [network_up, kds],\n  NEEDS [network, filesystem]\n) RATIONALE \"The counter world\"\n",
+      "expect": {
+        "name": "makeen_box",
+        "profile": "hosted",
+        "arch": "aarch64",
+        "kernel": "linux",
+        "libc": "musl",
+        "console": "/dev/ttyS0",
+        "counts": { "services": 3, "capabilities": 3, "mounts": 1, "pins": 0 },
+        "order": ["network_up", "kds", "poste"],
+        "granted": ["filesystem", "network"]
+      }
+    },
+    {
+      "id": "A3",
+      "name": "the edge sensor: no kernel, no libc, pins and a flash log",
+      "source": "DEFINE MACHINE cold_room_sensor AS (\n  PROFILE edge,\n  ARCH thumbv7em,\n  KERNEL none\n) RATIONALE \"A thermistor, a log, a radio: the binary is the device\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT yes\n) RATIONALE \"The probe and the LED are pins\"\n\nDEFINE CAPABILITY clock AS (\n  GRANT yes\n) RATIONALE \"Readings are timestamped\"\n\nDEFINE PIN led AS (\n  GPIO 17,\n  MODE out\n) RATIONALE \"Heartbeat\"\n\nDEFINE PIN probe AS (\n  GPIO 4,\n  MODE in\n) RATIONALE \"The thermistor\"\n\nDEFINE MOUNT log AS (\n  AT \"/log\",\n  FS littlefs,\n  DEVICE \"flash0\"\n) RATIONALE \"Power-loss safe, wear-levelled\"\n\nDEFINE SERVICE sense AS (\n  RUN [\"sense\"],\n  RESTART always,\n  NEEDS [gpio, clock]\n) RATIONALE \"Read, log, sleep\"\n",
+      "expect": {
+        "name": "cold_room_sensor",
+        "profile": "edge",
+        "arch": "thumbv7em",
+        "kernel": "none",
+        "libc": "none",
+        "console": "uart0",
+        "counts": { "services": 1, "capabilities": 2, "mounts": 1, "pins": 2 },
+        "order": ["sense"],
+        "granted": ["clock", "gpio"]
+      }
+    },
+    {
+      "id": "A4",
+      "name": "the touch phone: Android's kernel, the launcher is the pack",
+      "source": "DEFINE MACHINE server_phone AS (\n  PROFILE touch,\n  ARCH aarch64,\n  KERNEL android\n) RATIONALE \"The device is the job: no app drawer, one pack\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"Orders travel\"\n\nDEFINE CAPABILITY inference AS (\n  GRANT yes\n) RATIONALE \"A small model on the device, offline\"\n\nDEFINE SERVICE launcher AS (\n  RUN [\"/system/bin/stzr\", \"/pack/launcher.luau\"],\n  RESTART always,\n  NEEDS [network, inference]\n) RATIONALE \"The pack's entry surface\"\n",
+      "expect": {
+        "name": "server_phone",
+        "profile": "touch",
+        "arch": "aarch64",
+        "kernel": "android",
+        "libc": "bionic",
+        "console": "logcat",
+        "counts": { "services": 1, "capabilities": 2, "mounts": 0, "pins": 0 },
+        "order": ["launcher"],
+        "granted": ["inference", "network"]
+      }
+    },
+    {
+      "id": "A5",
+      "name": "AFTER orders the services; declaration order breaks ties",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"order\"\nDEFINE SERVICE c AS (RUN [\"c\"], AFTER [a, b]) RATIONALE \"third\"\nDEFINE SERVICE b AS (RUN [\"b\"], AFTER [a]) RATIONALE \"second\"\nDEFINE SERVICE a AS (RUN [\"a\"]) RATIONALE \"first\"\n",
+      "expect": {
+        "counts": { "services": 3, "capabilities": 0, "mounts": 0, "pins": 0 },
+        "order": ["a", "b", "c"]
+      }
+    },
+    {
+      "id": "A6",
+      "name": "a string may span lines; continuation whitespace folds to one space (C6 3.2)",
+      "source": "DEFINE MACHINE m AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux\n) RATIONALE \"One\n             two\n\tthree\"\n",
+      "expect": {
+        "rationale": "One two three"
+      }
+    },
+    {
+      "id": "A7",
+      "name": "CRLF line endings are accepted and never diagnosed",
+      "source": "DEFINE MACHINE m AS (\r\n  PROFILE hosted,\r\n  ARCH x86_64,\r\n  KERNEL linux\r\n) RATIONALE \"crlf\"\r\nDEFINE SERVICE s AS (\r\n  RUN [\"s\"]\r\n) RATIONALE \"one\"\r\n",
+      "expect": {
+        "name": "m",
+        "counts": { "services": 1, "capabilities": 0, "mounts": 0, "pins": 0 }
+      }
+    },
+    {
+      "id": "A8",
+      "name": "comments anywhere, trailing commas everywhere, an empty list",
+      "source": "-- a comment before anything\nDEFINE MACHINE m AS ( -- after a paren\n  PROFILE hosted, -- after a clause\n  ARCH x86_64,\n  KERNEL linux,\n) RATIONALE \"commas\"\nDEFINE CAPABILITY clock AS (GRANT yes,) RATIONALE \"tick\"\nDEFINE SERVICE s AS (\n  RUN [\"s\", \"--flag\",],\n  AFTER [],\n  NEEDS [clock,],\n) RATIONALE \"lists\"\n-- a comment at the end, no newline",
+      "expect": {
+        "counts": { "services": 1, "capabilities": 1, "mounts": 0, "pins": 0 },
+        "granted": ["clock"]
+      }
+    }
+  ],
+  "rejects": [
+    {
+      "id": "R1",
+      "name": "the alien verb dies at the top",
+      "source": "DROP MACHINE m AS (PROFILE hosted) RATIONALE \"x\"\n",
+      "refusal": "Unknown verb"
+    },
+    {
+      "id": "R2",
+      "name": "an alien kind dies after DEFINE",
+      "source": "DEFINE ROUTER r AS (PROFILE hosted) RATIONALE \"x\"\n",
+      "refusal": "kinds are closed"
+    },
+    {
+      "id": "R3",
+      "name": "keywords are case-sensitive: lowercase define is an unknown verb",
+      "source": "define MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\n",
+      "refusal": "Unknown verb"
+    },
+    {
+      "id": "R4",
+      "name": "RATIONALE is mandatory on every declaration",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux)\n",
+      "refusal": "RATIONALE is mandatory"
+    },
+    {
+      "id": "R5",
+      "name": "the boot path has no shell: a shell line is unexpressible",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/bin/sh\", \"-c\", \"stzr kds.luau\"]) RATIONALE \"x\"\n",
+      "refusal": "never a shell line"
+    },
+    {
+      "id": "R6",
+      "name": "RUN is an argv, one word per string, never one command string",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN \"stzr kds.luau\") RATIONALE \"x\"\n",
+      "refusal": "string list"
+    },
+    {
+      "id": "R7",
+      "name": "one namespace: a name declared twice is refused",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE kds AS (RUN [\"a\"]) RATIONALE \"x\"\nDEFINE SERVICE kds AS (RUN [\"b\"]) RATIONALE \"x\"\n",
+      "refusal": "already declared"
+    },
+    {
+      "id": "R8",
+      "name": "AFTER a service that resolves to nothing is refused at check time",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE kds AS (RUN [\"a\"], AFTER [network_up]) RATIONALE \"x\"\n",
+      "refusal": "resolves to nothing"
+    },
+    {
+      "id": "R9",
+      "name": "exactly one MACHINE per file",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MACHINE n AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\n",
+      "refusal": "exactly one MACHINE"
+    },
+    {
+      "id": "R10",
+      "name": "the MACHINE declaration comes first",
+      "source": "DEFINE SERVICE s AS (RUN [\"a\"]) RATIONALE \"x\"\nDEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\n",
+      "refusal": "comes first"
+    },
+    {
+      "id": "R11",
+      "name": "the identity surface is structural: ARCH is required",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, KERNEL linux) RATIONALE \"x\"\n",
+      "refusal": "ARCH is required"
+    },
+    {
+      "id": "R12",
+      "name": "an unknown clause is refused, naming the allowed set",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, COLOUR blue) RATIONALE \"x\"\n",
+      "refusal": "Unknown clause"
+    },
+    {
+      "id": "R13",
+      "name": "double quotes only: a single-quoted string is an alien character",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE 'x'\n",
+      "refusal": "not part of the machine grammar"
+    },
+    {
+      "id": "R14",
+      "name": "a mixed-case word is neither identifier nor keyword",
+      "source": "DEFINE MACHINE MakeenBox AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\n",
+      "refusal": "lower_snake"
+    },
+    {
+      "id": "R15",
+      "name": "a profile and a kernel that contradict each other",
+      "source": "DEFINE MACHINE m AS (PROFILE edge, ARCH thumbv7em, KERNEL linux) RATIONALE \"x\"\n",
+      "refusal": "contradicts"
+    },
+    {
+      "id": "R16",
+      "name": "the capability menu is closed: bluetooth is not a capability",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY bluetooth AS (GRANT yes) RATIONALE \"x\"\n",
+      "refusal": "not a capability"
+    },
+    {
+      "id": "R17",
+      "name": "silence is refusal: needing a capability no declaration grants",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"a\"], NEEDS [network]) RATIONALE \"x\"\n",
+      "refusal": "no declaration grants"
+    },
+    {
+      "id": "R18",
+      "name": "needing a capability the machine refuses is refused at check time",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT no) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"a\"], NEEDS [network]) RATIONALE \"x\"\n",
+      "refusal": "declared and refused"
+    },
+    {
+      "id": "R19",
+      "name": "an unterminated string is refused",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\n",
+      "refusal": "Unterminated"
+    },
+    {
+      "id": "R20",
+      "name": "a PIN without the gpio capability granted",
+      "source": "DEFINE MACHINE m AS (PROFILE edge, ARCH thumbv7em, KERNEL none) RATIONALE \"x\"\nDEFINE PIN led AS (GPIO 17, MODE out) RATIONALE \"x\"\n",
+      "refusal": "no declaration grants gpio"
+    },
+    {
+      "id": "R21",
+      "name": "AFTER forms a cycle: no order starts it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE a AS (RUN [\"a\"], AFTER [b]) RATIONALE \"x\"\nDEFINE SERVICE b AS (RUN [\"b\"], AFTER [a]) RATIONALE \"x\"\n",
+      "refusal": "cycle"
+    },
+    {
+      "id": "R22",
+      "name": "ext4 is not a filesystem of the edge profile",
+      "source": "DEFINE MACHINE m AS (PROFILE edge, ARCH thumbv7em, KERNEL none) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"mmc0\") RATIONALE \"x\"\n",
+      "refusal": "not a filesystem of the edge profile"
+    },
+    {
+      "id": "R23",
+      "name": "GRANT is yes or no, never maybe",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT maybe) RATIONALE \"x\"\n",
+      "refusal": "GRANT is yes or no"
+    },
+    {
+      "id": "R24",
+      "name": "a mount point is an absolute path",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"data\", FS tmpfs) RATIONALE \"x\"\n",
+      "refusal": "absolute path"
+    },
+    {
+      "id": "R25",
+      "name": "the restart menu is closed",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"a\"], RESTART sometimes) RATIONALE \"x\"\n",
+      "refusal": "RESTART is never, always or on_failure"
+    },
+    {
+      "id": "R26",
+      "name": "the touch profile owns no mounts: Android's init does",
+      "source": "DEFINE MACHINE m AS (PROFILE touch, ARCH aarch64, KERNEL android) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/block/x\") RATIONALE \"x\"\n",
+      "refusal": "touch profile owns no mounts"
+    },
+    {
+      "id": "R27",
+      "name": "a service cannot come after itself",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE a AS (RUN [\"a\"], AFTER [a]) RATIONALE \"x\"\n",
+      "refusal": "after itself"
+    },
+    {
+      "id": "R28",
+      "name": "RUN must name a program: an empty argv is refused",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE a AS (RUN []) RATIONALE \"x\"\n",
+      "refusal": "RUN must name a program"
+    },
+    {
+      "id": "R29",
+      "name": "a block filesystem needs a DEVICE",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4) RATIONALE \"x\"\n",
+      "refusal": "needs a DEVICE"
+    },
+    {
+      "id": "R30",
+      "name": "a clause given twice is refused",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, ARCH aarch64) RATIONALE \"x\"\n",
+      "refusal": "given twice"
+    },
+    {
+      "id": "R31",
+      "name": "a libc that contradicts the profile",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, LIBC bionic) RATIONALE \"x\"\n",
+      "refusal": "contradicts LIBC"
+    },
+    {
+      "id": "R32",
+      "name": "an empty file declares nothing",
+      "source": "-- nothing but a comment\n",
+      "refusal": "declares nothing"
+    }
+  ]
+}
