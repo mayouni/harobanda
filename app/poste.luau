@@ -17,6 +17,10 @@ print("poste: /data is the box's persistent partition, mounted by PID 1 before a
 print("poste: serving -- signalling /run/poste.ready")
 writefile("/run/poste.ready", "poste\n")
 
+-- ... and keeps saying it: the machine declares HEALTH 5, so PID 1
+-- feeds the board's watchdog only while this path stays fresh, and a
+-- trial commits only after one full window of it (HLT-1)
 while true do
     sleep(1000)
+    writefile("/run/poste.ready", "poste\n")
 end

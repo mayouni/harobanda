@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-a3ea9fca4c2f118de31b6dd071e7025bc261e7b24f77692cdf5fd519fa8714f7
+e65f7b668ee8917b1b3a2d9aa5837f13559ab2935da36b9c63881fdac68c24cf
 ```
 
-(Before the box's worlds became DAEMONS on 2026-09-13 (SRV-1):
+(Before the HEALTH seat of 2026-09-13 (HLT-1):
+`a3ea9fca4c2f118de31b6dd071e7025bc261e7b24f77692cdf5fd519fa8714f7`,
+67/67; the widening added A16, R53, R54, R55 and gave A2's two services
+their windows. Before the box's worlds became DAEMONS on 2026-09-13 (SRV-1):
 `826ab41fea0333d6f347763610e31803a9173c1253ac56cc0709d0aa14545750`,
 67/67 then and 67/67 now — the language did not widen; fixture A2 is
 `machines/makeen_box.machine` verbatim, and that file's two services
@@ -47,7 +50,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **67/67** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **71/71** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -90,9 +93,10 @@ second text through the emulator's lens (`/etc/expected.emulator`,
 selected by `stzos.expect=emulator` on the emulator's boot line and
 never on the card's); the diff of the two is the list of the emulator's
 lacks, printed at build time. The three pinned transcripts carry the
-verdicts: **33, 25 and 81 lines, identical** (25 and 81 since SRV-1,
-when the box's worlds became daemons; 23 and 75 before it, 22 and 49
-before JDG-1). The box's 81 hold three card boots: the trial through the emulator's lens
+verdicts: **33, 26 and 84 lines, identical** (26 and 84 since HLT-1,
+which gave the box's worlds their health windows; 25 and 81 at SRV-1
+when they became daemons; 23 and 75 before that, 22 and 49 before
+JDG-1). The box's 84 hold three card boots: the trial through the emulator's lens
 committed, the held trial not committed, and the NEGATIVE — the same
 trial judged through the board's lens, which the emulator cannot meet:
 `differs from its expectation (/etc/expected): 2 line(s) expected and
@@ -101,6 +105,27 @@ not committed ... the next boot is A`, and the card read back still
 booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
+
+## The health window, judged by a world that stops serving (HLT-1)
+
+`HEALTH <seconds>` on a service that declares READY: the window within
+which the daemon must refresh that path. Fixture-first — A16 accepts a
+declared window; R53 refuses HEALTH without READY ("HEALTH is measured
+on the READY path"), R54 refuses a window of zero, R55 refuses HEALTH on
+a MOUNT by the clause menu. **71/71**, from 67/67, and the court was red
+for three named reasons before the parser was touched.
+
+What the seat governs, and what judges it: PID 1 feeds the hardware
+watchdog only while every world with a window is fresh, and a trial
+commits only once every such world has been ready THROUGH one full
+window. Staleness latches. The POSITIVE is pinned in the box's
+transcripts (`health -- kds every 5s, poste every 5s`, and a commit line
+that says the window was held); the NEGATIVE is demonstrated in the WSL
+rehearsal, where `signals` is a `flock` that creates its path once and
+never touches it again — caught in seconds, with no kernel and no
+emulator. The window's own logic is judged beside the code in
+`src/init.zig` (ready at the signal, proven one window later, the latch,
+and a world with no window owing nothing).
 
 ## The edge projection, judged as text (PRJ-1)
 

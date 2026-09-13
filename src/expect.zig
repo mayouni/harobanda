@@ -54,6 +54,28 @@ pub fn startLine(w: *std.Io.Writer, s: *const machine.Service, pid: []const u8) 
     try w.print("\n", .{});
 }
 
+/// The standing HEALTH line: which worlds must keep saying they serve,
+/// and how often. Worded ONCE here, like every judged line -- init
+/// prints it and derive() writes it. Returns false when no world
+/// declares a window, and then nothing is said at all.
+pub fn healthLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    var any = false;
+    for (m.services) |s| {
+        if (s.health != null) any = true;
+    }
+    if (!any) return false;
+    try w.print("boot: health -- ", .{});
+    var first = true;
+    for (m.services) |s| {
+        if (s.health) |h| {
+            try w.print("{s}{s} every {d}s", .{ if (first) "" else ", ", s.name, h });
+            first = false;
+        }
+    }
+    try w.print("; a world that stops refreshing stops the watchdog\n", .{});
+    return true;
+}
+
 pub const Watchdog = enum { armed, off };
 
 /// Through which eyes the boot is expected. The board's lens is the
@@ -119,6 +141,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
         .armed => try w.writeAll(fmt_watchdog_armed),
         .off => try w.writeAll(fmt_watchdog_off),
     };
+    _ = try healthLine(w, m);
     // every service starts; a one-shot is ready when it has exited 0, a
     // daemon when spawned or, if it declares READY, when it has signalled
     for (p.steps) |step| if (step == .service) {
@@ -237,7 +260,7 @@ const box_src =
     \\DEFINE NETWORK lan AS ( INTERFACE "eth0", ADDRESS "192.168.10.1/24", GATEWAY "192.168.10.254", DNS ["1.1.1.1"] ) RATIONALE "static"
     \\DEFINE USER world AS ( UID 1000 ) RATIONALE "an identity"
     \\DEFINE SERVICE once AS ( RUN ["/stzos", "id"], RESTART never, NEEDS [network], USER world ) RATIONALE "a one-shot"
-    \\DEFINE SERVICE serve AS ( RUN ["/stzr", "/app/serve.luau"], RESTART always, AFTER [once], NEEDS [network], READY "/run/serve.ready" ) RATIONALE "a daemon"
+    \\DEFINE SERVICE serve AS ( RUN ["/stzr", "/app/serve.luau"], RESTART always, AFTER [once], NEEDS [network], READY "/run/serve.ready", HEALTH 3 ) RATIONALE "a daemon"
     \\
 ;
 
@@ -269,6 +292,7 @@ test "the board's expectation is derived from the declaration, line for line" {
         \\boot: refuse gpio (effectful)
         \\boot: network lan -- eth0 up 192.168.10.1/24, gateway 192.168.10.254, dns [1.1.1.1]
         \\boot: watchdog armed (/dev/watchdog)
+        \\boot: health -- serve every 3s; a world that stops refreshing stops the watchdog
         \\boot: start once -- pid N -- /stzos id -- as world (1000:1000)
         \\boot: once (pid N) exited 0
         \\boot: start serve -- pid N -- /stzr /app/serve.luau

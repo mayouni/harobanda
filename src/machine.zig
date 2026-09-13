@@ -91,6 +91,14 @@ pub const Service = struct {
     /// path it creates when it is up. A one-shot has no use for it (its
     /// readiness is its exit 0) and is refused one.
     ready: ?[]const u8,
+    /// the window, in seconds, within which the daemon must REFRESH that
+    /// path -- its word that it is serving STILL. A world can be alive
+    /// and wedged; the kernel cannot tell the difference and the
+    /// watchdog was fed regardless until HLT-1. With a window declared,
+    /// PID 1 feeds the hardware only while every world is fresh, and a
+    /// trial commits only after each has proven one full window. Null is
+    /// a world that answers for its start and never again.
+    health: ?u32,
     /// the declared identity this service runs as; null is the machine
     /// itself (root), which is what a service gets only by saying nothing
     user: ?*const User,
@@ -387,7 +395,7 @@ const Decl = struct {
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
         .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "USER" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "USER" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
@@ -742,6 +750,15 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             };
             ready = path;
         }
+        // HEALTH reads AFTER ready, because it is measured on that path
+        var health: ?u32 = null;
+        if (find(d, "HEALTH")) |c| {
+            if (ready == null) return ctx.refuse(c.line, "HEALTH is measured on the READY path, and {s} declares none: a world with nothing to refresh cannot be found wedged", .{d.name});
+            const secs = try wantNumber(&ctx, c);
+            if (secs == 0) return ctx.refuse(c.line, "HEALTH 0 is not a window: a world that never has to refresh is a world that can stop serving unnoticed", .{});
+            if (secs > 3600) return ctx.refuse(c.line, "HEALTH {d} is longer than an hour: a window nobody would wait out is a promise the watchdog cannot keep", .{secs});
+            health = @intCast(secs);
+        }
         var user: ?*const User = null;
         if (find(d, "USER")) |c| {
             const uname = try wantIdent(&ctx, c);
@@ -750,7 +767,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             };
             if (user == null) return ctx.refuse(c.line, "{s} runs as '{s}', which resolves to nothing: no such USER", .{ d.name, uname });
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .user = user, .rationale = d.rationale });
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .user = user, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
 

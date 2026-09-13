@@ -143,6 +143,7 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
                 try out.print("]", .{});
             }
             if (svc.ready) |r| try out.print(" -- ready on {s}", .{r});
+            if (svc.health) |h| try out.print(" -- fresh every {d}s", .{h});
             if (svc.user) |u| try out.print(" -- as {s} ({d}:{d})", .{ u.name, u.uid, u.gid });
             try out.print("\n", .{});
         },

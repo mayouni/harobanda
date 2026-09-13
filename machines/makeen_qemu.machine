@@ -46,6 +46,7 @@ DEFINE SERVICE kds AS (
   RUN ["/stzr", "/app/kds.luau"],
   RESTART always,
   READY "/run/kds.ready",
+  HEALTH 5,
   NEEDS [process, filesystem, network]
 ) RATIONALE "The kitchen display world: a daemon that says when it is serving"
 
@@ -53,6 +54,7 @@ DEFINE SERVICE poste AS (
   RUN ["/stzr", "/app/poste.luau"],
   RESTART always,
   READY "/run/poste.ready",
+  HEALTH 5,
   AFTER [kds],
   NEEDS [process, filesystem, network]
 ) RATIONALE "The counter world: a daemon, after the kitchen display is serving"

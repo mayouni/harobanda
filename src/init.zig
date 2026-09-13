@@ -206,6 +206,22 @@ fn commitText(gpa: std.mem.Allocator, text: []const u8, from: u8, to: u8) ![]u8 
     return std.mem.concat(gpa, u8, &.{ head, tail });
 }
 
+/// The wall clock in milliseconds. The machine sets no clock -- the
+/// board has no RTC and there is no time protocol on the boot path --
+/// so this reading only advances, and it comes from the same source as
+/// the mtimes it is compared against. The day a machine sets its time,
+/// this is the line to revisit (HLT-1).
+fn nowMs() i64 {
+    return std.time.milliTimestamp();
+}
+
+/// When the world last touched its READY path, or null if the path is
+/// gone: a world that deleted its own signal is not fresh either.
+fn mtimeMs(path: []const u8) ?i64 {
+    const st = std.fs.cwd().statFile(path) catch return null;
+    return @intCast(@divTrunc(st.mtime, std.time.ns_per_ms));
+}
+
 fn feedWatchdog(s: *Slots) void {
     if (s.wd_fd) |fd| _ = std.os.linux.write(fd, "\x00", 1);
 }
@@ -219,6 +235,56 @@ test "the committed slot is read from config.txt and a commit swaps the two pref
     try std.testing.expectEqual(@as(?u8, 'B'), committedSlot(after));
     try std.testing.expectEqual(@as(?u8, null), committedSlot("kernel=kernel8.img\n"));
     try std.testing.expectError(error.NoTryboot, commitText(std.testing.allocator, "os_prefix=slots/A/\n", 'A', 'B'));
+}
+
+test "a world with a window is ready at its signal but PROVEN only one window later, and staleness latches" {
+    const watched = machine.Service{
+        .name = "kds",
+        .line = 1,
+        .run = &.{"/kds"},
+        .restart = .always,
+        .after = &.{},
+        .needs = &.{},
+        .ready = "/run/kds.ready",
+        .health = 5,
+        .user = null,
+        .rationale = "a world that keeps saying it serves",
+    };
+    const unwatched = machine.Service{
+        .name = "poste",
+        .line = 2,
+        .run = &.{"/poste"},
+        .restart = .always,
+        .after = &.{},
+        .needs = &.{},
+        .ready = "/run/poste.ready",
+        .health = null,
+        .user = null,
+        .rationale = "a world that answers for its start and never again",
+    };
+
+    var s = Slot{ .service = &watched, .state = .running, .signalled_ready = true, .signalled_ms = 1_000 };
+    // ready the moment it signals -- that is what AFTER waits for
+    try std.testing.expect(s.ready());
+    // ... and proven only one full window later -- that is what a TRIAL waits for
+    try std.testing.expect(!s.proven(1_000));
+    try std.testing.expect(!s.proven(5_999));
+    try std.testing.expect(s.proven(6_000));
+
+    // staleness latches: a world that stopped serving stays unproven,
+    // because a feed that resumed on recovery would hide the very fault
+    // the watchdog exists for
+    s.stale = true;
+    try std.testing.expect(!s.proven(60_000));
+
+    // a world with no window owes nothing, and proves nothing
+    const p = Slot{ .service = &unwatched, .state = .running, .signalled_ready = true, .signalled_ms = 1_000 };
+    try std.testing.expect(p.proven(0));
+
+    // and one that never signalled is neither ready nor proven
+    const q = Slot{ .service = &watched, .state = .running };
+    try std.testing.expect(!q.ready());
+    try std.testing.expect(!q.proven(1_000_000));
 }
 
 const is_linux = builtin.os.tag == .linux;
@@ -247,6 +313,8 @@ const Slot = struct {
     code: u32 = 0,
     signaled: bool = false, // killed by a signal (the kernel's word)
     signalled_ready: bool = false, // its READY path has been seen (its own word)
+    signalled_ms: i64 = 0, // when PID 1 saw that word
+    stale: bool = false, // it stopped refreshing, and that latches
     restarts: usize = 0,
 
     fn ready(self: Slot) bool {
@@ -266,7 +334,46 @@ const Slot = struct {
     fn failed(self: Slot) bool {
         return self.service.restart == .never and self.state == .exited and (self.signaled or self.code != 0);
     }
+    /// A world with a declared window has PROVEN it serves only once a
+    /// full window has passed since it signalled, and it is not stale.
+    /// This is what a trial waits for: "serving" that survives one
+    /// window is worth committing an update on; "serving" measured at
+    /// the instant of the signal is not (HLT-1). A world with no window
+    /// proves nothing and owes nothing.
+    fn proven(self: Slot, now: i64) bool {
+        const window = self.service.health orelse return true;
+        if (!self.signalled_ready or self.stale) return false;
+        return now - self.signalled_ms >= @as(i64, window) * 1000;
+    }
 };
+
+/// Every world with a window must refresh its READY path within it. The
+/// first that does not is said once and LATCHES: a world that stopped
+/// serving has already cost the box its promise, and a feed that
+/// resumed on recovery would hide exactly the fault the watchdog exists
+/// for. Returns true when something went stale in this look.
+fn checkHealth(slots: []Slot, out: *std.Io.Writer) !bool {
+    var went_stale = false;
+    const now = nowMs();
+    for (slots) |*s| {
+        const window = s.service.health orelse continue;
+        if (!s.signalled_ready or s.stale) continue;
+        const path = s.service.ready.?;
+        const touched = mtimeMs(path) orelse {
+            s.stale = true;
+            went_stale = true;
+            try out.print("boot: {s} -- stale: {s} is gone; a world that deletes its own signal is not serving\n", .{ s.service.name, path });
+            continue;
+        };
+        const age = now - touched;
+        if (age > @as(i64, window) * 1000) {
+            s.stale = true;
+            went_stale = true;
+            try out.print("boot: {s} -- stale: {s} has not been refreshed for {d}s (window {d}s)\n", .{ s.service.name, path, @divTrunc(age, 1000), window });
+        }
+    }
+    return went_stale;
+}
 
 pub fn run(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Writer) !u8 {
     if (!is_linux) {
@@ -413,6 +520,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         try out.flush();
     };
 
+    _ = try expect.healthLine(led.w(), m);
+    try led.echo();
     try startReady(gpa, slots.items, &led);
     try out.flush();
 
@@ -421,8 +530,31 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     var turns: usize = 0;
     var judged = false; // the verdict is given once
     var held = false; // a trial the judge refused: not committed, the watchdog no longer fed
+    var starved = false; // a world stopped serving: the feed stops with it
+    var has_health = false;
+    for (slots.items) |sl| {
+        if (sl.service.health != null) has_health = true;
+    }
     while (true) {
-        if (ab) |*s| if (!opts.hold and !held) feedWatchdog(s);
+        // the hardware is fed only while every world is fresh (HLT-1)
+        if (ab) |*s| if (!opts.hold and !held and !starved) feedWatchdog(s);
+        if (try checkHealth(slots.items, out) and !starved) {
+            starved = true;
+            if (ab) |*s| {
+                if (s.wd_fd != null) {
+                    try out.print("boot: the watchdog is no longer fed -- what follows is the board's reset, into the committed slot\n", .{});
+                } else {
+                    try out.print("boot: no watchdog is armed here to answer; on the board this is where the reset comes from\n", .{});
+                }
+                if (!s.done and !opts.hold) {
+                    try out.print("boot: slot {c} -- held: a world stopped serving before the trial was committed; not committed, the next boot is {c}\n", .{ s.booted orelse '?', s.committed orelse '?' });
+                    s.done = true;
+                }
+            } else {
+                try out.print("boot: this machine declares no SLOTS and arms no watchdog; on a board a stale world is what resets it\n", .{});
+            }
+            try out.flush();
+        }
         if (!judged and !opts.rehearse) {
             // the verdict comes when every service is READY -- a one-shot
             // exited 0, a daemon spawned or signalled -- never merely started:
@@ -436,7 +568,15 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             for (slots.items) |sl| if (!sl.ready()) {
                 all_ready = false;
             };
-            if (all_ready) {
+            // ... and, where a window is declared, ready THROUGH one of
+            // them: a trial is not committed on a world that served for
+            // an instant (HLT-1)
+            const now = nowMs();
+            var all_proven = true;
+            for (slots.items) |sl| if (!sl.proven(now)) {
+                all_proven = false;
+            };
+            if (all_ready and all_proven) {
                 judged = true;
                 const matches = try judgeBoot(gpa, &led, out);
                 if (ab) |*s| if (!s.done and !opts.hold) {
@@ -450,7 +590,10 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                                     f.writeAll(new_cfg) catch {};
                                     f.sync() catch {};
                                     linux.sync();
-                                    try out.print("boot: slot {c} -- committed: every service is ready and the boot matches its expectation; config.txt now boots {c}, {c} is the fallback\n", .{ s.booted.?, s.booted.?, s.committed.? });
+                                    // the rule this line states is the rule the loop enforced:
+                                    // ready, past the window where one is declared (HLT-1), and
+                                    // the boot recognised as this machine's own
+                                    try out.print("boot: slot {c} -- committed: every service is ready{s} and the boot matches its expectation; config.txt now boots {c}, {c} is the fallback\n", .{ s.booted.?, if (has_health) " and has held its health window" else "", s.booted.?, s.committed.? });
                                 } else |e| try out.print("boot: slot {c} -- commit refused: config.txt: {s}\n", .{ s.booted.?, @errorName(e) });
                             } else |e| try out.print("boot: slot {c} -- commit refused: {s}\n", .{ s.booted.?, @errorName(e) });
                         } else |e| try out.print("boot: slot {c} -- commit refused: config.txt unreadable: {s}\n", .{ s.booted.?, @errorName(e) });
@@ -467,9 +610,14 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                 try out.flush();
             }
         }
-        if (judged and opts.halt_on_verdict) {
-            // a real init would keep the machine alive here, for years
-            try out.print("boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would\n", .{});
+        if (opts.halt_on_verdict and (judged or starved)) {
+            // a real init would keep the machine alive here, for years --
+            // or let the watchdog end it, which is the starved case
+            if (judged) {
+                try out.print("boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would\n", .{});
+            } else {
+                try out.print("boot: --halt-on-verdict: a world stopped serving and the feed stopped with it; the court ends what the board's reset would end\n", .{});
+            }
             break;
         }
         var alive: usize = 0;
@@ -528,7 +676,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         // the watchdog needs feeding, a declared signal is outstanding,
         // a service has not started yet (only a signal can start it), or
         // the court's instrument is still owed a verdict.
-        const polling = ab != null or poll.awaiting or pending > 0 or (opts.halt_on_verdict and !judged);
+        const polling = ab != null or poll.awaiting or pending > 0 or has_health or (opts.halt_on_verdict and !judged);
         var status: u32 = 0;
         const rc = linux.wait4(-1, &status, if (polling) linux.W.NOHANG else 0, null);
         if (polling and rc == 0) {
@@ -662,6 +810,7 @@ fn pollReady(slots: []Slot, led: *Ledger) !struct { signalled: bool, awaiting: b
         const path = s.service.ready.?;
         if (std.fs.cwd().access(path, .{})) |_| {
             s.signalled_ready = true;
+            s.signalled_ms = nowMs();
             signalled = true;
             try led.say(expect.fmt_ready, .{ s.service.name, path });
         } else |_| {

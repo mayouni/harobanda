@@ -1,3 +1,101 @@
+# HLT-1 — the watchdog is fed on HEALTH: a world can be alive and wedged, and until today nothing noticed
+
+Second of the five acts of 2026-09-13, and the second half of the
+guarantee RestoLean's sheet calls *traverse la coupure* — survives the
+cut. SRV-1 gave the box worlds that serve. This one asks what happens
+when a world is still there and no longer serving.
+
+## What was wrong
+
+The hardware watchdog was fed every turn of PID 1's loop, unconditionally.
+So it protected the box against exactly one thing: PID 1 itself dying,
+or the kernel hanging. A kitchen display whose process is alive and whose
+service has stopped — the ordinary failure of a real box — fed the
+watchdog just as happily as a healthy one, and an A/B trial committed on
+a world that had served for an instant.
+
+## The seat
+
+`HEALTH <seconds>` on a service that declares READY: the window within
+which the daemon must REFRESH that path. Fixture-first, as always — the
+court went red for three named reasons before a line of the parser was
+written (A16, R53, R54, R55; 71/71 after, from 67/67).
+
+```
+DEFINE SERVICE kds AS (
+  RUN ["/stzr", "/app/kds.luau"],
+  RESTART always,
+  READY "/run/kds.ready",
+  HEALTH 5,
+  NEEDS [network, filesystem]
+) RATIONALE "..."
+```
+
+One path, two roles, and R45 still holds: one path signals for one
+service. The world creates it to say *I am serving*, and touches it to
+say *I am serving still*.
+
+## What it changes, in three rules
+
+1. **The feed.** PID 1 feeds the hardware only while every world with a
+   window is fresh. The first that goes stale is named — `kds -- stale:
+   /run/kds.ready has not been refreshed for 6s (window 5s)` — the feed
+   stops, and the board's reset into the committed slot is the answer.
+2. **The commit.** A trial commits only once every such world has been
+   ready THROUGH one full window. "Serving" measured at the instant of
+   the signal is not worth an update; "serving one window later" is. The
+   commit line says so in the transcript.
+3. **The latch.** Staleness does not clear. A world that recovers does
+   not resume the feed, because a feed that resumed would hide exactly
+   the fault the watchdog exists for. AFTER is untouched: readiness is
+   still the signal, so nothing waits a window to start.
+
+A world that deletes its own signal is stale too — the check reads the
+path's mtime, and a missing path is not a fresh one.
+
+## The negative, demonstrated
+
+`machines/wsl_rehearsal.machine`'s `signals` service is
+`flock /tmp/stzos-signals.ready /bin/sleep 30`: it CREATES its path at
+start and never touches it again. That is precisely the world HEALTH
+exists to catch, and it was already in the rehearsal for another reason.
+With `HEALTH 2` declared it is caught in seconds, with no kernel and no
+emulator:
+
+```
+boot: signals -- stale: /tmp/stzos-signals.ready has not been refreshed for 2s (window 2s)
+boot: this machine declares no SLOTS and arms no watchdog; on a board a stale world is what resets it
+```
+
+The rehearsal's `--turns` went from 8 to 12 for one reason, stated in
+the script: the run has to OUTLIVE a window, or it proves nothing.
+
+## The positive, pinned
+
+The box's worlds refresh every second against a five-second window. The
+card's three boots are unchanged in kind and now carry the rule:
+
+```
+boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
+boot: slot B -- committed: every service is ready and has held its health window and the boot matches its expectation
+```
+
+- `makeen_box`: **84 lines** (from 81), three card boots.
+- `makeen_qemu`: **26 lines** (from 25).
+- `qemu_hello`: **33 lines, untouched** — one-shots declare no window.
+- The two lenses still differ on exactly the emulator's two lacks.
+- 12/12 unit tests (the window's own logic is judged beside the code:
+  ready at the signal, proven one window later, the latch, and a world
+  with no window owing nothing), 71/71 fixtures.
+
+## The law this pays for
+
+**Alive is not serving, and a watchdog fed by the fact that a process
+exists guards nothing that matters.** The declaration now carries the
+difference, and the hardware answers to it.
+
+---
+
 # SRV-1 — the box's worlds SERVE: a daemon never exits, and an init that waits for an exit learns nothing more
 
 First of the five acts the author ordered on 2026-09-13, and the one

@@ -116,6 +116,7 @@ init; the launcher is the pack).
 | `AFTER` | name list of services | optional; each resolves (R8), never itself (R27), never a cycle (R21) |
 | `NEEDS` | name list of capabilities | optional; each must be declared AND granted (R17, R18) |
 | `READY` | string | optional, daemons only — the absolute path the service creates when it is serving (R43, R44, R45); see the readiness rule below |
+| `HEALTH` | number (seconds) | optional — the window within which the daemon must REFRESH its READY path. Requires READY (R53); 0 is refused (R54), and so is a window longer than an hour. See the health rule below |
 | `USER` | name | optional — a declared USER this service runs as; PID 1 drops to that uid and gid between fork and exec. A name that resolves to nothing is refused at check time (R46). Saying nothing is how a service runs as the machine itself |
 
 ### DEFINE USER — a declared identity
@@ -169,6 +170,22 @@ would race a boot, and a box that refuses to commit an update whose
 world never came up is behaving correctly. READY is refused on a
 one-shot (R43), must be absolute (R44), and one path signals for one
 service (R45).
+
+**HEALTH is that word, repeated.** A world can be alive and wedged: the
+process is there, the kernel is content, and nothing is served. `HEALTH
+<seconds>` is the window within which the daemon must REFRESH its READY
+path, and it changes two things. PID 1 feeds the hardware watchdog only
+while every world with a window is fresh — the first that goes stale is
+named, the feed stops, and the board's reset into the committed slot is
+the answer. And an A/B trial commits only once every such world has
+been ready THROUGH one full window: "serving" measured at the instant
+of the signal is not worth an update, "serving one window later" is.
+Staleness LATCHES: a world that recovers does not resume the feed,
+because a feed that resumed would hide exactly the fault the watchdog
+exists for. HEALTH is measured on the READY path, so a service without
+one is refused it (R53); a window of zero (R54) and a window longer
+than an hour are refused as promises nobody would wait out. A world
+that deletes its own signal is stale too (HLT-1).
 The plan's order (A5) is the order in which services BECOME ELIGIBLE;
 the boot transcript is the order in which they actually start. (Ruled
 after OS-2's transcripts interleaved: AFTER had only ordered spawns —

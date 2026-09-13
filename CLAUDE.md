@@ -80,6 +80,12 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **Alive is not serving** (HLT-1): a world with `HEALTH <seconds>`
+  must refresh its READY path within every window; PID 1 feeds the
+  hardware watchdog ONLY while every such world is fresh, and a trial
+  commits only once each has been ready through one full window.
+  Staleness LATCHES -- never resume the feed on recovery, or the
+  watchdog guards nothing.
 - **A daemon never exits, so an init that waits for an exit learns
   nothing more** (SRV-1): PID 1 POLLS while the watchdog needs feeding,
   a declared signal is outstanding, a service has not started yet, or a
@@ -192,8 +198,9 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 - (done 2026-09-12, USR-1) The USER seat. The NETWORK kind exists
   since NET-1 (dhcp and static; lease renewal, a resolver, the box as
   DHCP server and IPv6 are its named seams) and READY since RDY-1 (a
-  daemon's own signal, no timer; a bounded window for the TRIAL and a
-  health seat are its seams).
+  daemon's own signal, no timer). The health seat is HEALTH since
+  HLT-1 (2026-09-13); a bounded window for the TRIAL itself is still a
+  seam.
 - (done 2026-09-12, PRJ-1) The edge profile's projection onto
   MicroRing's substrate: `stzos project` writes a real `device.ring`,
   judged by `experiment/judge_project.sh`. What remains is the Device

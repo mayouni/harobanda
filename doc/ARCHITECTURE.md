@@ -149,6 +149,7 @@ judged so that one file describes the fleet, phone included.
 | the board's card (the Makeen box on `raspi4b`) | the same against `machines/makeen_box.expected`: the card's second partition mounted by its declared name, the network refused NODEV (no Ethernet in the emulator), the two worlds run | matches, part of 75 |
 | the wire | `makeen_qemu.expected` carries the dhcp lease from QEMU's server; `makeen_box.expected` the static network refused NODEV in the emulator | part of 23 and 75 |
 | the slots | `makeen_box.expected`: a trial of B committed, the card read back boots B; the same trial held on a pristine card, not committed, that card still boots A | part of 75 |
+| health | `makeen_box.expected` and `makeen_qemu.expected` carry the standing rule (`health -- kds every 5s, poste every 5s`) and a commit line that says the window was held; the NEGATIVE is the WSL rehearsal's `signals`, a `flock` that creates its path once and never refreshes it, caught in seconds (HLT-1) | 84 and 26 lines; the rehearsal |
 | the served machine | `makeen_qemu.expected` and `makeen_box.expected`: each world is a daemon with a declared READY path, PID 1 starts what comes after only once the signal appears, and the boot ends on `--halt-on-verdict` (derived onto the emulator's line, never the card's). A daemon never exits, so the loop polls rather than blocking on `wait4` (SRV-1) | 25 and 81 lines |
 | the machine's own judge | every transcript carries PID 1's verdict on its own boot against `/etc/expected` (`matches ... 14 lines`, `15`, `16`); `makeen_box.expected` adds the negative: the trial judged through the board's lens differs on exactly the emulator's two lacks, holds itself, and the card still boots A; `src/expect.zig` pins the derivation and the judge's negatives in five unit tests | 81 lines; 11/11 tests |
 
@@ -168,7 +169,14 @@ judged so that one file describes the fleet, phone included.
   serving (RDY-1). A failed one-shot and a daemon that never signals
   both block their dependents, and init names them. No timer: a daemon
   that never comes up keeps an A/B trial uncommitted, which is the safe
-  outcome. A bounded window for the TRIAL is a named seam.
+  outcome. A world that declares `HEALTH <seconds>` owes more than a
+  signal: it must REFRESH that path within every window, PID 1 feeds the
+  hardware watchdog only while every such world is fresh, and a trial
+  commits only once each has been ready through one full window
+  (HLT-1). Staleness latches, because a feed that resumed on recovery
+  would hide the fault the watchdog exists for. A bounded window for the
+  TRIAL itself -- a cap on how long a trial may take to become ready --
+  is still a named seam.
 - The machine judges its own BOOT, not its life: the verdict comes once,
   when every service is ready, over what init said about the machine
   until then (mounts, capabilities, networks, the watchdog, starts,

@@ -11,6 +11,7 @@ boot: refuse gpio (effectful)
 boot: network lan -- eth0: no such interface (NODEV)
 boot: slot B -- a trial (committed is A); the watchdog holds the rollback until the boot is judged
 boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
+boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
 boot: start kds -- pid N -- /stzr /app/kds.luau
 kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 kds: read /etc/machine -- 8 declarations rode in the image
@@ -21,8 +22,8 @@ poste: the counter world is up on the Makeen box, after kds
 poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
 poste: serving -- signalling /run/poste.ready
 boot: poste -- ready (/run/poste.ready)
-boot: judge -- the boot matches its expectation (/etc/expected.emulator, 16 lines)
-boot: slot B -- committed: every service is ready and the boot matches its expectation; config.txt now boots B, A is the fallback
+boot: judge -- the boot matches its expectation (/etc/expected.emulator, 17 lines)
+boot: slot B -- committed: every service is ready and has held its health window and the boot matches its expectation; config.txt now boots B, A is the fallback
 boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system
@@ -33,6 +34,7 @@ card: os_prefix=slots/A/
 hold: the same trial on a pristine card, held:
 hold: boot: slot B -- a trial (committed is A); the watchdog holds the rollback until the boot is judged
 hold: boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
+hold: boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
 hold: boot: start kds -- pid N -- /stzr /app/kds.luau
 hold: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 hold: kds: read /etc/machine -- 8 declarations rode in the image
@@ -43,7 +45,7 @@ hold: poste: the counter world is up on the Makeen box, after kds
 hold: poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
 hold: poste: serving -- signalling /run/poste.ready
 hold: boot: poste -- ready (/run/poste.ready)
-hold: boot: judge -- the boot matches its expectation (/etc/expected.emulator, 16 lines)
+hold: boot: judge -- the boot matches its expectation (/etc/expected.emulator, 17 lines)
 hold: boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 hold: boot: --hold: the trial is held, not committed
 hold: boot: --hold: no watchdog to answer here; the trial ends without a commit, the next boot is the committed slot
@@ -56,6 +58,7 @@ card: os_prefix=slots/B/
 unmet: the same trial on a pristine card, judged by the board's expectation:
 unmet: boot: slot B -- a trial (committed is A); the watchdog holds the rollback until the boot is judged
 unmet: boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
+unmet: boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
 unmet: boot: start kds -- pid N -- /stzr /app/kds.luau
 unmet: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 unmet: kds: read /etc/machine -- 8 declarations rode in the image

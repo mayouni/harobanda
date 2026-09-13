@@ -39,6 +39,7 @@ DEFINE SERVICE signals AS (
   RUN ["/usr/bin/flock", "/tmp/stzos-signals.ready", "/bin/sleep", "30"],
   RESTART always,
   READY "/tmp/stzos-signals.ready",
+  HEALTH 2,
   NEEDS [process]
 ) RATIONALE "A daemon stand-in that creates its signal and stays alive, as a real world does"
 
