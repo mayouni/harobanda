@@ -404,7 +404,9 @@ table of that cooperation, each seam marked real or queued.
 The reading of the table matters more than any row: the floor adds no
 language, no runtime and no product. It gives every existing tool the
 one thing none of them had, a machine they can trust because it was
-declared in the same way they were.
+declared in the same way they were. What each layer gains from that,
+and what it owes in return, is accounted layer by layer in
+`DIVIDEND.md`.
 
 ## 6. What the angle changes in the queue
 

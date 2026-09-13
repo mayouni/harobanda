@@ -6,8 +6,11 @@ The operating layer of the Softanza vertical: the machine beneath stz.
 Private; created 2026-09-12 on the author's ruling to push the sovereign
 stack below Ring++ to the operating system, then MicroRing, then the
 PCB. **Read `doc/VISION.md` and `doc/PROVENANCE.md` before any
-strategic claim**, and `doc/GROUND.md` for what the machine is FOR (the
-solutions it is the floor of, and the tools that meet at that floor); the ratified strategy of the whole estate is the
+strategic claim**, `doc/GROUND.md` for what the machine is FOR (the
+solutions it is the floor of, and the tools that meet at that floor),
+and `doc/DIVIDEND.md` for what owning the floor gives each layer above
+it (the servers, the runtime, the intelligence modules, the pages, the
+flagships) and what each owes it; the ratified strategy of the whole estate is the
 Vision Corpus at `D:\GitHub\softanza\vision` (amended 2026-09-12 for the
 Ring++ turn of 08-30 -- Amended blocks beside the superseded sentences --
 and carrying the floor as `07-SYSTEM.md`, v0.1 DRAFT, unratified). Daily memos go to
