@@ -81,6 +81,11 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A reach is the declaration's to say** (EGR-1): `EGRESS` writes the
+  ROUTING TABLE -- one route per declared destination and no default
+  route, or none at all. Say precisely what that is and is not: the
+  machine knows no way there; it is not prevented from finding one. A
+  packet filter (netfilter over netlink) is a named seam, never claimed.
 - **Evidence is what the machine said about THIS boot, never what it
   quoted about another** (GRT-1): a transcript carries other boots
   (`hold: `, `unmet: `) and PID 1's own quotations of lines it did NOT

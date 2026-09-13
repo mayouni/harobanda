@@ -24,6 +24,9 @@ pub fn run(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
         .address = .dhcp,
         .gateway = null,
         .dns = &.{},
+        // by hand is by hand: this verb does what it is told and narrows
+        // nothing. A reach is a machine's to declare (EGR-1).
+        .egress = .unrestricted,
         .rationale = "",
     };
     if (!std.mem.eql(u8, args[1], "dhcp")) {

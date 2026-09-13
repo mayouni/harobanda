@@ -144,6 +144,7 @@ visibly the one with no USER line.
 | `INTERFACE` | string | required — the interface's name (`"eth0"`); one network per interface (R39) |
 | `ADDRESS` | `dhcp` \| string `"a.b.c.d/n"` | required — a leased address, or a static address with its prefix; an address without its prefix is refused (R38) |
 | `GATEWAY` | string `"a.b.c.d"` | optional, static only — a dhcp network learns its gateway (R37); not an address is refused (R40) |
+| `EGRESS` | string list of destinations, or the word `none` | optional — how far this network REACHES. A list writes one route per destination and NO default route; `none` writes no route at all. Saying nothing is today's behaviour: a declared GATEWAY becomes a default route. `none` with a GATEWAY is refused (R60), an empty list is refused (R61), and a destination is an address and a prefix, never a name (R62). See the egress rule below |
 | `DNS` | string list | optional, static only — the servers; a dhcp network learns them |
 
 A NETWORK needs the `network` capability granted (R36: silence is

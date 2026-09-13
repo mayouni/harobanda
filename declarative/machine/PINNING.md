@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-57f976861774231a86dd0db3f8005ca381d864cdde3cbab87bc31fcbe9e601e8
+0f8f291470adba76343ceecf6d102e027acf5b33e0737fb09a44542478ddb719
 ```
 
-(Before the BUDGET seat of 2026-09-13 (BDG-1):
+(Before the EGRESS seat of 2026-09-14 (EGR-1):
+`57f976861774231a86dd0db3f8005ca381d864cdde3cbab87bc31fcbe9e601e8`,
+76/76; the widening added A18, R60, R61, R62, R63. Before the BUDGET
+seat of 2026-09-13 (BDG-1):
 `e65f7b668ee8917b1b3a2d9aa5837f13559ab2935da36b9c63881fdac68c24cf`,
 71/71; the widening added A17, R56, R57, R58, R59 and the `cgroup2`
 filesystem. Before the HEALTH seat of 2026-09-13 (HLT-1):
@@ -53,7 +56,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **76/76** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **81/81** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -108,6 +111,31 @@ not committed ... the next boot is A`, and the card read back still
 booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
+
+## The perimeter, judged by the kernel's own answer (EGR-1)
+
+`EGRESS` on a NETWORK: a list of destinations, or the word `none`.
+Fixture-first — A18 accepts a declared reach, R60 refuses `none` beside
+a GATEWAY ("a gateway is a way out"), R61 an empty list, R62 a
+destination that is not an address and a prefix, R63 `EGRESS` on a
+MOUNT by the clause menu. **81/81**, from 76/76.
+
+`machines/qemu_egress.machine` is the machine that proves it, and the
+sixth pinned transcript: one destination declared, one not, and two
+witnesses that ask the KERNEL rather than the declaration. **19 lines,
+identical**:
+
+```
+boot: network lan -- eth0 up 10.0.2.15/24
+boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
+reach 10.9.0.1 -- a route exists: this machine knows a way there
+reach 8.8.8.8 -- no route: this machine knows no way there
+```
+
+`stzos reach <a.b.c.d>` is the witness, as `stzos id` is the USER
+seat's. A UDP `connect()` is the whole question: it performs the route
+lookup and sends nothing, so a machine with no way to an address learns
+that without a single packet leaving it.
 
 ## The four promises, judged by name (GRT-1)
 

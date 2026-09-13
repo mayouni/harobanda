@@ -1,0 +1,19 @@
+boot: stzos init -- machine qemu_egress (hosted / x86_64 / qemu_pc) -- pid 1
+boot: console /dev/ttyS0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: grant process (effectful)
+boot: grant network (effectful)
+boot: network lan -- eth0 up 10.0.2.15/24
+boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
+boot: start allowed -- pid N -- /stzos reach 10.9.0.1
+reach 10.9.0.1 -- a route exists: this machine knows a way there
+boot: allowed (pid N) exited 0
+boot: start denied -- pid N -- /stzos reach 8.8.8.8
+reach 8.8.8.8 -- no route: this machine knows no way there
+boot: denied (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 13 lines)
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)
+reboot: Restarting system

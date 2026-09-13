@@ -1,3 +1,101 @@
+# EGR-1 — a perimeter the declaration writes: how far a granted network reaches
+
+The first act of 2026-09-14, and the one with a customer requirement in
+a signed proposal behind it. DIKO's specification, requirement ESC6:
+child-protection and gender-based-violence data must never leave the
+organisation's perimeter. Until today the machine language could say
+that a box speaks -- `CAPABILITY network` -- and not one word about
+whom to.
+
+## The seat
+
+`EGRESS` on a NETWORK: a list of destinations, or the word `none`.
+
+```
+DEFINE NETWORK lan AS (
+  INTERFACE "eth0",
+  ADDRESS "10.0.2.15/24",
+  GATEWAY "10.0.2.2",
+  EGRESS ["10.9.0.0/16"]
+) RATIONALE "The programme's own range, reached through the gateway, and nowhere else"
+```
+
+Fixture-first, the court red for four named reasons before the parser
+was touched (A18, R60, R61, R62, R63; 81/81 after, from 76/76). The
+sharpest refusal is R60: **a gateway is a way out, and `EGRESS none`
+says there is none** -- declare one or the other.
+
+## What it does, exactly
+
+It writes the ROUTING TABLE from the declaration. With a declared reach,
+one route per destination is installed and **no default route at all**;
+with `none`, no route is added and the box knows no way off its own
+link; saying nothing is what every machine did before this seat, where a
+declared GATEWAY becomes a default route.
+
+## What it is NOT, said as plainly
+
+**This is the routing table, not a packet filter.** The guarantee is
+*the machine knows no way there*, not *the machine is prevented from
+finding one*. A world with the privilege to add a route could add one --
+there is no shell on the boot path to do it with, and a world that runs
+as a declared USER has no such privilege, but the distinction is real
+and the claim stops where it stops. A netfilter seat over netlink would
+be the stronger statement; it is named here and not built.
+
+Stated that way, it is still the answer a clause in a contract cannot
+give: a box that cannot route to the open internet does not have to be
+TRUSTED to refrain.
+
+## Judged by the kernel's own answer
+
+`machines/qemu_egress.machine`, the sixth pinned transcript, 19 lines:
+
+```
+boot: network lan -- eth0 up 10.0.2.15/24
+boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
+boot: start allowed -- pid N -- /stzos reach 10.9.0.1
+reach 10.9.0.1 -- a route exists: this machine knows a way there
+boot: start denied -- pid N -- /stzos reach 8.8.8.8
+reach 8.8.8.8 -- no route: this machine knows no way there
+```
+
+Note the network line: no `gateway` clause, because with a declared
+reach no default route was installed -- the line says what happened,
+and the egress line says the reach.
+
+`stzos reach <a.b.c.d>` is the witness, as `stzos id` was the USER
+seat's: it asks the KERNEL and says what it answered. A UDP `connect()`
+is the whole question -- it performs the route lookup and sends nothing
+-- so a machine with no way to an address learns that **without a single
+packet leaving it**, which is the point when the address is one the
+perimeter forbids.
+
+## What the cross build caught, again
+
+The host build was green and `zig build cross` was not: two errors in
+code only Linux compiles -- a Network literal in the by-hand `stzos net`
+verb missing the new field, and a double pointer where the new line is
+printed. The rule in `CLAUDE.md` earned itself again: a Windows build
+proves nothing about the init.
+
+## Judged
+
+- `qemu_egress`: **19 lines**, new and pinned.
+- `makeen_box` **84** and `makeen_qemu` **26**: unchanged. They declare
+  no reach, so they say nothing about one -- a machine written before
+  this seat has the transcript it always had.
+- 12/12 unit tests, 81/81 fixtures.
+
+## The law this pays for
+
+**A capability says what kind of effect a machine may have; only a
+declaration of reach says how far.** Granting the network and leaving
+the destination to whatever the box happens to find is how data leaves a
+perimeter nobody wrote down.
+
+---
+
 # OS-5-PREP — the board's first boot, written and rehearsed before the board exists
 
 Last of the five acts of 2026-09-13. OS-5 itself is NOT done: no card

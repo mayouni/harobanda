@@ -1,0 +1,49 @@
+-- qemu_egress.machine -- the machine that proves how far a granted
+-- network reaches. CAPABILITY network says this box may speak; EGRESS
+-- says whom to, and the routing table is written from that line alone.
+-- Two witnesses run on it: one asks the kernel for a way to a declared
+-- destination and is told there is one, the other asks for a way to the
+-- open internet and is told there is none. Neither sends a packet -- a
+-- UDP connect() is a route lookup and nothing more -- so the machine
+-- that may not speak to the world never does, not even to find out.
+--
+-- The ground is an NGO's, not a demonstration's: DIKO's specification
+-- (requirement ESC6) says child-protection and gender-based-violence
+-- data must never leave the organisation's perimeter. A box that cannot
+-- route there is the answer a clause in a contract cannot give (EGR-1,
+-- 2026-09-14).
+
+DEFINE MACHINE qemu_egress AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "The smallest machine that proves a perimeter: one destination declared, one refused, and a kernel that tells them apart"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The witnesses are processes"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "The box speaks -- and EGRESS says how far"
+
+DEFINE NETWORK lan AS (
+  INTERFACE "eth0",
+  ADDRESS "10.0.2.15/24",
+  GATEWAY "10.0.2.2",
+  EGRESS ["10.9.0.0/16"]
+) RATIONALE "The programme's own range, reached through the gateway, and nowhere else: no default route is installed, so the box knows no way to anywhere it was not told about"
+
+DEFINE SERVICE allowed AS (
+  RUN ["/stzos", "reach", "10.9.0.1"],
+  RESTART never,
+  NEEDS [process, network]
+) RATIONALE "A declared destination: the kernel should know a way there"
+
+DEFINE SERVICE denied AS (
+  RUN ["/stzos", "reach", "8.8.8.8"],
+  RESTART never,
+  AFTER [allowed],
+  NEEDS [process, network]
+) RATIONALE "The open internet, which this machine never declared: the kernel should know no way there, and the box should not have to be trusted to refrain"

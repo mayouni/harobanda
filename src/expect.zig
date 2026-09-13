@@ -99,6 +99,26 @@ pub fn budgetLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// The EGRESS line: how far a granted network reaches. Worded ONCE
+/// here, like every judged line -- netcfg prints it and derive() writes
+/// it. Nothing is said for a network that declares no reach, so every
+/// machine written before this seat has the transcript it always had.
+pub fn egressLine(w: *std.Io.Writer, n: *const machine.Network, prefix: []const u8) !bool {
+    switch (n.egress) {
+        .unrestricted => return false,
+        .none => {
+            try w.print("{s}egress {s} -- none: the machine knows no way off its own link\n", .{ prefix, n.name });
+            return true;
+        },
+        .to => |dests| {
+            try w.print("{s}egress {s} -- ", .{ prefix, n.name });
+            for (dests, 0..) |d, i| try w.print("{s}{s}", .{ if (i > 0) ", " else "", d.text });
+            try w.print(" and nowhere else: no default route\n", .{});
+            return true;
+        },
+    }
+}
+
 pub const Watchdog = enum { armed, off };
 
 /// Through which eyes the boot is expected. The board's lens is the
@@ -142,9 +162,14 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
                 .static => |s| {
                     var ipb: [16]u8 = undefined;
                     try w.print("boot: network {s} -- {s} up {s}/{d}", .{ n.name, n.interface, fmtIp(&ipb, s.ip), s.prefix });
-                    if (n.gateway) |g| {
-                        var gb: [16]u8 = undefined;
-                        try w.print(", gateway {s}", .{fmtIp(&gb, g.addr)});
+                    // a gateway becomes a default route only where no
+                    // EGRESS narrows it; with one, the line says the
+                    // address and the egress line says the reach
+                    if (n.egress == .unrestricted) {
+                        if (n.gateway) |g| {
+                            var gb: [16]u8 = undefined;
+                            try w.print(", gateway {s}", .{fmtIp(&gb, g.addr)});
+                        }
                     }
                     if (n.dns.len > 0) {
                         try w.print(", dns [", .{});
@@ -154,6 +179,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
                     try w.print("\n", .{});
                 },
             }
+            _ = try egressLine(w, n, "boot: ");
         },
         .service => {},
     };

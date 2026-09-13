@@ -152,6 +152,30 @@ pub const User = struct {
 };
 
 pub const Ipv4 = struct { text: []const u8, addr: u32 };
+pub const Destination = struct { text: []const u8, ip: u32, prefix: u6 };
+
+/// How far a granted network reaches (EGR-1).
+///
+/// CAPABILITY network says the machine may speak; EGRESS says whom to.
+/// `unrestricted` is what saying nothing means, and it is today's
+/// behaviour: a declared GATEWAY becomes a default route and the box can
+/// reach anything beyond its link. `to` is a closed list of
+/// destinations, and then there is NO default route -- the box knows a
+/// way to those and to nowhere else. `none` is a box that knows no way
+/// off its own link at all.
+///
+/// What this is, precisely: the ROUTING TABLE, written from the
+/// declaration. It is not a packet filter. A world with the privilege to
+/// add a route could still add one -- there is no shell on the boot path
+/// to do it with, and a world that runs as a declared USER has no such
+/// privilege, but the guarantee is "the machine knows no way there", not
+/// "the machine is prevented from finding one". A netfilter seat, which
+/// would make it the second, is named in GRAMMAR.md and not built.
+pub const Egress = union(enum) {
+    unrestricted,
+    none,
+    to: []const Destination,
+};
 pub const Address = union(enum) {
     dhcp,
     static: struct { text: []const u8, ip: u32, prefix: u6 },
@@ -168,6 +192,7 @@ pub const Network = struct {
     address: Address,
     gateway: ?Ipv4,
     dns: []const Ipv4,
+    egress: Egress,
     rationale: []const u8,
 };
 
@@ -408,7 +433,7 @@ fn allowedClauses(kind: Kind) []const []const u8 {
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
-        .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS" },
+        .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS", "EGRESS" },
         .USER => &.{ "UID", "GID" },
     };
 }
@@ -721,7 +746,29 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
                 try dns.append(arena, .{ .text = s, .addr = parseIpv4(s) orelse return ctx.refuse(c.line, "'{s}' is not an address (a.b.c.d)", .{s}) });
             }
         }
-        try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .dns = try dns.toOwnedSlice(arena), .rationale = d.rationale });
+        // EGRESS -- how far this network reaches. Read after GATEWAY,
+        // because the two can contradict each other (EGR-1).
+        var egress: Egress = .unrestricted;
+        if (find(d, "EGRESS")) |c| {
+            switch (c.value) {
+                .ident => |w| {
+                    if (!std.mem.eql(u8, w, "none")) return ctx.refuse(c.line, "EGRESS is a list of destinations or the word none, not '{s}'", .{w});
+                    if (gateway != null) return ctx.refuse(c.line, "a gateway is a way out, and EGRESS none says there is none: declare one or the other", .{});
+                    egress = .none;
+                },
+                else => {
+                    const strs = try wantStrings(&ctx, c);
+                    if (strs.len == 0) return ctx.refuse(c.line, "an empty EGRESS is not a declaration: a list names where the machine may go, and the word none says nowhere", .{});
+                    var dests: std.ArrayList(Destination) = .{};
+                    for (strs) |s2| {
+                        const cidr = parseCidr(s2) orelse return ctx.refuse(c.line, "EGRESS takes destinations as address/prefix (10.9.0.0/16), and '{s}' is not one", .{s2});
+                        try dests.append(arena, .{ .text = s2, .ip = cidr.ip, .prefix = cidr.prefix });
+                    }
+                    egress = .{ .to = try dests.toOwnedSlice(arena) };
+                },
+            }
+        }
+        try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .rationale = d.rationale });
     };
 
     // services

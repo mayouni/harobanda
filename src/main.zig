@@ -41,6 +41,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos judge  <file.machine> <transcript> [--lens emulator]   (a captured boot, against what the machine expects)
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos id                                     (uid and gid, from inside a machine)
+        \\  stzos reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -100,6 +101,47 @@ pub fn main() !u8 {
             return 2;
         }
         try out.print("id: uid={d} gid={d}\n", .{ std.os.linux.getuid(), std.os.linux.getgid() });
+        return 0;
+    }
+    if (std.mem.eql(u8, verb, "reach")) {
+        // The witness of the EGRESS seat, as `stzos id` is the USER
+        // seat's: it asks the KERNEL whether this machine knows a way to
+        // an address, and says what it answered. A UDP connect() is the
+        // whole question -- it performs the route lookup and sends
+        // nothing at all, so a machine with no way there learns that
+        // without a single packet leaving it, which is the point.
+        if (builtin.os.tag != .linux) {
+            try out.print("reach: a Linux act; this binary was built for {s}\n", .{@tagName(builtin.os.tag)});
+            return 2;
+        }
+        if (args.len < 3) {
+            try out.print("stzos: reach takes an address (a.b.c.d)\n", .{});
+            return 1;
+        }
+        const ip = machine.parseIpv4(args[2]) orelse {
+            try out.print("reach: '{s}' is not an address (a.b.c.d)\n", .{args[2]});
+            return 1;
+        };
+        const l = std.os.linux;
+        const rc_sock = l.socket(l.AF.INET, l.SOCK.DGRAM, 0);
+        if (l.E.init(rc_sock) != .SUCCESS) {
+            try out.print("reach {s} -- no socket: {s} (has this machine a network at all?)\n", .{ args[2], @tagName(l.E.init(rc_sock)) });
+            return 0;
+        }
+        const fd: i32 = @intCast(rc_sock);
+        defer _ = l.close(fd);
+        var sa = std.posix.sockaddr.in{
+            .family = l.AF.INET,
+            .port = std.mem.nativeToBig(u16, 53),
+            .addr = std.mem.nativeToBig(u32, ip),
+            .zero = [_]u8{0} ** 8,
+        };
+        const rc = l.connect(fd, @ptrCast(&sa), @sizeOf(@TypeOf(sa)));
+        switch (l.E.init(rc)) {
+            .SUCCESS => try out.print("reach {s} -- a route exists: this machine knows a way there\n", .{args[2]}),
+            .NETUNREACH, .HOSTUNREACH => try out.print("reach {s} -- no route: this machine knows no way there\n", .{args[2]}),
+            else => |e| try out.print("reach {s} -- the kernel refused the question: {s}\n", .{ args[2], @tagName(e) }),
+        }
         return 0;
     }
     if (std.mem.eql(u8, verb, "net")) {

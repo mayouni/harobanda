@@ -130,6 +130,15 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
                 .static => |st| try out.print("static {s}", .{st.text}),
             }
             if (n.gateway) |g| try out.print(" gateway {s}", .{g.text});
+            switch (n.egress) {
+                .unrestricted => {},
+                .none => try out.print(" -- egress none", .{}),
+                .to => |dests| {
+                    try out.print(" -- egress [", .{});
+                    for (dests, 0..) |d, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", d.text });
+                    try out.print("]", .{});
+                },
+            }
             if (n.dns.len > 0) {
                 try out.print(" dns [", .{});
                 for (n.dns, 0..) |d, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", d.text });

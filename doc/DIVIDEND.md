@@ -245,8 +245,10 @@ machine it perceives through logs written for people.
 
 - Inference is a fact of the floor: `CAPABILITY inference` is one of
   the nine names, granted or refused per machine, judged before boot.
-  With egress declared (a seam), an air-gapped intelligent box is a
-  declaration the court can convict, not a promise in a proposal.
+  And since EGR-1 the air gap is declarable too: a machine with
+  `EGRESS none` knows no way off its own link, so "the model runs here
+  and the data stays here" is a line the court can convict rather than a
+  promise in a proposal.
 - The model rides in the image, pinned by digest like the kernel. The
   intelligence a box has is exactly the intelligence it was declared
   with, and an auditor can read which.
@@ -419,8 +421,9 @@ diagram. This is where the floor pays each band of it:
 
 ## 14. The seams the dividends need, unordered
 
-1. Egress by declaration: whom a machine may speak to, with the
-   firewall derived.
+1. ~~Egress by declaration: whom a machine may speak to.~~ **Built
+   (EGR-1)** as the routing table written from the declaration; a packet
+   filter over netlink is the seam that remains.
 2. ~~Budgets: a memory and CPU ceiling per service.~~ **Built (BDG-1).**
 3. The envelope at the kernel: namespaces and allowed system calls
    derived from CAPABILITY.

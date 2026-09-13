@@ -426,11 +426,16 @@ the author orders.
    which an expectation cannot carry) and the emulator's transcript
    keeps one, naming the three the emulator cannot. One real transcript
    keeps all four on the day a card meets a board (OS-5).
-2. **Egress by declaration.** DIKO's ESC6 (sensitive data never leaves
-   the perimeter) is a NETWORK fact the language cannot yet state: it
-   declares the interface, not whom the machine may speak to. Declared
-   peers with the firewall derived from them is a fixture-first
-   widening, and the seat the NGO's requirement names.
+2. ~~**Egress by declaration.**~~ **Built (EGR-1, 2026-09-14):**
+   `EGRESS` on a NETWORK says how far a granted network reaches, and
+   the routing table is written from that line -- one route per declared
+   destination and no default route, or `none` at all. DIKO's ESC6 now
+   has a mechanism rather than a clause: a box that cannot route to the
+   open internet does not have to be trusted to refrain, and
+   `machines/qemu_egress.machine` proves both sides with the kernel's
+   own answer. What is NOT claimed: this is the routing table, not a
+   packet filter -- the machine knows no way there, and a netfilter seat
+   would be the stronger statement.
 3. **The evidence page.** Sonibank's auditor reads a transcript and a
    verdict; stzn should render them as the page the audit chain
    points to.

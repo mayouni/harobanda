@@ -314,6 +314,22 @@
           "think"
         ]
       }
+    },
+    {
+      "id": "A18",
+      "name": "a machine declares whom it may speak to: EGRESS is the reach of a granted network",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"10.0.2.15/24\",\n  GATEWAY \"10.0.2.2\",\n  EGRESS [\"10.9.0.0/16\"]\n) RATIONALE \"The hub speaks to the programme's own range and nowhere else\"\n",
+      "expect": {
+        "counts": {
+          "services": 0,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "order": []
+      }
     }
   ],
   "rejects": [
@@ -670,6 +686,30 @@
       "name": "MEMORY is a SERVICE's clause, not a MACHINE's",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, MEMORY 512) RATIONALE \"x\"\n",
       "refusal": "MEMORY"
+    },
+    {
+      "id": "R60",
+      "name": "a gateway is a way out: EGRESS none says there is none",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.0.2.15/24\", GATEWAY \"10.0.2.2\", EGRESS none) RATIONALE \"x\"\n",
+      "refusal": "EGRESS none says there is none"
+    },
+    {
+      "id": "R61",
+      "name": "an empty EGRESS is not a declaration",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.0.2.15/24\", EGRESS []) RATIONALE \"x\"\n",
+      "refusal": "an empty EGRESS"
+    },
+    {
+      "id": "R62",
+      "name": "a destination is an address and a prefix, never a host name",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.0.2.15/24\", EGRESS [\"the ministry\"]) RATIONALE \"x\"\n",
+      "refusal": "EGRESS takes destinations as address/prefix"
+    },
+    {
+      "id": "R63",
+      "name": "a machine that is granted no network cannot declare where it goes",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, EGRESS none) RATIONALE \"x\"\n",
+      "refusal": "EGRESS"
     }
   ]
 }

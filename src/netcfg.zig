@@ -149,22 +149,50 @@ fn bringUpLinux(n: *const machine.Network, out: *std.Io.Writer, prefix: []const 
     }
     if (!try setUp(fd, iface, out, prefix, n.name)) return false;
 
-    // the default route
+    // The routes. What a machine may REACH is the declaration's to say
+    // (EGR-1): with no EGRESS, a declared gateway becomes a default route
+    // and the box can reach anything beyond its link, which is what every
+    // machine did before this seat. With one, the default route is NOT
+    // installed and each declared destination gets its own route instead
+    // -- the box knows a way to those and to nowhere else. With `none`,
+    // no route is added at all and the box knows no way off its own link.
     var gw_note: []const u8 = "";
     var gw_buf: [48]u8 = undefined;
-    if (lease.gateway) |gw| {
-        var rt: rtentry = .{
-            .rt_dst = sockIn(0, 0),
-            .rt_gateway = sockIn(gw, 0),
-            .rt_genmask = sockIn(0, 0),
-            .rt_flags = RTF_UP | RTF_GATEWAY,
-        };
-        var ipb: [16]u8 = undefined;
-        const gws = fmtIp(&ipb, gw);
-        switch (errOf(linux.ioctl(fd, SIOCADDRT, @intFromPtr(&rt)))) {
-            .SUCCESS, .EXIST => gw_note = std.fmt.bufPrint(&gw_buf, ", gateway {s}", .{gws}) catch "",
-            else => |e| gw_note = std.fmt.bufPrint(&gw_buf, ", gateway {s} REFUSED: {s}", .{ gws, @tagName(e) }) catch "",
-        }
+    var egress_ok = true;
+    switch (n.egress) {
+        .none => {},
+        .to => |dests| {
+            for (dests) |dst| {
+                const dmask: u32 = if (dst.prefix == 0) 0 else @as(u32, 0xFFFFFFFF) << @intCast(32 - @as(u6, dst.prefix));
+                var rt: rtentry = .{
+                    .rt_dst = sockIn(dst.ip, 0),
+                    .rt_gateway = sockIn(lease.gateway orelse 0, 0),
+                    .rt_genmask = sockIn(dmask, 0),
+                    .rt_flags = if (lease.gateway != null) RTF_UP | RTF_GATEWAY else RTF_UP,
+                };
+                switch (errOf(linux.ioctl(fd, SIOCADDRT, @intFromPtr(&rt)))) {
+                    .SUCCESS, .EXIST => {},
+                    else => |e| {
+                        egress_ok = false;
+                        try out.print("{s}egress {s} -- {s}: the route refused: {s}\n", .{ prefix, n.name, dst.text, @tagName(e) });
+                    },
+                }
+            }
+        },
+        .unrestricted => if (lease.gateway) |gw| {
+            var rt: rtentry = .{
+                .rt_dst = sockIn(0, 0),
+                .rt_gateway = sockIn(gw, 0),
+                .rt_genmask = sockIn(0, 0),
+                .rt_flags = RTF_UP | RTF_GATEWAY,
+            };
+            var ipb: [16]u8 = undefined;
+            const gws = fmtIp(&ipb, gw);
+            switch (errOf(linux.ioctl(fd, SIOCADDRT, @intFromPtr(&rt)))) {
+                .SUCCESS, .EXIST => gw_note = std.fmt.bufPrint(&gw_buf, ", gateway {s}", .{gws}) catch "",
+                else => |e| gw_note = std.fmt.bufPrint(&gw_buf, ", gateway {s} REFUSED: {s}", .{ gws, @tagName(e) }) catch "",
+            }
+        },
     }
 
     var ipb: [16]u8 = undefined;
@@ -186,6 +214,9 @@ fn bringUpLinux(n: *const machine.Network, out: *std.Io.Writer, prefix: []const 
         try out.print("]", .{});
     }
     try out.print("\n", .{});
+    // the reach, said once and derived: a machine that declares none says
+    // nothing here, and its transcript is what it always was
+    if (egress_ok) _ = try expect.egressLine(out, n, prefix);
     return true;
 }
 
