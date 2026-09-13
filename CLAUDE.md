@@ -193,19 +193,22 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Next steps (author-ordered, one per session)
 
-- **OS-5 — the card meets the board**: flash `zig-out/image/makeen_box/
-  sd.img` to a card, boot a Raspberry Pi 4 with the mini-UART on the
-  header pins (GPIO 14/15, 115200), and read two verdicts: the board's
-  own (`judge -- the boot matches its expectation (/etc/expected, 16
-  lines)`, the text `zig-out/image/makeen_box/expected` derived through
-  the board's lens), and the court's, the real transcript against
-  `machines/makeen_box.expected` — expected to differ exactly where the
-  emulator lacks the hardware (the network up, the watchdog armed: the
-  two lines the build prints as the emulator's lacks) and nowhere else,
-  which the board's own verdict now states; the hardware watchdog's real
-  countdown (the emulator cannot arm it); and the tryboot flag, which
-  needs a small vendored patch to `bcm2835_wdt.c` (mainline ignores the
-  restart argument) -- until then a trial is requested by hand.
+- **OS-5 — the card meets the board.** PREPARED and rehearsed
+  (OS-5-PREP, 2026-09-13); it waits only on hardware
+  (`STZ-OS-HARDWARE-01`: a Pi 4 Model B, a micro-SD card, a 3.3 V
+  USB-serial adapter). One script carries it:
+  `bash experiment/os5_board.sh card` (digests, the boot the board
+  expects, the check that the card's cmdline carries no instrument of
+  the court, the flashing command it refuses to run itself, the wiring),
+  then `listen /dev/ttyUSB0 120`, then `judge <file>` -- three judges on
+  one boot: the board's own verdict, the court's (`stzos judge`), and
+  the four standing promises, which a board should keep all four in ONE
+  text for the first time. `rehearse` runs the same judges against the
+  emulator's pinned transcript with no hardware. The board is expected
+  to differ from the emulator on exactly the two lines the build prints
+  as the emulator's lacks; the watchdog's real countdown and the tryboot
+  flag (a vendored patch to `bcm2835_wdt.c`, which ignores the restart
+  argument) are the two things only a board can show.
 - (attempted 2026-09-12, ZIGCC-1) The kernel with `make CC="zig cc"`:
   behind `STZOS_CC=zigcc`, four concessions named in
   `experiment/zigcc_wrapper.sh`, the tree builds, **the image does not

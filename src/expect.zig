@@ -266,6 +266,76 @@ pub fn judge(arena: std.mem.Allocator, expected: []const u8, said: []const u8) !
     };
 }
 
+/// The same judge, run from the HOST against a captured transcript
+/// (OS-5). The machine judges its own ledger as it boots; this judges
+/// the text a serial cable carried away, and the two are independent
+/// witnesses to the same boot -- which is the whole reason to keep both.
+///
+/// A captured transcript is not a ledger: it carries the kernel's own
+/// lines, the worlds' output, and the console-only lines PID 1 says
+/// about the card (a trial, a commit, its verdict). So the comparison is
+/// one-sided on purpose. Every EXPECTED line must have been said, and a
+/// missing one is a finding; everything else the machine said is
+/// printed, not judged, because a real boot legitimately says more than
+/// its expectation.
+pub fn judgeTranscript(arena: std.mem.Allocator, p: plan.Plan, lens: Lens, text: []const u8, label: []const u8, out: *std.Io.Writer) !u8 {
+    const expected = try derive(arena, p, lens);
+    const exp = try lines(arena, expected);
+
+    // what PID 1 said, pulled out of whatever else rode on the wire: a
+    // line may carry a firmware or kernel prefix, so the line starts
+    // where `boot: ` starts. Its own verdict lines quote OTHER lines and
+    // are never evidence (GRT-1).
+    var said: std.ArrayList([]const u8) = .{};
+    var it = std.mem.splitScalar(u8, text, '\n');
+    while (it.next()) |raw| {
+        const l = std.mem.trimRight(u8, raw, "\r");
+        const at = std.mem.indexOf(u8, l, "boot: ") orelse continue;
+        const line = l[at..];
+        if (std.mem.startsWith(u8, line, "boot: judge --")) continue;
+        try said.append(arena, line);
+    }
+
+    try out.print("judge {s} -- the boot this machine EXPECTS ({s} lens, {d} lines), against {s}\n", .{
+        p.machine.name,
+        if (lens.network_absent or lens.watchdog == .off) "emulator" else "board",
+        exp.len,
+        label,
+    });
+
+    const used = try arena.alloc(bool, said.items.len);
+    @memset(used, false);
+    var missing: usize = 0;
+    for (exp) |e| {
+        var found = false;
+        for (said.items, 0..) |g, i| {
+            if (used[i]) continue;
+            if (same(e, g)) {
+                used[i] = true;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            if (missing == 0) try out.print("  EXPECTED, NOT SAID:\n", .{});
+            missing += 1;
+            try out.print("    {s}\n", .{bare(e)});
+        }
+    }
+    if (missing == 0) try out.print("  every expected line was said\n", .{});
+
+    var extra: usize = 0;
+    for (said.items, 0..) |g, i| {
+        if (used[i]) continue;
+        if (extra == 0) try out.print("  ... and the machine also said (its own, not part of the expectation):\n", .{});
+        extra += 1;
+        try out.print("    {s}\n", .{bare(g)});
+    }
+
+    try out.print("{d} of {d} expected lines said\n", .{ exp.len - missing, exp.len });
+    return if (missing == 0) 0 else 1;
+}
+
 /// a line as the verdict quotes it: without the `boot: ` the console shows
 pub fn bare(line: []const u8) []const u8 {
     return if (std.mem.startsWith(u8, line, "boot: ")) line["boot: ".len..] else line;

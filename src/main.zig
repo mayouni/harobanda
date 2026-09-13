@@ -38,6 +38,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
         \\  stzos project <file.machine> --out <dir>     (an edge machine, onto MicroRing's substrate)
         \\  stzos guarantees <file.machine> <text>       (the hosted profile's four promises, judged)
+        \\  stzos judge  <file.machine> <transcript> [--lens emulator]   (a captured boot, against what the machine expects)
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos version
@@ -111,6 +112,23 @@ pub fn main() !u8 {
         const path = if (args.len > 2) args[2] else default_fixtures;
         const failures = try court.run(gpa, path, out);
         return if (failures == 0) 0 else 1;
+    }
+    if (std.mem.eql(u8, verb, "judge")) {
+        if (args.len < 4) {
+            try out.print("stzos: judge needs <file.machine> and a captured transcript\n", .{});
+            return 1;
+        }
+        var lens = expect.Lens{};
+        if (args.len > 5 and std.mem.eql(u8, args[4], "--lens") and std.mem.eql(u8, args[5], "emulator")) {
+            lens = .{ .watchdog = .off, .network_absent = true };
+        }
+        const m = (try load(arena, args[2], out)) orelse return 1;
+        const text = std.fs.cwd().readFileAlloc(arena, args[3], 1 << 20) catch |e| {
+            try out.print("stzos: cannot read {s}: {s}\n", .{ args[3], @errorName(e) });
+            return 1;
+        };
+        const p = try plan.derive(arena, &m);
+        return expect.judgeTranscript(arena, p, lens, text, args[3], out);
     }
     if (std.mem.eql(u8, verb, "guarantees")) {
         if (args.len < 4) {

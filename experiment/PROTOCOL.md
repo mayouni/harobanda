@@ -1,3 +1,92 @@
+# OS-5-PREP — the board's first boot, written and rehearsed before the board exists
+
+Last of the five acts of 2026-09-13. OS-5 itself is NOT done: no card
+has been flashed and no board has booted. What is done is everything
+that can be done without one, so that the first real boot is a command
+rather than an improvisation — and so that whatever it says is judged by
+instruments that were written while nobody knew what it would say.
+
+## `experiment/os5_board.sh`, four acts
+
+**`card`** — what to flash and what it is. The digests of the machine
+file, the card, the kernel and the initramfs; the boot the BOARD expects
+of itself, printed in full; the two lines the emulator could not keep;
+then the wiring (GPIO 14 and 15 with a ground, 3.3 V, 115200 — the
+mini-UART the machine declares as `CONSOLE /dev/ttyS1`).
+
+And one check worth the whole act: **the card's own boot line carries no
+instrument of the court.** Every instrument is the emulator's — the
+watchdog turned off, the lens chosen, the boot halted at the verdict —
+and a card that carried one would be a box that behaves like a court,
+which is the one thing a box on a counter must never do. The script
+reads `cmdline.A.txt` and `cmdline.B.txt` and refuses to go on if it
+finds `stzos.watchdog=off`, `stzos.expect=`, `--halt-on-verdict` or
+`--hold`. Today they are clean:
+
+```
+  cmdline.A.txt: console=ttyS1,115200 quiet loglevel=3 stzos.slot=A rdinit=/stzos -- init /etc/machine
+  clean: the card boots the box, not the court
+```
+
+**It never writes to a device.** Flashing is the one act here that can
+destroy a computer if a letter is wrong, so the script prints the
+command and the author runs it. The Windows tools are named first
+because they refuse a system disk.
+
+**`listen <dev> [seconds]`** — the console, captured to a file at
+115200 8N1, with the `usbipd attach` line WSL needs before a USB serial
+adapter exists inside it at all.
+
+**`judge <file>`** — three judges on one captured boot:
+
+1. **the board's own verdict**, which PID 1 printed on that console: the
+   machine judging its own boot against the `/etc/expected` it carries
+   (JDG-1);
+2. **the court's verdict**, the same judge run from the host over the
+   captured text — `stzos judge <machine> <transcript>`, new here. Two
+   independent witnesses to one boot, which is the reason to keep both;
+3. **the four standing promises** (GRT-1), which on a board should for
+   the first time be kept all four by ONE text.
+
+Then it names what a board is expected to say that the emulator could
+not, and what only a board can show: the watchdog's real countdown, and
+the tryboot flag that still needs a vendored patch to `bcm2835_wdt.c`.
+
+**`rehearse`** — the same three judges against the emulator's pinned
+transcript, with no hardware at all. That is how this script was proven
+today:
+
+```
+--- 1. the BOARD's own verdict (what PID 1 said about its own boot)
+    the boot matches its expectation (/etc/expected.emulator, 17 lines)
+--- 2. the COURT's verdict (the same judge, run from the host)
+    judge makeen_box -- the boot this machine EXPECTS (emulator lens, 17 lines)
+      every expected line was said
+```
+
+## `stzos judge` — the host's own reading
+
+The machine judges its LEDGER as it boots; this judges the TEXT a serial
+cable carried away. A captured transcript is not a ledger: it carries
+the kernel's lines, the worlds' output and the console-only lines PID 1
+says about the card. So the comparison is one-sided on purpose — every
+expected line must have been said, and everything else the machine said
+is printed rather than judged, because a real boot legitimately says
+more than its expectation.
+
+It reuses the derivation and the comparison the machine itself uses
+(`src/expect.zig`), so the two witnesses cannot drift: one wording, two
+readers.
+
+## What waits on the author
+
+`STZ-OS-HARDWARE-01`: a Raspberry Pi 4 Model B, a micro-SD card, and a
+3.3 V USB-serial adapter. Nothing else. The card image is built, its
+digests are printed, the wiring is written down, and the judges are
+rehearsed.
+
+---
+
 # GRT-1 — the guarantee sheet becomes a verdict: four promises, judged by name against the machine's own evidence
 
 Fourth of the five acts of 2026-09-13. `GROUND.md` had written the item
