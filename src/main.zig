@@ -21,6 +21,7 @@ const image = @import("image.zig");
 const net = @import("net.zig");
 const update = @import("update.zig");
 const project = @import("project.zig");
+const guarantee = @import("guarantee.zig");
 const expect = @import("expect.zig");
 
 pub const version = "0.1.0";
@@ -36,6 +37,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos update <dir> [--boot <mountpoint>] [--no-reboot]   (write the other slot, try it once)
         \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
         \\  stzos project <file.machine> --out <dir>     (an edge machine, onto MicroRing's substrate)
+        \\  stzos guarantees <file.machine> <text>       (the hosted profile's four promises, judged)
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos version
@@ -109,6 +111,18 @@ pub fn main() !u8 {
         const path = if (args.len > 2) args[2] else default_fixtures;
         const failures = try court.run(gpa, path, out);
         return if (failures == 0) 0 else 1;
+    }
+    if (std.mem.eql(u8, verb, "guarantees")) {
+        if (args.len < 4) {
+            try out.print("stzos: guarantees needs <file.machine> and the text to judge (a transcript, or the expectation an image carries)\n", .{});
+            return 1;
+        }
+        const m = (try load(arena, args[2], out)) orelse return 1;
+        const text = std.fs.cwd().readFileAlloc(arena, args[3], 1 << 20) catch |e| {
+            try out.print("stzos: cannot read {s}: {s}\n", .{ args[3], @errorName(e) });
+            return 1;
+        };
+        return guarantee.judge(arena, &m, text, args[3], out);
     }
     if (std.mem.eql(u8, verb, "check") or std.mem.eql(u8, verb, "plan") or std.mem.eql(u8, verb, "init") or std.mem.eql(u8, verb, "image") or std.mem.eql(u8, verb, "project")) {
         if (args.len < 3) {

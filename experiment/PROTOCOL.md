@@ -1,3 +1,93 @@
+# GRT-1 — the guarantee sheet becomes a verdict: four promises, judged by name against the machine's own evidence
+
+Fourth of the five acts of 2026-09-13. `GROUND.md` had written the item
+itself: *RestoLean's four guarantees should be four named expectations
+judged by the court, so that "always reachable, stable name, durable
+log, survives the cut" is a verdict, not a brochure.*
+
+## Whose promises these are
+
+A restaurant's, first. RestoLean's Makeen thread called MakeenOS "a
+posture, never a marriage": a sheet of guarantees that imposes itself
+over whatever host is underneath, written by Amor in four words each --
+*toujours joignable, nom stable, journal local durable, traverse la
+coupure*.
+
+They are not one customer's, which is why `stzos guarantees` carries
+them as the HOSTED PROFILE's four standing promises. A box behind a
+counter, an NGO's hub in Diffa, a bank's server and a school's machine
+make the same four or say they make none. `qemu_hello` says it makes
+none, and that is a verdict too: **0 of 4 promised**.
+
+## What the verb does
+
+`stzos guarantees <file.machine> <text>` reads the DECLARATION for what
+is promised and a TEXT for what is kept, and says one of three things
+per promise: not promised, KEPT (with the line that keeps it, quoted),
+NOT KEPT (with what was looked for and not found). Nothing restates the
+declaration as its own evidence -- a promise is kept only if a line of
+the text says so.
+
+Two promises are also ORDERING claims, and the judge checks the order:
+the wire and the partition must be up BEFORE the first world starts,
+because a world that starts on a floor which is not ready has already
+been told a lie.
+
+## Judged twice, because two texts are needed today
+
+`experiment/judge_guarantees.sh` runs it against both, and the pinned
+verdict (`machines/makeen_box.guarantees.expected`, 39 lines) holds both
+reports:
+
+- **the board's expectation** (`zig-out/image/makeen_box/expected`,
+  derived through the board's lens): **3 kept** -- the wire up at its
+  declared address before any world, the address declared and not
+  leased, the partition mounted before any world spoke. The fourth is
+  NOT KEPT for a reason the judge states precisely: *this text carries
+  no slot decision -- an expectation stops where the verdict begins*.
+- **the court's transcript** (`machines/makeen_box.expected`, what the
+  emulator really printed): **1 kept** -- the durable log. The other
+  three name the emulator's own lacks: `the wire never came up -- boot:
+  network lan -- eth0: no such interface (NODEV)`, `no line carries
+  192.168.10.1/24`, and the watchdog line that says a trial cannot roll
+  back by hardware there.
+
+Neither text can keep all four, and the pair says exactly why. That is
+the honest state of the box until OS-5 puts a card in a board: on that
+day ONE transcript keeps all four, and this verb is what will say so.
+
+## The mechanism, asserted before its scoreboard
+
+Two mutations, each in a fresh run:
+
+- the mount line removed from the expectation → *a durable log: NOT
+  KEPT -- no line says 'mount ext4 at /data -- done'*;
+- the wire's line moved AFTER the first start → *always reachable: NOT
+  KEPT -- the wire came up AFTER a world had started*.
+
+## The defect the first run found, in the judge itself
+
+The first version searched the whole text for a substring and reported
+**a stable name: KEPT** — citing the line
+`unmet: boot: judge -- expected, not said: network lan -- eth0 up
+192.168.10.1/24`. A promise judged kept by the very line saying it was
+missing.
+
+A transcript carries more than one boot: the court runs the same card
+again held and again through another lens, prefixing those (`hold: `,
+`unmet: `), and PID 1 QUOTES lines it expected and did not say. Both
+answer a substring search; neither is evidence about this boot. So
+evidence is now what PID 1 said about THIS boot: a line that begins
+`boot: ` and is not the judge quoting.
+
+## The law this pays for
+
+**Evidence is what the machine said about this boot, never what it
+quoted about another.** A judge that searches a whole text will find the
+words it wants inside the sentence that denies them.
+
+---
+
 # BDG-1 — a budget the KERNEL holds: the wall between one world and the next, and the gate that made the transcript a fact
 
 Third of the five acts of 2026-09-13. The dividend document promised a

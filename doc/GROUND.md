@@ -221,8 +221,10 @@ starts what comes after a world only once that world has said it is
 serving. They are still stand-ins for what the kitchen and counter
 worlds will do; the Commons server is not yet a declared service of the
 machine; RestoPay is untouched;
-the board is on order (STZ-OS-HARDWARE-01). The guarantee sheet is not
-yet a fixture file, and it should be (§6).
+the board is on order (STZ-OS-HARDWARE-01). The guarantee sheet IS a
+verdict since GRT-1: `stzos guarantees` states each of the four by name
+against the box's own evidence, and the pair of reports says exactly
+which the emulator cannot keep.
 
 ### 4.2 DIKO Hub (ONG DIKO, Niamey; bases at Gothèye and Diffa)
 
@@ -416,12 +418,14 @@ and what it owes in return, is accounted layer by layer in
 None of these is ordered. They are what this analysis makes visible;
 the author orders.
 
-1. **The guarantee sheet becomes a fixture.** RestoLean's four
-   guarantees should be four named expectations judged by the court
-   (a transcript line for each), so that "always reachable, stable
-   name, durable log, survives the cut" is a verdict, not a brochure.
-   The first three already have their lines; "survives the cut" is
-   the watchdog's real countdown on the board (OS-5).
+1. ~~**The guarantee sheet becomes a fixture.**~~ **Built (GRT-1,
+   2026-09-13):** `stzos guarantees` judges the four by name against a
+   machine's own evidence, quoting the line that keeps each, and
+   `experiment/judge_guarantees.sh` pins both reports. Today the board's
+   derived expectation keeps three (the fourth needs a slot decision,
+   which an expectation cannot carry) and the emulator's transcript
+   keeps one, naming the three the emulator cannot. One real transcript
+   keeps all four on the day a card meets a board (OS-5).
 2. **Egress by declaration.** DIKO's ESC6 (sensitive data never leaves
    the perimeter) is a NETWORK fact the language cannot yet state: it
    declares the interface, not whom the machine may speak to. Declared

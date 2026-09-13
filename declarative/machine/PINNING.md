@@ -109,6 +109,25 @@ booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
 
+## The four promises, judged by name (GRT-1)
+
+The hosted profile's four standing promises -- always reachable, a
+stable name, a durable log, survives the cut -- are RestoLean's sheet
+(Amor's *toujours joignable, nom stable, journal local durable,
+traverse la coupure*) made into a verdict. `stzos guarantees
+<file.machine> <text>` reads the declaration for what is promised and a
+text for what is kept, quotes the line that keeps each, and names what
+was looked for when one is not. `experiment/judge_guarantees.sh` judges
+the box twice and pins both reports in
+`machines/makeen_box.guarantees.expected`: **39 lines, identical** --
+3 of 4 kept against the board's derived expectation (the fourth needs a
+slot decision, which an expectation cannot carry), 1 of 4 against the
+emulator's transcript, each of the other three naming a lack of the
+emulator. `qemu_hello` promises none of the four and says so. The
+mechanism was probed with two mutated texts (the mount line removed,
+the wire's line moved after the first start) before this pin was
+written.
+
 ## The budget, judged by a world the kernel kills (BDG-1)
 
 `MEMORY <mebibytes>` and `CPU <percent of one core>` on a SERVICE, held

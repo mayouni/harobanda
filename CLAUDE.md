@@ -54,6 +54,7 @@ silently (ZinOS, Zos, MakeenOS and Device all exist in the estate —
 ```
 zig build -j2 && zig build test -j2 && zig build court -j2 && zig build cross -j2
 zig-out\bin\stzos.exe check|plan machines\<name>.machine
+bash experiment/judge_guarantees.sh [name]   # the four standing promises, judged twice and pinned (GRT-1)
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/wsl_boot.sh    # then read zig-out/wsl/*.txt
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello   # image, kernel, QEMU boot, judge -> zig-out/wsl/image_qemu_hello.txt
 cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-x86_64-linux-musl   # stzr for the image
@@ -80,6 +81,12 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **Evidence is what the machine said about THIS boot, never what it
+  quoted about another** (GRT-1): a transcript carries other boots
+  (`hold: `, `unmet: `) and PID 1's own quotations of lines it did NOT
+  say. A judge that searches the whole text finds the words it wants
+  inside the sentence that denies them -- `stzos guarantees` reads only
+  lines beginning `boot: ` that are not `boot: judge --`.
 - **A transcript whose order depends on which process reaches the
   console first is a margin, not a fixture** (BDG-1): a world is forked
   HELD at a gate (a pipe) and released only after PID 1 has put it in

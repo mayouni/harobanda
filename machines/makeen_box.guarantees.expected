@@ -1,0 +1,39 @@
+guarantees makeen_box -- the hosted profile's four standing promises, judged against zig-out/image/makeen_box/expected
+
+  always reachable -- whoever needs the box finds it, without being told where it went
+    promised by: NETWORK lan on eth0
+    KEPT -- boot: network lan -- eth0 up 192.168.10.1/24
+
+  a stable name -- the address the phones learned yesterday is the address today
+    promised by: ADDRESS 192.168.10.1/24, declared, not leased
+    KEPT -- boot: network lan -- eth0 up 192.168.10.1/24
+
+  a durable log -- what the box wrote down is still there after the power comes back
+    promised by: MOUNT data, ext4 on /dev/mmcblk0p2
+    KEPT -- boot: mount ext4 at /data -- done
+
+  survives the cut -- a breaker, a technician, a bad update: the box comes back by itself
+    promised by: SLOTS /dev/mmcblk0p1
+    NOT KEPT -- this text carries no slot decision -- an EXPECTATION stops where the verdict begins (the card's state is the card's to say), so a commit or a hold is a TRANSCRIPT's evidence
+
+4 of 4 promised, 3 kept
+
+guarantees makeen_box -- the hosted profile's four standing promises, judged against machines/makeen_box.expected
+
+  always reachable -- whoever needs the box finds it, without being told where it went
+    promised by: NETWORK lan on eth0
+    NOT KEPT -- the wire never came up -- boot: network lan -- eth0: no such interface (NODEV)
+
+  a stable name -- the address the phones learned yesterday is the address today
+    promised by: ADDRESS 192.168.10.1/24, declared, not leased
+    NOT KEPT -- no line carries 192.168.10.1/24
+
+  a durable log -- what the box wrote down is still there after the power comes back
+    promised by: MOUNT data, ext4 on /dev/mmcblk0p2
+    KEPT -- boot: mount ext4 at /data -- done
+
+  survives the cut -- a breaker, a technician, a bad update: the box comes back by itself
+    promised by: SLOTS /dev/mmcblk0p1
+    NOT KEPT -- boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
+
+4 of 4 promised, 1 kept
