@@ -10,7 +10,9 @@ strategic claim**, `doc/GROUND.md` for what the machine is FOR (the
 solutions it is the floor of, and the tools that meet at that floor),
 and `doc/DIVIDEND.md` for what owning the floor gives each layer above
 it (the servers, the runtime, the intelligence modules, the pages, the
-flagships) and what each owes it; the ratified strategy of the whole estate is the
+flagships) and what each owes it, didactic, one example per layer; the
+estate-wide reflection that places the floor in the author's 2020
+diagram is `softanza/vision/08-NORTH-STAR.md` (draft); the ratified strategy of the whole estate is the
 Vision Corpus at `D:\GitHub\softanza\vision` (amended 2026-09-12 for the
 Ring++ turn of 08-30 -- Amended blocks beside the superseded sentences --
 and carrying the floor as `07-SYSTEM.md`, v0.1 DRAFT, unratified). Daily memos go to
