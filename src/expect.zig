@@ -76,6 +76,29 @@ pub fn healthLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// The standing BUDGET line: which worlds the kernel holds to a ceiling,
+/// and to what. Worded ONCE here, like every judged line. Returns false
+/// when no world declares one, and then nothing is said at all.
+pub fn budgetLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    var any = false;
+    for (m.services) |s| {
+        if (s.memory_mb != null or s.cpu_percent != null) any = true;
+    }
+    if (!any) return false;
+    try w.print("boot: budget -- ", .{});
+    var first = true;
+    for (m.services) |s| {
+        if (s.memory_mb == null and s.cpu_percent == null) continue;
+        try w.print("{s}{s} ", .{ if (first) "" else ", ", s.name });
+        first = false;
+        if (s.memory_mb) |mb| try w.print("{d} MiB", .{mb});
+        if (s.memory_mb != null and s.cpu_percent != null) try w.print(" and ", .{});
+        if (s.cpu_percent) |pct| try w.print("{d}% of a core", .{pct});
+    }
+    try w.print("; the kernel holds the ceiling, not the world\n", .{});
+    return true;
+}
+
 pub const Watchdog = enum { armed, off };
 
 /// Through which eyes the boot is expected. The board's lens is the
@@ -141,6 +164,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
         .armed => try w.writeAll(fmt_watchdog_armed),
         .off => try w.writeAll(fmt_watchdog_off),
     };
+    _ = try budgetLine(w, m);
     _ = try healthLine(w, m);
     // every service starts; a one-shot is ready when it has exited 0, a
     // daemon when spawned or, if it declares READY, when it has signalled

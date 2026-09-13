@@ -1,3 +1,113 @@
+# BDG-1 — a budget the KERNEL holds: the wall between one world and the next, and the gate that made the transcript a fact
+
+Third of the five acts of 2026-09-13. The dividend document promised a
+wall between an inference world and the kitchen display; this is that
+wall, built while the only thing on the other side of it is a stand-in
+that allocates.
+
+## The seat
+
+`MEMORY <mebibytes>` and `CPU <percent of one core>` on a service.
+Fixture-first as always (A17, R56, R57, R58, R59; the court red for
+four named reasons before the parser was touched; 76/76 after, from
+71/71).
+
+```
+DEFINE SERVICE greedy AS (
+  RUN ["/stzr", "/app/greedy.luau"],
+  RESTART on_failure,
+  READY "/run/greedy.ready",
+  MEMORY 32,
+  AFTER [modest],
+  NEEDS [process, filesystem]
+) RATIONALE "..."
+```
+
+## The mechanism, which cost this repository nothing
+
+cgroup v2 is a filesystem: a group is a directory, and a ceiling is a
+line of text written into it. So a budget needs no daemon, no agent and
+no library. PID 1 stays in the root group (exempt from the
+no-internal-process rule), delegates `+memory +cpu` to its children,
+makes one directory per budgeted world, writes `memory.max` and
+`cpu.max`, and moves each world into its own group between the fork and
+the exec -- so a world is never outside its ceiling for an instant.
+
+A machine that declares no budget mounts no cgroup filesystem and asks
+for no controller: the plan shows the mount only when a world asks for
+one, and the kernel fragment gains its five options only then.
+
+**The two ceilings do different things, and the difference is the
+point.** Memory KILLS -- SIGKILL, inside the world's own group, with the
+neighbour untouched. CPU THROTTLES -- the world waits for its next
+slice and nothing dies, so a held cpu ceiling appears in no transcript
+at all.
+
+## Judged by a world the kernel kills
+
+`machines/qemu_budget.machine`, the fourth pinned transcript: `modest`
+holds 8 MiB of its 64 and ends; `greedy` asks for far more than its 32
+and is killed by signal 9, five times, each restart the declared policy
+and each kill the kernel's:
+
+```
+boot: budget -- modest 64 MiB and 50% of a core, greedy 32 MiB; the kernel holds the ceiling, not the world
+boot: start greedy -- pid N -- /stzr /app/greedy.luau
+greedy: this world was granted 32 MiB, and is about to ask for far more
+boot: greedy (pid N) killed by signal 9
+boot: restart greedy (on_failure, 1/5) -- pid N
+...
+boot: greedy -- restart on_failure, but gave up after 5 restarts
+boot: every service has ended -- init has nothing left to keep alive
+```
+
+35 lines. The world's own file carries a bound of 512 MiB that the
+kernel should never let it reach: if the ceiling did NOT hold, the
+transcript would say so in one line instead of hanging. The machine
+never reaches a verdict on its own boot, which is the truth about a
+boot where a world never served.
+
+## The gate: what this act found in the old code
+
+Adding the budget changed the timing of the smallest machine, and its
+pinned transcript FLIPPED two lines:
+
+```
+-boot: start whoami -- pid N -- /stzos id -- as world (1000:1000)
+ id: uid=1000 gid=1000
++boot: start whoami -- pid N -- /stzos id -- as world (1000:1000)
+```
+
+PID 1 could only print a start line AFTER the fork, because the line
+carries the pid -- and `stzos id` is a static binary that prints one
+line and exits, so it beat its own start line to the console. The race
+had always been there; every earlier transcript had simply won it.
+
+**The fix is a gate, not a wider normalisation.** Between the fork and
+the exec the child now blocks on a pipe, so PID 1 can put it in its
+cgroup and SAY that it started before the world says anything. One
+spawn path serves both a world with a declared USER and one without,
+the credential drop happens at the same moment it always did, and the
+order of every transcript became a fact rather than a margin. The
+proof: `qemu_hello` matched its ORIGINAL pin again, unchanged, 33
+lines.
+
+## Judged
+
+- `qemu_budget`: **35 lines**, new and pinned.
+- `qemu_hello` **33**, `makeen_qemu` **26**, `makeen_box` **84**: all
+  matched their existing pins after the gate, none re-pinned.
+- 12/12 unit tests, 76/76 fixtures, the projection and its consumer
+  unchanged, the WSL rehearsal still catching its stale world.
+
+## The law this pays for
+
+**A transcript whose order depends on which process reaches the console
+first is a margin, not a fixture.** Where PID 1 must speak before a
+world does, it holds the world until it has spoken.
+
+---
+
 # HLT-1 — the watchdog is fed on HEALTH: a world can be alive and wedged, and until today nothing noticed
 
 Second of the five acts of 2026-09-13, and the second half of the

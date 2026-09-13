@@ -45,7 +45,7 @@ pub fn boardProfile(b: Board) Profile {
 }
 pub const Restart = enum { never, always, on_failure };
 pub const PinMode = enum { in, out };
-pub const Fs = enum { proc, sysfs, devtmpfs, tmpfs, ext4, vfat, littlefs };
+pub const Fs = enum { proc, sysfs, devtmpfs, tmpfs, ext4, vfat, littlefs, cgroup2 };
 pub const MountOption = enum { rw, ro, noatime, nosuid, nodev, noexec };
 
 /// The capability vocabulary is stzlib's own (base/system/stzSystemProfile.ring):
@@ -99,6 +99,15 @@ pub const Service = struct {
     /// trial commits only after each has proven one full window. Null is
     /// a world that answers for its start and never again.
     health: ?u32,
+    /// the ceiling the KERNEL holds this world to, in mebibytes: the
+    /// memory controller kills what goes past it, inside this world's
+    /// own group, and no other world feels it (BDG-1). Null is a world
+    /// that may take the whole box down with it.
+    memory_mb: ?u32,
+    /// the share of ONE core, as a percentage: 50 is half a core, 200 is
+    /// two of them. The scheduler throttles past it rather than killing:
+    /// a world that wants more time waits, and its neighbours do not.
+    cpu_percent: ?u32,
     /// the declared identity this service runs as; null is the machine
     /// itself (root), which is what a service gets only by saying nothing
     user: ?*const User,
@@ -395,7 +404,7 @@ const Decl = struct {
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
         .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "USER" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "USER" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
@@ -759,6 +768,23 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             if (secs > 3600) return ctx.refuse(c.line, "HEALTH {d} is longer than an hour: a window nobody would wait out is a promise the watchdog cannot keep", .{secs});
             health = @intCast(secs);
         }
+        // the ceilings the kernel holds (BDG-1). A budget is a fact of
+        // the world, not of the machine: the machine's own total is the
+        // board's, and a world that names a ceiling names its own.
+        var memory_mb: ?u32 = null;
+        if (find(d, "MEMORY")) |c| {
+            const mb = try wantNumber(&ctx, c);
+            if (mb == 0) return ctx.refuse(c.line, "MEMORY 0 is not a ceiling: a world that may hold nothing cannot run at all", .{});
+            if (mb > 1024 * 1024) return ctx.refuse(c.line, "MEMORY {d} is more than a tebibyte; the number is mebibytes, not bytes", .{mb});
+            memory_mb = @intCast(mb);
+        }
+        var cpu_percent: ?u32 = null;
+        if (find(d, "CPU")) |c| {
+            const pct = try wantNumber(&ctx, c);
+            if (pct == 0) return ctx.refuse(c.line, "CPU 0 is a service that cannot run: the number is a percentage of ONE core, and 100 is that core", .{});
+            if (pct > 1600) return ctx.refuse(c.line, "CPU {d} is more than sixteen cores' worth; 1600 is the ceiling this grammar admits", .{pct});
+            cpu_percent = @intCast(pct);
+        }
         var user: ?*const User = null;
         if (find(d, "USER")) |c| {
             const uname = try wantIdent(&ctx, c);
@@ -767,7 +793,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             };
             if (user == null) return ctx.refuse(c.line, "{s} runs as '{s}', which resolves to nothing: no such USER", .{ d.name, uname });
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .user = user, .rationale = d.rationale });
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .user = user, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
 

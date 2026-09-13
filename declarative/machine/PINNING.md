@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-e65f7b668ee8917b1b3a2d9aa5837f13559ab2935da36b9c63881fdac68c24cf
+57f976861774231a86dd0db3f8005ca381d864cdde3cbab87bc31fcbe9e601e8
 ```
 
-(Before the HEALTH seat of 2026-09-13 (HLT-1):
+(Before the BUDGET seat of 2026-09-13 (BDG-1):
+`e65f7b668ee8917b1b3a2d9aa5837f13559ab2935da36b9c63881fdac68c24cf`,
+71/71; the widening added A17, R56, R57, R58, R59 and the `cgroup2`
+filesystem. Before the HEALTH seat of 2026-09-13 (HLT-1):
 `a3ea9fca4c2f118de31b6dd071e7025bc261e7b24f77692cdf5fd519fa8714f7`,
 67/67; the widening added A16, R53, R54, R55 and gave A2's two services
 their windows. Before the box's worlds became DAEMONS on 2026-09-13 (SRV-1):
@@ -50,7 +53,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **71/71** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **76/76** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -105,6 +108,27 @@ not committed ... the next boot is A`, and the card read back still
 booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
+
+## The budget, judged by a world the kernel kills (BDG-1)
+
+`MEMORY <mebibytes>` and `CPU <percent of one core>` on a SERVICE, held
+by cgroup v2. Fixture-first — A17 accepts both ceilings, R56 refuses a
+memory ceiling of zero, R57 a share of zero, R58 more than sixteen
+cores' worth, R59 `MEMORY` on a MACHINE (the clause menu). **76/76**,
+from 71/71.
+
+`machines/qemu_budget.machine` is the machine that proves it, and it is
+the fourth pinned transcript: two worlds on the smallest board, one
+inside its ceiling and one over it. `modest` holds 8 MiB of its 64 and
+ends, and nothing in the transcript mentions the budget again -- a
+ceiling that holds is a ceiling nobody hears about. `greedy` asks for
+far more than its 32 MiB and is **killed by signal 9, five times**,
+inside its own group: its neighbour never felt it, PID 1 applied the
+declared RESTART policy, gave up after five, and the box carried on to
+a clean halt. **35 lines, identical.** The machine never reaches a
+verdict on its own boot, and that is the truth about a boot in which a
+world never served: `greedy` declares the signal it would give if it
+were serving, and never gives it.
 
 ## The health window, judged by a world that stops serving (HLT-1)
 

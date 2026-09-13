@@ -108,6 +108,15 @@ const Ledger = struct {
     fn said(self: *Ledger) []const u8 {
         return self.aw.written();
     }
+    /// everything recorded so far, on the console, now. Called before a
+    /// spawn: a world starts speaking the instant it is forked, and a
+    /// reason still sitting in PID 1's buffer would be read AFTER the
+    /// world it explains (BDG-1, where five restarts arrived out of
+    /// order with the kills that caused them).
+    fn flush(self: *Ledger) !void {
+        try self.echo();
+        try self.out.flush();
+    }
 };
 
 /// the value after `<key>` on the kernel command line, or null
@@ -206,6 +215,96 @@ fn commitText(gpa: std.mem.Allocator, text: []const u8, from: u8, to: u8) ![]u8 
     return std.mem.concat(gpa, u8, &.{ head, tail });
 }
 
+// ---- budgets, held by the kernel (BDG-1) ---------------------------------
+//
+// cgroup v2 is a filesystem: a group is a directory, and a ceiling is a
+// line of text written into it. That is the whole machinery, which is
+// why a budget costs this repository no daemon, no agent and no library.
+// PID 1 stays in the root group (which is exempt from the no-internal-
+// process rule), delegates the two controllers it uses to the children,
+// makes one directory per budgeted world, writes the ceilings, and moves
+// each world into its own on the way up.
+//
+// What the two ceilings do when they are reached is not the same, and
+// the difference is the point: memory KILLS (the world is SIGKILLed
+// inside its own group, and no other world feels it), cpu THROTTLES (the
+// world waits for its next slice; nothing dies). The transcript shows
+// the first as a signal and the second not at all, which is honest --
+// a throttled world is a working world.
+
+const BudgetState = enum { none, held, refused };
+
+/// Everything cgroup v2 wants is a small string in a file it already
+/// created. Errors are the caller's to state, never swallowed.
+fn writeKernelFile(path: []const u8, data: []const u8) !void {
+    const f = try std.fs.cwd().openFile(path, .{ .mode = .write_only });
+    defer f.close();
+    try f.writeAll(data);
+}
+
+/// Delegate the controllers and make one group per budgeted world. A
+/// machine that declares no budget touches none of this and says
+/// nothing: the plumbing a declaration did not ask for is not built.
+fn cgroupPrepare(m: *const machine.Machine, out: *std.Io.Writer) BudgetState {
+    var any = false;
+    for (m.services) |s| {
+        if (s.memory_mb != null or s.cpu_percent != null) any = true;
+    }
+    if (!any) return .none;
+
+    writeKernelFile("/sys/fs/cgroup/cgroup.subtree_control", "+memory +cpu") catch |e| {
+        out.print("boot: budget -- the kernel would not delegate the controllers ({s}); no ceiling is held this boot\n", .{@errorName(e)}) catch {};
+        return .refused;
+    };
+    for (m.services) |s| {
+        if (s.memory_mb == null and s.cpu_percent == null) continue;
+        var dbuf: [128]u8 = undefined;
+        const dir = std.fmt.bufPrint(&dbuf, "/sys/fs/cgroup/{s}", .{s.name}) catch return .refused;
+        std.fs.cwd().makeDir(dir) catch |e| switch (e) {
+            error.PathAlreadyExists => {},
+            else => {
+                out.print("boot: budget -- {s}: the group could not be made ({s}); no ceiling is held this boot\n", .{ s.name, @errorName(e) }) catch {};
+                return .refused;
+            },
+        };
+        var pbuf: [160]u8 = undefined;
+        var vbuf: [48]u8 = undefined;
+        if (s.memory_mb) |mb| {
+            const path = std.fmt.bufPrint(&pbuf, "{s}/memory.max", .{dir}) catch return .refused;
+            const val = std.fmt.bufPrint(&vbuf, "{d}", .{@as(u64, mb) * 1024 * 1024}) catch return .refused;
+            writeKernelFile(path, val) catch |e| {
+                out.print("boot: budget -- {s}: the memory ceiling was refused ({s}); no ceiling is held this boot\n", .{ s.name, @errorName(e) }) catch {};
+                return .refused;
+            };
+        }
+        if (s.cpu_percent) |pct| {
+            // cpu.max is "<quota> <period>" in microseconds: a period of
+            // 100 ms, and the slice of it the percentage asks for
+            const path = std.fmt.bufPrint(&pbuf, "{s}/cpu.max", .{dir}) catch return .refused;
+            const val = std.fmt.bufPrint(&vbuf, "{d} 100000", .{@as(u64, pct) * 1000}) catch return .refused;
+            writeKernelFile(path, val) catch |e| {
+                out.print("boot: budget -- {s}: the cpu ceiling was refused ({s}); no ceiling is held this boot\n", .{ s.name, @errorName(e) }) catch {};
+                return .refused;
+            };
+        }
+    }
+    return .held;
+}
+
+/// Move a world into its own group. PID 1 does it after the fork, so the
+/// one path serves a world that drops to a USER and one that does not:
+/// a child that has already dropped its privileges could not write here.
+fn cgroupJoin(svc: *const machine.Service, pid: i32) void {
+    if (svc.memory_mb == null and svc.cpu_percent == null) return;
+    var pbuf: [160]u8 = undefined;
+    const path = std.fmt.bufPrint(&pbuf, "/sys/fs/cgroup/{s}/cgroup.procs", .{svc.name}) catch return;
+    var vbuf: [24]u8 = undefined;
+    const val = std.fmt.bufPrint(&vbuf, "{d}", .{pid}) catch return;
+    // a world that has already exited cannot be moved, and that is not
+    // an error: the reaper's line is the one that matters
+    writeKernelFile(path, val) catch {};
+}
+
 /// The wall clock in milliseconds. The machine sets no clock -- the
 /// board has no RTC and there is no time protocol on the boot path --
 /// so this reading only advances, and it comes from the same source as
@@ -247,6 +346,8 @@ test "a world with a window is ready at its signal but PROVEN only one window la
         .needs = &.{},
         .ready = "/run/kds.ready",
         .health = 5,
+        .memory_mb = null,
+        .cpu_percent = null,
         .user = null,
         .rationale = "a world that keeps saying it serves",
     };
@@ -259,6 +360,8 @@ test "a world with a window is ready at its signal but PROVEN only one window la
         .needs = &.{},
         .ready = "/run/poste.ready",
         .health = null,
+        .memory_mb = null,
+        .cpu_percent = null,
         .user = null,
         .rationale = "a world that answers for its start and never again",
     };
@@ -435,6 +538,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                 .ext4 => "ext4",
                 .vfat => "vfat",
                 .littlefs => "littlefs",
+                .cgroup2 => "cgroup2",
             };
             const dir = try gpa.dupeZ(u8, mt.at);
             defer gpa.free(dir);
@@ -520,6 +624,18 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         try out.flush();
     };
 
+    // the ceilings, before the first world runs: a world must never see
+    // a boot in which its group did not exist yet (BDG-1)
+    switch (cgroupPrepare(m, out)) {
+        .none => {},
+        .held => {
+            _ = try expect.budgetLine(led.w(), m);
+            try led.echo();
+        },
+        // refused: the console said why, and the ledger lacks the line
+        // the expectation has -- so the verdict differs and a trial holds
+        .refused => try out.flush(),
+    }
     _ = try expect.healthLine(led.w(), m);
     try led.echo();
     try startReady(gpa, slots.items, &led);
@@ -726,13 +842,16 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                     try led.say("boot: {s} -- restart {s}, but gave up after {d} restarts\n", .{ c.service.name, @tagName(c.service.restart), c.restarts });
                 } else {
                     c.restarts += 1;
-                    const np = spawn(gpa, c.service) catch |e| {
+                    const again = spawn(gpa, c.service) catch |e| {
                         try led.say("boot: restart {s} -- could not spawn: {s}\n", .{ c.service.name, @errorName(e) });
                         break;
                     };
-                    c.pid = np;
+                    c.pid = again.pid;
                     c.state = .running;
-                    try led.say("boot: restart {s} ({s}, {d}/{d}) -- pid {d}\n", .{ c.service.name, @tagName(c.service.restart), c.restarts, opts.max_restarts, np });
+                    cgroupJoin(c.service, again.pid);
+                    try led.say("boot: restart {s} ({s}, {d}/{d}) -- pid {d}\n", .{ c.service.name, @tagName(c.service.restart), c.restarts, opts.max_restarts, again.pid });
+                    try led.flush();
+                    release(again.gate);
                 }
             }
             break;
@@ -835,36 +954,42 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
                 };
             }
             if (!ok) continue;
-            const pid = spawn(gpa, s.service) catch |e| {
+            const started = spawn(gpa, s.service) catch |e| {
                 s.state = .never;
                 try led.say("boot: start {s} -- could not spawn: {s}\n", .{ s.service.name, @errorName(e) });
                 progressed = true;
                 continue;
             };
-            s.pid = pid;
+            s.pid = started.pid;
             s.state = .running;
+            cgroupJoin(s.service, started.pid); // inside its ceiling before its first instruction
             progressed = true;
             var pb: [16]u8 = undefined;
-            try expect.startLine(led.w(), s.service, std.fmt.bufPrint(&pb, "{d}", .{pid}) catch "?");
-            try led.echo();
+            try expect.startLine(led.w(), s.service, std.fmt.bufPrint(&pb, "{d}", .{started.pid}) catch "?");
+            try led.flush();
+            release(started.gate);
         }
     }
 }
 
-fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service) !i32 {
-    const u = svc.user orelse {
-        var child = std.process.Child.init(svc.run, gpa);
-        child.stdin_behavior = .Ignore;
-        child.stdout_behavior = .Inherit;
-        child.stderr_behavior = .Inherit;
-        try child.spawn();
-        return @intCast(child.id);
-    };
-    // a declared identity: fork by hand, drop the credentials in the child,
-    // then exec. std.process.Child has no seat for a uid, and the drop must
-    // happen between fork and exec -- the one moment where the child is
-    // still ours and not yet the program's. Group first, then user: after
-    // setuid there is no privilege left to change the group with.
+/// A world, forked and HELD at the gate.
+///
+/// Between the fork and the exec the child blocks on a pipe, so PID 1
+/// can put it in its cgroup and SAY that it started before the world
+/// says anything at all. Without that gate the transcript's order is a
+/// race between a fork and a print, and a fast world wins it often
+/// enough to make a pinned transcript flap: `stzos id` -- a static
+/// binary that prints one line and exits -- overtook its own start line
+/// the first time budgets changed the timing (BDG-1). A gate costs one
+/// pipe and makes the order a fact.
+///
+/// It is also where a declared identity is dropped, which must happen
+/// between fork and exec -- the one moment where the child is still
+/// ours and not yet the program's. Group first, then user: after setuid
+/// there is no privilege left to change the group with.
+const Started = struct { pid: i32, gate: std.posix.fd_t };
+
+fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service) !Started {
     var argv = try gpa.alloc(?[*:0]const u8, svc.run.len + 1);
     defer gpa.free(argv);
     for (svc.run, 0..) |a, i| argv[i] = (try gpa.dupeZ(u8, a)).ptr;
@@ -873,13 +998,28 @@ fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service) !i32 {
     defer gpa.free(path);
     const envp = [_:null]?[*:0]const u8{null};
 
+    const gate = try std.posix.pipe();
     const pid = try std.posix.fork();
     if (pid == 0) {
         // the child: any failure here must not return into init's loop
-        std.posix.setgid(u.gid) catch std.posix.exit(126);
-        std.posix.setuid(u.uid) catch std.posix.exit(126);
+        std.posix.close(gate[1]);
+        var latch: [1]u8 = undefined;
+        _ = std.posix.read(gate[0], &latch) catch {}; // PID 1's word, or its death
+        std.posix.close(gate[0]);
+        if (svc.user) |u| {
+            std.posix.setgid(u.gid) catch std.posix.exit(126);
+            std.posix.setuid(u.uid) catch std.posix.exit(126);
+        }
         std.posix.execveZ(path, @ptrCast(argv.ptr), &envp) catch {};
         std.posix.exit(127); // the program was not there, or not runnable as this identity
     }
-    return pid;
+    std.posix.close(gate[0]);
+    return .{ .pid = pid, .gate = gate[1] };
+}
+
+/// Let the world run: everything PID 1 owed it first -- its group, its
+/// line in the transcript -- is done.
+fn release(gate: std.posix.fd_t) void {
+    _ = std.posix.write(gate, "\x00") catch {};
+    std.posix.close(gate);
 }

@@ -80,6 +80,17 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A transcript whose order depends on which process reaches the
+  console first is a margin, not a fixture** (BDG-1): a world is forked
+  HELD at a gate (a pipe) and released only after PID 1 has put it in
+  its cgroup and printed its start line. One spawn path for every
+  world, with or without a declared USER. Never widen the judge's
+  normalisation to hide an ordering race -- close the race.
+- **A budget is the KERNEL's to hold** (BDG-1): `MEMORY` (mebibytes)
+  and `CPU` (percent of one core) become a cgroup v2 group per world.
+  Memory KILLS inside that group and the neighbour never feels it; cpu
+  THROTTLES and says nothing. A machine that declares no budget mounts
+  no cgroup filesystem and asks for no controller.
 - **Alive is not serving** (HLT-1): a world with `HEALTH <seconds>`
   must refresh its READY path within every window; PID 1 feeds the
   hardware watchdog ONLY while every such world is fresh, and a trial

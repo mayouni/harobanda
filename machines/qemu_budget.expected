@@ -1,0 +1,35 @@
+boot: stzos init -- machine qemu_budget (hosted / x86_64 / qemu_pc) -- pid 1
+boot: console /dev/ttyS0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: mount cgroup2 at /sys/fs/cgroup -- done
+boot: grant process (effectful)
+boot: grant filesystem (effectful)
+boot: budget -- modest 64 MiB and 50% of a core, greedy 32 MiB; the kernel holds the ceiling, not the world
+boot: start modest -- pid N -- /stzr /app/modest.luau
+modest: this world was granted 64 MiB and half a core
+modest: 8 MiB held, well inside the ceiling -- the kernel never had to intervene
+boot: modest (pid N) exited 0
+boot: start greedy -- pid N -- /stzr /app/greedy.luau
+greedy: this world was granted 32 MiB, and is about to ask for far more
+boot: greedy (pid N) killed by signal 9
+boot: restart greedy (on_failure, 1/5) -- pid N
+greedy: this world was granted 32 MiB, and is about to ask for far more
+boot: greedy (pid N) killed by signal 9
+boot: restart greedy (on_failure, 2/5) -- pid N
+greedy: this world was granted 32 MiB, and is about to ask for far more
+boot: greedy (pid N) killed by signal 9
+boot: restart greedy (on_failure, 3/5) -- pid N
+greedy: this world was granted 32 MiB, and is about to ask for far more
+boot: greedy (pid N) killed by signal 9
+boot: restart greedy (on_failure, 4/5) -- pid N
+greedy: this world was granted 32 MiB, and is about to ask for far more
+boot: greedy (pid N) killed by signal 9
+boot: restart greedy (on_failure, 5/5) -- pid N
+greedy: this world was granted 32 MiB, and is about to ask for far more
+boot: greedy (pid N) killed by signal 9
+boot: greedy -- restart on_failure, but gave up after 5 restarts
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)
+reboot: Restarting system

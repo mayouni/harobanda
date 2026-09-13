@@ -373,6 +373,20 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             // read the committed slot and to commit a trial
             try w.print("CONFIG_VFAT_FS=y\nCONFIG_NLS_CODEPAGE_437=y\nCONFIG_NLS_ISO8859_1=y\n", .{});
         }
+        {
+            // the groups a declared budget is held in (BDG-1): the memory
+            // controller for the ceiling that kills, the cpu controller
+            // and its bandwidth for the share that throttles. Asked for
+            // only when a world declares one -- a machine carries the
+            // kernel its own declaration needs.
+            var budgeted = false;
+            for (m.services) |s| {
+                if (s.memory_mb != null or s.cpu_percent != null) budgeted = true;
+            }
+            if (budgeted) {
+                try w.print("CONFIG_CGROUPS=y\nCONFIG_MEMCG=y\nCONFIG_CGROUP_SCHED=y\nCONFIG_FAIR_GROUP_SCHED=y\nCONFIG_CFS_BANDWIDTH=y\n", .{});
+            }
+        }
         if (block) |b| {
             // BLOCK and BLK_DEV are menus tinyconfig closes; VIRTIO_MENU
             // gates every virtio driver. Without them, olddefconfig drops

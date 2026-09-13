@@ -117,6 +117,8 @@ init; the launcher is the pack).
 | `NEEDS` | name list of capabilities | optional; each must be declared AND granted (R17, R18) |
 | `READY` | string | optional, daemons only — the absolute path the service creates when it is serving (R43, R44, R45); see the readiness rule below |
 | `HEALTH` | number (seconds) | optional — the window within which the daemon must REFRESH its READY path. Requires READY (R53); 0 is refused (R54), and so is a window longer than an hour. See the health rule below |
+| `MEMORY` | number (mebibytes) | optional — the ceiling the KERNEL holds this world to. 0 is refused (R56), and so is a number big enough to be bytes by mistake. See the budget rule below |
+| `CPU` | number (percent of ONE core) | optional — 50 is half a core, 200 is two of them. 0 is refused (R57), and so is more than sixteen cores' worth (R58) |
 | `USER` | name | optional — a declared USER this service runs as; PID 1 drops to that uid and gid between fork and exec. A name that resolves to nothing is refused at check time (R46). Saying nothing is how a service runs as the machine itself |
 
 ### DEFINE USER — a declared identity
@@ -170,6 +172,20 @@ would race a boot, and a box that refuses to commit an update whose
 world never came up is behaving correctly. READY is refused on a
 one-shot (R43), must be absolute (R44), and one path signals for one
 service (R45).
+
+**A BUDGET is a ceiling the kernel holds, not a promise the world
+keeps.** `MEMORY <mebibytes>` and `CPU <percent of one core>` are
+written into a cgroup v2 group per world — a group is a directory, a
+ceiling is a line of text in it — and the two behave differently on
+purpose. Memory KILLS: a world that allocates past its ceiling is
+SIGKILLed inside its own group, its neighbours never feel it, and PID 1
+reaps it and applies the declared RESTART policy like any other death.
+CPU THROTTLES: a world that wants more time waits for its next slice,
+and nothing dies, so a held cpu ceiling appears in no transcript at
+all. A machine that declares no budget mounts no cgroup filesystem and
+asks its kernel for no controller: the plumbing a declaration did not
+ask for is not built (BDG-1). `MEMORY` and `CPU` are a SERVICE's, never
+a MACHINE's (R59) -- the machine's own total is the board's.
 
 **HEALTH is that word, repeated.** A world can be alive and wedged: the
 process is there, the kernel is content, and nothing is served. `HEALTH

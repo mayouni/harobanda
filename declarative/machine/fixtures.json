@@ -296,6 +296,24 @@
           "srv"
         ]
       }
+    },
+    {
+      "id": "A17",
+      "name": "a world declares its ceiling: MEMORY in mebibytes and CPU as a share of one core",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE think AS (\n  RUN [\"/think\"],\n  RESTART on_failure,\n  MEMORY 256,\n  CPU 50,\n  NEEDS [process]\n) RATIONALE \"It may have a quarter of a gibibyte and half a core, and not one page more\"\n",
+      "expect": {
+        "counts": {
+          "services": 1,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 0,
+          "users": 0
+        },
+        "order": [
+          "think"
+        ]
+      }
     }
   ],
   "rejects": [
@@ -628,6 +646,30 @@
       "name": "HEALTH is a SERVICE's clause, not a MOUNT's",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, HEALTH 5) RATIONALE \"x\"\n",
       "refusal": "HEALTH"
+    },
+    {
+      "id": "R56",
+      "name": "a ceiling of zero mebibytes is not a ceiling",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART never, MEMORY 0) RATIONALE \"x\"\n",
+      "refusal": "MEMORY 0 is not a ceiling"
+    },
+    {
+      "id": "R57",
+      "name": "a share of zero is a service that cannot run",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART never, CPU 0) RATIONALE \"x\"\n",
+      "refusal": "CPU 0 is a service that cannot run"
+    },
+    {
+      "id": "R58",
+      "name": "a share above sixteen cores is refused",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART never, CPU 2000) RATIONALE \"x\"\n",
+      "refusal": "more than sixteen cores"
+    },
+    {
+      "id": "R59",
+      "name": "MEMORY is a SERVICE's clause, not a MACHINE's",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, MEMORY 512) RATIONALE \"x\"\n",
+      "refusal": "MEMORY"
     }
   ]
 }

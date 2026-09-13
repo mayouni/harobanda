@@ -58,6 +58,15 @@ pub fn derive(arena: std.mem.Allocator, m: *const Machine) !Plan {
         try steps.append(arena, .{ .mount = .{ .at = "/proc", .fs = .proc, .device = null, .options = &.{}, .implicit = true } });
         try steps.append(arena, .{ .mount = .{ .at = "/sys", .fs = .sysfs, .device = null, .options = &.{}, .implicit = true } });
         try steps.append(arena, .{ .mount = .{ .at = "/dev", .fs = .devtmpfs, .device = null, .options = &.{}, .implicit = true } });
+        // ... and the groups the kernel holds the budgets in, when any
+        // world declares one. No budget, no mount: a machine carries the
+        // plumbing its own declaration asks for and nothing else (BDG-1).
+        for (m.services) |s| {
+            if (s.memory_mb != null or s.cpu_percent != null) {
+                try steps.append(arena, .{ .mount = .{ .at = "/sys/fs/cgroup", .fs = .cgroup2, .device = null, .options = &.{}, .implicit = true } });
+                break;
+            }
+        }
     }
     for (m.mounts) |mt| try steps.append(arena, .{ .mount = .{ .at = mt.at, .fs = mt.fs, .device = mt.device, .options = mt.options, .implicit = false } });
     for (m.capabilities) |c| try steps.append(arena, .{ .capability = .{ .name = c.name, .granted = c.granted } });
@@ -144,6 +153,8 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
             }
             if (svc.ready) |r| try out.print(" -- ready on {s}", .{r});
             if (svc.health) |h| try out.print(" -- fresh every {d}s", .{h});
+            if (svc.memory_mb) |mb| try out.print(" -- within {d} MiB", .{mb});
+            if (svc.cpu_percent) |pct| try out.print(" -- at most {d}% of a core", .{pct});
             if (svc.user) |u| try out.print(" -- as {s} ({d}:{d})", .{ u.name, u.uid, u.gid });
             try out.print("\n", .{});
         },

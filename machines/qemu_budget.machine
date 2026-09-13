@@ -1,0 +1,40 @@
+-- qemu_budget.machine -- the machine that proves a ceiling holds, and
+-- what happens to the world that ignores it. Two worlds on the smallest
+-- emulator board: one that stays inside its budget and ends cleanly, and
+-- one that asks for more memory than it was granted and is killed by the
+-- kernel inside its own group -- not by PID 1, and not at the expense of
+-- its neighbour. This is the wall an inference world will one day stand
+-- behind, written now, while the only thing on the other side of it is a
+-- stand-in that allocates (BDG-1, 2026-09-13).
+
+DEFINE MACHINE qemu_budget AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "The smallest machine that proves a budget: one world inside its ceiling, one over it, and a kernel that tells them apart"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The worlds are processes"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The initramfs carries the worlds"
+
+DEFINE SERVICE modest AS (
+  RUN ["/stzr", "/app/modest.luau"],
+  RESTART never,
+  MEMORY 64,
+  CPU 50,
+  NEEDS [process, filesystem]
+) RATIONALE "A world that holds a little and ends: the kernel never has to intervene, and the transcript says nothing about it -- which is what a held ceiling looks like"
+
+DEFINE SERVICE greedy AS (
+  RUN ["/stzr", "/app/greedy.luau"],
+  RESTART on_failure,
+  READY "/run/greedy.ready",
+  MEMORY 32,
+  AFTER [modest],
+  NEEDS [process, filesystem]
+) RATIONALE "A world that asks for more than it was granted: the kernel kills it inside its own group, the restart policy tries five times, and the box carries on -- the neighbour never felt it. It declares the signal it would give if it ever served, and never gives it: so this machine never reaches a verdict on its own boot, which is the truth about a boot where a world never served"

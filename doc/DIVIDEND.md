@@ -104,7 +104,7 @@ in the rest of this document is a consequence of it.
 | what you get | what it means, plainly | today |
 |---|---|---|
 | **a floor that is a fact** | every mount, address, identity and start order is declared and in the transcript before your first line runs | real: three machines boot in emulators, pinned transcripts |
-| **an envelope below you** | what the machine refuses, you cannot do; the runtime refuses it today, the kernel will (namespaces, allowed system calls, budgets) | real at the runtime; the kernel half queued |
+| **an envelope below you** | what the machine refuses, you cannot do; the runtime refuses the capabilities, and since BDG-1 the KERNEL holds the resources -- `MEMORY` and `CPU` per world, in its own cgroup | real for capabilities and resources; namespaces and system calls queued |
 | **an identity from the floor** | you run as a declared USER; a per-device key that never leaves the board comes next | real; the key queued |
 | **a durable place and a clock** | a partition mounted before you speak, with declared options; the clock a capability; a signed journal a named seat | real for the mount; the journal seat named |
 | **one narrative** | your output is a line in the machine's story, with a prefix and a grammar; no syslog, no journald | real |
@@ -195,8 +195,8 @@ machine this is.
   from below: there is nothing on the path to reach.
 - Determinism: a boot is a transcript; a world with journaled inputs
   replays in the emulator.
-- Budgets, when the seat lands: a declared ceiling the collector can
-  assume.
+- Budgets, since BDG-1: a declared `MEMORY` ceiling the collector can
+  assume, held by the kernel rather than by the runtime's good manners.
 - The compiler as the kernel's builder, one day: today gcc builds the
   kernel, `zig cc` was tried and the image did not boot (ZIGCC-1), and
   the instrument is kept.
@@ -250,8 +250,11 @@ machine it perceives through logs written for people.
 - The model rides in the image, pinned by digest like the kernel. The
   intelligence a box has is exactly the intelligence it was declared
   with, and an auditor can read which.
-- A wall between worlds: the inference world runs as its own USER
-  under its own budget, so a model never starves the kitchen display.
+- A wall between worlds, built: the inference world runs as its own
+  USER under its own `MEMORY` and `CPU` ceiling, so a model that asks
+  for too much is killed inside its own group and the kitchen display
+  never feels it (BDG-1, proved by a world the kernel kills five times
+  while its neighbour finishes cleanly).
 - The agent's mouth is constrained on the box, and it can speak about
   the box. Because the machine language is a declared grammar, an
   agent on the machine can propose a change to the machine:
@@ -286,7 +289,7 @@ boot: judge -- expected, not said: network lan -- eth0 up 192.168.10.1/24
   `/etc/machine` as its profile so there is one declaration.
 
 **What it owes.** Declare the model as a pinned asset, declare
-inference and its egress, declare a budget when the seat exists, and
+inference and its egress, declare its `MEMORY` and `CPU` ceilings, and
 write to the transcript in its grammar.
 
 **Honest boundary.** A Raspberry Pi 4 is a weak inference host: no
@@ -418,7 +421,7 @@ diagram. This is where the floor pays each band of it:
 
 1. Egress by declaration: whom a machine may speak to, with the
    firewall derived.
-2. Budgets: a memory and CPU ceiling per service.
+2. ~~Budgets: a memory and CPU ceiling per service.~~ **Built (BDG-1).**
 3. The envelope at the kernel: namespaces and allowed system calls
    derived from CAPABILITY.
 4. The signed journal and a trusted clock.

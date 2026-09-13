@@ -149,6 +149,7 @@ judged so that one file describes the fleet, phone included.
 | the board's card (the Makeen box on `raspi4b`) | the same against `machines/makeen_box.expected`: the card's second partition mounted by its declared name, the network refused NODEV (no Ethernet in the emulator), the two worlds run | matches, part of 75 |
 | the wire | `makeen_qemu.expected` carries the dhcp lease from QEMU's server; `makeen_box.expected` the static network refused NODEV in the emulator | part of 23 and 75 |
 | the slots | `makeen_box.expected`: a trial of B committed, the card read back boots B; the same trial held on a pristine card, not committed, that card still boots A | part of 75 |
+| budgets | `machines/qemu_budget.machine` on `qemu_pc`: two worlds, one inside its ceiling and one over it. `modest` holds 8 MiB of its 64 and ends; `greedy` asks for far more than its 32 and is killed by signal 9 five times inside its own group, its neighbour untouched, the box carrying on to a clean halt (BDG-1) | matches, 35 lines |
 | health | `makeen_box.expected` and `makeen_qemu.expected` carry the standing rule (`health -- kds every 5s, poste every 5s`) and a commit line that says the window was held; the NEGATIVE is the WSL rehearsal's `signals`, a `flock` that creates its path once and never refreshes it, caught in seconds (HLT-1) | 84 and 26 lines; the rehearsal |
 | the served machine | `makeen_qemu.expected` and `makeen_box.expected`: each world is a daemon with a declared READY path, PID 1 starts what comes after only once the signal appears, and the boot ends on `--halt-on-verdict` (derived onto the emulator's line, never the card's). A daemon never exits, so the loop polls rather than blocking on `wait4` (SRV-1) | 25 and 81 lines |
 | the machine's own judge | every transcript carries PID 1's verdict on its own boot against `/etc/expected` (`matches ... 14 lines`, `15`, `16`); `makeen_box.expected` adds the negative: the trial judged through the board's lens differs on exactly the emulator's two lacks, holds itself, and the card still boots A; `src/expect.zig` pins the derivation and the judge's negatives in five unit tests | 81 lines; 11/11 tests |
@@ -157,9 +158,12 @@ judged so that one file describes the fleet, phone included.
 
 - Capability ENFORCEMENT is the service's scope on stzr (the runtime
   refuses what its machine did not grant — stzlib's down-constrain law);
-  init records the envelope and starts the processes. Kernel-level
-  enforcement (seccomp, namespaces per service, cgroups) is a named
-  widening, not a v0.1 claim.
+  init records the envelope and starts the processes. RESOURCES are the
+  exception since BDG-1: `MEMORY` and `CPU` are held by the KERNEL, in a
+  cgroup v2 group per world, written from the declaration before the
+  world's first instruction. The rest of kernel-level enforcement
+  (seccomp, a namespace per service) is still a named widening, not a
+  v0.1 claim.
 - Restart policy is a cap of 5 in v0.1 (a rehearsal guard); backoff and
   a declared budget are queued. A real machine's `always` service is
   expected to run, not to exit.
