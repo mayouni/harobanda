@@ -80,6 +80,15 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A daemon never exits, so an init that waits for an exit learns
+  nothing more** (SRV-1): PID 1 POLLS while the watchdog needs feeding,
+  a declared signal is outstanding, a service has not started yet, or a
+  verdict is owed -- never blocks on `wait4` on a served machine. A
+  world's READY path is its LAST act (a print after it lets PID 1's own
+  line overtake it, and an order that depends on a 250 ms poll is not a
+  fixture). `--halt-on-verdict` is DERIVED onto the emulator's boot line
+  for any machine with a non-one-shot service; the card's cmdline.txt
+  never carries it.
 - **Assert the mechanism** — the court was probed with a mutated judge
   in fresh processes (wrong count, wrong fragment, valid source posing
   as reject → three reds) before its scoreboard was written.

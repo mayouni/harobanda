@@ -4,8 +4,9 @@
 -- Pi 4 Model B, the SD card's second partition as /data, the console on
 -- the header pins, the network declared and brought up by PID 1 before
 -- any world speaks, and two boot slots: an update is tried once under
--- the watchdog and committed only when every world has started. RestoLean's Makeen thread named the box; this
--- declares it.
+-- the watchdog and committed only when every world is SERVING and the
+-- box recognises its own boot. RestoLean's Makeen thread named the box;
+-- this declares it.
 
 DEFINE MACHINE makeen_box AS (
   PROFILE hosted,
@@ -43,13 +44,15 @@ DEFINE NETWORK lan AS (
 
 DEFINE SERVICE kds AS (
   RUN ["/stzr", "/app/kds.luau"],
-  RESTART never,
+  RESTART always,
+  READY "/run/kds.ready",
   NEEDS [network, filesystem]
-) RATIONALE "The kitchen display world (a stand-in that exits; the real world is a daemon, RESTART always)"
+) RATIONALE "The kitchen display world: a daemon that serves the kitchen and says so by creating its READY path; PID 1 keeps it alive for the life of the box"
 
 DEFINE SERVICE poste AS (
   RUN ["/stzr", "/app/poste.luau"],
-  RESTART never,
+  RESTART always,
+  READY "/run/poste.ready",
   AFTER [kds],
   NEEDS [network, filesystem]
-) RATIONALE "The counter world (a stand-in that exits; the real world is a daemon, RESTART always)"
+) RATIONALE "The counter world: a daemon too, and it starts only once the kitchen display has SIGNALLED it is serving -- not merely started"

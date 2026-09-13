@@ -5,10 +5,16 @@
 `fixtures.json` sha256:
 
 ```
-826ab41fea0333d6f347763610e31803a9173c1253ac56cc0709d0aa14545750
+a3ea9fca4c2f118de31b6dd071e7025bc261e7b24f77692cdf5fd519fa8714f7
 ```
 
-(Before the edge boards of 2026-09-12 (PRJ-1):
+(Before the box's worlds became DAEMONS on 2026-09-13 (SRV-1):
+`826ab41fea0333d6f347763610e31803a9173c1253ac56cc0709d0aa14545750`,
+67/67 then and 67/67 now — the language did not widen; fixture A2 is
+`machines/makeen_box.machine` verbatim, and that file's two services
+changed from `RESTART never` to `RESTART always` with a `READY` path.
+A2 was RE-TAKEN from the file mechanically rather than hand-copied, so
+"verbatim" stays a fact. Before the edge boards of 2026-09-12 (PRJ-1):
 `f2bf476618d2c5afd9d282f1fe5eba4ce717486b43266b93374e8a53bfc6a40f`,
 14 accepts + 50 rejects; the widening added A15, R51, R52, made A3 the
 sensor file verbatim with `BOARD pico2`, and re-aimed R34/R35 at the
@@ -84,8 +90,9 @@ second text through the emulator's lens (`/etc/expected.emulator`,
 selected by `stzos.expect=emulator` on the emulator's boot line and
 never on the card's); the diff of the two is the list of the emulator's
 lacks, printed at build time. The three pinned transcripts carry the
-verdicts: **33, 23 and 75 lines, identical** (from 32, 22 and 49). The
-box's 75 hold three card boots: the trial through the emulator's lens
+verdicts: **33, 25 and 81 lines, identical** (25 and 81 since SRV-1,
+when the box's worlds became daemons; 23 and 75 before it, 22 and 49
+before JDG-1). The box's 81 hold three card boots: the trial through the emulator's lens
 committed, the held trial not committed, and the NEGATIVE — the same
 trial judged through the board's lens, which the emulator cannot meet:
 `differs from its expectation (/etc/expected): 2 line(s) expected and

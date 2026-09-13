@@ -32,7 +32,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos check  <file.machine>
         \\  stzos plan   <file.machine>
         \\  stzos court  [fixtures.json]        (default: {s})
-        \\  stzos init   <file.machine> [--rehearse] [--turns N] [--hold]
+        \\  stzos init   <file.machine> [--rehearse] [--turns N] [--hold] [--halt-on-verdict]
         \\  stzos update <dir> [--boot <mountpoint>] [--no-reboot]   (write the other slot, try it once)
         \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
         \\  stzos project <file.machine> --out <dir>     (an edge machine, onto MicroRing's substrate)
@@ -171,6 +171,8 @@ pub fn main() !u8 {
                 opts.rehearse = true;
             } else if (std.mem.eql(u8, args[i], "--hold")) {
                 opts.hold = true;
+            } else if (std.mem.eql(u8, args[i], "--halt-on-verdict")) {
+                opts.halt_on_verdict = true;
             } else if (std.mem.eql(u8, args[i], "--turns") and i + 1 < args.len) {
                 i += 1;
                 opts.turns = std.fmt.parseInt(usize, args[i], 10) catch {

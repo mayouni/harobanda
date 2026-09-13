@@ -88,10 +88,12 @@ mini-UART there as `ttyS1`), and `sd.list`: a 256 MiB card, p1 FAT32
 with the firmware, `config.txt`, `cmdline.txt`, `kernel8.img`, the DTB
 and the initramfs, p2 ext4 as the declared `/data`. QEMU's `raspi4b`
 boots the same image and finds `mmcblk0: p1 p2` by the declared name.
-The emulator has no Ethernet, so the pinned transcript shows `stzos
-net` refused with NODEV and the two worlds never started; the board
-will show them start. That is the one place the two are allowed to
-differ.
+The emulator has no Ethernet, so the pinned transcript shows the
+declared network refused with NODEV; the worlds run anyway, because a
+network is brought up like a mount and a refused one does not hold a
+service back (NET-1). The board will show the interface up and the
+watchdog armed -- the two lines the build prints as the emulator's
+lacks, and the only place the two are allowed to differ.
 
 ## 4. The edge profile (declared here, projected onto MicroRing)
 
@@ -143,11 +145,12 @@ judged so that one file describes the fleet, phone included.
 | the Linux-only code | `zig build cross` (two static targets) | builds |
 | the boot | the transcript, run as PID 1 in a user namespace under WSL | ran: pids 1–10, proc mounted, sysfs/devtmpfs refused PERM, all policies exercised |
 | the image, x86_64 | the QEMU serial transcript, normalised, diffed against `machines/qemu_hello.expected` | matches, 33 lines |
-| the image, aarch64 (the Makeen box on `virt`) | the same against `machines/makeen_qemu.expected`: `virt`, PL011, a virtio ext4 disk mounted at `/data`, two stzr worlds | matches, 23 lines |
+| the image, aarch64 (the Makeen box on `virt`) | the same against `machines/makeen_qemu.expected`: `virt`, PL011, a virtio ext4 disk mounted at `/data`, two stzr worlds that SERVE and signal | matches, 25 lines |
 | the board's card (the Makeen box on `raspi4b`) | the same against `machines/makeen_box.expected`: the card's second partition mounted by its declared name, the network refused NODEV (no Ethernet in the emulator), the two worlds run | matches, part of 75 |
 | the wire | `makeen_qemu.expected` carries the dhcp lease from QEMU's server; `makeen_box.expected` the static network refused NODEV in the emulator | part of 23 and 75 |
 | the slots | `makeen_box.expected`: a trial of B committed, the card read back boots B; the same trial held on a pristine card, not committed, that card still boots A | part of 75 |
-| the machine's own judge | every transcript carries PID 1's verdict on its own boot against `/etc/expected` (`matches ... 14 lines`, `15`, `16`); `makeen_box.expected` adds the negative: the trial judged through the board's lens differs on exactly the emulator's two lacks, holds itself, and the card still boots A; `src/expect.zig` pins the derivation and the judge's negatives in five unit tests | 75 lines; 11/11 tests |
+| the served machine | `makeen_qemu.expected` and `makeen_box.expected`: each world is a daemon with a declared READY path, PID 1 starts what comes after only once the signal appears, and the boot ends on `--halt-on-verdict` (derived onto the emulator's line, never the card's). A daemon never exits, so the loop polls rather than blocking on `wait4` (SRV-1) | 25 and 81 lines |
+| the machine's own judge | every transcript carries PID 1's verdict on its own boot against `/etc/expected` (`matches ... 14 lines`, `15`, `16`); `makeen_box.expected` adds the negative: the trial judged through the board's lens differs on exactly the emulator's two lacks, holds itself, and the card still boots A; `src/expect.zig` pins the derivation and the judge's negatives in five unit tests | 81 lines; 11/11 tests |
 
 ## 7. Boundaries
 

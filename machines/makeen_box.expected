@@ -14,14 +14,16 @@ boot: watchdog -- off by the boot line (the emulator resets on arming); a trial 
 boot: start kds -- pid N -- /stzr /app/kds.luau
 kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 kds: read /etc/machine -- 8 declarations rode in the image
-boot: kds (pid N) exited 0
+kds: serving -- signalling /run/kds.ready
+boot: kds -- ready (/run/kds.ready)
 boot: start poste -- pid N -- /stzr /app/poste.luau
 poste: the counter world is up on the Makeen box, after kds
 poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
-boot: poste (pid N) exited 0
+poste: serving -- signalling /run/poste.ready
+boot: poste -- ready (/run/poste.ready)
 boot: judge -- the boot matches its expectation (/etc/expected.emulator, 16 lines)
 boot: slot B -- committed: every service is ready and the boot matches its expectation; config.txt now boots B, A is the fallback
-boot: every service has ended -- init has nothing left to keep alive
+boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system
 card: config.txt after the trial:
@@ -34,13 +36,15 @@ hold: boot: watchdog -- off by the boot line (the emulator resets on arming); a 
 hold: boot: start kds -- pid N -- /stzr /app/kds.luau
 hold: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 hold: kds: read /etc/machine -- 8 declarations rode in the image
-hold: boot: kds (pid N) exited 0
+hold: kds: serving -- signalling /run/kds.ready
+hold: boot: kds -- ready (/run/kds.ready)
 hold: boot: start poste -- pid N -- /stzr /app/poste.luau
 hold: poste: the counter world is up on the Makeen box, after kds
 hold: poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
-hold: boot: poste (pid N) exited 0
+hold: poste: serving -- signalling /run/poste.ready
+hold: boot: poste -- ready (/run/poste.ready)
 hold: boot: judge -- the boot matches its expectation (/etc/expected.emulator, 16 lines)
-hold: boot: every service has ended -- init has nothing left to keep alive
+hold: boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 hold: boot: --hold: the trial is held, not committed
 hold: boot: --hold: no watchdog to answer here; the trial ends without a commit, the next boot is the committed slot
 hold: boot: init halts the machine -- reboot(RESTART)
@@ -55,18 +59,20 @@ unmet: boot: watchdog -- off by the boot line (the emulator resets on arming); a
 unmet: boot: start kds -- pid N -- /stzr /app/kds.luau
 unmet: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 unmet: kds: read /etc/machine -- 8 declarations rode in the image
-unmet: boot: kds (pid N) exited 0
+unmet: kds: serving -- signalling /run/kds.ready
+unmet: boot: kds -- ready (/run/kds.ready)
 unmet: boot: start poste -- pid N -- /stzr /app/poste.luau
 unmet: poste: the counter world is up on the Makeen box, after kds
 unmet: poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
-unmet: boot: poste (pid N) exited 0
+unmet: poste: serving -- signalling /run/poste.ready
+unmet: boot: poste -- ready (/run/poste.ready)
 unmet: boot: judge -- the boot differs from its expectation (/etc/expected): 2 line(s) expected and not said, 2 said and not expected
 unmet: boot: judge -- expected, not said: network lan -- eth0 up 192.168.10.1/24
 unmet: boot: judge -- expected, not said: watchdog armed (/dev/watchdog)
 unmet: boot: judge -- said, not expected: network lan -- eth0: no such interface (NODEV)
 unmet: boot: judge -- said, not expected: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
 unmet: boot: slot B -- held: every service is ready but the boot is not the one expected; not committed, the watchdog is no longer fed -- the next boot is A
-unmet: boot: every service has ended -- init has nothing left to keep alive
+unmet: boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 unmet: boot: init halts the machine -- reboot(RESTART)
 unmet: reboot: Restarting system
 card: config.txt after the unmet trial:

@@ -38,6 +38,16 @@ pub const Options = struct {
     /// the rollback instrument: on a trial boot, never commit and stop
     /// feeding the watchdog, so the hardware's answer is what follows
     hold: bool = false,
+    /// the COURT's instrument, for a machine whose worlds SERVE: a
+    /// daemon never exits, so a real init never halts and a transcript
+    /// never closes. With this, PID 1 halts the moment the verdict is in
+    /// -- every service ready and the boot judged (SRV-1). It is derived
+    /// onto the EMULATOR's boot line only; a board keeps the box alive,
+    /// and the card's cmdline.txt never carries it. No verdict is no
+    /// halt: a daemon that never signals leaves the court's timeout to
+    /// convict it, which is the same rule as "no expectation is no
+    /// commit" seen from the other side.
+    halt_on_verdict: bool = false,
 };
 
 // ---- A/B slots ------------------------------------------------------------
@@ -457,6 +467,11 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                 try out.flush();
             }
         }
+        if (judged and opts.halt_on_verdict) {
+            // a real init would keep the machine alive here, for years
+            try out.print("boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would\n", .{});
+            break;
+        }
         var alive: usize = 0;
         var pending: usize = 0;
         for (slots.items) |s| switch (s.state) {
@@ -498,9 +513,22 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             };
             break;
         };
-        const awaiting = try pollReady(slots.items, &led);
-        if (awaiting) try startReady(gpa, slots.items, &led);
-        const polling = ab != null or awaiting;
+        const poll = try pollReady(slots.items, &led);
+        if (poll.signalled) {
+            try startReady(gpa, slots.items, &led);
+            try out.flush(); // the console, as it happens: a served machine
+            // never reaches the reaper's flush, because no child exits
+        }
+        // When to POLL instead of blocking on wait4. A one-shot machine
+        // could block: every change arrived as an exit. A machine whose
+        // worlds SERVE cannot -- a daemon never exits, and blocking on
+        // one costs the boot everything after it (SRV-1: the box's
+        // second world never started, and the court's timeout was the
+        // only thing that noticed). So poll while any of these is true:
+        // the watchdog needs feeding, a declared signal is outstanding,
+        // a service has not started yet (only a signal can start it), or
+        // the court's instrument is still owed a verdict.
+        const polling = ab != null or poll.awaiting or pending > 0 or (opts.halt_on_verdict and !judged);
         var status: u32 = 0;
         const rc = linux.wait4(-1, &status, if (polling) linux.W.NOHANG else 0, null);
         if (polling and rc == 0) {
@@ -619,21 +647,28 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     return 0;
 }
 
-/// Look for the declared signals that have appeared since the last look.
-/// Returns true if any service is still awaiting one.
-fn pollReady(slots: []Slot, led: *Ledger) !bool {
+/// Look for the declared signals that have appeared since the last look,
+/// and report BOTH facts the loop needs: whether one APPEARED (a service
+/// that comes AFTER it can start now) and whether one is still
+/// OUTSTANDING (a reason to keep polling rather than block on a child
+/// that may never exit). Before daemons, one boolean sufficed because
+/// every change arrived as an exit; SRV-1 is where that stopped being
+/// true.
+fn pollReady(slots: []Slot, led: *Ledger) !struct { signalled: bool, awaiting: bool } {
+    var signalled = false;
     var awaiting = false;
     for (slots) |*s| {
         if (!s.awaiting()) continue;
         const path = s.service.ready.?;
         if (std.fs.cwd().access(path, .{})) |_| {
             s.signalled_ready = true;
+            signalled = true;
             try led.say(expect.fmt_ready, .{ s.service.name, path });
         } else |_| {
             awaiting = true;
         }
     }
-    return awaiting;
+    return .{ .signalled = signalled, .awaiting = awaiting };
 }
 
 /// Start every pending service whose AFTER services are all ready, in

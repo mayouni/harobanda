@@ -160,8 +160,10 @@ from `/etc/machine`, not from a configuration file. TLS stays in front,
 where the estate ruled it; the machine gives that front a declared
 place and nothing more.
 
-**Status.** By design. No server is yet declared as a machine service;
-the box's worlds are stand-ins that exit. RestoLean's Commons world is
+**Status.** By design. No server is yet declared as a machine service.
+The box's worlds became daemons with READY paths on 2026-09-13 (SRV-1),
+so the shape a server needs is proven — start, serve, signal, be waited
+for, halt only on the court's instrument. RestoLean's Commons world is
 the first candidate.
 
 ## 6. The runtime: stzr today, Ring++ and Haro tomorrow
@@ -436,8 +438,8 @@ diagram. This is where the floor pays each band of it:
 - The dividends the three machines already pay: the declared address,
   the mounts before worlds, the identities, the readiness signal, the
   trial, the machine's own verdict. Everything else here is a seam.
-- No application server is yet a machine service; the box's worlds
-  are stand-ins that exit.
+- No application server is yet a machine service. The box's worlds
+  serve and signal (SRV-1), but they stand in for the real ones.
 - Haro does not exist; Ring++'s Linux-class row is unmeasured.
 - The Pi 4 is a weak inference host; model placement is C3's.
 - TLS is ruled for the estate, not here.

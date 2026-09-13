@@ -1,3 +1,109 @@
+# SRV-1 — the box's worlds SERVE: a daemon never exits, and an init that waits for an exit learns nothing more
+
+First of the five acts the author ordered on 2026-09-13, and the one
+everything else stands on: until today the Makeen box's two worlds were
+stand-ins that printed two lines and exited, so every box transcript was
+a lie of shape. A kitchen display serves a service; it does not end.
+
+## The declaration first
+
+`machines/makeen_box.machine` and `machines/makeen_qemu.machine` now say
+what the worlds are:
+
+```
+DEFINE SERVICE kds AS (
+  RUN ["/stzr", "/app/kds.luau"],
+  RESTART always,
+  READY "/run/kds.ready",
+  NEEDS [network, filesystem]
+) RATIONALE "The kitchen display world: a daemon that serves the kitchen and says so by creating its READY path; PID 1 keeps it alive for the life of the box"
+```
+
+The grammar needed nothing new: RESTART and READY were seated at RDY-1.
+Fixture A2 is `makeen_box.machine` verbatim, so it was RE-TAKEN from the
+file mechanically rather than hand-copied, and `fixtures.json` re-pinned
+in this commit (67/67, unchanged: the widening was a machine's, not the
+language's).
+
+## The runtime owed them one primitive
+
+A daemon has to YIELD. Luau's sandbox ships no timer, so stzr gained a
+fourth granted capability beside `readfile` and `writefile`:
+`sleep(ms)` (`stz/src/main.zig`, judged by `stz/experiment/run_sleep.luau`,
+6/6). The alternative was a busy loop, and a busy loop lies twice: it
+reports "serving" while it spins a core, and under TCG emulation it
+spends the boot's own time. A negative argument is refused rather than
+rounded to zero — silence about a wrong argument is how a daemon becomes
+a one-shot nobody noticed. The suite was probed with the wait removed
+(`sleep(0)` where `sleep(120)` stood): red for its named reason, exit 1.
+
+## The defect a daemon found, which no one-shot could
+
+The first boot with a serving world stopped dead after the kitchen
+display signalled. `poste` never started; the court's timeout was the
+only thing that noticed.
+
+**PID 1 was blocking on `wait4` for a child that never exits.** Two
+bugs, one cause — the loop assumed every change arrives as an EXIT:
+
+1. `startReady` was called only when a signal was still OUTSTANDING
+   (`if (awaiting)`), never when one had just APPEARED. The moment the
+   display's path showed up, nothing was awaiting any more, so the world
+   that came AFTER it was never started.
+2. With no service awaiting and no slots, the loop chose a BLOCKING
+   `wait4`. A daemon never exits, so that call never returns.
+
+`pollReady` now reports both facts the loop needs — a signal APPEARED
+(start what waited on it) and a signal is OUTSTANDING (keep polling) —
+and the loop polls while any of four things is true: the watchdog needs
+feeding, a signal is outstanding, a service has not started yet (only a
+signal can start it), or the court's instrument is still owed a verdict.
+
+## The instrument: a served boot still has to close
+
+A real init keeps a served machine alive for years. A transcript that
+never closes is not a fixture, so `stzos init --halt-on-verdict` halts
+the moment every service is ready AND the boot is judged. It is DERIVED
+from the declaration — any service that is not a one-shot — onto the
+EMULATOR's boot line only; the card's `cmdline.txt` never carries it,
+because a board must keep the box alive. No verdict is no halt: a daemon
+that never signals leaves the court's timeout to convict it, which is
+"no expectation is no commit" seen from the other side.
+
+## The ordering trap, found in the same run
+
+The worlds wrote their READY path and THEN printed "serving". PID 1
+polls every 250 ms, so its `ready` line could land between the two — a
+transcript whose order depends on a poll is not a fixture. The signal is
+now the LAST act of a world, after everything it has to say. And PID 1
+flushes its own lines when a signal is seen: a served machine never
+reaches the reaper's flush, because no child exits, so without it PID 1's
+lines arrived in a batch at the end.
+
+## Judged
+
+- `makeen_qemu`: **25 lines** (from 23). Both worlds serve, signal, and
+  are seen; `judge -- matches (/etc/expected, 15 lines)`; the boot ends
+  on the instrument.
+- `makeen_box`: **81 lines** (from 75), three card boots unchanged in
+  kind — the trial commits and the card boots B, the held trial does not
+  and the card boots A, the trial judged through the BOARD's lens names
+  the emulator's two lacks, holds itself, and the card still boots A.
+- `qemu_hello`: **33 lines, untouched** — every service is a one-shot,
+  so no instrument is derived onto its line. It stays the control case.
+- The WSL rehearsal, the projection and its consumer, the stzu
+  meta-court: unchanged. 11/11 unit tests, 67/67 fixtures.
+
+## The law this pays for
+
+**A daemon never exits, so an init that waits for an exit learns nothing
+more.** Every loop that watches a machine must ask what happens when
+nothing ends — and the answer must be in the transcript, not in a
+timeout. The one-shot machine hid this for a day and a half; the first
+world that served found it in one boot.
+
+---
+
 # JDG-1 — the machine judges its own boot: the expectation rides in the image, a trial commits only on a match
 
 The author said: close the loop. The loop was this: every boot was

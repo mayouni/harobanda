@@ -487,12 +487,25 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         const slot_arg: []const u8 = if (m.slots != null) " stzos.slot=B stzos.watchdog=off" else "";
         // ... and judged through the emulator's lens, when it has one
         const lens_arg: []const u8 = if (t.qemu_lens != null) " stzos.expect=emulator" else "";
-        try w.print(" -append \"console={s} quiet loglevel=3{s}{s} rdinit=/stzos -- init /etc/machine\"\n", .{ t.console_qemu, slot_arg, lens_arg });
+        // ... and ENDED, when the machine's worlds serve: a daemon never
+        // exits, so a real init never halts and the transcript never
+        // closes. Derived from the declaration -- any service that is not
+        // a one-shot -- and carried on the EMULATOR's line only. The
+        // card's cmdline.txt never says it: a board keeps the box alive
+        // (SRV-1).
+        var serves = false;
+        for (m.services) |svc| {
+            if (svc.restart != .never) serves = true;
+        }
+        const init_args = try std.fmt.allocPrint(arena, "-- init /etc/machine{s}", .{if (serves) " --halt-on-verdict" else ""});
+        try w.print(" -append \"console={s} quiet loglevel=3{s}{s} rdinit=/stzos {s}\"\n", .{ t.console_qemu, slot_arg, lens_arg, init_args });
         try writeOut(opts.out_dir, "boot.cmd", cmd.items);
         if (m.slots != null) {
             // the rollback instrument: the same trial, held -- never committed,
             // the watchdog not fed. What follows is the hardware's answer.
-            const hold = try std.mem.replaceOwned(u8, arena, cmd.items, "-- init /etc/machine\"", "-- init /etc/machine --hold\"");
+            const hold_needle = try std.fmt.allocPrint(arena, "{s}\"", .{init_args});
+            const hold_with = try std.fmt.allocPrint(arena, "{s} --hold\"", .{init_args});
+            const hold = try std.mem.replaceOwned(u8, arena, cmd.items, hold_needle, hold_with);
             try writeOut(opts.out_dir, "boot_hold.cmd", hold);
             // the judge's negative: the same trial judged by the BOARD's
             // expectation, which the emulator cannot meet. PID 1 must name

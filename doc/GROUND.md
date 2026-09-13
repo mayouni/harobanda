@@ -215,9 +215,12 @@ the real CousBox catalogue, without payment, on a laptop as the
 server, a phone as the remote control and a tablet as the kitchen
 display, on the venue's Wi-Fi. The box today is a Galaxy A16 phone as
 a hotspot, with two lived limits (B9). `machines/makeen_box.machine`
-boots in the emulator with stand-in worlds that exit; the real kitchen
-and counter worlds are daemons still to be written; the Commons server
-is not yet a declared service of the machine; RestoPay is untouched;
+boots in the emulator with both worlds SERVING since SRV-1
+(2026-09-13): each is a daemon with a declared READY path, and the box
+starts what comes after a world only once that world has said it is
+serving. They are still stand-ins for what the kitchen and counter
+worlds will do; the Commons server is not yet a declared service of the
+machine; RestoPay is untouched;
 the board is on order (STZ-OS-HARDWARE-01). The guarantee sheet is not
 yet a fixture file, and it should be (§6).
 
@@ -444,8 +447,8 @@ the author orders.
 
 - No customer runs stzos. Three declared machines boot in emulators;
   one sensor projects onto MicroRing; no board has been flashed; the
-  Makeen box's worlds are stand-ins that exit; the touch profile is a
-  design.
+  Makeen box's worlds serve but stand in for the real ones; the touch
+  profile is a design.
 - The kernel is borrowed and pinned, the board's firmware is a vendor
   blob pinned by digest, the compiler that builds the kernel is gcc,
   and the emulator is the court's instrument, not the product's. The
