@@ -56,7 +56,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  stzos fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
         \\  stzos court  --fleet [declarative/fleet/fixtures.json]
-        \\  stzos learn  [n] [--all] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
+        \\  stzos learn  [n] [--all] [--words] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -122,15 +122,21 @@ pub fn main() !u8 {
         var want_all = false;
         var want_check = false;
         var want_run = false;
+        var want_words = false;
         for (args[2..]) |a| {
             if (std.mem.eql(u8, a, "--all")) want_all = true
             else if (std.mem.eql(u8, a, "--check")) want_check = true
             else if (std.mem.eql(u8, a, "--run")) want_run = true
+            else if (std.mem.eql(u8, a, "--words")) want_words = true
             else n = std.fmt.parseInt(usize, a, 10) catch null;
         }
         if (want_check) {
             const missing = try learn.check(out);
             return if (missing == 0) 0 else 1;
+        }
+        if (want_words) {
+            try learn.glossary(out);
+            return 0;
         }
         if (want_all) {
             try learn.all(out);
@@ -148,12 +154,19 @@ pub fn main() !u8 {
         if (!want_run) return 0;
         const l = learn.lessons[which - 1];
         if (!l.runnable) {
-            try out.print("  (this one is not this binary's to run -- copy the command above)\n\n", .{});
+            // the boots are WSL scripts and the read-only lessons have no
+            // command at all: say which, rather than "copy the command
+            // above" when there is none
+            if (l.run[0] == '(') {
+                try out.print("  (nothing to run -- this lesson reads the output of another one)\n\n", .{});
+            } else {
+                try out.print("  (not this binary's to run -- copy the command above into a terminal)\n\n", .{});
+            }
             return 0;
         }
         // spawn OURSELVES with the lesson's own words, so what runs is
         // exactly what the lesson printed and not a paraphrase of it
-        var it = std.mem.tokenizeScalar(u8, l.run["stzos ".len..], ' ');
+        var it = std.mem.tokenizeScalar(u8, l.run[learn.exe.len + 1 ..], ' ');
         var argv: std.ArrayList([]const u8) = .{};
         try argv.append(arena, args[0]);
         while (it.next()) |word| try argv.append(arena, word);

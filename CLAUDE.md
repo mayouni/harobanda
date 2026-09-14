@@ -61,7 +61,7 @@ wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os6_names.sh              #
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os7_fleet.sh              # a device publishes its key, a fleet enrols it, its record is verified by something that never held the secret -> zig-out/wsl/fleet.txt
 zig-out\bin\stzos.exe fleet machines\salle_makeen.fleet     # the roll: who is in the set, and who nobody can speak for yet
 zig-out\bin\stzos.exe learn                                 # the guided tour: 18 lessons, each with a command, the lines to look for, and a way to BREAK it
-zig-out\bin\stzos.exe learn 7                               # one lesson in full; `--all` for every one, `--run` where the command is this binary's
+zig-out\bin\stzos.exe learn 7                               # one lesson in full; `--all` for every one, `--words` for the vocabulary, `--run` where the command is this binary's
 cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-x86_64-linux-musl   # stzr for the image
 ```
 
@@ -77,7 +77,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   court` runs `stzos learn --check` over them. Anything that tells a
   reader what they will see must fail loudly when that stops being true.
   Each lesson carries a BREAK IT step, because a guarantee only ever
-  seen to succeed is a claim and not evidence.
+  seen to succeed is a claim and not evidence. **A step that cannot name
+  its file, its exact text, its command, its expected answer and its
+  UNDO is not a step, it is an assumption about what the reader already
+  knows** -- two unit tests hold that shape. Its first reader hit all
+  five gaps within the hour and was left with a dirty working tree. And
+  a BREAK IT step is RUN before it is promised: three of the first nine
+  refused for a different reason than the lesson claimed.
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.

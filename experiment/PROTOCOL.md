@@ -1,4 +1,4 @@
-# LRN-1 — the guided tour, and why a tutorial needs a judge like everything else
+# LRN-1 — the guided tour, and what its first reader taught it within the hour
 
 Asked for by the author: a way to SEE what was built, didactically,
 rather than read twenty-four protocol entries in reverse order.
@@ -38,10 +38,135 @@ Six fields, and the fourth is the whole point.
 **Break it** is why this is a tutorial and not a tour. A guarantee you
 have only seen SUCCEED is a claim; one you have watched refuse you is
 evidence. That is the same argument IDN-1 made about a signature nobody
-tried to break, turned on the reader: add a shell to a RUN and watch the
-grammar refuse it by name; change a word in a pinned transcript and
-watch the court produce a diff; give a confined world the capability it
-lacked and watch the interface appear.
+tried to break, turned on the reader.
+
+## What the first reader taught it, the same day
+
+The author ran lesson 1. Its BREAK IT step said, in full: *"Add a
+service whose RUN is `["sh", "-c", "echo hi"]` and check again. It is
+refused BY NAME."* They did it, and it worked -- and then they wrote
+back:
+
+> *"When you say 'add a service', tell me how and where… Do not assume I
+> know the internals of the system."*
+
+They were right, and the lesson had hidden five separate things in one
+imperative sentence: **which** file to edit, **where** in it, **what a
+service must contain** to be legal at all, **which directory** to stand
+in so a relative path resolves, and **how to put the file back**. They
+worked out the first four unaided; nobody told them the fifth, so their
+working tree was left dirty by a tutorial.
+
+Two of those were visible in their own screenshot. They ran `stzos learn
+1` from `zig-out\bin` and `stzos check machines\qemu_hello.machine` from
+the repository root, because nothing said which, and they had to notice
+the difference themselves. And their service declared no `RESTART` and
+no `NEEDS` -- so the refusal they got could have been about any of
+those, for all the lesson told them.
+
+That last one was worth answering properly rather than asserting. A
+probe: the same three lines with `RUN ["/stzos", "version"]` in place of
+the shell, judged as a copy. **Accepted** -- `4 service(s) … judged, no
+refusal`. So `RESTART` and `NEEDS` are optional, everything they had
+written was legal, and the shell was the only thing wrong. That belongs
+in the lesson, because "it was refused" teaches nothing about what was
+refused.
+
+## The redesign: a step is five things, or it is an assumption
+
+`breakit` stopped being a sentence and became a record:
+
+```zig
+pub const Break = struct {
+    pub const How = enum { append, replace, create };
+    proves: []const u8,          // one sentence: what you are about to prove
+    file: []const u8 = "",       // the file, spelled as you would type it
+    where: []const u8 = "",      // where in it, in plain words
+    how: How = .append,          // add a line, replace one, or make a file
+    paste: []const []const u8 = &.{},   // the exact text, line by line
+    then: []const u8 = "",       // the command
+    expect: []const []const u8 = &.{},  // the refusal, in the machine's words
+    undo: []const u8 = "",       // how to put everything back
+    note: []const u8 = "",       // for a lesson with nothing to edit
+};
+```
+
+`how` exists because "put this there" does not distinguish adding a line
+from replacing one, and that is exactly the sort of thing an author
+knows and a reader does not. Two unit tests hold the shape: a step that
+names a file must carry `where`, `paste`, `then`, `expect` and an `undo`
+containing `git checkout -- `; a step with no file must carry a `note`
+saying why there is nothing to edit. **The undo requirement is the
+author's dirty working tree, written down so it cannot happen again.**
+
+Every command is now printed as `zig-out\bin\stzos.exe …`, not `stzos
+…`, and every lesson prints `RUN  (from D:\GitHub\stzos)`. A tour whose
+first reader has to guess the working directory has not started
+teaching yet. `stzos learn --words` was added for the same reason: a
+machine, a world, the envelope, the court, a pin, a transcript, PID 1, a
+fleet and a seat, in one paragraph each, because every one of them is
+estate jargon that reads like an English word.
+
+## Three lessons were WRONG, and only running them found out
+
+A tutorial is a claim about the system. So each BREAK IT step that
+promises an answer was run -- on a COPY of its machine, judged, and the
+copy deleted. Nine steps in the first pass: **six answered as the lesson
+said and three did not**, and all three were errors the author would
+have walked straight into.
+
+- **Lesson 16** claimed the refusal was *"one link has one server of
+  names"*. It is not. Pointing a second MEMBER at the SAME declaration
+  is caught earlier and differently: *"makeen\_names.machine is already
+  boitier's declaration: one declaration, one member, or the fleet
+  counts one device twice"*. To reach the refusal the lesson is ABOUT,
+  the reader needs a second, distinct machine that also serves `salle`
+  -- so the step now has them write one (fifteen lines, given in full),
+  and then check it alone to watch it pass. Which is a better lesson
+  than the one I wrote from memory, and I would not have found it
+  without running it.
+- **Lesson 15** claimed the reader had to boot two machines to see a
+  stranger get nothing. They do not: changing a member's HARDWARE to an
+  undeclared address is refused by `stzos fleet` in about a second,
+  *"boitier promises no address to 52:54:00:99:99:99 … and no pool
+  exists to fall back on"*. The declaration IS the register, so a device
+  that would go unanswered on the wire is caught in a text file months
+  before the wire exists. Cheaper AND a sharper demonstration of the
+  law.
+- **Lesson 12** paraphrased the key-custody refusal. It now quotes it,
+  because the machine's own sentence (*"a key on a filesystem that dies
+  with the power is a new device every morning"*) is better than mine.
+
+The rewritten steps were then run again, with the second machine of
+lesson 16 written out and judged both ways: **10/10**.
+
+Two more were fixed by the shape rather than by the probe. Lesson 11's
+step had been *"delete the EGRESS line, and the comma above it"* --
+which is a description, not a paste, and the new unit test would not
+accept it; it is now `EGRESS ["0.0.0.0/0"]`, a real line with a real
+undo, with the deletion mentioned afterwards as the same result for a
+different reason. And lesson 5 no longer promises that a fourth service
+makes the boot MISMATCH its expectation: the expectation is DERIVED from
+the declaration, so editing the machine moves both sides together. It
+matches, the lesson says WHY it matches, and it points at the flagship's
+`unmet:` section for the only mismatch there is.
+
+## What this seat is actually about
+
+The instrument was already right -- the curriculum in the binary, the
+paths judged by the court. What was wrong was the part no judge was
+looking at: the prose BETWEEN the judged facts, where an author's
+knowledge leaks out as an assumption. `--check` proves a lesson points
+at files that exist. It cannot prove a lesson can be FOLLOWED. Only a
+reader can, and one did, within an hour.
+
+## The law this pays for
+
+**A tutorial is a claim about the system, so it is judged like one.**
+Anything that tells a reader what they will see must fail loudly when
+that stops being true -- and a step that cannot name its file, its exact
+text, its command, its expected answer and its undo is not a step, it is
+an assumption about what the reader already knows.
 
 ## Eighteen lessons, six acts
 
