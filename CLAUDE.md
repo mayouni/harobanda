@@ -84,6 +84,15 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A namespace the caller does not ENTER is a namespace nobody is in**
+  (PID-1): `unshare(CLONE_NEWPID)` does not move the caller, it makes
+  its future CHILDREN the inhabitants -- so the world forks once more
+  and the process left behind is a STAND-IN that carries the world's
+  fate back unchanged (an exit code exits, a signal is re-raised on
+  itself), or `exited 0` and the budget's kill line stop being true.
+  `/proc` is remounted inside, or the world reads the machine's table
+  through the mount it inherited. Check which side of an `unshare` the
+  guarantee lands on.
 - **Ask the question that DECIDES, not the one next to it** (MNT-1):
   the witness is part of the evidence. `/data` is a directory in the
   image and stays after its mount is detached, so `access()` answers
@@ -316,14 +325,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   daemon's own signal, no timer). The health seat is HEALTH since
   HLT-1 (2026-09-13); a bounded window for the TRIAL itself is still a
   seam.
-- (done 2026-09-14, NS-1 and MNT-1) The envelope at the kernel, derived
-  from NEEDS with no new clause: an empty network namespace, a seccomp
-  filter on process creation, and a mount namespace with the declared
-  MOUNTs detached. `machines/qemu_confine.machine` is the witness (four
-  worlds, three questions) and `stzos confined` the verb. Still open: a
-  PID namespace (a world still sees the process table), whose THREAD it
-  is, per-world choice of WHICH mount to keep, and a syscall surface
-  wider than process creation.
+- (done 2026-09-14, NS-1, MNT-1, PID-1) The envelope at the kernel,
+  derived from NEEDS with no new clause: an empty network namespace, a
+  seccomp filter on process creation, a mount namespace with the
+  declared MOUNTs detached, and a process table of the world's own.
+  `machines/qemu_confine.machine` is the witness (four worlds, four
+  questions) and `stzos confined` the verb. Still open: whose THREAD it
+  is, per-world choice of WHICH mount to keep (`filesystem` is all or
+  nothing), and a syscall surface wider than process creation.
 - (done 2026-09-14, HDW-1) The hardware clause: `HARDWARE` on a fleet
   MEMBER, 22/22, and `experiment/os6_names.sh` reads the addresses from
   the declaration instead of carrying them as constants. Still open:

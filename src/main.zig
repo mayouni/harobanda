@@ -508,6 +508,28 @@ pub fn main() !u8 {
             try out.print("confined: no socket at all: {s}\n", .{@tagName(l.E.init(rc_sock))});
         }
 
+        // ... and what this world can see of the machine's OTHER worlds.
+        // Asked BEFORE the fork below, or this world's own child would be
+        // counted as company (PID-1).
+        {
+            const me = l.getpid();
+            var others: usize = 0;
+            if (std.fs.cwd().openDir("/proc", .{ .iterate = true })) |dir| {
+                var d = dir;
+                defer d.close();
+                var it = d.iterate();
+                while (it.next() catch null) |e| {
+                    const n = std.fmt.parseInt(i32, e.name, 10) catch continue;
+                    if (n != me) others += 1;
+                }
+            } else |_| {}
+            if (others == 0) {
+                try out.print("confined: processes -- this world is pid {d} and no other process exists here: a table of its own\n", .{me});
+            } else {
+                try out.print("confined: processes -- this world is pid {d} and can see the machine's other processes: one table for everybody\n", .{me});
+            }
+        }
+
         // ... and whether the machine's own storage is there. The world
         // keeps the image it was built from -- its binary is a file --
         // and a declared MOUNT is what a world that never asked for the

@@ -483,7 +483,7 @@ test "the board's expectation is derived from the declaration, line for line" {
         \\boot: network lan -- eth0 up 192.168.10.1/24, gateway 192.168.10.254, dns [1.1.1.1]
         \\boot: watchdog armed (/dev/watchdog)
         \\boot: health -- serve every 3s; a world that stops refreshing stops the watchdog
-        \\boot: confine -- once has no way to start another process and no sight of /data, serve has no way to start another process and no sight of /data; what a world did not declare, the kernel does not give it
+        \\boot: confine -- once has no sight of the other worlds and no way to start one and no sight of /data, serve has no sight of the other worlds and no way to start one and no sight of /data; what a world did not declare, the kernel does not give it
         \\boot: start once -- pid N -- /stzos id -- as world (1000:1000)
         \\boot: once (pid N) exited 0
         \\boot: start serve -- pid N -- /stzr /app/serve.luau

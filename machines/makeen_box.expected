@@ -13,7 +13,7 @@ boot: slot B -- a trial (committed is A); the watchdog holds the rollback until 
 boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
 boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint KEY1
 boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
-boot: confine -- kds has no way to start another process, poste has no way to start another process; what a world did not declare, the kernel does not give it
+boot: confine -- kds has no sight of the other worlds and no way to start one, poste has no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
 boot: start kds -- pid N -- /stzr /app/kds.luau
 kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 kds: read /etc/machine -- 8 declarations rode in the image
@@ -50,7 +50,7 @@ steady: boot: slot B -- committed, steady
 steady: boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
 steady: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint KEY1
 steady: boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
-steady: boot: confine -- kds has no way to start another process, poste has no way to start another process; what a world did not declare, the kernel does not give it
+steady: boot: confine -- kds has no sight of the other worlds and no way to start one, poste has no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
 steady: boot: start kds -- pid N -- /stzr /app/kds.luau
 steady: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 steady: kds: read /etc/machine -- 8 declarations rode in the image
@@ -71,7 +71,7 @@ hold: boot: slot B -- a trial (committed is A); the watchdog holds the rollback 
 hold: boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
 hold: boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint KEY2
 hold: boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
-hold: boot: confine -- kds has no way to start another process, poste has no way to start another process; what a world did not declare, the kernel does not give it
+hold: boot: confine -- kds has no sight of the other worlds and no way to start one, poste has no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
 hold: boot: start kds -- pid N -- /stzr /app/kds.luau
 hold: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 hold: kds: read /etc/machine -- 8 declarations rode in the image
@@ -98,7 +98,7 @@ unmet: boot: slot B -- a trial (committed is A); the watchdog holds the rollback
 unmet: boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
 unmet: boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint KEY3
 unmet: boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
-unmet: boot: confine -- kds has no way to start another process, poste has no way to start another process; what a world did not declare, the kernel does not give it
+unmet: boot: confine -- kds has no sight of the other worlds and no way to start one, poste has no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
 unmet: boot: start kds -- pid N -- /stzr /app/kds.luau
 unmet: kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 unmet: kds: read /etc/machine -- 8 declarations rode in the image

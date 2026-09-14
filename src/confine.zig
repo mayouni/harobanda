@@ -67,7 +67,12 @@ const linux = std.os.linux;
 pub const Confinement = struct {
     /// may the world speak on the network at all
     network: bool,
-    /// may it create a process
+    /// may it have any business with processes at all: create one
+    /// (NS-1) and, since PID-1, SEE or signal one. stzlib's capability
+    /// is "spawn and manage", and managing is inspecting and signalling
+    /// as much as starting -- so a world that never asked for it is
+    /// alone in a process table of its own, where the pids of the other
+    /// worlds do not exist and cannot be named, let alone signalled.
     process: bool,
     /// may it create a thread
     threads: bool,
@@ -130,6 +135,7 @@ pub const Confinement = struct {
     /// what to call it in one word, for the line the boot prints
     pub fn words(self: Confinement, buf: []u8) []const u8 {
         var n: usize = 0;
+        _ = &n;
         if (!self.network) {
             const s = "no network of its own";
             @memcpy(buf[n..][0..s.len], s);
@@ -140,7 +146,7 @@ pub const Confinement = struct {
                 @memcpy(buf[n..][0..5], " and ");
                 n += 5;
             }
-            const s = "no way to start another process";
+            const s = "no sight of the other worlds and no way to start one";
             @memcpy(buf[n..][0..s.len], s);
             n += s.len;
         }
@@ -320,6 +326,7 @@ pub fn filter(c: Confinement, buf: []sock_filter) []sock_filter {
 pub const Applied = struct {
     network: bool = false, // an empty network namespace was entered
     mounts: bool = false, // the machine's storage was detached
+    pids: bool = false, // the world is alone in a table of its own
     seccomp: bool = false, // a filter was installed
     trouble: ?[]const u8 = null,
 };
@@ -345,7 +352,12 @@ pub fn apply(c: Confinement) Applied {
         }
     }
 
-    if (c.hidden.len > 0) mounts: {
+    // A mount namespace is wanted for either of two reasons: to detach
+    // the machine's storage (MNT-1), or to give this world a /proc that
+    // shows its OWN process table and not the machine's (PID-1). Asking
+    // twice would fail the second time, so the reasons are joined here.
+    const wants_mountns = c.hidden.len > 0 or !c.process;
+    if (wants_mountns) mounts: {
         switch (linux.E.init(linux.unshare(linux.CLONE.NEWNS))) {
             .SUCCESS => {},
             else => |e| {
@@ -380,7 +392,58 @@ pub fn apply(c: Confinement) Applied {
                 },
             }
         }
-        done.mounts = done.trouble == null;
+        done.mounts = done.trouble == null and c.hidden.len > 0;
+    }
+
+    if (!c.process) pids: {
+        // unshare(CLONE_NEWPID) does NOT move the caller -- it makes the
+        // caller's future CHILDREN the inhabitants of a new table. So the
+        // world cannot simply exec here: this process forks once more,
+        // the grandchild is pid 1 of the new namespace and becomes the
+        // world, and THIS process stays behind only to carry the
+        // grandchild's fate back to the machine's PID 1 unchanged.
+        switch (linux.E.init(linux.unshare(linux.CLONE.NEWPID))) {
+            .SUCCESS => {},
+            else => |e| {
+                if (done.trouble == null) done.trouble = @tagName(e);
+                break :pids;
+            },
+        }
+        const pid = std.posix.fork() catch |e| {
+            if (done.trouble == null) done.trouble = @errorName(e);
+            break :pids;
+        };
+        if (pid != 0) {
+            // the stand-in. It waits, and then it dies the way the world
+            // died: an exit code exits, a signal is re-raised on itself,
+            // so `boot: kds (pid N) exited 0` and the killed-by-the-kernel
+            // line of the BUDGET seat both stay true through the extra
+            // process nobody declared.
+            var status: u32 = 0;
+            while (true) {
+                const rc = linux.wait4(pid, &status, 0, null);
+                switch (linux.E.init(rc)) {
+                    .SUCCESS => break,
+                    .INTR => continue,
+                    else => linux.exit(127),
+                }
+            }
+            if (status & 0x7f != 0) {
+                const sig: u32 = status & 0x7f;
+                _ = linux.kill(linux.getpid(), @intCast(sig));
+                linux.exit(128 + @as(u8, @intCast(sig)));
+            }
+            linux.exit(@intCast((status >> 8) & 0xff));
+        }
+        // the grandchild: pid 1 of its own table, and a /proc that says
+        // so. Without the remount it would read the machine's table
+        // through the mount it inherited and see every other world.
+        switch (linux.E.init(linux.mount("proc", "/proc", "proc", 0, 0))) {
+            .SUCCESS => done.pids = true,
+            else => |e| if (done.trouble == null) {
+                done.trouble = @tagName(e);
+            },
+        }
     }
 
     if (!c.process or !c.threads) {
@@ -459,7 +522,7 @@ test "the confinement is read off NEEDS, and threads are deliberately not read" 
     try testing.expect(none.confined());
 
     var buf: [128]u8 = undefined;
-    try testing.expectEqualStrings("no network of its own and no way to start another process", none.words(&buf));
+    try testing.expectEqualStrings("no network of its own and no sight of the other worlds and no way to start one", none.words(&buf));
 }
 
 test "a machine with no wire keeps no world off one" {

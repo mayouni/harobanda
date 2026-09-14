@@ -343,14 +343,17 @@ act — stzlib's rehearse-plan-commit law carried down to the boot.
 
 ## Named seams (stated, not hidden)
 
-- **What a world may SEE** — since NS-1 and MNT-1 the kernel holds a
-  world to what its `NEEDS` left out: no `network` is an empty network
-  namespace, no `process` is a seccomp filter on fork, no `filesystem`
-  is a mount namespace with every declared MOUNT detached. Still open:
-  the PROCESS TABLE (a pid namespace), per-world choice of WHICH mount
-  to keep (`filesystem` is all or nothing today), and `threads`, which
-  is read and deliberately not enforced because a thread the RUNTIME
-  makes is not the world asking for one.
+- **What a world may SEE** — since NS-1, MNT-1 and PID-1 the kernel
+  holds a world to what its `NEEDS` left out: no `network` is an empty
+  network namespace, no `filesystem` is a mount namespace with every
+  declared MOUNT detached, and no `process` is both a seccomp filter on
+  fork and a process table of the world's own, where the other worlds
+  have no pids at all. `process` is stzlib's "spawn and manage", and
+  managing is inspecting and signalling as much as starting. Still open:
+  per-world choice of WHICH mount to keep (`filesystem` is all or
+  nothing today), a syscall surface wider than process creation, and
+  `threads`, which is read and deliberately not enforced because a
+  thread the RUNTIME makes is not the world asking for one.
 - **Users and identities** — every service runs as the machine today;
   a USER seat with the machine's identity model (MicroRing's Ed25519
   per device is the precedent) is a fixture-first widening.

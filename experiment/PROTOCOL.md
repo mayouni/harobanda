@@ -1,3 +1,76 @@
+# PID-1 — the process table: a world that never asked for processes is alone in one of its own
+
+The ninth act of 2026-09-14, and the last of the three that close "what
+a world can see". Still no clause.
+
+## What `process` means, stated once
+
+stzlib's capability is *spawn and manage*, and managing is inspecting
+and signalling as much as starting. So a world that never asked for
+`process` now gets none of it: it cannot create one (NS-1), and it
+cannot SEE or signal one either. The pids of the other worlds do not
+exist in its table, so they cannot be named, let alone killed.
+
+## The trap in the middle of it
+
+`unshare(CLONE_NEWPID)` does **not** move the caller. It makes the
+caller's future CHILDREN the inhabitants of a new table. A world that
+unshared and then exec'd would still be standing in the machine's own
+table, with a guarantee printed about it and nothing behind the
+guarantee -- the NS-1 defect again, wearing a different hat.
+
+So the child forks once more. The grandchild is pid 1 of the new
+namespace and becomes the world; the process left behind is a STAND-IN
+that exists only to carry the world's fate back unchanged:
+
+- an exit code exits,
+- a signal is re-raised on itself,
+
+so `boot: kds (pid N) exited 0` and the killed-by-the-kernel line the
+BUDGET seat depends on both stay true through a process nobody declared.
+
+And `/proc` is remounted inside, or the world would read the machine's
+table through the mount it inherited and see every other world. That is
+why the mount namespace is now asked for by EITHER reason -- the storage
+(MNT-1) or the table -- and asked for once.
+
+## What made it safe to do at all
+
+PID 1 never signals a world. It spawns and it reaps, and nothing else,
+so the signal shielding a namespace's init acquires changes nothing
+here. The kernel's own OOM kill, which the BUDGET seat relies on, is
+SIGKILL from an ancestor namespace and reaches a namespace init
+regardless. Both checked before a line was written.
+
+## Judged
+
+`still` declares `network` and `filesystem` and not `process`, and gives
+four independent answers, each from one word above it:
+
+```
+confined: eth0 -- present: this world shares the machine's network
+confined: processes -- this world is pid 1 and no other process exists here: a table of its own
+confined: /data -- mounted here: this world can see the machine's storage
+confined: fork -- refused by the kernel (EPERM): this world cannot start another process
+```
+
+`exited 0` came back through the stand-in unchanged.
+
+And `makeen_box` again: both its worlds declare `NEEDS [network,
+filesystem]`, so both are now daemons that are pid 1 of their own
+tables, behind a stand-in, with a remounted `/proc`. **All 125 lines
+across four card boots match** -- they came up, signalled ready, held
+their health windows, and the trial committed. The only line that
+changed in the whole file is the wording of the confinement itself.
+
+## The law this pays for
+
+**A namespace the caller does not enter is a namespace nobody is in.**
+`unshare` is not `enter`: check which side of the call the guarantee
+lands on, and if it lands on the children, make one.
+
+---
+
 # MNT-1 — the mount namespace: a world that never asked for the filesystem does not get the machine's storage
 
 The eighth act of 2026-09-14, and the other half of the envelope NS-1

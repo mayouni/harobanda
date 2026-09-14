@@ -395,6 +395,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             // the kernel its own declaration needs and nothing else.
             var needs_namespaces = false;
             var needs_netns = false;
+            var needs_pidns = false;
             var needs_seccomp = false;
             for (m.services) |s| {
                 const c = confine.Confinement.of(m.*, s);
@@ -405,6 +406,12 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
                 // a MOUNT namespace needs no option of its own: it exists
                 // wherever NAMESPACES does (MNT-1)
                 if (c.hidden.len > 0) needs_namespaces = true;
+                if (!c.process) {
+                    // a world alone in its own process table (PID-1), which
+                    // also needs the mount namespace its /proc is remounted in
+                    needs_pidns = true;
+                    needs_namespaces = true;
+                }
                 if (!c.process or !c.threads) needs_seccomp = true;
             }
             // NAMESPACES is a menu tinyconfig closes; NET_NS lives under
@@ -413,6 +420,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             // be built and where it means something.
             if (needs_namespaces) try w.print("CONFIG_NAMESPACES=y\n", .{});
             if (needs_netns) try w.print("CONFIG_NET_NS=y\n", .{});
+            if (needs_pidns) try w.print("CONFIG_PID_NS=y\n", .{});
             if (needs_seccomp) try w.print("CONFIG_SECCOMP=y\nCONFIG_SECCOMP_FILTER=y\n", .{});
         }
         if (block) |b| {
