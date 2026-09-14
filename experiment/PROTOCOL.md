@@ -1,3 +1,145 @@
+# SYS-1 — the syscall surface: the machine is not a world's to change
+
+The tenth act of 2026-09-14, and the first of the envelope seats that is
+NOT derived from `NEEDS`.
+
+## Why this one is different
+
+The three before it all asked the same question: *what did this world
+declare?* This one asks a different one: *what is a world, on this
+floor?*
+
+The machine's own law says there is no shell, no package manager and no
+service manager, and that the declared machine IS the system. A world
+computes and talks to what it declared. It does not remount the
+filesystem, set the clock, load a kernel module, rename the host, build
+itself a new envelope, read another process's memory, or reboot the box.
+
+No clause grants those, because **no declaration should ask**. So they
+are refused to every world on every machine, with EPERM, whatever its
+`NEEDS` say -- and `qemu_confine`'s `open`, which declares `process`,
+`network` and `filesystem` and is held to nothing on its own account, is
+refused them exactly like the others.
+
+## The list, and one absence
+
+Twenty-five calls in four groups: the filesystem tree (`mount`,
+`umount2`, `pivot_root`), the kernel (`init_module`, `finit_module`,
+`delete_module`, `kexec_load`, `kexec_file_load`), the machine's own
+life and identity (`reboot`, `settimeofday`, `clock_settime`,
+`adjtimex`, `clock_adjtime`, `sethostname`, `setdomainname`), and the
+envelope and the plumbing (`unshare`, `setns`, `ptrace`, `swapon`,
+`swapoff`, `bpf`, `syslog`, `acct`, `mknod`, `mknodat`).
+
+A call absent on an architecture emits no instruction at all, so the
+filter never tests a number that means something else there.
+
+The absence worth naming: this is **not** a default-deny allowlist. That
+would be the strong form, and it would mean enumerating everything stzr
+needs on two architectures and being wrong somewhere nobody notices
+until a world dies in a restaurant. What is claimed is exactly what is
+built: a named, closed list of things a world may not do, not a proof
+that everything else is safe.
+
+## The order that makes it possible
+
+The filter is installed LAST, after the unshares that build the
+envelope. That is why it can refuse `unshare` and `mount` -- PID 1 has
+already used them, and the world never will.
+
+## Judged
+
+Two new tests beside the code: a world that declared everything still
+carries the floor's refusals, and every call in the list appears on
+every filter whatever the world declared. And the boot says it once,
+per machine rather than per world, because it is a fact about the floor
+and not about any declaration:
+
+```
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+confined: the floor -- refused by the kernel (EPERM): this world cannot change the machine it runs on
+```
+
+The witness TRIES it rather than reporting it, and the call it tries is
+`unshare` -- chosen because if the filter is not there, all that happens
+is the world gets a mount namespace of its own and exits. **A witness
+must not damage the machine in the case where the guard it is testing
+has failed**, which rules out trying `reboot` to prove reboot is
+refused.
+
+## Two defects, and neither was in the filter
+
+Both were found by REFUSING TO PIN A TRANSCRIPT WITHOUT READING ITS
+DIFF, which is the only reason this entry is not a lie.
+
+**The kernel could not build the filter on a machine with no network.**
+`CONFIG_SECCOMP_FILTER depends on HAVE_ARCH_SECCOMP_FILTER && SECCOMP &&
+NET` -- the kernel builds its filter engine on the BPF core, which lives
+under `NET`. So `qemu_hello`, which declares no network at all, got
+`EINVAL` from `seccomp()` and PID 1 refused to start a world it could
+not confine. Three of its worlds did not run. That refusal is the NS-1
+law doing exactly its job, and it is the second time a namespace or a
+filter has turned out to depend on `CONFIG_NET` -- the first was
+`NET_NS`, three seats ago. A machine with no wire now gets `CONFIG_NET`
+anyway when it needs the floor's refusals: a machine carries the kernel
+its own declaration needs, and since this seat every declaration needs
+them.
+
+**And the worse one: the refusal was guarded too narrowly.** PID 1 only
+refused to start a world when `held.confined()` -- when the world's own
+`NEEDS` had asked for something to be taken away. But since this seat
+EVERY world has an envelope, so on `qemu_identity`, whose worlds declare
+everything, the filter failed silently, the boot printed
+
+```
+boot: floor -- the machine is not a world's to change: ...
+```
+
+on its console, and nothing at all was behind it. The machine announced
+a guarantee it had not kept -- the NS-1 defect, in its third incarnation
+and its best hiding place yet, because the transcript looked perfect and
+the boot judged itself a match. The guard is now simply "the kernel
+could not build this world's envelope", with no condition on whose
+account it was being built.
+
+## The law this pays for
+
+**Some things are refused by what a world IS, not by what it declared.**
+When no declaration should ever ask for something, do not add a clause
+that could grant it -- refuse it to everyone and say so once.
+
+**And: a pin is not a record of what happened, it is a claim that what
+happened was right.** Copying a transcript over its expectation without
+reading the diff turns a broken world into the new definition of
+correct. Every re-pin in this seat was diffed against a checker that
+allows exactly two changes -- the floor line appearing and the judged
+count moving by one -- and four pins made before that checker existed
+were reverted.
+
+## What it cost, measured
+
+The eight-machine regression took about twenty minutes, and the kernel
+is all of it. One row of the timings says why:
+
+| machine | kernel build |
+|---|---|
+| qemu_hello | 1m16 |
+| qemu_budget | 1m31 |
+| qemu_identity | 2m07 |
+| **fleet_temoin** | **0m06** |
+| qemu_egress | 2m23 |
+| makeen_qemu | 3m04 |
+| makeen_box | 3m13 |
+
+`fleet_temoin` wants a kernel with exactly the 559 options
+`qemu_identity` wants, and it ran straight after it, so the shared
+tree was already configured that way and `make` had nothing to do.
+Every other machine paid a full reconfigure because the machine before
+it had left the tree configured for something else. That is the whole
+cost, and KCACHE-1 turns every row into the `fleet_temoin` row.
+
+---
+
 # PID-1 — the process table: a world that never asked for processes is alone in one of its own
 
 The ninth act of 2026-09-14, and the last of the three that close "what

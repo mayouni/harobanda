@@ -10,6 +10,7 @@ boot: grant network (effectful)
 boot: refuse gpio (effectful)
 boot: network lan -- eth0 up 10.0.2.15/24, gateway 10.0.2.2 (dhcp), dns [10.0.2.3], /etc/resolv.conf written
 boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
 boot: start kds -- pid N -- /stzr /app/kds.luau
 kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)
 kds: read /etc/machine -- 9 declarations rode in the image
@@ -20,7 +21,7 @@ poste: the counter world is up on the Makeen box, after kds
 poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
 poste: serving -- signalling /run/poste.ready
 boot: poste -- ready (/run/poste.ready)
-boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
+boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
 boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system

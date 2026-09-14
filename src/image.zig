@@ -421,7 +421,22 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             if (needs_namespaces) try w.print("CONFIG_NAMESPACES=y\n", .{});
             if (needs_netns) try w.print("CONFIG_NET_NS=y\n", .{});
             if (needs_pidns) try w.print("CONFIG_PID_NS=y\n", .{});
-            if (needs_seccomp) try w.print("CONFIG_SECCOMP=y\nCONFIG_SECCOMP_FILTER=y\n", .{});
+            // EVERY world carries the floor's own refusals since SYS-1, so
+            // a machine with any world at all needs the filter built in
+            if (m.services.len > 0) needs_seccomp = true;
+            if (needs_seccomp) {
+                // CONFIG_SECCOMP_FILTER depends on HAVE_ARCH_SECCOMP_FILTER
+                // && SECCOMP && NET: the kernel builds its filter engine on
+                // the BPF core, which lives under NET. So a machine with no
+                // declared network still needs CONFIG_NET to hold its worlds
+                // to the floor, and it gets it -- a machine carries the
+                // kernel ITS OWN DECLARATION needs, and since SYS-1 every
+                // declaration needs the floor's refusals. Found because
+                // qemu_hello refused to start a world it could not confine,
+                // which is the NS-1 law doing exactly its job.
+                if (m.networks.len == 0) try w.print("CONFIG_NET=y\n", .{});
+                try w.print("CONFIG_SECCOMP=y\nCONFIG_SECCOMP_FILTER=y\n", .{});
+            }
         }
         if (block) |b| {
             // BLOCK and BLK_DEV are menus tinyconfig closes; VIRTIO_MENU

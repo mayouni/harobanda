@@ -84,6 +84,25 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A PIN is not a record of what happened, it is a claim that what
+  happened was RIGHT** (SYS-1): never copy a transcript over its
+  expectation without reading the diff. Doing it blindly pinned three
+  machines whose worlds the new filter had broken, and one whose filter
+  had silently failed while the boot judged itself a match.
+- **Some things are refused by what a world IS, not by what it
+  declared** (SYS-1): the calls that would let a world change the
+  machine it runs on -- mount, reboot, the clock setters, module
+  loading, unshare/setns, ptrace -- are refused to EVERY world with
+  EPERM, whatever its NEEDS. When no declaration should ever ask for
+  something, do not add a clause that could grant it. The filter goes on
+  LAST, after PID 1 has used those same calls to build the envelope. And
+  this is a named closed DENY list, never a claim that everything else
+  is safe: a default-deny allowlist would mean enumerating what stzr
+  needs on two architectures and being wrong where nobody notices.
+- **A witness must not damage the machine in the case where the guard it
+  tests has FAILED** (SYS-1): the floor's witness tries `unshare`, whose
+  worst case is a world getting a namespace it does not need, and never
+  `reboot`.
 - **A namespace the caller does not ENTER is a namespace nobody is in**
   (PID-1): `unshare(CLONE_NEWPID)` does not move the caller, it makes
   its future CHILDREN the inhabitants -- so the world forks once more
@@ -273,15 +292,23 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   stzlib-graphics staged a file its own assertion had just refused, and
   committed another desk's memo under its subject. Put the program in a
   FILE and `&&` the file.
-- **The Bash tool mangles `\\` inside a heredoc into a real newline**,
-  even with a quoted terminator (`<<'PY'`). A Python replacement
-  carrying a Zig `"...\n"` arrives as a string literal with a line break in
-  it, and Zig refuses it ("string literal contains invalid byte"). Build
-  the escape from `chr(92)`, or -- the standing fix -- write the script
-  to the scratchpad with the file tool and run it by path. Hit twice on
-  2026-09-14.
-- **A one-line `bash -c` through `wsl.exe` loses `$` and `&`** whichever
-  tool sends it. Every WSL act is a script file under `experiment/`.
+- **Never put a program inline in a shell argument. Write it to the
+  scratchpad with the file tool and run it by path.** Three different
+  ways it has been eaten on 2026-09-14 alone:
+  - `\\` inside a heredoc becomes a real newline even with a quoted
+    terminator (`<<'PY'`), so a Python replacement carrying a Zig
+    `"...\n"` arrives as a string literal with a line break in it and
+    Zig refuses it ("string literal contains invalid byte"). Twice.
+  - ```backticks``` inside a double-quoted `python3 -c "..."` are COMMAND
+    SUBSTITUTION: the shell runs them and splices the (empty) output in,
+    so a markdown table lost four words to "command not found" and the
+    edit still reported success. Build them from `chr(96)` if they must
+    be inline.
+  - a one-line `bash -c` through `wsl.exe` loses `$` and `&`.
+  The scratchpad file has none of these failure modes and is the
+  standing fix; reach for it FIRST, not after the second repair. Every
+  WSL act is likewise a script file under `experiment/`, never a
+  one-liner sent through `wsl.exe`.
 - **QEMU under `timeout` from a real terminal STOPS silently.** With a
   tty on stdin, `-nographic` sets raw mode; in `timeout`'s background
   process group that is SIGTTOU, and QEMU sits stopped until the timeout
@@ -329,10 +356,11 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   derived from NEEDS with no new clause: an empty network namespace, a
   seccomp filter on process creation, a mount namespace with the
   declared MOUNTs detached, and a process table of the world's own.
-  `machines/qemu_confine.machine` is the witness (four worlds, four
-  questions) and `stzos confined` the verb. Still open: whose THREAD it
-  is, per-world choice of WHICH mount to keep (`filesystem` is all or
-  nothing), and a syscall surface wider than process creation.
+  `machines/qemu_confine.machine` is the witness (four worlds, five
+  questions) and `stzos confined` the verb. SYS-1 then added the one
+  part that is NOT derived: the calls no world may make at all. Still
+  open: whose THREAD it is, and per-world choice of WHICH mount to keep
+  (`filesystem` is all or nothing).
 - (done 2026-09-14, HDW-1) The hardware clause: `HARDWARE` on a fleet
   MEMBER, 22/22, and `experiment/os6_names.sh` reads the addresses from
   the declaration instead of carrying them as constants. Still open:

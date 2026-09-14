@@ -823,6 +823,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     _ = try expect.healthLine(led.w(), m);
     // what the kernel will refuse each world, said before any of them runs
     _ = try expect.confineLine(led.w(), m);
+    _ = try expect.floorLine(led.w(), m);
     try led.echo();
     try startReady(gpa, slots.items, &led);
     try out.flush();
@@ -1219,7 +1220,13 @@ fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Conf
         // before the drop to a declared USER, which is the last moment
         // this child has the privilege to ask for a namespace.
         const applied = confine.apply(held);
-        if (held.confined() and applied.trouble != null) {
+        // NOT `held.confined() and ...`: since SYS-1 every world carries
+        // the floor's own refusals, so a world that declared everything
+        // still has an envelope, and a failure to build it is still a
+        // promise the machine printed and did not keep. The narrower
+        // guard let qemu_identity boot with the floor line on its
+        // console and no filter behind it.
+        if (applied.trouble != null) {
             // The machine said, in a line the court reads, that this
             // world would be held to what it declared. If the kernel
             // cannot do it, the promise is broken -- and a machine that

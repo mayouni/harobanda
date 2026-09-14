@@ -116,6 +116,16 @@ pub fn confineLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
 /// The standing BUDGET line: which worlds the kernel holds to a ceiling,
 /// and to what. Worded ONCE here, like every judged line. Returns false
 /// when no world declares one, and then nothing is said at all.
+/// What no world may do, whatever it declared (SYS-1). Said once per
+/// machine rather than once per world, because it is a fact about the
+/// FLOOR and not about any declaration: the same sentence on every
+/// machine, and a machine with no worlds has nobody to say it to.
+pub fn floorLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    if (m.services.len == 0) return false;
+    try w.print("boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box\n", .{});
+    return true;
+}
+
 pub fn budgetLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     var any = false;
     for (m.services) |s| {
@@ -262,6 +272,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
     _ = try budgetLine(w, m);
     _ = try healthLine(w, m);
     _ = try confineLine(w, m);
+    _ = try floorLine(w, m);
     // every service starts; a one-shot is ready when it has exited 0, a
     // daemon when spawned or, if it declares READY, when it has signalled
     for (p.steps) |step| if (step == .service) {
@@ -484,6 +495,7 @@ test "the board's expectation is derived from the declaration, line for line" {
         \\boot: watchdog armed (/dev/watchdog)
         \\boot: health -- serve every 3s; a world that stops refreshing stops the watchdog
         \\boot: confine -- once has no sight of the other worlds and no way to start one and no sight of /data, serve has no sight of the other worlds and no way to start one and no sight of /data; what a world did not declare, the kernel does not give it
+        \\boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
         \\boot: start once -- pid N -- /stzos id -- as world (1000:1000)
         \\boot: once (pid N) exited 0
         \\boot: start serve -- pid N -- /stzr /app/serve.luau

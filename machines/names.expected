@@ -21,6 +21,7 @@ till: boot: mount devtmpfs at /dev -- done
 till: boot: grant process (effectful)
 till: boot: grant network (effectful)
 till: boot: network salle -- eth0 up 192.168.10.40/24 (dhcp), dns [192.168.10.1], names on makeen (/etc/resolv.conf)
+till: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
 till: boot: start printer -- pid N -- /stzos ask imprimante.makeen
 till: ask imprimante.makeen -- 192.168.10.50 (from 192.168.10.1)
 till: boot: printer (pid N) exited 0
@@ -33,7 +34,7 @@ till: boot: box (pid N) exited 0
 till: boot: start absent -- pid N -- /stzos ask fantome.makeen
 till: ask fantome.makeen -- no such name on this network (from 192.168.10.1)
 till: boot: absent (pid N) exited 0
-till: boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
+till: boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
 till: boot: every service has ended -- init has nothing left to keep alive
 till: boot: init halts the machine -- reboot(RESTART)
 till: reboot: Restarting system
@@ -46,6 +47,7 @@ stranger: boot: mount devtmpfs at /dev -- done
 stranger: boot: grant process (effectful)
 stranger: boot: grant network (effectful)
 stranger: boot: network salle -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
+stranger: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
 stranger: boot: start printer -- pid N -- /stzos ask imprimante.makeen
 stranger: ask imprimante.makeen -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
 stranger: boot: printer (pid N) exited 0

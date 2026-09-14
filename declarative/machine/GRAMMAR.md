@@ -351,9 +351,17 @@ act — stzlib's rehearse-plan-commit law carried down to the boot.
   have no pids at all. `process` is stzlib's "spawn and manage", and
   managing is inspecting and signalling as much as starting. Still open:
   per-world choice of WHICH mount to keep (`filesystem` is all or
-  nothing today), a syscall surface wider than process creation, and
-  `threads`, which is read and deliberately not enforced because a
-  thread the RUNTIME makes is not the world asking for one.
+  nothing today) and `threads`, which is read and deliberately not
+  enforced because a thread the RUNTIME makes is not the world asking
+  for one.
+- **What no world may do at all** — SYS-1 refuses every world, whatever
+  it declared, the calls that would let it change the machine it runs
+  on: mount and unmount, the module and kexec calls, reboot, the clock
+  setters, the host name, `unshare` and `setns`, `ptrace`, swap, `bpf`,
+  `syslog`, `acct` and `mknod`. No clause grants these because no
+  declaration should ask. It is a named closed DENY list and not a claim
+  that everything else is safe; a default-deny allowlist is the strong
+  form and is not built.
 - **Users and identities** — every service runs as the machine today;
   a USER seat with the machine's identity model (MicroRing's Ed25519
   per device is the precedent) is a fixture-first widening.

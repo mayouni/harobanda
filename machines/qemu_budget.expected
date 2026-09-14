@@ -7,6 +7,7 @@ boot: mount cgroup2 at /sys/fs/cgroup -- done
 boot: grant process (effectful)
 boot: grant filesystem (effectful)
 boot: budget -- modest 64 MiB and 50% of a core, greedy 32 MiB; the kernel holds the ceiling, not the world
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
 boot: start modest -- pid N -- /stzr /app/modest.luau
 modest: this world was granted 64 MiB and half a core
 modest: 8 MiB held, well inside the ceiling -- the kernel never had to intervene

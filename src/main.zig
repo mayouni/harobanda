@@ -562,6 +562,17 @@ pub fn main() !u8 {
             }
         }
 
+        // ... and whether this world can change the machine it runs on.
+        // unshare is the safe one to actually TRY: if the filter is not
+        // there, all that happens is this world gets a mount namespace of
+        // its own and then exits. A witness must not damage the machine
+        // in the case where the guard it is testing has failed (SYS-1).
+        switch (l.E.init(l.unshare(l.CLONE.NEWNS))) {
+            .PERM => try out.print("confined: the floor -- refused by the kernel (EPERM): this world cannot change the machine it runs on\n", .{}),
+            .SUCCESS => try out.print("confined: the floor -- PERMITTED: this world just built itself a namespace, and the floor is not holding\n", .{}),
+            else => |e| try out.print("confined: the floor -- {s}\n", .{@tagName(e)}),
+        }
+
         // and whether this world may make another process. A permitted
         // fork is PROVEN by forking, not by the absence of an error: the
         // child says so and is reaped.

@@ -216,6 +216,46 @@ const audit_arch: u32 = switch (builtin.cpu.arch) {
     else => 0,
 };
 
+/// The calls that would let a WORLD change the MACHINE it was declared
+/// to run on (SYS-1).
+///
+/// This list is the only thing in the envelope that is NOT derived from
+/// `NEEDS`, and that is the point. The other three seats ask what this
+/// world declared; this one asks what a world IS on this floor. The
+/// machine's own law says there is no shell, no package manager and no
+/// service manager, and that the declared machine IS the system. A world
+/// computes and talks to what it declared. It does not remount the
+/// filesystem, set the clock, load a module, rename the host, build
+/// itself a new envelope, read another process's memory, or reboot the
+/// box. No clause grants these because no declaration should ask.
+///
+/// Every one is refused with EPERM for every world, on every machine.
+/// A call absent on an architecture is simply skipped -- `nrOf` returns
+/// null and no instruction is emitted, so the filter never tests a
+/// number that means something else here.
+const off_limits = [_][]const u8{
+    // the filesystem tree is the declaration's, not a world's
+    "mount",       "umount2",        "pivot_root",
+    // the kernel is the image's
+    "init_module", "finit_module",   "delete_module",
+    "kexec_load",  "kexec_file_load",
+    // the machine's life is PID 1's
+    "reboot",
+    // the clock is the machine's, and a world that may READ it still may
+    // not move it under every other world
+    "settimeofday", "clock_settime", "adjtimex", "clock_adjtime",
+    // who the machine says it is
+    "sethostname", "setdomainname",
+    // the envelope is built BEFORE the world and is not the world's to
+    // widen, narrow or leave
+    "unshare",     "setns",
+    // another process's memory
+    "ptrace",
+    // the machine's own plumbing
+    "swapon",      "swapoff",        "bpf",   "syslog", "acct",
+    "mknod",       "mknodat",
+};
+
 fn nrOf(comptime name: []const u8) ?u32 {
     if (!@hasField(linux.SYS, name)) return null;
     return @intCast(@intFromEnum(@field(linux.SYS, name)));
@@ -229,12 +269,11 @@ fn nrOf(comptime name: []const u8) ?u32 {
 /// makes a process or a thread. Every jump target is one of three returns
 /// at the end, so the offsets are computed rather than counted by hand.
 pub fn filter(c: Confinement, buf: []sock_filter) []sock_filter {
-    if (c.process and c.threads) return buf[0..0];
     if (audit_arch == 0) return buf[0..0];
 
     var n: usize = 0;
     var arch_jmp: usize = 0;
-    var deny_jmps: [4]usize = undefined;
+    var deny_jmps: [off_limits.len + 4]usize = undefined;
     var ndeny: usize = 0;
     var clone_jmp: ?usize = null;
     var thread_jmp: ?usize = null;
@@ -248,6 +287,16 @@ pub fn filter(c: Confinement, buf: []sock_filter) []sock_filter {
 
     buf[n] = .{ .code = LD_W_ABS, .jt = 0, .jf = 0, .k = OFF_NR };
     n += 1;
+
+    // what no world may do on this floor, whatever it declared (SYS-1)
+    inline for (off_limits) |name| {
+        if (nrOf(name)) |nr| {
+            deny_jmps[ndeny] = n;
+            ndeny += 1;
+            buf[n] = .{ .code = JMP_JEQ_K, .jt = 0, .jf = 0, .k = nr };
+            n += 1;
+        }
+    }
 
     // the calls that make a PROCESS and cannot make anything else
     if (!c.process) {
@@ -446,8 +495,8 @@ pub fn apply(c: Confinement) Applied {
         }
     }
 
-    if (!c.process or !c.threads) {
-        var buf: [24]sock_filter = undefined;
+    {
+        var buf: [64]sock_filter = undefined;
         const prog = filter(c, &buf);
         if (prog.len > 0) {
             // without this, a filter may not be installed by an
@@ -535,10 +584,49 @@ test "a machine with no wire keeps no world off one" {
     try testing.expect(!Confinement.of(wired(), svcWith(&.{ .process, .filesystem })).network);
 }
 
-test "a world that may do everything the filter knows about gets no filter" {
-    var buf: [24]sock_filter = undefined;
-    const prog = filter(.{ .network = false, .process = true, .threads = true }, &buf);
-    try testing.expectEqual(@as(usize, 0), prog.len);
+test "a world that declared everything is still held to the floor" {
+    if (audit_arch == 0) return error.SkipZigTest;
+    var buf: [64]sock_filter = undefined;
+    const prog = filter(.{ .network = true, .process = true, .threads = true }, &buf);
+    // it declared all three, so nothing is refused ON ITS ACCOUNT -- and
+    // it is still refused the calls that would let it change the machine
+    // it runs on, because that was never a world's to do (SYS-1)
+    try testing.expect(prog.len > off_limits.len);
+    var found_reboot = false;
+    var found_mount = false;
+    const reboot_nr = nrOf("reboot").?;
+    const mount_nr = nrOf("mount").?;
+    for (prog, 0..) |ins, i| {
+        if (ins.code != JMP_JEQ_K) continue;
+        if (ins.k == reboot_nr) {
+            found_reboot = true;
+            try testing.expect(prog[i + 1 + ins.jt].k & linux.SECCOMP.RET.ACTION == linux.SECCOMP.RET.ERRNO);
+        }
+        if (ins.k == mount_nr) found_mount = true;
+    }
+    try testing.expect(found_reboot and found_mount);
+}
+
+test "the floor's own refusals are on every filter, whatever the world declared" {
+    if (audit_arch == 0) return error.SkipZigTest;
+    const cases = [_]Confinement{
+        .{ .network = true, .process = true, .threads = true },
+        .{ .network = false, .process = false, .threads = true },
+        .{ .network = true, .process = true, .threads = false },
+    };
+    for (cases) |c| {
+        var buf: [64]sock_filter = undefined;
+        const prog = filter(c, &buf);
+        inline for (off_limits) |name| {
+            if (nrOf(name)) |nr| {
+                var seen = false;
+                for (prog) |ins| {
+                    if (ins.code == JMP_JEQ_K and ins.k == nr) seen = true;
+                }
+                if (!seen) return error.FloorNotHeld;
+            }
+        }
+    }
 }
 
 test "every jump lands inside the program, and on a return" {
@@ -549,7 +637,7 @@ test "every jump lands inside the program, and on a return" {
         .{ .network = true, .process = true, .threads = false },
     };
     for (cases) |c| {
-        var buf: [24]sock_filter = undefined;
+        var buf: [64]sock_filter = undefined;
         const prog = filter(c, &buf);
         try testing.expect(prog.len >= 4);
         // the last three instructions are the three verdicts
@@ -577,7 +665,7 @@ test "every jump lands inside the program, and on a return" {
 
 test "the clone bit decides, and it decides the right way round" {
     if (audit_arch == 0) return error.SkipZigTest;
-    var buf: [24]sock_filter = undefined;
+    var buf: [64]sock_filter = undefined;
 
     // no process, threads granted: the bit SET means a thread, allowed
     const p = filter(.{ .network = true, .process = false, .threads = true }, &buf);
@@ -590,7 +678,7 @@ test "the clone bit decides, and it decides the right way round" {
     try testing.expect(found);
 
     // process granted, no threads: the bit SET means a thread, refused
-    var buf2: [24]sock_filter = undefined;
+    var buf2: [64]sock_filter = undefined;
     const t = filter(.{ .network = true, .process = true, .threads = false }, &buf2);
     found = false;
     for (t, 0..) |ins, i| if (ins.code == JMP_JSET_K and ins.k == CLONE_THREAD) {

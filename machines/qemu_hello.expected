@@ -7,6 +7,7 @@ boot: mount tmpfs at /tmp -- done
 boot: grant process (effectful)
 boot: grant filesystem (effectful)
 boot: confine -- whoami has no sight of /tmp; what a world did not declare, the kernel does not give it
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
 boot: start self -- pid N -- /stzos plan /etc/machine
 machine qemu_hello -- hosted / x86_64 / board qemu_pc / kernel linux / libc musl
   rationale: The smallest machine that boots: kernel, PID 1, runtime, one world
@@ -28,7 +29,7 @@ boot: start hello -- pid N -- /stzr /app/hello.luau
 hello from a declared machine -- stzr on stzos, a Luau world under PID 1
 the machine was declared, judged, planned, imaged, booted, narrated -- and now it runs a world
 boot: hello (pid N) exited 0
-boot: judge -- the boot matches its expectation (/etc/expected, 15 lines)
+boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system
