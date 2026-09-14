@@ -1,3 +1,112 @@
+# KCACHE-1 — one kernel per configuration, not one per architecture
+
+Not a seat: a repair to the court's own instrument, made because the
+SYS-1 regression took twenty minutes and the author asked why.
+
+## What it was
+
+`os2_image.sh` kept one kernel tree per architecture and configured it
+afresh for whichever machine was building. But a machine carries the
+kernel ITS OWN declaration needs, so every machine asks that tree for a
+different kernel -- 502 options for `qemu_hello`, 634 for `qemu_egress`
+-- and each one reconfigured and rebuilt what the machine before it had
+just finished building.
+
+The measurement that names it, from the SYS-1 regression in the order it
+ran:
+
+| machine | kernel build |
+|---|---|
+| qemu_hello | 1m16 |
+| qemu_budget | 1m31 |
+| qemu_identity | 2m07 |
+| **fleet_temoin** | **0m06** |
+| qemu_egress | 2m23 |
+| makeen_qemu | 3m04 |
+| makeen_box | 3m13 |
+
+`fleet_temoin` wants exactly the 559 options `qemu_identity` wants and
+ran straight after it, so the tree was already configured that way and
+`make` had nothing to do. One row got a cache hit by accident of
+ordering; the others paid full price for a kernel that had existed an
+hour earlier.
+
+## What it is now
+
+One SOURCE tree per architecture, extracted once. One BUILD directory
+per CONFIGURATION, keyed by the first twelve hex of the fragment's
+sha256, built out-of-tree with `make O=`. A configuration is built once
+and reused; two machines that want the same kernel share it; and the
+boot log says which it got:
+
+```
+kernel cache: MISS x86_64-f4e24d5fe4b5 -- first build of this configuration
+real    1m49.423s
+kernel cache: HIT x86_64-f4e24d5fe4b5 -- this configuration is already built
+real    0m6.611s
+```
+
+Then the test that matters, because the old layout's whole failing was
+that machines evicted each other: run `qemu_egress` in between, and come
+back.
+
+```
+qemu_egress   MISS 2m25.615s
+qemu_hello    HIT  0m4.756s
+```
+
+And the whole regression, twice, every run judged against its pin:
+
+| machine | pass 1 | pass 2 |
+|---|---|---|
+| qemu_hello | MISS 1m50 | HIT 0m05 |
+| qemu_budget | MISS 1m45 | HIT 0m05 |
+| qemu_identity | MISS 1m59 | HIT 0m05 |
+| fleet_temoin | HIT 0m05 | HIT 0m05 |
+| qemu_egress | MISS 2m13 | HIT 0m07 |
+| makeen_qemu | MISS 2m57 | HIT 0m06 |
+| qemu_confine | MISS 2m10 | HIT 0m08 |
+| makeen_box | MISS 3m11 | HIT 0m04 |
+| **total** | **16m10** | **0m45** |
+
+Sixteen minutes of kernel builds becomes forty-five seconds, and all
+sixteen runs matched. `fleet_temoin` is a HIT on the second row of the
+FIRST pass, which is the key fix showing its work: it shares
+`qemu_identity`'s configuration and no longer builds it again.
+
+The out-of-tree build produces the same kernel; only where it is kept
+has moved.
+
+## The key is what the fragment ASKS FOR, not the file
+
+The first key was the sha256 of `kernel.fragment`, and it was wrong in a
+way the cache itself exposed within minutes: `qemu_identity` and
+`fleet_temoin` want byte-identical options and got two separate builds,
+because the derived fragment opens with a comment naming the machine it
+came from. Hashing the file hashed the comment.
+
+The key is now the CONFIG lines alone -- keeping `# CONFIG_X is not
+set`, which looks like a comment and is a setting -- and the two collide
+as they should.
+
+## Why the sources moved too
+
+`make O=` refuses a source tree that was ever built IN -- it wants
+`mrproper` first. The existing `$K/<arch>` trees are dirty from every
+in-tree build since OS-2, so the sources now live at `$K/src/<arch>`
+and get extracted clean. **The old `$K/<arch>` trees are superseded and
+can be deleted**; about 7 GB, and nothing reads them any more.
+
+## What it does not change
+
+The rule it exists to serve: a machine still carries the kernel its own
+declaration needs, and nothing was merged into a common superset to make
+the cache cheaper. Two machines share a build exactly when they ask for
+the same thing, which is a fact about their declarations rather than a
+convenience arranged here.
+
+---
+
 # SYS-1 — the syscall surface: the machine is not a world's to change
 
 The tenth act of 2026-09-14, and the first of the envelope seats that is

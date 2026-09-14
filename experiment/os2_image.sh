@@ -60,42 +60,72 @@ mkdir -p "$OUT" zig-out/wsl
   else
     echo "compiler: $(${CROSS_COMPILE}gcc --version | head -1)"
   fi
-  PIN=$(cat vendor/linux/PIN.txt); TARBALL=${PIN%% *}; SRC=$K/$KSUB/${TARBALL%.tar.xz}
+  PIN=$(cat vendor/linux/PIN.txt); TARBALL=${PIN%% *}; SRC=$K/src/$KSUB/${TARBALL%.tar.xz}
   echo "pin: $PIN"
-  mkdir -p "$K/$KSUB"
-  if [ ! -d "$SRC" ]; then echo "extracting into $K/$KSUB"; tar -xJf "vendor/linux/$TARBALL" -C "$K/$KSUB" || { echo "extract failed"; exit 1; }; fi
-  cp "$OUT/kernel.fragment" "$SRC/stzos.fragment"
+  mkdir -p "$K/src/$KSUB"
+  if [ ! -d "$SRC" ]; then echo "extracting into $K/src/$KSUB"; tar -xJf "vendor/linux/$TARBALL" -C "$K/src/$KSUB" || { echo "extract failed"; exit 1; }; fi
+  # ONE SOURCE TREE PER ARCH, ONE BUILD DIRECTORY PER CONFIGURATION.
+  #
+  # Every machine asks this tree for a different kernel -- 502 options for
+  # qemu_hello, 634 for qemu_egress -- and with one build directory per
+  # arch each machine reconfigured and rebuilt what the machine before it
+  # had just built. Measured on the SYS-1 regression: 1m16, 1m31, 2m07,
+  # then SIX SECONDS for fleet_temoin, which happened to follow the one
+  # machine wanting the same 559 options, then 2m23, 3m04, 3m13. Keyed by
+  # the digest of the fragment, a configuration is built once and reused,
+  # and two machines that want the same kernel share it.
+  #
+  # The build is out-of-tree, so the source stays pristine and is
+  # extracted once per arch however many configurations there are. That is
+  # also why the sources moved to $K/src: `make O=` refuses a tree that
+  # was ever built IN, and the old $K/<arch> trees are dirty. They are
+  # superseded and can be deleted (KCACHE-1).
+  # The key is what the fragment ASKS FOR, not the file. The derived
+  # fragment opens with a comment naming the machine it came from, so
+  # hashing the file gave qemu_identity and fleet_temoin -- whose options
+  # are identical, byte for byte, below that one line -- two separate
+  # builds of the same kernel. Keep the CONFIG lines, and keep
+  # `# CONFIG_X is not set`, which looks like a comment and is a setting.
+  FRAG=$(grep -E '^(CONFIG_[A-Z0-9_]+=|# CONFIG_[A-Z0-9_]+ is not set)' "$OUT/kernel.fragment" | sha256sum | cut -c1-12)
+  B=$K/build/$KSUB-$FRAG
+  if [ -f "$B/$KERNEL_ARTIFACT" ]; then
+    echo "kernel cache: HIT $KSUB-$FRAG -- this configuration is already built"
+  else
+    echo "kernel cache: MISS $KSUB-$FRAG -- first build of this configuration"
+  fi
+  mkdir -p "$B"
+  cp "$OUT/kernel.fragment" "$B/stzos.fragment"
   (
     cd "$SRC" || exit 1
     export ARCH CROSS_COMPILE
     # shellcheck disable=SC2086 -- CCARGS is empty or two plain assignments
-    make -s $CCARGS tinyconfig || exit 1
-    scripts/kconfig/merge_config.sh -m .config stzos.fragment > /dev/null || exit 1
-    make -s $CCARGS olddefconfig || exit 1
-    echo "config: $(grep -c '=y' .config) options on"
+    make -s $CCARGS O="$B" tinyconfig || exit 1
+    scripts/kconfig/merge_config.sh -O "$B" -m "$B/.config" "$B/stzos.fragment" > /dev/null || exit 1
+    make -s $CCARGS O="$B" olddefconfig || exit 1
+    echo "config: $(grep -c '=y' "$B/.config") options on"
     # every option the fragment asked for must survive olddefconfig; one that
     # did not is a dependency the fragment forgot, and it is named here
-    grep -E '^CONFIG_[A-Z0-9_]+=y' stzos.fragment | while read -r want; do
-      grep -q "^$want\$" .config && echo "  $want" || echo "  $want DROPPED by olddefconfig -- a dependency is missing from the fragment"
+    grep -E '^CONFIG_[A-Z0-9_]+=y' "$B/stzos.fragment" | while read -r want; do
+      grep -q "^$want\$" "$B/.config" && echo "  $want" || echo "  $want DROPPED by olddefconfig -- a dependency is missing from the fragment"
     done
-    time make -j2 $CCARGS "$(basename "$KERNEL_ARTIFACT")" 2>&1 | tail -3
-    if [ -n "$DTB" ]; then make -j2 $CCARGS dtbs 2>&1 | tail -1; fi
-    make -s usr/gen_init_cpio || exit 1
+    time make -j2 $CCARGS O="$B" "$(basename "$KERNEL_ARTIFACT")" 2>&1 | tail -3
+    if [ -n "$DTB" ]; then make -j2 $CCARGS O="$B" dtbs 2>&1 | tail -1; fi
+    make -s $CCARGS O="$B" usr/gen_init_cpio || exit 1
   ) || { echo "kernel build failed"; exit 1; }
-  cp "$SRC/$KERNEL_ARTIFACT" "$OUT/$KERNEL_IMAGE" || exit 1
+  cp "$B/$KERNEL_ARTIFACT" "$OUT/$KERNEL_IMAGE" || exit 1
   # the config this image's kernel was built with, kept beside it: the tree's
   # .config belongs to whichever machine of this ARCH was built last, and a
   # diagnostic that read the tree answered for the wrong machine (OS-4)
-  cp "$SRC/.config" "$OUT/kernel.config"
-  cp "$SRC/System.map" "$OUT/System.map"   # the symbol map of THIS kernel, for os4_syms.sh
+  cp "$B/.config" "$OUT/kernel.config"
+  cp "$B/System.map" "$OUT/System.map"   # the symbol map of THIS kernel, for os4_syms.sh
   if [ -n "$DTB" ]; then
-    cp "$SRC/$DTB" "$OUT/$(basename "$DTB")" || { echo "no dtb built: $DTB"; exit 1; }
+    cp "$B/$DTB" "$OUT/$(basename "$DTB")" || { echo "no dtb built: $DTB"; exit 1; }
     # two trees from mainline's: the CARD's (mainline + DTB_OPS: what the
     # board needs mainline does not say, e.g. the mmc aliases that make the
     # declared /dev/mmcblk0p2 hold) and the EMULATOR's (the card's +
     # QEMU_DTB_OPS: the blocks QEMU does not model, the host it plugs the
     # card into). Both derived into image.env; experiment/dtb_ops.py applies.
-    DTC="$SRC/scripts/dtc/dtc"; BDTB="$OUT/$(basename "$DTB")"; QDTB="$OUT/$(basename "${DTB%.dtb}").qemu.dtb"
+    DTC="$B/scripts/dtc/dtc"; BDTB="$OUT/$(basename "$DTB")"; QDTB="$OUT/$(basename "${DTB%.dtb}").qemu.dtb"
     "$DTC" -q -I dtb -O dts -o "$OUT/mainline.dts" "$BDTB" || { echo "dtc failed"; exit 1; }
     echo "-- the card's tree:"; python3 experiment/dtb_ops.py "$OUT/mainline.dts" "$OUT/board.dts" ${DTB_OPS:-}
     "$DTC" -q -I dts -O dtb -o "$BDTB" "$OUT/board.dts" || { echo "dtc (board) failed"; exit 1; }
@@ -103,7 +133,7 @@ mkdir -p "$OUT" zig-out/wsl
     "$DTC" -q -I dts -O dtb -o "$QDTB" "$OUT/qemu.dts" || { echo "dtc (qemu) failed"; exit 1; }
   fi
   echo "=== initramfs ==="
-  "$SRC/usr/gen_init_cpio" "$OUT/initramfs.list" > "$OUT/initramfs.cpio" || { echo "cpio failed"; exit 1; }
+  "$B/usr/gen_init_cpio" "$OUT/initramfs.list" > "$OUT/initramfs.cpio" || { echo "cpio failed"; exit 1; }
   echo "=== disks ==="
   grep -v '^#' "$OUT/disk.list" | while read -r id dev fs size img; do
     [ -z "$id" ] && continue

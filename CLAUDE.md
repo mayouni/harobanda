@@ -253,6 +253,15 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   an order of magnitude slower; `os2_image.sh` extracts into `$HOME`
   inside WSL. The tarball and its pin stay in `vendor/linux/`
   (gitignored, 142 MB; `vendor/PIN.md` is the record).
+- **One kernel SOURCE tree per arch, one BUILD directory per CONFIG**
+  (KCACHE-1): `$K/src/<arch>` extracted once, `$K/build/<arch>-<frag
+  sha>` built out-of-tree with `make O=`. Every machine asks for a
+  different kernel, so a single build directory per arch meant each
+  machine rebuilt what the one before it had just built -- 1m16, 1m31,
+  2m07, then SIX SECONDS for the one machine that happened to follow
+  another wanting the same config. The boot log says HIT or MISS. The
+  old dirty `$K/<arch>` trees are superseded and can be deleted; `make
+  O=` refuses a tree that was ever built in.
 - **`rdinit=`, never `init=`, on the boot line**: the root is the
   initramfs; `init=` sends the kernel to mount a root device, which
   panics as soon as the kernel has a block layer (OS-3 finding 1).
