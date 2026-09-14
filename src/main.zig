@@ -42,6 +42,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
+        \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -101,6 +102,66 @@ pub fn main() !u8 {
             return 2;
         }
         try out.print("id: uid={d} gid={d}\n", .{ std.os.linux.getuid(), std.os.linux.getgid() });
+        return 0;
+    }
+    if (std.mem.eql(u8, verb, "attest")) {
+        // The witness of the IDENTITY seat, as `reach` is EGRESS's and
+        // `id` is USER's: it uses the device's own key and shows both
+        // halves of what a signature is worth -- that it verifies, and
+        // that it stops verifying the moment the message changes. The
+        // second half is the one worth printing: a signature nobody
+        // tried to break is a claim, not evidence.
+        const path = if (args.len > 2) args[2] else "/etc/machine";
+        const m = (try load(arena, path, out)) orelse return 1;
+        const key_path = m.identity orelse {
+            try out.print("attest: {s} declares no IDENTITY: this machine has no key to sign with\n", .{m.name});
+            return 1;
+        };
+        const Ed = std.crypto.sign.Ed25519;
+        var seed: [Ed.KeyPair.seed_length]u8 = undefined;
+        const f = std.fs.cwd().openFile(key_path, .{}) catch |e| {
+            try out.print("attest: cannot read {s}: {s}\n", .{ key_path, @errorName(e) });
+            return 1;
+        };
+        defer f.close();
+        const n = f.readAll(&seed) catch |e| {
+            try out.print("attest: cannot read {s}: {s}\n", .{ key_path, @errorName(e) });
+            return 1;
+        };
+        if (n != seed.len) {
+            try out.print("attest: {s} is {d} bytes, and a seed is {d}\n", .{ key_path, n, seed.len });
+            return 1;
+        }
+        const pair = Ed.KeyPair.generateDeterministic(seed) catch |e| {
+            try out.print("attest: the key could not be derived: {s}\n", .{@errorName(e)});
+            return 1;
+        };
+        var msg_buf: [128]u8 = undefined;
+        const msg = std.fmt.bufPrint(&msg_buf, "{s} attests", .{m.name}) catch "attests";
+        const sig = pair.sign(msg, null) catch |e| {
+            try out.print("attest: the signature failed: {s}\n", .{@errorName(e)});
+            return 1;
+        };
+        var digest: [32]u8 = undefined;
+        std.crypto.hash.sha2.Sha256.hash(&pair.public_key.toBytes(), &digest, .{});
+        var hex: [16]u8 = undefined;
+        _ = std.fmt.bufPrint(&hex, "{x}", .{digest[0..8]}) catch {};
+        try out.print("attest {s} -- ed25519, fingerprint {s}\n", .{ m.name, hex });
+        sig.verify(msg, pair.public_key) catch {
+            try out.print("attest: the device's own signature did not verify -- this machine cannot prove it is itself\n", .{});
+            return 1;
+        };
+        try out.print("attest: signed {d} bytes with this device's key and verified them against its public half\n", .{msg.len});
+        // ... and the negative, which is the half that makes the first half mean anything
+        var tampered_buf: [128]u8 = undefined;
+        @memcpy(tampered_buf[0..msg.len], msg);
+        tampered_buf[0] ^= 1;
+        if (sig.verify(tampered_buf[0..msg.len], pair.public_key)) {
+            try out.print("attest: A TAMPERED MESSAGE VERIFIED -- this signature proves nothing\n", .{});
+            return 1;
+        } else |_| {
+            try out.print("attest: one bit flipped in the message, and the same signature is refused\n", .{});
+        }
         return 0;
     }
     if (std.mem.eql(u8, verb, "reach")) {

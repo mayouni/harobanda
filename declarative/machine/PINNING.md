@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-0f8f291470adba76343ceecf6d102e027acf5b33e0737fb09a44542478ddb719
+3809f24df3232e5d2c1b9a100a60379567e49883d687787af5ac2202eb47b7fc
 ```
 
-(Before the EGRESS seat of 2026-09-14 (EGR-1):
+(Before the IDENTITY seat of 2026-09-14 (IDN-1):
+`0f8f291470adba76343ceecf6d102e027acf5b33e0737fb09a44542478ddb719`,
+81/81; the widening added A19, R64, R65, R66 and gave A2 its
+`IDENTITY`. Before the EGRESS seat of 2026-09-14 (EGR-1):
 `57f976861774231a86dd0db3f8005ca381d864cdde3cbab87bc31fcbe9e601e8`,
 76/76; the widening added A18, R60, R61, R62, R63. Before the BUDGET
 seat of 2026-09-13 (BDG-1):
@@ -56,7 +59,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **81/81** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **85/85** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -111,6 +114,37 @@ not committed ... the next boot is A`, and the card read back still
 booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
+
+## The device's own name, judged across four boots (IDN-1)
+
+`IDENTITY` on a MACHINE: where this device's key lives. PID 1 makes an
+Ed25519 pair there the first time the machine boots and loads it every
+time after. Fixture-first — A19 accepts it beside a persistent mount,
+R64 refuses a relative path, R65 refuses a key on a filesystem that dies
+with the power ("a new device every morning"), R66 refuses it on the
+edge profile, where custody is the hardware's and the design is
+MicroRing's. **85/85**, from 81/81.
+
+`machines/qemu_identity.machine` is the seventh pinned transcript (18
+lines): the key is made, `stzos attest` signs with it, verifies it, and
+then flips one bit in the message and shows the same signature refused --
+the half that makes the first half evidence rather than a claim.
+
+**The claim is persistence, so the court boots the same card TWICE.**
+`makeen_box.expected` is now 117 lines and holds four card boots: the
+trial (the key is CREATED, `KEY1`), **the same card again** (the slot is
+`committed, steady` and the key is `already on this device, KEY1`), and
+the held and unmet trials on PRISTINE copies, each of which creates its
+own (`KEY2`, `KEY3`) -- because a fresh card is a fresh device, which is
+exactly what an identity should mean.
+
+The fingerprint is the one thing a declaration cannot know, so it is not
+pinned as a value and not normalised to a constant either: each DISTINCT
+fingerprint becomes `KEY1`, `KEY2`, … in order of first appearance. Two
+builds with two different real keys produce the same pinned text, and a
+key that CHANGED between two boots of one card would read as `KEY2` and
+convict. Measured: two consecutive builds, real fingerprints
+`8038fb3d6c45b2de` and `b6a136f719a92fa3`, one pinned transcript.
 
 ## The perimeter, judged by the kernel's own answer (EGR-1)
 

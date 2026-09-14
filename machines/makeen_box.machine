@@ -15,7 +15,8 @@ DEFINE MACHINE makeen_box AS (
   LIBC musl,
   BOARD rpi4,
   CONSOLE "/dev/ttyS1",
-  SLOTS "/dev/mmcblk0p1"
+  SLOTS "/dev/mmcblk0p1",
+  IDENTITY "/data/device.key"
 ) RATIONALE "One box, no shell, no package manager: the declared machine is the system; two slots, so an update is a trial before it is a commitment"
 
 DEFINE CAPABILITY network AS (

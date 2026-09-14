@@ -140,8 +140,10 @@ data.
 - PID 1 is the supervisor. `READY` is the server's own word, and for
   RingServ that is the moment the shape log answers.
 - The journal has a partition mounted before the server starts.
-- Identity from the floor: the server's USER, and later the box's
-  key, so the request-signing key is not "generated somewhere".
+- Identity from the floor: the server's USER, and since IDN-1 the box's
+  own Ed25519 key, made on first boot and kept on the declared
+  partition -- so a request-signing key is the device's, not one
+  "generated somewhere".
 - The update is a trial. RingServ refuses to deploy from another
   machine because that is "a different product with a different
   threat model". The floor answers without a new product: the new
@@ -428,7 +430,10 @@ diagram. This is where the floor pays each band of it:
 3. The envelope at the kernel: namespaces and allowed system calls
    derived from CAPABILITY.
 4. The signed journal and a trusted clock.
-5. The per-device identity, verified by the box.
+5. ~~The per-device identity.~~ **Built (IDN-1)** as `IDENTITY` on a
+   hosted machine: an Ed25519 key made on first boot and kept on a
+   declared partition. What remains is the fleet's half -- a box
+   verifying ANOTHER device's signature, which needs the fleet court.
 6. The box as the network's server of addresses and names.
 7. The model as a pinned asset of the image.
 8. NEEDS judged against a world's own manifest and the placement

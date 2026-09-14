@@ -226,6 +226,18 @@ pub const Machine = struct {
     libc: Libc,
     board: Board,
     console: []const u8,
+    /// where this device's own key lives: the seed of an Ed25519 pair
+    /// PID 1 creates on first boot and never sends anywhere. The public
+    /// half is who the machine IS; the private half is why anyone should
+    /// believe a record it signed. It must live on a declared persistent
+    /// mount, or the device is a new one every morning. Ed25519 on
+    /// MicroRing's finding: signing is deterministic and needs no nonce
+    /// from a board with no entropy worth the name -- and the algorithm
+    /// is recorded per device, because custody and algorithm are coupled
+    /// (a key held in silicon may be a P-256 key). Here custody is a
+    /// file on a declared partition, and the transcript says so rather
+    /// than implying it (IDN-1).
+    identity: ?[]const u8,
     /// the boot partition that holds config.txt and the two slots, when
     /// the machine updates A/B (SLOTS "/dev/mmcblk0p1"); null: single boot
     slots: ?[]const u8,
@@ -428,7 +440,7 @@ const Decl = struct {
 
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
-        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS" },
+        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY" },
         .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "USER" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
@@ -667,6 +679,15 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .touch => "logcat",
     };
     if (find(md, "CONSOLE")) |c| console = try wantString(&ctx, c);
+    // IDENTITY -- where this device's key lives. WHERE it may live is
+    // checked once the mounts are known, at the end of this function.
+    var identity: ?[]const u8 = null;
+    if (find(md, "IDENTITY")) |c| {
+        if (profile != .hosted) return ctx.refuse(c.line, "IDENTITY is a hosted machine's declaration; a machine of PROFILE {s} keeps its key in its own substrate, whose custody is the hardware's (MicroRing's identity design)", .{@tagName(profile)});
+        const path = try wantString(&ctx, c);
+        if (path.len == 0 or path[0] != '/') return ctx.refuse(c.line, "IDENTITY is the absolute path of this device's key, not '{s}'", .{path});
+        identity = path;
+    }
     var slots: ?[]const u8 = null;
     if (find(md, "SLOTS")) |c| {
         const dev = try wantString(&ctx, c);
@@ -910,6 +931,18 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         try mounts.append(arena, .{ .name = d.name, .line = d.line, .at = at, .fs = fs, .device = device, .options = try opts.toOwnedSlice(arena), .rationale = d.rationale });
     };
 
+    // a key on a filesystem that dies with the power is a new device
+    // every morning, which is the one thing an identity must never be
+    if (identity) |key| {
+        var kept = false;
+        for (mounts.items) |mt| {
+            if (mt.fs != .ext4 and mt.fs != .vfat) continue;
+            if (!std.mem.startsWith(u8, key, mt.at)) continue;
+            if (mt.at.len == 1 or key.len == mt.at.len or key[mt.at.len] == '/') kept = true;
+        }
+        if (!kept) return ctx.refuse(md.line, "IDENTITY {s} is where the key lives, and no declared MOUNT keeps it: a key on a filesystem that dies with the power is a new device every morning", .{key});
+    }
+
     // pins
     var pins: std.ArrayList(Pin) = .{};
     for (decls.items) |d| if (d.kind == .PIN) {
@@ -933,6 +966,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .board = board,
         .console = console,
         .slots = slots,
+        .identity = identity,
         .rationale = md.rationale,
         .services = svc_slice,
         .capabilities = cap_slice,

@@ -31,7 +31,7 @@
     {
       "id": "A2",
       "name": "the hosted box: the counter machine of a restaurant, whole -- machines/makeen_box.machine verbatim",
-      "source": "-- makeen_box.machine -- the box behind the counter: server, network and\n-- bridge in one. The hosted profile's reference machine (fixture A2 is\n-- this file, verbatim) and, since OS-4, the board's truth: a Raspberry\n-- Pi 4 Model B, the SD card's second partition as /data, the console on\n-- the header pins, the network declared and brought up by PID 1 before\n-- any world speaks, and two boot slots: an update is tried once under\n-- the watchdog and committed only when every world is SERVING -- and\n-- still serving a window later -- and the box recognises its own boot. RestoLean's Makeen thread named the box;\n-- this declares it.\n\nDEFINE MACHINE makeen_box AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  LIBC musl,\n  BOARD rpi4,\n  CONSOLE \"/dev/ttyS1\",\n  SLOTS \"/dev/mmcblk0p1\"\n) RATIONALE \"One box, no shell, no package manager: the declared machine is the system; two slots, so an update is a trial before it is a commitment\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"The box is the restaurant's network\"\n\nDEFINE CAPABILITY filesystem AS (\n  GRANT yes\n) RATIONALE \"Orders and stock live on the box\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT no\n) RATIONALE \"No pins on the counter box; sensors are edge machines\"\n\nDEFINE MOUNT data AS (\n  AT \"/data\",\n  FS ext4,\n  DEVICE \"/dev/mmcblk0p2\",\n  OPTIONS [rw, noatime]\n) RATIONALE \"The persistent partition: the SD card's second partition\"\n\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"192.168.10.1/24\"\n) RATIONALE \"The box is the network's address; the phones find it here. No gateway: the box is the gateway\"\n\nDEFINE SERVICE kds AS (\n  RUN [\"/stzr\", \"/app/kds.luau\"],\n  RESTART always,\n  READY \"/run/kds.ready\",\n  HEALTH 5,\n  NEEDS [network, filesystem]\n) RATIONALE \"The kitchen display world: a daemon that serves the kitchen and says so by creating its READY path; PID 1 keeps it alive for the life of the box\"\n\nDEFINE SERVICE poste AS (\n  RUN [\"/stzr\", \"/app/poste.luau\"],\n  RESTART always,\n  READY \"/run/poste.ready\",\n  HEALTH 5,\n  AFTER [kds],\n  NEEDS [network, filesystem]\n) RATIONALE \"The counter world: a daemon too, and it starts only once the kitchen display has SIGNALLED it is serving -- not merely started\"\n",
+      "source": "-- makeen_box.machine -- the box behind the counter: server, network and\n-- bridge in one. The hosted profile's reference machine (fixture A2 is\n-- this file, verbatim) and, since OS-4, the board's truth: a Raspberry\n-- Pi 4 Model B, the SD card's second partition as /data, the console on\n-- the header pins, the network declared and brought up by PID 1 before\n-- any world speaks, and two boot slots: an update is tried once under\n-- the watchdog and committed only when every world is SERVING -- and\n-- still serving a window later -- and the box recognises its own boot. RestoLean's Makeen thread named the box;\n-- this declares it.\n\nDEFINE MACHINE makeen_box AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  LIBC musl,\n  BOARD rpi4,\n  CONSOLE \"/dev/ttyS1\",\n  SLOTS \"/dev/mmcblk0p1\",\n  IDENTITY \"/data/device.key\"\n) RATIONALE \"One box, no shell, no package manager: the declared machine is the system; two slots, so an update is a trial before it is a commitment\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"The box is the restaurant's network\"\n\nDEFINE CAPABILITY filesystem AS (\n  GRANT yes\n) RATIONALE \"Orders and stock live on the box\"\n\nDEFINE CAPABILITY gpio AS (\n  GRANT no\n) RATIONALE \"No pins on the counter box; sensors are edge machines\"\n\nDEFINE MOUNT data AS (\n  AT \"/data\",\n  FS ext4,\n  DEVICE \"/dev/mmcblk0p2\",\n  OPTIONS [rw, noatime]\n) RATIONALE \"The persistent partition: the SD card's second partition\"\n\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"192.168.10.1/24\"\n) RATIONALE \"The box is the network's address; the phones find it here. No gateway: the box is the gateway\"\n\nDEFINE SERVICE kds AS (\n  RUN [\"/stzr\", \"/app/kds.luau\"],\n  RESTART always,\n  READY \"/run/kds.ready\",\n  HEALTH 5,\n  NEEDS [network, filesystem]\n) RATIONALE \"The kitchen display world: a daemon that serves the kitchen and says so by creating its READY path; PID 1 keeps it alive for the life of the box\"\n\nDEFINE SERVICE poste AS (\n  RUN [\"/stzr\", \"/app/poste.luau\"],\n  RESTART always,\n  READY \"/run/poste.ready\",\n  HEALTH 5,\n  AFTER [kds],\n  NEEDS [network, filesystem]\n) RATIONALE \"The counter world: a daemon too, and it starts only once the kitchen display has SIGNALLED it is serving -- not merely started\"\n",
       "expect": {
         "name": "makeen_box",
         "profile": "hosted",
@@ -326,6 +326,22 @@
           "mounts": 0,
           "pins": 0,
           "networks": 1,
+          "users": 0
+        },
+        "order": []
+      }
+    },
+    {
+      "id": "A19",
+      "name": "a device holds a key: IDENTITY names where it lives, and it lives where the power cannot take it",
+      "source": "DEFINE MACHINE m AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  IDENTITY \"/data/device.key\"\n) RATIONALE \"The box is who its key says it is\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/mmcblk0p2\") RATIONALE \"x\"\n",
+      "expect": {
+        "counts": {
+          "services": 0,
+          "capabilities": 1,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 0,
           "users": 0
         },
         "order": []
@@ -710,6 +726,24 @@
       "name": "a machine that is granted no network cannot declare where it goes",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, EGRESS none) RATIONALE \"x\"\n",
       "refusal": "EGRESS"
+    },
+    {
+      "id": "R64",
+      "name": "a key lives at an absolute path, like everything else PID 1 must find",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"device.key\") RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\") RATIONALE \"x\"\n",
+      "refusal": "IDENTITY is the absolute path"
+    },
+    {
+      "id": "R65",
+      "name": "a key that dies with the power is a new device every morning",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/tmp/device.key\") RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT tmp AS (AT \"/tmp\", FS tmpfs) RATIONALE \"x\"\n",
+      "refusal": "no declared MOUNT keeps it"
+    },
+    {
+      "id": "R66",
+      "name": "an edge device's identity is MicroRing's, and its custody is the hardware's",
+      "source": "DEFINE MACHINE m AS (PROFILE edge, ARCH thumbv8m, KERNEL none, BOARD pico2, IDENTITY \"/log/device.key\") RATIONALE \"x\"\nDEFINE CAPABILITY gpio AS (GRANT yes) RATIONALE \"x\"\nDEFINE PIN led AS (GPIO 25, MODE out) RATIONALE \"x\"\n",
+      "refusal": "IDENTITY is a hosted machine's declaration"
     }
   ]
 }

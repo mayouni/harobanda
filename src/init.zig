@@ -215,6 +215,75 @@ fn commitText(gpa: std.mem.Allocator, text: []const u8, from: u8, to: u8) ![]u8 
     return std.mem.concat(gpa, u8, &.{ head, tail });
 }
 
+// ---- this device's own key (IDN-1) ---------------------------------------
+//
+// The seed is 32 bytes on a declared persistent mount, and the pair is
+// derived from it every boot: what is stored is the smallest thing that
+// can be, and the public half is never written down at all. The private
+// half never leaves -- there is no code in this repository that sends
+// it, and no world can read it, because the file is the machine's own
+// and a world that declares a USER is not the machine.
+//
+// Ed25519 on MicroRing's finding: signing is deterministic, so no nonce
+// is drawn at signing time, and a board with no entropy source worth the
+// name cannot leak its key by drawing a bad one. The algorithm and the
+// custody are SAID, never implied, because custody and algorithm are
+// coupled -- a key held in silicon may be a P-256 key -- and a record
+// that assumed one would be the uniform pretence that design refuses.
+
+const Identity = struct {
+    pair: std.crypto.sign.Ed25519.KeyPair,
+    fingerprint: [16]u8, // the first 8 bytes of sha256(public key), in hex
+    created: bool,
+};
+
+fn fingerprintOf(public: [32]u8) [16]u8 {
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(&public, &digest, .{});
+    var hex: [16]u8 = undefined;
+    _ = std.fmt.bufPrint(&hex, "{x}", .{digest[0..8]}) catch unreachable;
+    return hex;
+}
+
+/// Load this device's key, or make it the first time. A failure here is
+/// said and not hidden: a machine that declares an identity and cannot
+/// keep one has not booted as declared, and the ledger lacks the line
+/// its expectation has -- so the verdict differs and a trial holds.
+fn identityOf(m: *const machine.Machine, out: *std.Io.Writer) ?Identity {
+    const path = m.identity orelse return null;
+    const Ed = std.crypto.sign.Ed25519;
+    var seed: [Ed.KeyPair.seed_length]u8 = undefined;
+    var created = false;
+
+    read: {
+        const f = std.fs.cwd().openFile(path, .{}) catch break :read;
+        defer f.close();
+        const n = f.readAll(&seed) catch break :read;
+        if (n != seed.len) break :read;
+        const pair = Ed.KeyPair.generateDeterministic(seed) catch break :read;
+        return .{ .pair = pair, .fingerprint = fingerprintOf(pair.public_key.toBytes()), .created = false };
+    }
+
+    std.crypto.random.bytes(&seed);
+    created = true;
+    const pair = Ed.KeyPair.generateDeterministic(seed) catch |e| {
+        out.print("boot: identity -- the key could not be derived: {s}\n", .{@errorName(e)}) catch {};
+        return null;
+    };
+    if (std.fs.cwd().createFile(path, .{ .truncate = true, .mode = 0o600 })) |f| {
+        defer f.close();
+        f.writeAll(&seed) catch |e| {
+            out.print("boot: identity -- the key could not be written to {s}: {s}\n", .{ path, @errorName(e) }) catch {};
+            return null;
+        };
+        f.sync() catch {};
+    } else |e| {
+        out.print("boot: identity -- {s} could not be created: {s}; this device has no name it can keep\n", .{ path, @errorName(e) }) catch {};
+        return null;
+    }
+    return .{ .pair = pair, .fingerprint = fingerprintOf(pair.public_key.toBytes()), .created = created };
+}
+
 // ---- budgets, held by the kernel (BDG-1) ---------------------------------
 //
 // cgroup v2 is a filesystem: a group is a directory, and a ceiling is a
@@ -623,6 +692,15 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         }
         try out.flush();
     };
+
+    // this device's own key, before anything that might want to use it
+    if (identityOf(m, out)) |id| {
+        try led.say("boot: identity -- ed25519, custody a file at {s} -- {s} on this device, fingerprint {s}\n", .{
+            m.identity.?,
+            if (id.created) "created" else "already",
+            id.fingerprint,
+        });
+    }
 
     // the ceilings, before the first world runs: a world must never see
     // a boot in which its group did not exist yet (BDG-1)

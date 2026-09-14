@@ -149,6 +149,7 @@ judged so that one file describes the fleet, phone included.
 | the board's card (the Makeen box on `raspi4b`) | the same against `machines/makeen_box.expected`: the card's second partition mounted by its declared name, the network refused NODEV (no Ethernet in the emulator), the two worlds run | matches, part of 75 |
 | the wire | `makeen_qemu.expected` carries the dhcp lease from QEMU's server; `makeen_box.expected` the static network refused NODEV in the emulator | part of 23 and 75 |
 | the slots | `makeen_box.expected`: a trial of B committed, the card read back boots B; the same trial held on a pristine card, not committed, that card still boots A | part of 75 |
+| the device's name | `machines/qemu_identity.machine`: an Ed25519 key made on first boot and kept on a declared partition; `stzos attest` signs, verifies, and shows a tampered message refused. `makeen_box.expected` boots the same card twice, so the key is CREATED once and LOADED after -- and a pristine card makes its own (IDN-1) | 18 lines; 117 across four card boots |
 | the perimeter | `machines/qemu_egress.machine` on `qemu_pc`: `EGRESS ["10.9.0.0/16"]` writes one route and no default route, and two witnesses ask the kernel -- a way to the declared range, no way to the open internet, and no packet sent to find out (EGR-1) | matches, 19 lines |
 | the board, prepared | `experiment/os5_board.sh` -- the card's digests, the check that its cmdline carries no instrument of the court, the wiring, the capture, and three judges on one boot (the board's own verdict, `stzos judge` from the host, the four promises); `rehearse` proves the pipeline with no hardware (OS-5-PREP) | rehearsed; OS-5 waits on a board |
 | the four promises | `stzos guarantees` judges the hosted profile's four standing promises by name against a machine's own evidence, quoting the line that keeps each; `experiment/judge_guarantees.sh` does it twice for the box and pins both reports (GRT-1) | 39 lines; 3 of 4 on the board's expectation, 1 of 4 on the emulator's transcript |
@@ -197,6 +198,13 @@ judged so that one file describes the fleet, phone included.
 - Identities: a service runs as a declared USER when it names one, and
   as the machine itself when it says nothing (USR-1). uid 0 cannot be
   declared, so root is visible as the absence of a line rather than as
-  a choice. The per-DEVICE identity — an Ed25519 key that never leaves
-  the board (MicroRing's ALIGNMENT.md finding: hardware custody and
-  algorithm are coupled) — is a different thing and still queued.
+  a choice. The per-DEVICE identity is a different thing and exists
+  since IDN-1: `IDENTITY <path>` on a hosted machine, an Ed25519 pair
+  made on first boot and kept on a declared persistent mount, with the
+  algorithm and the custody SAID in the transcript rather than implied
+  (MicroRing's finding: hardware custody and algorithm are coupled, and
+  a key held in silicon may be a P-256 key). What is not claimed: the
+  private half is never sent because no code here sends it, and the file
+  is the machine's own -- not because hardware prevents reading it. A
+  key in a secure element is the seam, and it is the edge profile's
+  question first.

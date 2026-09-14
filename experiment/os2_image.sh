@@ -172,6 +172,15 @@ mkdir -p "$OUT" zig-out/wsl
     # trial boot (the commit rewrote it, or did not), read from the image
     echo "card: config.txt after the trial:" >> "$OUT/transcript.txt"
     mcopy -i "$OUT/sd.img@@$((2048*512))" ::config.txt - 2>/dev/null | grep -E 'os_prefix|tryboot' | sed 's/^/card: /' >> "$OUT/transcript.txt"
+    # the SAME card, booted again (IDN-1). Everything the first boot
+    # decided is now this boot's starting point: the committed slot is B
+    # and says so as STEADY rather than a trial, and this device's key is
+    # the one the first boot made -- loaded, not created. A court that
+    # never boots the same card twice can say nothing about what persists.
+    ( cd "$OUT" && timeout --foreground 120 bash boot.cmd < /dev/null > transcript_steady.txt 2>&1; echo "qemu exit $?" >> transcript_steady.txt )
+    echo "steady: the same card, booted again:" >> "$OUT/transcript.txt"
+    sed -e 's/\r$//' "$OUT/transcript_steady.txt" | sed -n '/^.*boot: stzos init/,$p' | sed -e 's/^.*boot: stzos init/boot: stzos init/' | grep -v '^qemu exit' | sed 's/^/steady: /' >> "$OUT/transcript.txt"
+
     # the rollback instrument, on a PRISTINE copy of the card (the first boot
     # committed B on sd.img; a hold on that card would be steady, not a
     # trial -- the first run of this instrument showed exactly that): the same
@@ -207,9 +216,17 @@ mkdir -p "$OUT" zig-out/wsl
   # IS PID 1 is the claim the judge must be able to convict (the first
   # judge run normalised it away and was corrected, PROTOCOL.md OS-2).
   # Anything else that differs is a finding.
+  # ... and the FINGERPRINT of this device's key, which is made on the
+  # device from its own randomness and is therefore different in every
+  # build. It is not normalised to a constant: each DISTINCT fingerprint
+  # becomes KEY1, KEY2, ... in order of first appearance, so the claim
+  # that matters survives the normalisation -- the same key in three
+  # boots reads as KEY1 three times, and a key that changed would read as
+  # KEY2 and convict (IDN-1).
   sed -e 's/\r$//' "$OUT/transcript.txt" \
     | sed -n '/^.*boot: stzos init/,$p' | sed -e 's/^.*boot: stzos init/boot: stzos init/' \
     | sed -E 's/pid ([2-9]|[1-9][0-9]+)\b/pid N/g' \
+    | awk '{ while (match($0, /fingerprint [0-9a-f]+/)) { fp = substr($0, RSTART + 12, RLENGTH - 12); if (!(fp in seen)) { n++; seen[fp] = "KEY" n } $0 = substr($0, 1, RSTART + 11) seen[fp] substr($0, RSTART + RLENGTH) } print }' \
     | sed -e '/^qemu exit$/d; /^qemu exit [0-9]*$/d' > "$OUT/transcript.normalised"
   if [ ! -f "machines/$NAME.expected" ]; then
     echo "JUDGED: no expectation pinned for $NAME yet -- machines/$NAME.expected is missing; this boot's normalised transcript is at $OUT/transcript.normalised"

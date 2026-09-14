@@ -1,3 +1,108 @@
+# IDN-1 — a device is somebody: a key made once, kept where the power cannot take it, and a court that boots the same card twice
+
+The second act of 2026-09-14. A box's name is a label; its KEY is who it
+is. Until today every Makeen box in the world would have been the same
+box to anyone reading a record it produced.
+
+## The seat, and the design it borrows
+
+`IDENTITY "<path>"` on a hosted MACHINE: where this device's own key
+lives. PID 1 makes an Ed25519 pair there the first time the machine ever
+boots, and loads it every time after. Fixture-first (A19, R64, R65, R66;
+85/85 after, from 81/81).
+
+The design is **MicroRing's**, read before a line was written, and two
+of its findings are law here:
+
+- **Ed25519 because of what it does not need.** Signing is deterministic
+  (RFC 8032), so no nonce is drawn at signing time, and a board with no
+  entropy source worth the name cannot leak its key by drawing a bad one.
+- **The algorithm and the custody are SAID, never implied**, because the
+  two are coupled: a key held in silicon may be a P-256 key, since some
+  signing peripherals do not speak Ed25519. A record that assumed one
+  algorithm would be the uniform pretence that design refuses. So the
+  transcript says `ed25519, custody a file at /data/device.key`.
+
+And the refusal that matters most is the one about WHERE:
+
+```
+R65: IDENTITY /tmp/device.key is where the key lives, and no declared
+     MOUNT keeps it: a key on a filesystem that dies with the power is
+     a new device every morning
+```
+
+R66 refuses the whole clause on the edge profile and says whose it is:
+an edge device's key is MicroRing's, and its custody is the hardware's.
+
+## The witness
+
+`stzos attest`, as `stzos id` is the USER seat's and `stzos reach` is
+EGRESS's. It signs with the device's key, verifies the signature against
+the public half, and then **flips one bit in the message and shows the
+same signature refused**. That second half is what makes the first half
+evidence rather than a claim: a signature nobody tried to break proves
+nothing.
+
+## The claim is persistence, so the court boots the same card TWICE
+
+A key that is made and used in one boot proves nothing about identity.
+`experiment/os2_image.sh` now boots the card again after the trial has
+committed, and that boot is where both of the first boot's decisions are
+read back:
+
+```
+boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint KEY1
+...
+steady: boot: slot B -- committed, steady
+steady: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint KEY1
+```
+
+The held and unmet trials run on PRISTINE copies of the card and each
+makes its own key (`KEY2`, `KEY3`) -- because a fresh card is a fresh
+device, which is exactly what an identity should mean.
+`makeen_box.expected` is now **117 lines** across four card boots.
+
+## Normalising a value without hiding the claim
+
+A fingerprint is the one thing a declaration cannot know: it is made on
+the device from the device's own randomness, and a machine that could
+derive it from its file would have no identity at all. So the derived
+expectation ends in the wildcard, and the judge does NOT replace the
+fingerprint with a constant -- that would erase the very claim. Each
+DISTINCT fingerprint becomes `KEY1`, `KEY2`, … in order of first
+appearance.
+
+Measured: two consecutive builds, real fingerprints
+`8038fb3d6c45b2de` and `b6a136f719a92fa3`, one pinned transcript. And a
+key that CHANGED between two boots of one card would read as `KEY2` and
+convict.
+
+## What is NOT claimed
+
+The private half never leaves because **no code in this repository sends
+it**, and no world can read it because the file is the machine's own and
+a world that declares a USER is not the machine. That is not the same as
+hardware custody: a key in a secure element cannot be read by software
+at all, and that is a different seat -- the edge profile's question
+first, where MicroRing already named the coupling it costs.
+
+## Judged
+
+- `qemu_identity`: **18 lines**, new and pinned.
+- `makeen_box`: **117 lines** (from 84), four card boots.
+- `qemu_hello` 33, `qemu_egress` 19, `qemu_budget` 35, `makeen_qemu` 26:
+  unchanged. A machine that declares no identity says nothing about one.
+- 12/12 unit tests, 85/85 fixtures, the guarantees and the projection
+  unchanged.
+
+## The law this pays for
+
+**A name a device cannot keep is not a name.** An identity that does not
+survive the power is a new device every morning, and the declaration is
+refused rather than believed.
+
+---
+
 # EGR-1 — a perimeter the declaration writes: how far a granted network reaches
 
 The first act of 2026-09-14, and the one with a customer requirement in

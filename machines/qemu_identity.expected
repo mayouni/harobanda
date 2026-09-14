@@ -1,0 +1,18 @@
+boot: stzos init -- machine qemu_identity (hosted / x86_64 / qemu_pc) -- pid 1
+boot: console /dev/ttyS0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: mount ext4 at /data -- done
+boot: grant process (effectful)
+boot: grant filesystem (effectful)
+boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint KEY1
+boot: start attest -- pid N -- /stzos attest
+attest qemu_identity -- ed25519, fingerprint KEY1
+attest: signed 21 bytes with this device's key and verified them against its public half
+attest: one bit flipped in the message, and the same signature is refused
+boot: attest (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 11 lines)
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)
+reboot: Restarting system

@@ -76,6 +76,20 @@ pub fn healthLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// This device's own name, said once. The FINGERPRINT is the one thing
+/// a declaration cannot know -- it is made on the device, from the
+/// device's own randomness, and a machine that could derive it from its
+/// file would not have an identity at all -- so the derived line ends in
+/// the wildcard and the transcript carries the rest. Everything before
+/// it IS derived, and says what a reader needs: the algorithm and the
+/// custody, never implied (MicroRing's law: the record names its
+/// algorithm rather than assuming one).
+pub fn identityLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    const path = m.identity orelse return false;
+    try w.print("boot: identity -- ed25519, custody a file at {s} -- *\n", .{path});
+    return true;
+}
+
 /// The standing BUDGET line: which worlds the kernel holds to a ceiling,
 /// and to what. Worded ONCE here, like every judged line. Returns false
 /// when no world declares one, and then nothing is said at all.
@@ -190,6 +204,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
         .armed => try w.writeAll(fmt_watchdog_armed),
         .off => try w.writeAll(fmt_watchdog_off),
     };
+    _ = try identityLine(w, m);
     _ = try budgetLine(w, m);
     _ = try healthLine(w, m);
     // every service starts; a one-shot is ready when it has exited 0, a

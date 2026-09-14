@@ -81,6 +81,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A device's name is its KEY, and it must survive the power**
+  (IDN-1): `IDENTITY <path>` must sit inside a declared persistent
+  mount, or the box is a new device every morning. Ed25519, and the
+  transcript SAYS the algorithm and the custody rather than implying
+  them (MicroRing's law: custody and algorithm are coupled). A
+  fingerprint is per-device, so the judge maps each DISTINCT one to
+  `KEY1`, `KEY2`, … in order of appearance -- never to a constant,
+  which would hide the claim that a card keeps its key.
 - **A reach is the declaration's to say** (EGR-1): `EGRESS` writes the
   ROUTING TABLE -- one route per declared destination and no default
   route, or none at all. Say precisely what that is and is not: the

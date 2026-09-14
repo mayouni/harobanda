@@ -1,0 +1,44 @@
+-- qemu_identity.machine -- the machine that proves a device is somebody.
+--
+-- A box's name is a label; its KEY is who it is. This machine declares
+-- where that key lives, PID 1 makes it the first time the machine ever
+-- boots and never makes it again, and one witness uses it: it signs, it
+-- verifies, and then it flips a bit in the message and shows the same
+-- signature being refused. The second half is the half that matters -- a
+-- signature nobody tried to break is a claim, not evidence.
+--
+-- Ed25519, and the transcript says so, because MicroRing's identity
+-- design paid for that line: custody and algorithm are coupled, a key
+-- held in silicon may be a P-256 key, and a record that assumed one
+-- algorithm would let a reader trust a device it should not. Here the
+-- custody is a file on a declared partition and the transcript says
+-- that too (IDN-1, 2026-09-14).
+
+DEFINE MACHINE qemu_identity AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  IDENTITY "/data/device.key"
+) RATIONALE "The smallest machine that is somebody: one key, made once, kept where the power cannot take it"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The witness is a process"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The key is a file, and the partition it lives on is declared"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where the key lives: a partition that survives the power, and therefore an identity that does"
+
+DEFINE SERVICE attest AS (
+  RUN ["/stzos", "attest"],
+  RESTART never,
+  NEEDS [process, filesystem]
+) RATIONALE "The witness: it signs with the device's own key, verifies the signature, and then shows a tampered message being refused"
