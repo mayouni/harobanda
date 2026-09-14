@@ -84,6 +84,18 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **Ask the question that DECIDES, not the one next to it** (MNT-1):
+  the witness is part of the evidence. `/data` is a directory in the
+  image and stays after its mount is detached, so `access()` answers
+  about the directory and reported a kept promise as broken. A path is
+  a separate filesystem exactly when its device id differs from its
+  parent's -- what `mountpoint(1)` asks. A witness answering an adjacent
+  question gives the wrong verdict with full confidence.
+- **A mount namespace is made PRIVATE before anything is detached**
+  (MNT-1): without `MS_REC | MS_PRIVATE` the umounts propagate back and
+  one confined world takes the storage from every other world and from
+  PID 1. Isolation that shares propagation is a way to break the box
+  from inside a world.
 - **A promise the machine ANNOUNCES and cannot keep is worse than one
   it never made** (NS-1): when the mechanism behind a declared guarantee
   fails, refuse the act and say so -- never print the guarantee and
@@ -304,12 +316,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   daemon's own signal, no timer). The health seat is HEALTH since
   HLT-1 (2026-09-13); a bounded window for the TRIAL itself is still a
   seam.
-- (done 2026-09-14, NS-1) Namespaces and seccomp per service, derived
-  from NEEDS with no new clause: `machines/qemu_confine.machine` is the
-  witness and `stzos confined` the verb. Still open: a MOUNT namespace
-  (a world still sees the whole filesystem) and a PID namespace (it
-  still sees the process table); whose THREAD it is; and a world's own
-  syscall surface beyond process creation.
+- (done 2026-09-14, NS-1 and MNT-1) The envelope at the kernel, derived
+  from NEEDS with no new clause: an empty network namespace, a seccomp
+  filter on process creation, and a mount namespace with the declared
+  MOUNTs detached. `machines/qemu_confine.machine` is the witness (four
+  worlds, three questions) and `stzos confined` the verb. Still open: a
+  PID namespace (a world still sees the process table), whose THREAD it
+  is, per-world choice of WHICH mount to keep, and a syscall surface
+  wider than process creation.
 - (done 2026-09-14, HDW-1) The hardware clause: `HARDWARE` on a fleet
   MEMBER, 22/22, and `experiment/os6_names.sh` reads the addresses from
   the declaration instead of carrying them as constants. Still open:

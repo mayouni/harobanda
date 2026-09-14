@@ -48,7 +48,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
-        \\  stzos confined [iface]                       (what can this WORLD see and do? from inside one)
+        \\  stzos confined [iface] [path]                (what can this WORLD see and do? from inside one)
         \\  stzos ask    <name>                          (what does a name mean on this network? from inside a device on it)
         \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
@@ -506,6 +506,38 @@ pub fn main() !u8 {
             }
         } else {
             try out.print("confined: no socket at all: {s}\n", .{@tagName(l.E.init(rc_sock))});
+        }
+
+        // ... and whether the machine's own storage is there. The world
+        // keeps the image it was built from -- its binary is a file --
+        // and a declared MOUNT is what a world that never asked for the
+        // filesystem does not get to see (MNT-1).
+        if (args.len > 3) {
+            const path = args[3];
+            // ASK WHETHER IT IS A MOUNT POINT, not whether the path
+            // exists. The directory is in the image so that PID 1 has
+            // somewhere to mount onto, and it stays there after the
+            // detach -- the first run of this witness reported "/data is
+            // there" about an empty directory and called a kept promise
+            // broken-looking (MNT-1). A path is a separate filesystem
+            // exactly when its device id differs from its parent's, which
+            // is what mountpoint(1) asks and the only honest question.
+            //
+            // fstatat, not stat: aarch64 has no stat syscall at all.
+            var here: l.Stat = undefined;
+            var root: l.Stat = undefined;
+            const pz = try arena.dupeZ(u8, path);
+            const ok_here = l.E.init(l.fstatat(l.AT.FDCWD, pz.ptr, &here, 0)) == .SUCCESS;
+            const ok_root = l.E.init(l.fstatat(l.AT.FDCWD, "/", &root, 0)) == .SUCCESS;
+            if (!ok_here) {
+                try out.print("confined: {s} -- not even a directory here\n", .{path});
+            } else if (!ok_root) {
+                try out.print("confined: {s} -- the root could not be read\n", .{path});
+            } else if (here.dev != root.dev) {
+                try out.print("confined: {s} -- mounted here: this world can see the machine's storage\n", .{path});
+            } else {
+                try out.print("confined: {s} -- an empty directory and nothing mounted on it: this world has a mount namespace of its own and the machine's storage is not in it\n", .{path});
+            }
         }
 
         // and whether this world may make another process. A permitted

@@ -1,3 +1,87 @@
+# MNT-1 — the mount namespace: a world that never asked for the filesystem does not get the machine's storage
+
+The eighth act of 2026-09-14, and the other half of the envelope NS-1
+opened. Still no clause.
+
+## What is taken, and what is deliberately not
+
+A world whose `NEEDS` omits `filesystem` runs in its own mount namespace
+with every DECLARED `MOUNT` detached. It keeps the image it was built
+from, because its binary is a file and a world with no files is not a
+world. It loses the machine's STORAGE -- which is where everything worth
+keeping from a world lives: the device key, the signed boot record, the
+business data.
+
+That line is the whole design. The profile's implicit `proc`, `sysfs`
+and `devtmpfs` stay: they are the machine's plumbing, not its storage,
+and a world that cannot see `/proc` is a world that cannot run.
+
+## The safety step that is not optional
+
+Before any detach, the tree is made `MS_REC | MS_PRIVATE`. Without it
+the umounts PROPAGATE BACK to the machine, and a single confined world
+takes `/data` away from every other world and from PID 1 itself. A mount
+namespace that shares propagation is not an isolation; it is a way to
+break the box from inside a world.
+
+## Judged
+
+`machines/qemu_confine.machine` grew to four worlds and three questions,
+and every cell is explained by the line above it:
+
+```
+                      eth0        /data       fork
+  sealed   no network  not there   mounted     permitted
+  still    no process  there       mounted     refused, EPERM
+  open     everything  there       mounted     permitted
+  blind    only process not there  NOT MOUNTED permitted
+```
+
+`blind` asked for nothing but the right to run, so it gets nothing but
+that. It is the world a sovereignty brief wants for anything handling
+data it must not be able to send anywhere -- DIKO's ESC6 read from the
+other side: not "may not leave the perimeter" but "has nowhere to send
+it from and nothing to send".
+
+## The defect, and it was the witness rather than the mechanism
+
+The first run reported `/data -- there` for `blind` and the promise
+looked broken. It was not: `/data` is a DIRECTORY in the image, put
+there so PID 1 has somewhere to mount onto, and it stays after the
+detach. `access()` answers about the directory and says nothing about
+what is mounted on it.
+
+The honest question is the one `mountpoint(1)` asks: a path is a
+separate filesystem exactly when its device id differs from its
+parent's. The witness now compares them with `fstatat` -- `stat` does
+not exist as a syscall on aarch64 at all -- and says which of the two
+things it found:
+
+```
+confined: /data -- mounted here: this world can see the machine's storage
+confined: /data -- an empty directory and nothing mounted on it: this world has a mount namespace of its own and the machine's storage is not in it
+```
+
+A witness that asks a question next to the one that matters will report
+a kept promise as broken, which costs exactly as much trust as the
+reverse.
+
+## One tolerated failure, on purpose
+
+`umount2` returning EINVAL is not treated as trouble. It means nothing
+was mounted at that path -- and then the world cannot see the machine's
+storage there either, so the promise is kept vacuously. Cascading a
+failed boot-time mount into a refusal to start every confined world
+would punish the worlds for the machine's own fault.
+
+## The law this pays for
+
+**Ask the question that decides, not the one next to it.** The witness
+is part of the evidence, and a witness answering an adjacent question is
+a witness giving the wrong verdict with full confidence.
+
+---
+
 # NS-1 — namespaces and seccomp: the kernel keeps the promise NEEDS has been making since the first day
 
 The seventh act of 2026-09-14, and the only one so far that added no

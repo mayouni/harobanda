@@ -321,7 +321,19 @@ pub const Machine = struct {
     /// everyone else this machine serves on a link it declares a DOMAIN
     /// for: an address that never changes and a name that goes with it
     peers: []const Peer,
+    /// the `at` of every declared mount, kept beside them so a world's
+    /// confinement can name what it may not see without walking the
+    /// mounts again in three places
+    mount_paths: []const []const u8,
     users: []const User,
+
+    /// the paths this machine mounts of its own, in declaration order.
+    /// The profile's implicit proc/sys/dev are not here: they are the
+    /// machine's plumbing, not its storage, and a world that cannot see
+    /// /proc is a world that cannot run (NS-1, MNT-1).
+    pub fn mountPaths(self: Machine) []const []const u8 {
+        return self.mount_paths;
+    }
 
     pub fn granted(self: Machine, c: Capability) bool {
         for (self.capabilities) |d| if (d.name == c) return d.granted;
@@ -1091,6 +1103,14 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         if (!kept) return ctx.refuse(md.line, "JOURNAL {s} is where the record lives, and no declared MOUNT keeps it: a record that dies with the power is not a record", .{rec});
     }
 
+    // the declared mounts, and their paths beside them: a world's
+    // confinement names what it may not see, and walking the mounts again
+    // in three places is three chances to disagree (MNT-1)
+    const mount_slice = try mounts.toOwnedSlice(arena);
+    var mount_paths: std.ArrayList([]const u8) = .{};
+    for (mount_slice) |mt| try mount_paths.append(arena, mt.at);
+    const mount_path_slice = try mount_paths.toOwnedSlice(arena);
+
     // pins
     var pins: std.ArrayList(Pin) = .{};
     for (decls.items) |d| if (d.kind == .PIN) {
@@ -1119,7 +1139,8 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .rationale = md.rationale,
         .services = svc_slice,
         .capabilities = cap_slice,
-        .mounts = try mounts.toOwnedSlice(arena),
+        .mounts = mount_slice,
+        .mount_paths = mount_path_slice,
         .pins = try pins.toOwnedSlice(arena),
         .networks = try nets.toOwnedSlice(arena),
         .peers = try peers.toOwnedSlice(arena),

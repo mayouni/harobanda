@@ -71,6 +71,14 @@ pub const Confinement = struct {
     process: bool,
     /// may it create a thread
     threads: bool,
+    /// the machine's declared MOUNTs this world may not see (MNT-1).
+    /// Empty when the world declared `filesystem`, or when the machine
+    /// mounts nothing of its own. The world keeps the image it was built
+    /// from -- its binary is a file, and a world with no files is not a
+    /// world -- and loses the machine's STORAGE, which is where anything
+    /// worth keeping from it lives: the device key, the signed record,
+    /// the business data.
+    hidden: []const []const u8 = &.{},
 
     /// Read off the machine and the service together. The machine
     /// matters for one reason: a machine that declares NO network has
@@ -83,6 +91,11 @@ pub const Confinement = struct {
     pub fn of(m: machine.Machine, svc: machine.Service) Confinement {
         var c = ofService(svc);
         if (m.networks.len == 0) c.network = true;
+        var sees_files = false;
+        for (svc.needs) |n| {
+            if (n == .filesystem) sees_files = true;
+        }
+        if (!sees_files) c.hidden = m.mountPaths();
         return c;
     }
 
@@ -111,7 +124,7 @@ pub const Confinement = struct {
 
     /// does anything need saying about this world at all
     pub fn confined(self: Confinement) bool {
-        return !self.network or !self.process or !self.threads;
+        return !self.network or !self.process or !self.threads or self.hidden.len > 0;
     }
 
     /// what to call it in one word, for the line the boot prints
@@ -139,6 +152,23 @@ pub const Confinement = struct {
             const s = "no way to start a thread";
             @memcpy(buf[n..][0..s.len], s);
             n += s.len;
+        }
+        if (self.hidden.len > 0) {
+            if (n > 0) {
+                @memcpy(buf[n..][0..5], " and ");
+                n += 5;
+            }
+            const s = "no sight of ";
+            @memcpy(buf[n..][0..s.len], s);
+            n += s.len;
+            for (self.hidden, 0..) |p, i| {
+                if (i > 0) {
+                    @memcpy(buf[n..][0..2], ", ");
+                    n += 2;
+                }
+                @memcpy(buf[n..][0..p.len], p);
+                n += p.len;
+            }
         }
         return buf[0..n];
     }
@@ -289,6 +319,7 @@ pub fn filter(c: Confinement, buf: []sock_filter) []sock_filter {
 
 pub const Applied = struct {
     network: bool = false, // an empty network namespace was entered
+    mounts: bool = false, // the machine's storage was detached
     seccomp: bool = false, // a filter was installed
     trouble: ?[]const u8 = null,
 };
@@ -312,6 +343,44 @@ pub fn apply(c: Confinement) Applied {
             // built without namespaces: say so rather than pretending
             else => |e| done.trouble = @tagName(e),
         }
+    }
+
+    if (c.hidden.len > 0) mounts: {
+        switch (linux.E.init(linux.unshare(linux.CLONE.NEWNS))) {
+            .SUCCESS => {},
+            else => |e| {
+                if (done.trouble == null) done.trouble = @tagName(e);
+                break :mounts;
+            },
+        }
+        // FIRST, and this is the whole safety of the act: make the tree
+        // private, or the umounts below PROPAGATE BACK to the machine and
+        // this world takes /data away from every other world and from PID
+        // 1 itself. A mount namespace that shares propagation is not an
+        // isolation, it is a way to break the box from inside a world.
+        switch (linux.E.init(linux.mount("none", "/", null, linux.MS.REC | linux.MS.PRIVATE, 0))) {
+            .SUCCESS => {},
+            else => |e| {
+                if (done.trouble == null) done.trouble = @tagName(e);
+                break :mounts;
+            },
+        }
+        for (c.hidden) |path| {
+            var buf: [256]u8 = undefined;
+            if (path.len + 1 > buf.len) continue;
+            @memcpy(buf[0..path.len], path);
+            buf[path.len] = 0;
+            const z: [*:0]const u8 = @ptrCast(&buf);
+            // MNT_DETACH (2): take it out of THIS tree now, and let the
+            // kernel release it when nothing holds it any more
+            switch (linux.E.init(linux.umount2(z, 2))) {
+                .SUCCESS, .INVAL, .NOENT => {},
+                else => |e| if (done.trouble == null) {
+                    done.trouble = @tagName(e);
+                },
+            }
+        }
+        done.mounts = done.trouble == null;
     }
 
     if (!c.process or !c.threads) {

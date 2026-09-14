@@ -13,9 +13,14 @@
 -- process? The answers should form a table that only the declarations
 -- above them explain.
 --
---   sealed   no network declared  -> eth0 is not there; fork permitted
---   still    no process declared  -> eth0 is there; fork refused, EPERM
---   open     both declared        -> eth0 is there; fork permitted
+-- Four worlds, three questions, and every cell explained by the line
+-- above it:
+--
+--                       eth0        /data       fork
+--   sealed   no network  not there   there       permitted
+--   still    no process  there       there       refused, EPERM
+--   open     everything  there       there       permitted
+--   blind    only process not there  NOT THERE   permitted
 --
 -- The first answer is the sharp one. `stzos reach` asks whether the
 -- machine knows a WAY to an address, which is the EGRESS seat's
@@ -23,6 +28,13 @@
 -- stands. In an empty network namespace it does not, and "no such
 -- interface" is a different answer from "no route" in the way that
 -- matters: there is nothing here to be refused (NS-1, 2026-09-14).
+--
+-- And `blind` is the MOUNT seat's own answer (MNT-1): it never declared
+-- the filesystem, so the machine's declared storage is not in its tree.
+-- It keeps the image it was built from, because its binary is a file and
+-- a world with no files is not a world; it loses the partition, which is
+-- where everything worth keeping from a world lives -- the device key,
+-- the signed record, the business data.
 
 DEFINE MACHINE qemu_confine AS (
   PROFILE hosted,
@@ -43,27 +55,40 @@ DEFINE CAPABILITY filesystem AS (
   GRANT yes
 ) RATIONALE "The witness is a file on the machine; what it reports about is the network and the fork, never the disk"
 
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS tmpfs,
+  OPTIONS [rw]
+) RATIONALE "The machine's own storage, so that a world which cannot see it is being kept from something that is really there. A tmpfs rather than a disk because what is being judged is the SIGHT of it, not what it holds"
+
 DEFINE NETWORK lan AS (
   INTERFACE "eth0",
   ADDRESS dhcp
 ) RATIONALE "An interface that really exists on this machine, so that a world which cannot see it is being kept from something real"
 
 DEFINE SERVICE sealed AS (
-  RUN ["/stzos", "confined", "eth0"],
+  RUN ["/stzos", "confined", "eth0", "/data"],
   RESTART never,
   NEEDS [process, filesystem]
 ) RATIONALE "It never declared the network, so it runs in an empty network namespace of its own: eth0 is not absent-from-permission, it is absent"
 
 DEFINE SERVICE still AS (
-  RUN ["/stzos", "confined", "eth0"],
+  RUN ["/stzos", "confined", "eth0", "/data"],
   RESTART never,
   AFTER [sealed],
   NEEDS [network, filesystem]
 ) RATIONALE "It never declared process creation, so the kernel refuses its fork with EPERM -- and it can still see the network it did declare, which is what makes the two refusals independent"
 
 DEFINE SERVICE open AS (
-  RUN ["/stzos", "confined", "eth0"],
+  RUN ["/stzos", "confined", "eth0", "/data"],
   RESTART never,
   AFTER [still],
   NEEDS [process, network, filesystem]
-) RATIONALE "It declared both, so it is held to nothing: the control that shows the other two answers come from their declarations and not from the witness"
+) RATIONALE "It declared everything, so it is held to nothing: the control that shows the other answers come from their declarations and not from the witness"
+
+DEFINE SERVICE blind AS (
+  RUN ["/stzos", "confined", "eth0", "/data"],
+  RESTART never,
+  AFTER [open],
+  NEEDS [process]
+) RATIONALE "It asked for nothing but the right to run, so it gets nothing but that: no network to speak on and no sight of the machine's storage. It is the world a sovereignty brief wants for anything that handles data it must not be able to send anywhere"

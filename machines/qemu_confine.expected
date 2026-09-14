@@ -3,24 +3,33 @@ boot: console /dev/ttyS0
 boot: mount proc at /proc -- done
 boot: mount sysfs at /sys -- done
 boot: mount devtmpfs at /dev -- done
+boot: mount tmpfs at /data -- done
 boot: grant process (effectful)
 boot: grant network (effectful)
 boot: grant filesystem (effectful)
 boot: network lan -- eth0 up 10.0.2.15/24, gateway 10.0.2.2 (dhcp), dns [10.0.2.3], /etc/resolv.conf written
-boot: confine -- sealed has no network of its own, still has no way to start another process; what a world did not declare, the kernel does not give it
-boot: start sealed -- pid N -- /stzos confined eth0
+boot: confine -- sealed has no network of its own, still has no way to start another process, blind has no network of its own and no sight of /data; what a world did not declare, the kernel does not give it
+boot: start sealed -- pid N -- /stzos confined eth0 /data
 confined: eth0 -- no such interface from here: this world has a network namespace of its own and there is nothing in it
+confined: /data -- mounted here: this world can see the machine's storage
 confined: fork -- permitted: this world started another process, and this line is the child speaking
 boot: sealed (pid N) exited 0
-boot: start still -- pid N -- /stzos confined eth0
+boot: start still -- pid N -- /stzos confined eth0 /data
 confined: eth0 -- present: this world shares the machine's network
+confined: /data -- mounted here: this world can see the machine's storage
 confined: fork -- refused by the kernel (EPERM): this world cannot start another process
 boot: still (pid N) exited 0
-boot: start open -- pid N -- /stzos confined eth0
+boot: start open -- pid N -- /stzos confined eth0 /data
 confined: eth0 -- present: this world shares the machine's network
+confined: /data -- mounted here: this world can see the machine's storage
 confined: fork -- permitted: this world started another process, and this line is the child speaking
 boot: open (pid N) exited 0
-boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
+boot: start blind -- pid N -- /stzos confined eth0 /data
+confined: eth0 -- no such interface from here: this world has a network namespace of its own and there is nothing in it
+confined: /data -- an empty directory and nothing mounted on it: this world has a mount namespace of its own and the machine's storage is not in it
+confined: fork -- permitted: this world started another process, and this line is the child speaking
+boot: blind (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 19 lines)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system

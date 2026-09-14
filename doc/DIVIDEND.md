@@ -104,7 +104,7 @@ in the rest of this document is a consequence of it.
 | what you get | what it means, plainly | today |
 |---|---|---|
 | **a floor that is a fact** | every mount, address, identity and start order is declared and in the transcript before your first line runs | real: three machines boot in emulators, pinned transcripts |
-| **an envelope below you** | what the machine refuses, you cannot do; the runtime refuses the capabilities, since BDG-1 the KERNEL holds the resources (`MEMORY` and `CPU` per world, in its own cgroup), and since NS-1 the kernel also holds what `NEEDS` left out -- a world that did not ask for the network has an empty network namespace, one that did not ask for `process` is refused fork | real for capabilities, resources, the network and process creation; the filesystem a world can SEE, and its wider syscall surface, are queued |
+| **an envelope below you** | what the machine refuses, you cannot do; the runtime refuses the capabilities, since BDG-1 the KERNEL holds the resources (`MEMORY` and `CPU` per world, in its own cgroup), and since NS-1/MNT-1 the kernel also holds what `NEEDS` left out -- no network means an empty network namespace, no `process` means fork is refused, no `filesystem` means the machine's declared storage is not in the world's tree at all | real for capabilities, resources, the network, process creation and the storage a world can SEE; the process table it can see, and a wider syscall surface, are queued |
 | **an identity from the floor** | you run as a declared USER; a per-device key that never leaves the board comes next | real; the key queued |
 | **a durable place and a clock** | a partition mounted before you speak, with declared options; the clock a capability; a signed journal a named seat | real for the mount; the journal seat named |
 | **one narrative** | your output is a line in the machine's story, with a prefix and a grammar; no syslog, no journald | real |
@@ -428,10 +428,12 @@ diagram. This is where the floor pays each band of it:
    filter over netlink is the seam that remains.
 2. ~~Budgets: a memory and CPU ceiling per service.~~ **Built (BDG-1).**
 3. ~~The envelope at the kernel: namespaces and allowed system calls~~
-   **Half built (NS-1)**, and derived rather than declared: the network
-   namespace and the process-creation syscalls now follow `NEEDS`. What
-   remains is what a world can SEE -- a mount namespace, a pid namespace
-   -- and a syscall surface wider than fork
+   **Built (NS-1, MNT-1)**, and derived rather than declared: the
+   network namespace, the process-creation syscalls and the machine's
+   storage now all follow `NEEDS`. What remains is the PROCESS TABLE a
+   world can see (a pid namespace), a syscall surface wider than fork,
+   and per-world choice of which mount to keep -- today `filesystem` is
+   all or nothing
    derived from CAPABILITY.
 4. ~~The signed journal~~ **Built (JRN-1)** as the machine's own boot
    record: hash-chained, signed by the device's key, verified before it

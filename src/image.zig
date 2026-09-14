@@ -393,18 +393,26 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             // SECCOMP_FILTER is what makes a filter more than a mode.
             // Only when a world is actually confined: a machine carries
             // the kernel its own declaration needs and nothing else.
+            var needs_namespaces = false;
             var needs_netns = false;
             var needs_seccomp = false;
             for (m.services) |s| {
                 const c = confine.Confinement.of(m.*, s);
-                if (!c.network) needs_netns = true;
+                if (!c.network) {
+                    needs_netns = true;
+                    needs_namespaces = true;
+                }
+                // a MOUNT namespace needs no option of its own: it exists
+                // wherever NAMESPACES does (MNT-1)
+                if (c.hidden.len > 0) needs_namespaces = true;
                 if (!c.process or !c.threads) needs_seccomp = true;
             }
-            // NET_NS lives under NAMESPACES, which tinyconfig closes, and
-            // under NET, which only a machine with a declared network
-            // opens -- so it is asked for only where it can be built and
-            // only where it means something.
-            if (needs_netns) try w.print("CONFIG_NAMESPACES=y\nCONFIG_NET_NS=y\n", .{});
+            // NAMESPACES is a menu tinyconfig closes; NET_NS lives under
+            // it AND under NET, which only a machine with a declared
+            // network opens -- so each is asked for exactly where it can
+            // be built and where it means something.
+            if (needs_namespaces) try w.print("CONFIG_NAMESPACES=y\n", .{});
+            if (needs_netns) try w.print("CONFIG_NET_NS=y\n", .{});
             if (needs_seccomp) try w.print("CONFIG_SECCOMP=y\nCONFIG_SECCOMP_FILTER=y\n", .{});
         }
         if (block) |b| {
