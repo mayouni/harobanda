@@ -67,183 +67,140 @@ cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -
 Linux and Zig analyses only the taken side, so a Windows build proves
 nothing about the init (the MicroRing injection finding, 2026-08-20).
 
-## Doctrine (each line was paid for, here or upstream)
+## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.
-- **A generated artifact is judged by what CONSUMES it**, never only by
-  a diff against the same generator's earlier output: both sides can be
-  wrong in the same way and the court stays green. QEMU judges the
-  images; MicroRing judges the projection (PRJ-2, where a diff passed a
-  file Ring could not parse).
-- **The machine judges its own boot** (JDG-1): the image carries
-  `/etc/expected`, derived from the plan; PID 1 records what it says
-  and judges the two when every service is ready; a trial commits only
-  on a match, and no expectation is no commit. Each judged line is
-  worded ONCE in `src/expect.zig` for init and the derivation alike --
-  never reword one side. The emulator's lacks are a `Lens` per board
-  (`qemu_lens`), never a loosened comparison.
+- **A generated artifact is judged by what CONSUMES it**, never by a
+  diff against the same generator's earlier output: both sides can be
+  wrong in the same way and the court stays green (PRJ-2, where a diff
+  passed a file Ring could not parse).
+- **The machine judges its own boot** (JDG-1): a trial commits only on a
+  match, and no expectation is no commit. Each judged line is worded
+  ONCE in `src/expect.zig` -- never reword one side. The emulator's
+  lacks are a `Lens` per board, never a loosened comparison.
 - **A PIN is not a record of what happened, it is a claim that what
   happened was RIGHT** (SYS-1): never copy a transcript over its
-  expectation without reading the diff. Doing it blindly pinned three
-  machines whose worlds the new filter had broken, and one whose filter
-  had silently failed while the boot judged itself a match.
-- **When a question cannot be ANSWERED, check whether it is the right
-  question** (THR-1): "whose thread is this" has no answer at the kernel,
-  which is why `threads` is read and never enforced here. "How many tasks
-  will this machine hold for this world" has an exact one -- `TASKS`
-  becomes cgroup `pids.max`, counting processes and threads together
-  because that is the only number the kernel keeps. The capability asks
-  who asked and belongs to the runtime; the budget asks how many and
-  belongs to the kernel.
-- **When a policy grows a DIMENSION, grep every condition that
-  enumerates the old ones** (THR-1): `cgroupJoin` returned early unless a
-  service declared MEMORY or CPU, so the first TASKS world was left
-  outside the group its ceiling was written on and the boot announced a
-  ceiling it was not holding. Third guard in two days narrower than the
-  thing it guarded.
-- **Derive while the declaration already knows; add a CLAUSE when it
-  does not** (SEE-1): four envelope seats came out of `NEEDS` with no
-  new grammar, because `NEEDS` already held the answer. Which mounts a
-  world keeps is information no clause carried, so `SEES` was added
-  rather than derived from a proxy -- that would have been a guess
-  wearing a derivation's clothes. `NEEDS [filesystem]` is the grant and
-  `SEES` narrows it, so `SEES` without the capability is refused and
-  silence keeps every mount.
-- **Some things are refused by what a world IS, not by what it
-  declared** (SYS-1): the calls that would let a world change the
-  machine it runs on -- mount, reboot, the clock setters, module
-  loading, unshare/setns, ptrace -- are refused to EVERY world with
-  EPERM, whatever its NEEDS. When no declaration should ever ask for
-  something, do not add a clause that could grant it. The filter goes on
-  LAST, after PID 1 has used those same calls to build the envelope. And
-  this is a named closed DENY list, never a claim that everything else
-  is safe: a default-deny allowlist would mean enumerating what stzr
-  needs on two architectures and being wrong where nobody notices.
+  expectation without reading the diff. Doing it blindly pinned four
+  machines -- three whose worlds a new filter had broken, one whose
+  filter had silently failed while the boot judged itself a match.
+- **Assert the mechanism**: the court was probed with a mutated judge in
+  fresh processes (wrong count, wrong fragment, valid source posing as
+  reject -> three reds) before its scoreboard was written.
+- **A promise the machine ANNOUNCES and cannot keep is worse than one it
+  never made** (NS-1): when the mechanism behind a declared guarantee
+  fails, refuse the act and say so. PID 1 does not start a world whose
+  envelope the kernel could not build; the boot then differs from its
+  expectation and a trial holds.
+- **Ask the question that DECIDES, not the one next to it** (MNT-1): the
+  witness is part of the evidence. `access()` on a detached mount
+  answers about the empty directory left behind, and reported a kept
+  promise as broken. A witness answering an adjacent question gives the
+  wrong verdict with full confidence.
 - **A witness must not damage the machine in the case where the guard it
   tests has FAILED** (SYS-1): the floor's witness tries `unshare`, whose
-  worst case is a world getting a namespace it does not need, and never
+  worst case is a world getting a namespace it does not need, never
   `reboot`.
+- **When a question cannot be ANSWERED, check whether it is the right
+  question** (THR-1): "whose thread is this" has no answer at the kernel,
+  so `threads` is read and never enforced here; "how many tasks will
+  this machine hold" has an exact one. The capability asks who asked and
+  belongs to the runtime; the budget asks how many and belongs to the
+  kernel.
+- **When a policy grows a DIMENSION, grep every condition that
+  enumerates the old ones** (THR-1): a join that ran only for MEMORY or
+  CPU left the first TASKS world outside the group its ceiling was
+  written on. Third guard in two days narrower than the thing it
+  guarded.
+- **Derive while the declaration already knows; add a CLAUSE when it
+  does not** (SEE-1): four envelope seats came out of `NEEDS` with no
+  new grammar. Which mounts a world keeps was in no clause, so `SEES`
+  was added rather than derived from a proxy -- which would be a guess
+  wearing a derivation's clothes.
+- **The envelope is DERIVED from NEEDS, never declared** (NS-1): what a
+  world did not ask for, the kernel does not give it. A claim that would
+  be EMPTY is not made -- a machine with no declared network confines
+  nobody off one, and `CONFIG_NET_NS` cannot be built without
+  `CONFIG_NET`.
+- **Some things are refused by what a world IS, not by what it
+  declared** (SYS-1): the calls that would let a world change the machine
+  it runs on are refused to EVERY world, whatever its NEEDS. When no
+  declaration should ever ask for something, do not add a clause that
+  could grant it. It is a named closed DENY list, never a claim that
+  everything else is safe.
 - **A namespace the caller does not ENTER is a namespace nobody is in**
-  (PID-1): `unshare(CLONE_NEWPID)` does not move the caller, it makes
-  its future CHILDREN the inhabitants -- so the world forks once more
-  and the process left behind is a STAND-IN that carries the world's
-  fate back unchanged (an exit code exits, a signal is re-raised on
-  itself), or `exited 0` and the budget's kill line stop being true.
-  `/proc` is remounted inside, or the world reads the machine's table
-  through the mount it inherited. Check which side of an `unshare` the
-  guarantee lands on.
-- **Ask the question that DECIDES, not the one next to it** (MNT-1):
-  the witness is part of the evidence. `/data` is a directory in the
-  image and stays after its mount is detached, so `access()` answers
-  about the directory and reported a kept promise as broken. A path is
-  a separate filesystem exactly when its device id differs from its
-  parent's -- what `mountpoint(1)` asks. A witness answering an adjacent
-  question gives the wrong verdict with full confidence.
+  (PID-1): `unshare` makes the caller's CHILDREN the inhabitants, so a
+  world that unshared and exec'd would still stand in the old one. Check
+  which side of an `unshare` the guarantee lands on; a stand-in process
+  must carry the world's exit or signal back unchanged.
 - **A mount namespace is made PRIVATE before anything is detached**
   (MNT-1): without `MS_REC | MS_PRIVATE` the umounts propagate back and
   one confined world takes the storage from every other world and from
   PID 1. Isolation that shares propagation is a way to break the box
   from inside a world.
-- **A promise the machine ANNOUNCES and cannot keep is worse than one
-  it never made** (NS-1): when the mechanism behind a declared guarantee
-  fails, refuse the act and say so -- never print the guarantee and
-  carry on. PID 1 does not start a world whose envelope the kernel could
-  not build; it exits 125 with the reason, the boot differs from its
-  expectation, and a trial holds.
-- **The envelope is DERIVED from NEEDS, never declared** (NS-1): a world
-  that did not ask for `network` gets an empty network namespace, one
-  that did not ask for `process` is refused fork and clone-without-
-  CLONE_THREAD. `threads` is deliberately NOT enforced -- a thread the
-  RUNTIME makes for its own housekeeping is not the world asking, and
-  refusing it would punish stzr for a Luau script's declaration. A
-  machine with no declared network confines nobody off one: the claim
-  would be empty, and CONFIG_NET_NS cannot even be built without
-  CONFIG_NET.
-- **A fact about a DEPLOYMENT lives in a declaration, or it is not a
-  fact anyone can check** (HDW-1): when one turns up in a script, move
-  it and DELETE the constant -- never add a second place that has to
-  agree. A hardware address and an enrolled key both belong on a fleet
-  MEMBER rather than in a machine file, because a machine file is a
-  design that images many devices and these are facts about one.
-- **A claim only its author can check is not evidence** (FLT-1): a
-  device signs its record with a key nobody else holds, so a FLEET
-  records the PUBLIC half and any holder of that file can verify any
-  member. The floor holds the secret, the fleet holds what anyone may
+- **A budget is the KERNEL's to hold** (BDG-1, THR-1): `MEMORY`, `CPU`
+  and `TASKS` become a cgroup per world -- memory kills, cpu throttles,
+  tasks refuse with EAGAIN. A machine that declares no budget mounts no
+  cgroup filesystem and asks for no controller.
+- **Alive is not serving** (HLT-1): a world with `HEALTH` must refresh
+  its READY path within every window, and PID 1 feeds the watchdog only
+  while every such world is fresh. Staleness LATCHES -- never resume the
+  feed on recovery, or the watchdog guards nothing.
+- **A daemon never exits, so an init that waits for an exit learns
+  nothing more** (SRV-1): PID 1 POLLS while anything is owed and never
+  blocks on `wait4` on a served machine. A world's READY path is its
+  LAST act. `--halt-on-verdict` is DERIVED onto the emulator's boot line
+  only; the card's cmdline.txt never carries it.
+- **A transcript whose order depends on which process reaches the
+  console first is a margin, not a fixture** (BDG-1): a world is forked
+  HELD at a gate and released only after PID 1 has spoken. ONE spawn
+  path for every world, with or without a declared USER. Never widen the
+  judge's normalisation to hide an ordering race -- close the race.
+- **Evidence is what the machine said about THIS boot, never what it
+  quoted about another** (GRT-1): a transcript carries other boots and
+  PID 1's own quotations of lines it did NOT say, so a judge that
+  searches the whole text finds the words it wants inside the sentence
+  that denies them.
+- **A record is the FLOOR's or a world's, never both** (JRN-1): the
+  machine's journal says what the machine was and what it judged of
+  itself; what a business record IS belongs to the world that keeps it.
+  Verify a chain BEFORE extending it and never extend a broken one.
+  Inalterability is that a change cannot go unnoticed, not that a file
+  cannot be changed; claim the first and never the second.
+- **A device's name is its KEY, and it must survive the power** (IDN-1):
+  `IDENTITY` must sit inside a declared persistent mount, or the box is
+  a new device every morning. The transcript SAYS the algorithm and the
+  custody rather than implying them. The judge maps each DISTINCT
+  fingerprint to `KEY1`, `KEY2`, … -- never to a constant, which would
+  hide the claim that a card keeps its key.
+- **A claim only its author can check is not evidence** (FLT-1): the
+  floor holds the secret, the fleet holds the public half anyone may
   check, and the two never meet in one place. Enrolment stays MANUAL --
-  a fleet that enrolled whatever key answered would attribute records
-  to whatever device was plugged in -- and a member with no key is
+  a fleet that enrolled whatever key answered would attribute records to
+  whatever device was plugged in -- and a member with no key is
   REPORTED, never guessed at.
 - **Some facts are about a SET and belong in a file about a set**
   (FLT-1): two boxes that each serve `makeen` are each faultless and
   together they are a broken network. One language, two files, and a
   file is judged by which kinds it may contain.
-- **A machine that SERVES a link is not finished when its services
-  are** (NAM-1): serving is a state of the machine, not a task that
-  completes. A box that halted when its last one-shot exited would be a
-  box that works until it is needed. And a server declares who it
-  serves: no pool, no range -- the declaration is the register, which
-  is why it cannot be lost at a reboot. Never send an option the
-  machine cannot honour (no router option from a box that does not
-  forward) and never answer for a name the link does not own.
-- **A record is the FLOOR's or a world's, never both** (JRN-1): the
-  machine's journal says what the machine was and what it judged of
-  itself; what a record of business IS belongs to the world that keeps
-  it. Verify a chain BEFORE extending it and never extend a broken one
-  -- an entry appended after a break launders it. Inalterability is
-  that a change cannot go unnoticed, not that a file cannot be changed;
-  claim the first and never the second.
-- **A device's name is its KEY, and it must survive the power**
-  (IDN-1): `IDENTITY <path>` must sit inside a declared persistent
-  mount, or the box is a new device every morning. Ed25519, and the
-  transcript SAYS the algorithm and the custody rather than implying
-  them (MicroRing's law: custody and algorithm are coupled). A
-  fingerprint is per-device, so the judge maps each DISTINCT one to
-  `KEY1`, `KEY2`, … in order of appearance -- never to a constant,
-  which would hide the claim that a card keeps its key.
+- **A fact about a DEPLOYMENT lives in a declaration, or it is not a
+  fact anyone can check** (HDW-1): when one turns up in a script, move
+  it and DELETE the constant -- never a second place that has to agree.
+  A machine file is a design that images many devices, so facts about
+  ONE of them belong on a fleet member.
+- **A machine that SERVES a link is not finished when its services are**
+  (NAM-1): serving is a state of the machine, not a task that completes.
+  A server declares who it serves -- no pool, no range, the declaration
+  IS the register, which is why it cannot be lost at a reboot. Never
+  send an option the machine cannot honour, and never answer for a name
+  the link does not own.
 - **A reach is the declaration's to say** (EGR-1): `EGRESS` writes the
-  ROUTING TABLE -- one route per declared destination and no default
-  route, or none at all. Say precisely what that is and is not: the
-  machine knows no way there; it is not prevented from finding one. A
-  packet filter (netfilter over netlink) is a named seam, never claimed.
-- **Evidence is what the machine said about THIS boot, never what it
-  quoted about another** (GRT-1): a transcript carries other boots
-  (`hold: `, `unmet: `) and PID 1's own quotations of lines it did NOT
-  say. A judge that searches the whole text finds the words it wants
-  inside the sentence that denies them -- `stzos guarantees` reads only
-  lines beginning `boot: ` that are not `boot: judge --`.
-- **A transcript whose order depends on which process reaches the
-  console first is a margin, not a fixture** (BDG-1): a world is forked
-  HELD at a gate (a pipe) and released only after PID 1 has put it in
-  its cgroup and printed its start line. One spawn path for every
-  world, with or without a declared USER. Never widen the judge's
-  normalisation to hide an ordering race -- close the race.
-- **A budget is the KERNEL's to hold** (BDG-1): `MEMORY` (mebibytes)
-  and `CPU` (percent of one core) become a cgroup v2 group per world.
-  Memory KILLS inside that group and the neighbour never feels it; cpu
-  THROTTLES and says nothing. A machine that declares no budget mounts
-  no cgroup filesystem and asks for no controller.
-- **Alive is not serving** (HLT-1): a world with `HEALTH <seconds>`
-  must refresh its READY path within every window; PID 1 feeds the
-  hardware watchdog ONLY while every such world is fresh, and a trial
-  commits only once each has been ready through one full window.
-  Staleness LATCHES -- never resume the feed on recovery, or the
-  watchdog guards nothing.
-- **A daemon never exits, so an init that waits for an exit learns
-  nothing more** (SRV-1): PID 1 POLLS while the watchdog needs feeding,
-  a declared signal is outstanding, a service has not started yet, or a
-  verdict is owed -- never blocks on `wait4` on a served machine. A
-  world's READY path is its LAST act (a print after it lets PID 1's own
-  line overtake it, and an order that depends on a 250 ms poll is not a
-  fixture). `--halt-on-verdict` is DERIVED onto the emulator's boot line
-  for any machine with a non-one-shot service; the card's cmdline.txt
-  never carries it.
-- **Assert the mechanism** — the court was probed with a mutated judge
-  in fresh processes (wrong count, wrong fragment, valid source posing
-  as reject → three reds) before its scoreboard was written.
-- **Closed grammars have no host escape.** A shell is refused by name
-  in RUN; do not add a command-string form, an env-expansion, a hook.
+  routing table. Say precisely what that is and is not -- the machine
+  knows no way there; it is not prevented from finding one. A packet
+  filter is a named seam, never claimed.
+- **Closed grammars have no host escape.** A shell is refused by name in
+  RUN; do not add a command-string form, an env-expansion, a hook.
 - **The transcript is the fixture; it is never stored.** Rendered from
   the run into `zig-out/`, gitignored.
 - **One binary, every role.** The CLI and PID 1 are the same static
@@ -355,66 +312,39 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 ## Next steps (author-ordered, one per session)
 
 - **OS-5 — the card meets the board.** PREPARED and rehearsed
-  (OS-5-PREP, 2026-09-13); it waits only on hardware
-  (`STZ-OS-HARDWARE-01`: a Pi 4 Model B, a micro-SD card, a 3.3 V
-  USB-serial adapter). One script carries it:
-  `bash experiment/os5_board.sh card` (digests, the boot the board
-  expects, the check that the card's cmdline carries no instrument of
-  the court, the flashing command it refuses to run itself, the wiring),
-  then `listen /dev/ttyUSB0 120`, then `judge <file>` -- three judges on
-  one boot: the board's own verdict, the court's (`stzos judge`), and
-  the four standing promises, which a board should keep all four in ONE
-  text for the first time. `rehearse` runs the same judges against the
-  emulator's pinned transcript with no hardware. The board is expected
-  to differ from the emulator on exactly the two lines the build prints
-  as the emulator's lacks; the watchdog's real countdown and the tryboot
-  flag (a vendored patch to `bcm2835_wdt.c`, which ignores the restart
-  argument) are the two things only a board can show.
-- (attempted 2026-09-12, ZIGCC-1) The kernel with `make CC="zig cc"`:
-  behind `STZOS_CC=zigcc`, four concessions named in
-  `experiment/zigcc_wrapper.sh`, the tree builds, **the image does not
-  boot** (it dies in the 16-bit setup code). gcc stays. Do not reopen
-  without a newer zig or an LLVM-shaped attempt; the instrument and the
-  six probes are kept. The estate's tarball MIRROR is a routed errand
-  for the author (availability, not integrity: the digests are pinned).
-- (done 2026-09-12, USR-1) The USER seat. The NETWORK kind exists
-  since NET-1 (dhcp and static; lease renewal, a resolver, the box as
-  DHCP server and IPv6 are its named seams) and READY since RDY-1 (a
-  daemon's own signal, no timer). The health seat is HEALTH since
-  HLT-1 (2026-09-13); a bounded window for the TRIAL itself is still a
-  seam.
-- (done 2026-09-14, NS-1, MNT-1, PID-1) The envelope at the kernel,
-  derived from NEEDS with no new clause: an empty network namespace, a
-  seccomp filter on process creation, a mount namespace with the
-  declared MOUNTs detached, and a process table of the world's own.
-  `machines/qemu_confine.machine` is the witness (four worlds, five
-  questions) and `stzos confined` the verb. SYS-1 added the part that is
-  NOT derived (the calls no world may make at all) and SEE-1 the part
-  that needed a clause (`SEES`, which mounts a world keeps). THR-1
-  closed the last seam by dissolving it: `TASKS` sizes a world in the
-  unit the kernel counts, and `threads` stays the runtime's.
-- (done 2026-09-14, HDW-1) The hardware clause: `HARDWARE` on a fleet
-  MEMBER, 22/22, and `experiment/os6_names.sh` reads the addresses from
-  the declaration instead of carrying them as constants. Still open:
-  hardware is DECLARED, never observed; revocation (a key a device USED
-  to have); forwarding between two links.
-- (done 2026-09-14, FLT-1) The fleet court: `FLEET` and `MEMBER` in a
-  second file of the same language, and one device's signed record
-  verified by a holder of nothing but its public key.
-- (done 2026-09-14, NAM-1) The box as the network's own server of
-  addresses and names: `DOMAIN` on a NETWORK, the `PEER` kind, and the
-  first paired boot -- `experiment/os6_names.sh` puts two machines on
-  one QEMU socket netdev, a box that serves and a till that asks. The
-  FLEET COURT (a set of machine files judged together, which is what
-  would let one box verify another device's signature) is the seam
-  that seat opens, and `makeen_box` gets its own `DOMAIN` at OS-5,
-  when there is a NIC to serve.
-- (done 2026-09-12, PRJ-1) The edge profile's projection onto
-  MicroRing's substrate: `stzos project` writes a real `device.ring`,
-  judged by `experiment/judge_project.sh`. What remains is the Device
-  LANGUAGE (behaviour: the every/on handlers), which is an L2 member
-  and not this repository's to invent.
-- (done 2026-09-12) The OS chapter is `softanza/vision/07-SYSTEM.md`
-  (v0.1 DRAFT, unratified) with the corpus amended for the 08-30 Ring++
-  turn; the three refusals are ruled in `doc/PROVENANCE.md`. Both wait
-  on the author's ratification; the author reverses by name.
+  (OS-5-PREP); it waits only on hardware (`STZ-OS-HARDWARE-01`: a Pi 4
+  Model B, a micro-SD card, a 3.3 V USB-serial adapter). One script
+  carries it: `bash experiment/os5_board.sh card`, then `listen
+  /dev/ttyUSB0 120`, then `judge <file>` -- three judges on one boot
+  (the board's own verdict, `stzos judge`, and the four promises).
+  `rehearse` runs the same judges against the emulator's pinned
+  transcript with no hardware. The board should differ from the emulator
+  on exactly the two lines the build prints as the emulator's lacks; the
+  watchdog's real countdown and the tryboot flag (a vendored patch to
+  `bcm2835_wdt.c`) are the two things only a board can show.
+- **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
+  attempt: behind `STZOS_CC=zigcc` the kernel builds with `make CC="zig
+  cc"` and the image does NOT boot (it dies in the 16-bit setup code).
+  gcc stays; the instrument and its six probes are kept.
+- **Open seams, none blocking.** A trusted CLOCK (the journal carries no
+  timestamp because the board has no clock, and a box with `EGRESS none`
+  cannot ask the network -- where the trust comes from is the author's
+  ruling). REVOCATION in a fleet: a key a device USED to have, which is
+  what a card rebuilt after a failure needs if its old records are to
+  stay readable. Hardware DECLARED but never observed. Forwarding
+  between two links. A bounded window for the TRIAL itself. The Commons
+  as the first declared server world. Haro's runtime as the image's
+  second binary. `makeen_box` gets its own `DOMAIN` at OS-5, when there
+  is a NIC to serve.
+- **Waiting on the author.** The hardware above; ratification of
+  `softanza/vision/` chapters 06, 07 and 08 (`07-SYSTEM.md` is v0.1
+  DRAFT and the three refusals are ruled in `doc/PROVENANCE.md`); the
+  estate's tarball MIRROR errand (availability, not integrity -- the
+  digests are pinned).
+- **What is built, and where its story is.** Every seat is written up in
+  `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
+  line carries: THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
+  JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
+  grammars and their pins are `declarative/machine/` and
+  `declarative/fleet/`.
