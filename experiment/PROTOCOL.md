@@ -1,3 +1,89 @@
+# THR-1 — whose thread it is: the question dissolved rather than answered
+
+The twelfth act of 2026-09-14, and the last named seam in the envelope.
+It was left open for five seats because the question as asked has no
+answer, and the seat is what happens when you notice that.
+
+## The question that could not be answered
+
+stzlib's `threads` capability says whether the WORLD may create threads.
+NS-1 built the machinery to refuse `clone(CLONE_THREAD)` and then
+deliberately did not wire it, because the kernel cannot tell a thread the
+Luau script asked for from one stzr made for its own housekeeping.
+Refusing them alike would punish the runtime for the world's
+declaration. That is a real objection and it does not go away.
+
+## The question that can be
+
+Not *who asked for this thread* but *how many tasks will this machine
+hold for this world*. The kernel answers that one exactly, and it is the
+same shape as `MEMORY` and `CPU`: a ceiling the declaration sets and the
+kernel holds.
+
+```
+DEFINE SERVICE swarm AS (
+  RUN ["/stzos", "swarm", "12"],
+  TASKS 6,
+  NEEDS [process, filesystem]
+) RATIONALE "..."
+```
+
+`TASKS n` becomes cgroup v2's `pids.max`, which counts **processes and
+threads together**. Together deliberately: a thread and a process are one
+`clone` flag apart and the kernel keeps one number, so a floor that
+billed them separately would be inventing a distinction the kernel does
+not make. The runtime's housekeeping counts against the ceiling, which
+is right -- the machine is sizing the WORLD, and stzr's threads are this
+world's threads.
+
+## So the capability stays where it was
+
+`threads` is the world's API surface and the runtime's to refuse. It
+asks WHO ASKED, which only stzr knows. `TASKS` asks HOW MANY, which only
+the kernel knows. They are different questions and each belongs to
+whoever can answer it -- which is the whole resolution, and the reason
+this floor will never enforce `threads` at the kernel.
+
+## Judged
+
+```
+boot: budget -- modest 64 MiB and 50% of a core, swarm 6 tasks, greedy 32 MiB; the kernel holds the ceiling, not the world
+boot: start swarm -- pid N -- /stzos swarm 12
+swarm: 5 tasks made, and the kernel refused the next (AGAIN): this world is as many as the machine agreed to hold
+boot: swarm (pid N) exited 0
+```
+
+Five children plus the world itself is six, which is what was declared.
+EAGAIN rather than a kill: a ceiling on how many, not a refusal to be --
+and the neighbours never felt it, exactly as the memory ceiling of BDG-1
+behaves one row below in the same transcript.
+
+**107/107** fixtures, from 104.
+
+## The defect, and it is the third of its kind
+
+The first boot printed `swarm 6 tasks` and the world made all twelve.
+`pids.max` had been written on a group nobody was in: `cgroupJoin`
+returned early unless the service declared MEMORY or CPU, a guard
+written before `TASKS` existed.
+
+That is the third time in two days a guard has been narrower than the
+thing it guards -- NS-1's refusal gated on `confined()`, SYS-1's gated
+the same way, and now this. The pattern is always the same: a new
+dimension is added to a policy, and a condition written for the old
+dimensions silently excludes it. **When a policy grows a dimension,
+grep for every condition that enumerates the old ones.**
+
+## The law this pays for
+
+**When a question cannot be answered, check whether it is the right
+question.** "Whose thread is this" has no answer at the kernel and
+never will. "How many tasks may this world have" has an exact one, it
+is the question a floor actually needs, and it was available the whole
+time.
+
+---
+
 # SEE-1 — per-world sight of the machine's storage: `filesystem` stops being all or nothing
 
 The eleventh act of 2026-09-14, and the first envelope seat that needed

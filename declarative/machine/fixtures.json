@@ -397,6 +397,25 @@
           "printer"
         ]
       }
+    },
+    {
+      "id": "A23",
+      "name": "a world is sized by how many tasks the machine will hold for it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE swarm AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process],\n  TASKS 8\n) RATIONALE \"x\"\nDEFINE SERVICE single AS (\n  RUN [\"/w\"],\n  RESTART never,\n  AFTER [swarm],\n  NEEDS [process],\n  TASKS 1\n) RATIONALE \"x\"\n",
+      "expect": {
+        "counts": {
+          "services": 2,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 0,
+          "users": 0
+        },
+        "order": [
+          "swarm",
+          "single"
+        ]
+      }
     }
   ],
   "rejects": [
@@ -891,6 +910,18 @@
       "name": "a machine that mounts nothing has no sight to apportion",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE ledger AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process, filesystem],\n  SEES [data]\n) RATIONALE \"x\"\n",
       "refusal": "declares no MOUNT"
+    },
+    {
+      "id": "R83",
+      "name": "a world with no task at all cannot be a world",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE none AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process],\n  TASKS 0\n) RATIONALE \"x\"\n",
+      "refusal": "TASKS 0"
+    },
+    {
+      "id": "R84",
+      "name": "the number counts tasks, and nothing else is being counted",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE vast AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process],\n  TASKS 100000\n) RATIONALE \"x\"\n",
+      "refusal": "counts tasks"
     }
   ]
 }

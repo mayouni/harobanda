@@ -555,6 +555,7 @@ fn svcWith(needs: []const machine.Capability) machine.Service {
         .health = null,
         .memory_mb = null,
         .cpu_percent = null,
+        .tasks = null,
         .user = null,
         .sees = null,
         .rationale = "",

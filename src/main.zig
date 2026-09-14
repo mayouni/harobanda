@@ -49,6 +49,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
         \\  stzos confined [iface] [path...]             (what can this WORLD see and do? from inside one)
+        \\  stzos swarm  [n]                             (ask for n tasks and say where the kernel stopped; from inside a world)
         \\  stzos ask    <name>                          (what does a name mean on this network? from inside a device on it)
         \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
@@ -473,6 +474,56 @@ pub fn main() !u8 {
             }
         }
         try out.print("ask {s} -- {s} did not answer\n", .{ want, stext });
+        return 0;
+    }
+    if (std.mem.eql(u8, verb, "swarm")) {
+        // The witness of the TASKS seat: a world asking the kernel for
+        // more of itself than the machine agreed to hold, and being told
+        // no. It counts what it got rather than what it asked for,
+        // because the ceiling is on the WORLD and the world already
+        // occupies some of it -- the number that matters is where the
+        // kernel stopped, not the difference from the declaration.
+        if (builtin.os.tag != .linux) {
+            try out.print("swarm: a Linux act; this binary was built for {s}\n", .{@tagName(builtin.os.tag)});
+            return 2;
+        }
+        const want = if (args.len > 2) std.fmt.parseInt(u32, args[2], 10) catch 8 else 8;
+        const l = std.os.linux;
+        var made: u32 = 0;
+        var stopped: ?[]const u8 = null;
+        var kids: [64]i32 = undefined;
+        while (made < want and made < kids.len) {
+            try out.flush(); // a fork copies the buffer as well (NS-1)
+            const rc = l.fork();
+            switch (l.E.init(rc)) {
+                .SUCCESS => {
+                    if (rc == 0) {
+                        // a child that only has to EXIST while the parent
+                        // counts; it waits to be reaped and says nothing
+                        var ts: l.timespec = .{ .sec = 2, .nsec = 0 };
+                        _ = l.nanosleep(&ts, null);
+                        l.exit(0);
+                    }
+                    kids[made] = @intCast(rc);
+                    made += 1;
+                },
+                else => |e| {
+                    stopped = @tagName(e);
+                    break;
+                },
+            }
+        }
+        if (stopped) |why| {
+            try out.print("swarm: {d} tasks made, and the kernel refused the next ({s}): this world is as many as the machine agreed to hold\n", .{ made, why });
+        } else {
+            try out.print("swarm: {d} tasks made, and the kernel refused none: this world was not sized\n", .{made});
+        }
+        var i: u32 = 0;
+        while (i < made) : (i += 1) {
+            _ = l.kill(kids[i], 9);
+            var status: u32 = 0;
+            _ = l.wait4(kids[i], &status, 0, null);
+        }
         return 0;
     }
     if (std.mem.eql(u8, verb, "confined")) {

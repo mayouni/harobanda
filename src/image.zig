@@ -381,12 +381,19 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             // only when a world declares one -- a machine carries the
             // kernel its own declaration needs.
             var budgeted = false;
+            var counted = false;
             for (m.services) |s| {
                 if (s.memory_mb != null or s.cpu_percent != null) budgeted = true;
+                if (s.tasks != null) counted = true;
+            }
+            if (budgeted or counted) {
+                try w.print("CONFIG_CGROUPS=y\n", .{});
             }
             if (budgeted) {
-                try w.print("CONFIG_CGROUPS=y\nCONFIG_MEMCG=y\nCONFIG_CGROUP_SCHED=y\nCONFIG_FAIR_GROUP_SCHED=y\nCONFIG_CFS_BANDWIDTH=y\n", .{});
+                try w.print("CONFIG_MEMCG=y\nCONFIG_CGROUP_SCHED=y\nCONFIG_FAIR_GROUP_SCHED=y\nCONFIG_CFS_BANDWIDTH=y\n", .{});
             }
+            // the pids controller is what holds a TASKS ceiling (THR-1)
+            if (counted) try w.print("CONFIG_CGROUP_PIDS=y\n", .{});
             // ... and the kernel that can hold a world to what it did NOT
             // declare (NS-1). NAMESPACES is the menu NET_NS lives under
             // and tinyconfig closes it, which is the trap OS-3 paid for;

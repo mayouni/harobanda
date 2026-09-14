@@ -402,16 +402,16 @@ fn serveNames(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machi
 fn cgroupPrepare(m: *const machine.Machine, out: *std.Io.Writer) BudgetState {
     var any = false;
     for (m.services) |s| {
-        if (s.memory_mb != null or s.cpu_percent != null) any = true;
+        if (s.memory_mb != null or s.cpu_percent != null or s.tasks != null) any = true;
     }
     if (!any) return .none;
 
-    writeKernelFile("/sys/fs/cgroup/cgroup.subtree_control", "+memory +cpu") catch |e| {
+    writeKernelFile("/sys/fs/cgroup/cgroup.subtree_control", "+memory +cpu +pids") catch |e| {
         out.print("boot: budget -- the kernel would not delegate the controllers ({s}); no ceiling is held this boot\n", .{@errorName(e)}) catch {};
         return .refused;
     };
     for (m.services) |s| {
-        if (s.memory_mb == null and s.cpu_percent == null) continue;
+        if (s.memory_mb == null and s.cpu_percent == null and s.tasks == null) continue;
         var dbuf: [128]u8 = undefined;
         const dir = std.fmt.bufPrint(&dbuf, "/sys/fs/cgroup/{s}", .{s.name}) catch return .refused;
         std.fs.cwd().makeDir(dir) catch |e| switch (e) {
@@ -428,6 +428,19 @@ fn cgroupPrepare(m: *const machine.Machine, out: *std.Io.Writer) BudgetState {
             const val = std.fmt.bufPrint(&vbuf, "{d}", .{@as(u64, mb) * 1024 * 1024}) catch return .refused;
             writeKernelFile(path, val) catch |e| {
                 out.print("boot: budget -- {s}: the memory ceiling was refused ({s}); no ceiling is held this boot\n", .{ s.name, @errorName(e) }) catch {};
+                return .refused;
+            };
+        }
+        if (s.tasks) |n| {
+            // pids.max counts TASKS -- processes and threads together,
+            // because that is the only number the kernel keeps. A fork or
+            // a thread past it returns EAGAIN to the world rather than
+            // killing it: a ceiling on how many, not a refusal to be
+            // (THR-1).
+            const path = std.fmt.bufPrint(&pbuf, "{s}/pids.max", .{dir}) catch return .refused;
+            const val = std.fmt.bufPrint(&vbuf, "{d}", .{n}) catch return .refused;
+            writeKernelFile(path, val) catch |e| {
+                out.print("boot: budget -- {s}: the task ceiling was refused ({s}); no ceiling is held this boot\n", .{ s.name, @errorName(e) }) catch {};
                 return .refused;
             };
         }
@@ -449,7 +462,12 @@ fn cgroupPrepare(m: *const machine.Machine, out: *std.Io.Writer) BudgetState {
 /// one path serves a world that drops to a USER and one that does not:
 /// a child that has already dropped its privileges could not write here.
 fn cgroupJoin(svc: *const machine.Service, pid: i32) void {
-    if (svc.memory_mb == null and svc.cpu_percent == null) return;
+    // every budget, or a world is left outside the group whose ceiling
+    // was written for it -- which is what happened to the first TASKS
+    // world: pids.max was set on a group nobody was in, and the boot
+    // announced a ceiling it was not holding (THR-1). Third time a guard
+    // has been narrower than the thing it guards.
+    if (svc.memory_mb == null and svc.cpu_percent == null and svc.tasks == null) return;
     var pbuf: [160]u8 = undefined;
     const path = std.fmt.bufPrint(&pbuf, "/sys/fs/cgroup/{s}/cgroup.procs", .{svc.name}) catch return;
     var vbuf: [24]u8 = undefined;
@@ -502,6 +520,7 @@ test "a world with a window is ready at its signal but PROVEN only one window la
         .health = 5,
         .memory_mb = null,
         .cpu_percent = null,
+        .tasks = null,
         .user = null,
         .sees = null,
         .rationale = "a world that keeps saying it serves",
@@ -517,6 +536,7 @@ test "a world with a window is ready at its signal but PROVEN only one window la
         .health = null,
         .memory_mb = null,
         .cpu_percent = null,
+        .tasks = null,
         .user = null,
         .sees = null,
         .rationale = "a world that answers for its start and never again",

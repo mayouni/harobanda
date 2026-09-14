@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-c6b02508f3650354c75149918876ffaa8659c8e0bcb7bb1316a677b1d6610d56
+4ed7adee6a389edbc6623bdf5b559fd4e87c5a1bcc0c9a9e40671116cbd828c1
 ```
 
-(Before the SEES seat of 2026-09-14 (SEE-1):
+(Before the TASKS seat of 2026-09-14 (THR-1):
+`c6b02508f3650354c75149918876ffaa8659c8e0bcb7bb1316a677b1d6610d56`,
+104/104; the widening added A23, R83 and R84, and gave SERVICE its
+`TASKS`. Before the SEES seat of 2026-09-14 (SEE-1):
 `a3f0d91ab47704acf1a966c3fcdf37df6ce01543dee8bdfadb162caad5ab7727`,
 98/98; the widening added A22 and R78-R82, and gave SERVICE its
 `SEES`. Before the NAMES seat of 2026-09-14 (NAM-1):
@@ -68,7 +71,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **104/104** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **107/107** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -123,6 +126,32 @@ not committed ... the next boot is A`, and the card read back still
 booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
+
+## How many tasks a world may hold (THR-1)
+
+`TASKS n` on a SERVICE becomes cgroup v2's `pids.max`, which counts
+processes and threads TOGETHER -- the only number the kernel keeps.
+`TASKS 0` is refused (R83), and a count beyond four thousand (R84),
+because the number counts tasks and nothing else. **107/107**, from 104.
+
+This is the seat that closed the `threads` seam by dissolving it. The
+capability asks WHO ASKED for a thread, which only the runtime knows and
+which no seccomp filter can decide; `TASKS` asks HOW MANY the machine
+will hold, which only the kernel knows. Each question belongs to
+whoever can answer it, and this floor will not enforce `threads`.
+
+`machines/qemu_budget.machine` gained a world sized at six and asking
+for twelve:
+
+```
+swarm: 5 tasks made, and the kernel refused the next (AGAIN): this world is as many as the machine agreed to hold
+```
+
+Five children plus the world itself is six. EAGAIN rather than a kill: a
+ceiling on how many, not a refusal to be -- and one row below in the
+same transcript, BDG-1's greedy world is still killed by signal 9 for
+asking for memory it was not granted. Two ceilings, two behaviours, both
+the kernel's.
 
 ## Which storage is whose (SEE-1)
 

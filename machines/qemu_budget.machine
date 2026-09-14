@@ -30,11 +30,19 @@ DEFINE SERVICE modest AS (
   NEEDS [process, filesystem]
 ) RATIONALE "A world that holds a little and ends: the kernel never has to intervene, and the transcript says nothing about it -- which is what a held ceiling looks like"
 
+DEFINE SERVICE swarm AS (
+  RUN ["/stzos", "swarm", "12"],
+  RESTART never,
+  TASKS 6,
+  AFTER [modest],
+  NEEDS [process, filesystem]
+) RATIONALE "A world sized by how many TASKS the machine will hold for it, which is the only question about threads the kernel can answer. It asks for twelve and the kernel stops it where the declaration said: a ceiling on how many, not a refusal to be. The `threads` capability stays the runtime's to enforce -- it asks who ASKED for a thread, and only stzr knows that; this asks how many the machine allows, and only the kernel does"
+
 DEFINE SERVICE greedy AS (
   RUN ["/stzr", "/app/greedy.luau"],
   RESTART on_failure,
   READY "/run/greedy.ready",
   MEMORY 32,
-  AFTER [modest],
+  AFTER [swarm],
   NEEDS [process, filesystem]
 ) RATIONALE "A world that asks for more than it was granted: the kernel kills it inside its own group, the restart policy tries five times, and the box carries on -- the neighbour never felt it. It declares the signal it would give if it ever served, and never gives it: so this machine never reaches a verdict on its own boot, which is the truth about a boot where a world never served"

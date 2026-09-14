@@ -134,18 +134,29 @@ pub fn floorLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
 pub fn budgetLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     var any = false;
     for (m.services) |s| {
-        if (s.memory_mb != null or s.cpu_percent != null) any = true;
+        if (s.memory_mb != null or s.cpu_percent != null or s.tasks != null) any = true;
     }
     if (!any) return false;
     try w.print("boot: budget -- ", .{});
     var first = true;
     for (m.services) |s| {
-        if (s.memory_mb == null and s.cpu_percent == null) continue;
+        if (s.memory_mb == null and s.cpu_percent == null and s.tasks == null) continue;
         try w.print("{s}{s} ", .{ if (first) "" else ", ", s.name });
         first = false;
-        if (s.memory_mb) |mb| try w.print("{d} MiB", .{mb});
-        if (s.memory_mb != null and s.cpu_percent != null) try w.print(" and ", .{});
-        if (s.cpu_percent) |pct| try w.print("{d}% of a core", .{pct});
+        var said = false;
+        if (s.memory_mb) |mb| {
+            try w.print("{d} MiB", .{mb});
+            said = true;
+        }
+        if (s.cpu_percent) |pct| {
+            if (said) try w.print(" and ", .{});
+            try w.print("{d}% of a core", .{pct});
+            said = true;
+        }
+        if (s.tasks) |n| {
+            if (said) try w.print(" and ", .{});
+            try w.print("{d} tasks", .{n});
+        }
     }
     try w.print("; the kernel holds the ceiling, not the world\n", .{});
     return true;

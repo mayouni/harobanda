@@ -89,6 +89,20 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   expectation without reading the diff. Doing it blindly pinned three
   machines whose worlds the new filter had broken, and one whose filter
   had silently failed while the boot judged itself a match.
+- **When a question cannot be ANSWERED, check whether it is the right
+  question** (THR-1): "whose thread is this" has no answer at the kernel,
+  which is why `threads` is read and never enforced here. "How many tasks
+  will this machine hold for this world" has an exact one -- `TASKS`
+  becomes cgroup `pids.max`, counting processes and threads together
+  because that is the only number the kernel keeps. The capability asks
+  who asked and belongs to the runtime; the budget asks how many and
+  belongs to the kernel.
+- **When a policy grows a DIMENSION, grep every condition that
+  enumerates the old ones** (THR-1): `cgroupJoin` returned early unless a
+  service declared MEMORY or CPU, so the first TASKS world was left
+  outside the group its ceiling was written on and the boot announced a
+  ceiling it was not holding. Third guard in two days narrower than the
+  thing it guarded.
 - **Derive while the declaration already knows; add a CLAUSE when it
   does not** (SEE-1): four envelope seats came out of `NEEDS` with no
   new grammar, because `NEEDS` already held the answer. Which mounts a
@@ -376,8 +390,9 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   `machines/qemu_confine.machine` is the witness (four worlds, five
   questions) and `stzos confined` the verb. SYS-1 added the part that is
   NOT derived (the calls no world may make at all) and SEE-1 the part
-  that needed a clause (`SEES`, which mounts a world keeps). Still open:
-  whose THREAD it is.
+  that needed a clause (`SEES`, which mounts a world keeps). THR-1
+  closed the last seam by dissolving it: `TASKS` sizes a world in the
+  unit the kernel counts, and `threads` stays the runtime's.
 - (done 2026-09-14, HDW-1) The hardware clause: `HARDWARE` on a fleet
   MEMBER, 22/22, and `experiment/os6_names.sh` reads the addresses from
   the declaration instead of carrying them as constants. Still open:

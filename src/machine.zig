@@ -108,6 +108,22 @@ pub const Service = struct {
     /// two of them. The scheduler throttles past it rather than killing:
     /// a world that wants more time waits, and its neighbours do not.
     cpu_percent: ?u32,
+    /// how many TASKS the machine will hold for this world -- the kernel's
+    /// `pids.max`, which counts processes and threads together (THR-1).
+    ///
+    /// Together, deliberately. A thread and a process are one clone call
+    /// apart and the kernel counts them in one number, so a floor that
+    /// billed them separately would be inventing a distinction the kernel
+    /// does not make. The runtime's own housekeeping threads count
+    /// against this, which is right: the machine is sizing the WORLD, and
+    /// stzr's threads are this world's threads.
+    ///
+    /// This is why the `threads` CAPABILITY is not enforced at the kernel
+    /// and never will be here. The capability asks WHO ASKED for a
+    /// thread, which only the runtime knows; this asks HOW MANY the
+    /// machine will allow, which only the kernel can answer. They are
+    /// different questions and each belongs to whoever can answer it.
+    tasks: ?u32,
     /// the declared identity this service runs as; null is the machine
     /// itself (root), which is what a service gets only by saying nothing
     user: ?*const User,
@@ -538,7 +554,7 @@ pub const Decl = struct {
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
         .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "USER", "SEES" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
@@ -1009,6 +1025,13 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             memory_mb = @intCast(mb);
         }
         var cpu_percent: ?u32 = null;
+        var tasks: ?u32 = null;
+        if (find(d, "TASKS")) |c| {
+            const n = try wantNumber(&ctx, c);
+            if (n == 0) return ctx.refuse(c.line, "TASKS 0 is a world that may hold no task at all, and a world with no task cannot run", .{});
+            if (n > 4096) return ctx.refuse(c.line, "TASKS {d}: the number counts tasks -- processes and threads together -- and four thousand is more than this grammar admits for one world", .{n});
+            tasks = @intCast(n);
+        }
         if (find(d, "CPU")) |c| {
             const pct = try wantNumber(&ctx, c);
             if (pct == 0) return ctx.refuse(c.line, "CPU 0 is a service that cannot run: the number is a percentage of ONE core, and 100 is that core", .{});
@@ -1045,7 +1068,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             // cannot ask about something the parser has not read yet
             sees = names;
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .user = user, .sees = sees, .rationale = d.rationale });
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .tasks = tasks, .user = user, .sees = sees, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
 
