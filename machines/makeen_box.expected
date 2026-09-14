@@ -24,6 +24,7 @@ poste: /data is the box's persistent partition, mounted by PID 1 before any worl
 poste: serving -- signalling /run/poste.ready
 boot: poste -- ready (/run/poste.ready)
 boot: judge -- the boot matches its expectation (/etc/expected.emulator, 18 lines)
+boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict matched)
 boot: slot B -- committed: every service is ready and has held its health window and the boot matches its expectation; config.txt now boots B, A is the fallback
 boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 boot: init halts the machine -- reboot(RESTART)
@@ -33,7 +34,7 @@ card: os_prefix=slots/B/
 card: [tryboot]
 card: os_prefix=slots/A/
 steady: the same card, booted again:
-boot: stzos init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
+steady: boot: stzos init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
 steady: boot: console /dev/ttyS1
 steady: boot: slots on /dev/mmcblk0p1 -- A and B
 steady: boot: mount proc at /proc -- done
@@ -59,6 +60,7 @@ steady: poste: /data is the box's persistent partition, mounted by PID 1 before 
 steady: poste: serving -- signalling /run/poste.ready
 steady: boot: poste -- ready (/run/poste.ready)
 steady: boot: judge -- the boot matches its expectation (/etc/expected.emulator, 18 lines)
+steady: boot: journal -- /data/boot.journal: 1 entry verified, entry 2 appended and signed (verdict matched)
 steady: boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 steady: boot: init halts the machine -- reboot(RESTART)
 steady: reboot: Restarting system
@@ -78,6 +80,7 @@ hold: poste: /data is the box's persistent partition, mounted by PID 1 before an
 hold: poste: serving -- signalling /run/poste.ready
 hold: boot: poste -- ready (/run/poste.ready)
 hold: boot: judge -- the boot matches its expectation (/etc/expected.emulator, 18 lines)
+hold: boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict matched)
 hold: boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 hold: boot: --hold: the trial is held, not committed
 hold: boot: --hold: no watchdog to answer here; the trial ends without a commit, the next boot is the committed slot
@@ -107,6 +110,7 @@ unmet: boot: judge -- expected, not said: network lan -- eth0 up 192.168.10.1/24
 unmet: boot: judge -- expected, not said: watchdog armed (/dev/watchdog)
 unmet: boot: judge -- said, not expected: network lan -- eth0: no such interface (NODEV)
 unmet: boot: judge -- said, not expected: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
+unmet: boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict differed)
 unmet: boot: slot B -- held: every service is ready but the boot is not the one expected; not committed, the watchdog is no longer fed -- the next boot is A
 unmet: boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 unmet: boot: init halts the machine -- reboot(RESTART)

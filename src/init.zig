@@ -30,6 +30,7 @@ const machine = @import("machine.zig");
 const plan = @import("plan.zig");
 const netcfg = @import("netcfg.zig");
 const expect = @import("expect.zig");
+const journal = @import("journal.zig");
 
 pub const Options = struct {
     rehearse: bool = false,
@@ -282,6 +283,44 @@ fn identityOf(m: *const machine.Machine, out: *std.Io.Writer) ?Identity {
         return null;
     }
     return .{ .pair = pair, .fingerprint = fingerprintOf(pair.public_key.toBytes()), .created = created };
+}
+
+/// The machine's own record, written once per boot (JRN-1).
+///
+/// Verified BEFORE it is extended, and never extended when it does not
+/// verify: an entry appended after a broken one would launder the
+/// break, and inalterability is exactly the property that a change
+/// cannot go unnoticed. A machine that cannot keep its record has not
+/// booted as declared, so the trial that would have committed is held.
+///
+/// It runs after the verdict, because the verdict is what the entry is
+/// worth recording: this device, this declaration, this judgement.
+fn journalWrite(gpa: std.mem.Allocator, m: *const machine.Machine, id: ?Identity, matched: bool, judged: bool, out: *std.Io.Writer) bool {
+    const path = m.journal orelse return true;
+    const ident = id orelse {
+        out.print("boot: journal -- this machine has no key this boot, so nothing can be signed\n", .{}) catch {};
+        return false;
+    };
+    const existing = std.fs.cwd().readFileAlloc(gpa, path, 1 << 20) catch "";
+    defer if (existing.len > 0) gpa.free(existing);
+    const check = journal.verify(existing, ident.pair.public_key);
+    if (check.broken_at) |n| {
+        out.print("boot: journal -- entry {d} does not verify: {s}. The chain is broken and this boot will NOT extend it\n", .{ n, check.reason }) catch {};
+        return false;
+    }
+    const decl = std.fs.cwd().readFileAlloc(gpa, "/etc/machine", 1 << 20) catch "";
+    defer if (decl.len > 0) gpa.free(decl);
+    const verdict: journal.Verdict = if (!judged) .unjudged else if (matched) .matched else .differed;
+    const seq = journal.append(path, ident.pair, check, m.name, journal.declarationDigest(decl), verdict) catch |e| {
+        out.print("boot: journal -- {s} could not be extended: {s}\n", .{ path, @errorName(e) }) catch {};
+        return false;
+    };
+    if (check.verified == 0) {
+        out.print("boot: journal -- {s}: the chain begins, entry {d} signed by this device (verdict {s})\n", .{ path, seq, verdict.text() }) catch {};
+    } else {
+        out.print("boot: journal -- {s}: {d} entr{s} verified, entry {d} appended and signed (verdict {s})\n", .{ path, check.verified, if (check.verified == 1) "y" else "ies", seq, verdict.text() }) catch {};
+    }
+    return true;
 }
 
 // ---- budgets, held by the kernel (BDG-1) ---------------------------------
@@ -694,7 +733,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     };
 
     // this device's own key, before anything that might want to use it
-    if (identityOf(m, out)) |id| {
+    const device = identityOf(m, out);
+    if (device) |id| {
         try led.say("boot: identity -- ed25519, custody a file at {s} -- {s} on this device, fingerprint {s}\n", .{
             m.identity.?,
             if (id.created) "created" else "already",
@@ -773,8 +813,15 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             if (all_ready and all_proven) {
                 judged = true;
                 const matches = try judgeBoot(gpa, &led, out);
+                // the record, after the verdict and before the commit:
+                // what this boot was is what the entry is worth (JRN-1)
+                const recorded = journalWrite(gpa, m, device, matches, true, out);
                 if (ab) |*s| if (!s.done and !opts.hold) {
-                    if (matches) {
+                    if (matches and !recorded) {
+                        held = true;
+                        try out.print("boot: slot {c} -- held: the boot matched its expectation but this machine could not keep its own record; not committed, the next boot is {c}\n", .{ s.booted orelse '?', s.committed orelse '?' });
+                        s.done = true;
+                    } else if (matches) {
                         if (std.fs.cwd().readFileAlloc(gpa, "/boot/config.txt", 1 << 16)) |cfg| {
                             defer gpa.free(cfg);
                             if (commitText(gpa, cfg, s.committed.?, s.booted.?)) |new_cfg| {

@@ -167,6 +167,15 @@ mkdir -p "$OUT" zig-out/wsl
   # the timeout kills it (the author's first run, 2026-09-12). With no tty
   # on stdin it never touches the terminal.
   ( cd "$OUT" && timeout --foreground 180 bash boot.cmd < /dev/null > transcript.txt 2>&1; echo "qemu exit $?" >> transcript.txt )
+  if grep -q '^  JOURNAL ' "$M" && [ "$SD" != yes ]; then
+    # the same machine, booted again on the same disk (JRN-1). A record of
+    # one boot proves nothing about a chain: the second boot is where the
+    # first boot's entry is read back, verified and extended. A slotted
+    # machine needs no extra boot here -- its steady boot is already this.
+    ( cd "$OUT" && timeout --foreground 120 bash boot.cmd < /dev/null > transcript_again.txt 2>&1; echo "qemu exit $?" >> transcript_again.txt )
+    echo "again: the same machine, booted again on the same disk:" >> "$OUT/transcript.txt"
+    sed -e 's/$//' "$OUT/transcript_again.txt" | sed -n '/^.*boot: stzos init/,$p' | sed -e 's/^.*boot: stzos init/boot: stzos init/' | grep -v '^qemu exit' | sed 's/^/again: /' >> "$OUT/transcript.txt"
+  fi
   if [ "$SD" = yes ] && [ -f "$OUT/boot_hold.cmd" ]; then
     # the second witness of an A/B machine: the card's config.txt after the
     # trial boot (the commit rewrote it, or did not), read from the image
@@ -209,6 +218,10 @@ mkdir -p "$OUT" zig-out/wsl
   fi
   echo "--- transcript"; cat "$OUT/transcript.txt"
   echo "=== judge ==="
+  # ... and ONLY on the first line: a later section's banner (steady:,
+  # again:, hold:, unmet:) kept its prefix when that section was
+  # extracted, and stripping it again here erased which boot a line
+  # belonged to -- several banners reading identically in one file (JRN-1).
   # The transcript is the fixture. Normalise what no two boots share -- the
   # firmware banner and terminal control bytes before PID 1's first line,
   # CRs, and the pids the kernel hands out to the SERVICES -- and diff the
@@ -224,7 +237,7 @@ mkdir -p "$OUT" zig-out/wsl
   # boots reads as KEY1 three times, and a key that changed would read as
   # KEY2 and convict (IDN-1).
   sed -e 's/\r$//' "$OUT/transcript.txt" \
-    | sed -n '/^.*boot: stzos init/,$p' | sed -e 's/^.*boot: stzos init/boot: stzos init/' \
+    | sed -n '/^.*boot: stzos init/,$p' | sed -e '1s/^.*boot: stzos init/boot: stzos init/' \
     | sed -E 's/pid ([2-9]|[1-9][0-9]+)\b/pid N/g' \
     | awk '{ while (match($0, /fingerprint [0-9a-f]+/)) { fp = substr($0, RSTART + 12, RLENGTH - 12); if (!(fp in seen)) { n++; seen[fp] = "KEY" n } $0 = substr($0, 1, RSTART + 11) seen[fp] substr($0, RSTART + RLENGTH) } print }' \
     | sed -e '/^qemu exit$/d; /^qemu exit [0-9]*$/d' > "$OUT/transcript.normalised"

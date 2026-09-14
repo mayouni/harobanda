@@ -22,6 +22,7 @@ const net = @import("net.zig");
 const update = @import("update.zig");
 const project = @import("project.zig");
 const guarantee = @import("guarantee.zig");
+const journal = @import("journal.zig");
 const expect = @import("expect.zig");
 
 pub const version = "0.1.0";
@@ -43,6 +44,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
         \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
+        \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -102,6 +104,66 @@ pub fn main() !u8 {
             return 2;
         }
         try out.print("id: uid={d} gid={d}\n", .{ std.os.linux.getuid(), std.os.linux.getgid() });
+        return 0;
+    }
+    if (std.mem.eql(u8, verb, "journal")) {
+        // The record read back and checked, from inside the machine that
+        // wrote it. An auditor reading this file elsewhere runs the same
+        // check with the same public key; nothing here is privileged
+        // except the private half, which never appears (JRN-1).
+        const path = if (args.len > 2) args[2] else "/etc/machine";
+        const m = (try load(arena, path, out)) orelse return 1;
+        const rec_path = m.journal orelse {
+            try out.print("journal: {s} declares no JOURNAL\n", .{m.name});
+            return 1;
+        };
+        const key_path = m.identity orelse {
+            try out.print("journal: {s} declares no IDENTITY, so nothing signed its record\n", .{m.name});
+            return 1;
+        };
+        const Ed = std.crypto.sign.Ed25519;
+        var seed: [Ed.KeyPair.seed_length]u8 = undefined;
+        const kf = std.fs.cwd().openFile(key_path, .{}) catch |e| {
+            try out.print("journal: cannot read {s}: {s}\n", .{ key_path, @errorName(e) });
+            return 1;
+        };
+        defer kf.close();
+        const kn = kf.readAll(&seed) catch 0;
+        if (kn != seed.len) {
+            try out.print("journal: {s} is not a seed\n", .{key_path});
+            return 1;
+        }
+        const pair = Ed.KeyPair.generateDeterministic(seed) catch |e| {
+            try out.print("journal: the key could not be derived: {s}\n", .{@errorName(e)});
+            return 1;
+        };
+        const text = std.fs.cwd().readFileAlloc(arena, rec_path, 1 << 20) catch |e| switch (e) {
+            // the first boot of a device has nothing to read: PID 1
+            // writes this boot's entry after the verdict, which is after
+            // every world has run. That is an order, not a fault.
+            error.FileNotFound => {
+                try out.print("journal {s} -- no record yet: this is the first boot, and its entry is written after the verdict\n", .{rec_path});
+                return 0;
+            },
+            else => {
+                try out.print("journal: cannot read {s}: {s}\n", .{ rec_path, @errorName(e) });
+                return 1;
+            },
+        };
+        const check = journal.verify(text, pair.public_key);
+        if (check.broken_at) |n| {
+            try out.print("journal {s} -- entry {d} does not verify: {s}\n", .{ rec_path, n, check.reason });
+            try out.print("journal: {d} entr{s} verified before it\n", .{ check.verified, if (check.verified == 1) "y" else "ies" });
+            return 1;
+        }
+        try out.print("journal {s} -- {d} entr{s}, every one chained to the one before it and signed by this device\n", .{ rec_path, check.verified, if (check.verified == 1) "y" else "ies" });
+        var it = std.mem.splitScalar(u8, text, 10);
+        while (it.next()) |raw| {
+            const line = std.mem.trimRight(u8, raw, "\r");
+            if (line.len == 0) continue;
+            const cut = std.mem.indexOf(u8, line, " hash=") orelse line.len;
+            try out.print("journal:   {s}\n", .{line[0..cut]});
+        }
         return 0;
     }
     if (std.mem.eql(u8, verb, "attest")) {
@@ -331,4 +393,5 @@ test {
     _ = net;
     _ = init;
     _ = expect;
+    _ = journal;
 }

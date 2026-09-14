@@ -1,3 +1,107 @@
+# JRN-1 — the machine's own record: chained, signed, and never extended when it does not verify
+
+The third act of 2026-09-14, and the one where the scope mattered more
+than the mechanism.
+
+## Whose record this is
+
+RingServ described the target precisely, from a real constraint: French
+anti-fraud law requires cash-register software to guarantee
+inalterability, security, retention and archiving of sales records, and
+its own shape log is "a sync convenience -- derived from tables,
+deliberately trimmable, holding row images", which is "the opposite on
+every axis" of what that law wants.
+
+So the temptation was to build a business journal here. **This is not
+one.** `JOURNAL` records what the MACHINE was and what it judged of
+itself: one line per boot, carrying the digest of the declaration that
+ran and the verdict PID 1 reached. What a record of business IS belongs
+to the world that keeps it, and a floor that invented that would be
+inventing its customer's domain.
+
+The two compose exactly as MicroRing's identity design says: a device
+signature attributes a record BEFORE it enters any ledger, and a chain
+orders records WITHIN one. A world's journal of signed records sits
+above this one; neither replaces the other.
+
+## The record
+
+Plain text, one entry per line, because a record a person cannot read is
+a record nobody audits:
+
+```
+seq=1 prev=- machine=qemu_identity declaration=a48c59fbf8070f67 verdict=matched hash=<64 hex> sig=<128 hex>
+```
+
+`hash` is sha256 of everything before ` hash=`, and `sig` is Ed25519
+over those same bytes -- the exact bytes on the line, not the object
+they came from, which is MicroRing's rule and removes the class of bug
+where two spellings of one record verify differently.
+
+**No timestamp, deliberately.** The board has no clock of its own and
+nothing on the boot path sets one, so a time in this file would be the
+epoch wearing the authority of a date. The SEQUENCE is the order, and a
+trusted clock is a named seam whose field can be appended to the payload
+the day one exists.
+
+## The rule that makes it worth keeping
+
+**Verified before it is extended, and never extended when it does not
+verify.** An entry appended after a broken one launders the break. A
+machine that cannot keep its record has not booted as declared, so the
+trial that would have committed is HELD -- the journal is not advisory.
+
+And the claim is stated exactly: inalterability is not that a record
+cannot be changed (any file can be changed) but that a change cannot go
+UNNOTICED.
+
+## Judged
+
+The chain's logic is judged beside the code (`src/journal.zig`): three
+entries verify; one word changed in entry two -- the verdict, which is
+exactly the field someone would want to change -- is caught with its
+position and its reason; a signature from another device is refused.
+
+`qemu_identity` is now booted TWICE on the same disk, because a record
+of one boot proves nothing about a chain (46 lines):
+
+```
+boot: start record -- pid N -- /stzos journal
+journal /data/boot.journal -- no record yet: this is the first boot, and its entry is written after the verdict
+boot: judge -- the boot matches its expectation (/etc/expected, 13 lines)
+boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict matched)
+...
+again: journal /data/boot.journal -- 1 entry, every one chained to the one before it and signed by this device
+again: journal:   seq=1 prev=- machine=qemu_identity declaration=a48c59fbf8070f67 verdict=matched
+again: boot: journal -- /data/boot.journal: 1 entry verified, entry 2 appended and signed (verdict matched)
+```
+
+`makeen_box` (121 lines) carries it across four card boots, and the
+entry the UNMET trial wrote is the one worth reading:
+
+```
+unmet: boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict differed)
+```
+
+The box wrote down that its boot was not the declared one. That is the
+line an auditor wants and the line a vendor's box would never keep.
+
+## The defect the repeated boots exposed
+
+The final normaliser stripped everything before `boot: stzos init` on
+EVERY line that matched, not only the first -- so the banner of a later
+section (`steady:`, `again:`) lost its prefix, and several boots' first
+lines read identically in one file. It went unnoticed while no machine
+booted twice. Fixed to the first line only, which is the line the
+firmware noise actually precedes.
+
+## The law this pays for
+
+**A record is the floor's or a world's, never both.** The machine says
+what the machine did; what a business record is stays the business's.
+
+---
+
 # IDN-1 — a device is somebody: a key made once, kept where the power cannot take it, and a court that boots the same card twice
 
 The second act of 2026-09-14. A box's name is a label; its KEY is who it

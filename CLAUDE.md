@@ -81,6 +81,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A record is the FLOOR's or a world's, never both** (JRN-1): the
+  machine's journal says what the machine was and what it judged of
+  itself; what a record of business IS belongs to the world that keeps
+  it. Verify a chain BEFORE extending it and never extend a broken one
+  -- an entry appended after a break launders it. Inalterability is
+  that a change cannot go unnoticed, not that a file cannot be changed;
+  claim the first and never the second.
 - **A device's name is its KEY, and it must survive the power**
   (IDN-1): `IDENTITY <path>` must sit inside a declared persistent
   mount, or the box is a new device every morning. Ed25519, and the

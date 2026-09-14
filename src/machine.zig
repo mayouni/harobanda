@@ -238,6 +238,12 @@ pub const Machine = struct {
     /// file on a declared partition, and the transcript says so rather
     /// than implying it (IDN-1).
     identity: ?[]const u8,
+    /// where this machine keeps its OWN record: one line per boot,
+    /// hash-chained and signed by the device's key. It records what the
+    /// machine was and what it judged of itself -- never what a world
+    /// did, which is the world's to keep. Needs an IDENTITY to sign
+    /// with and a persistent mount to survive on (JRN-1).
+    journal: ?[]const u8,
     /// the boot partition that holds config.txt and the two slots, when
     /// the machine updates A/B (SLOTS "/dev/mmcblk0p1"); null: single boot
     slots: ?[]const u8,
@@ -440,7 +446,7 @@ const Decl = struct {
 
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
-        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY" },
+        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL" },
         .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "USER" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
@@ -687,6 +693,14 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         const path = try wantString(&ctx, c);
         if (path.len == 0 or path[0] != '/') return ctx.refuse(c.line, "IDENTITY is the absolute path of this device's key, not '{s}'", .{path});
         identity = path;
+    }
+    var journal: ?[]const u8 = null;
+    if (find(md, "JOURNAL")) |c| {
+        if (profile != .hosted) return ctx.refuse(c.line, "JOURNAL is a hosted machine's declaration; a machine of PROFILE {s} keeps its record in its own substrate", .{@tagName(profile)});
+        if (identity == null) return ctx.refuse(c.line, "a journal is signed by the device, and this machine declares no IDENTITY: an unsigned record is anybody's", .{});
+        const path = try wantString(&ctx, c);
+        if (path.len == 0 or path[0] != '/') return ctx.refuse(c.line, "JOURNAL is the absolute path of this machine's record, not '{s}'", .{path});
+        journal = path;
     }
     var slots: ?[]const u8 = null;
     if (find(md, "SLOTS")) |c| {
@@ -942,6 +956,15 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         }
         if (!kept) return ctx.refuse(md.line, "IDENTITY {s} is where the key lives, and no declared MOUNT keeps it: a key on a filesystem that dies with the power is a new device every morning", .{key});
     }
+    if (journal) |rec| {
+        var kept = false;
+        for (mounts.items) |mt| {
+            if (mt.fs != .ext4 and mt.fs != .vfat) continue;
+            if (!std.mem.startsWith(u8, rec, mt.at)) continue;
+            if (mt.at.len == 1 or rec.len == mt.at.len or rec[mt.at.len] == '/') kept = true;
+        }
+        if (!kept) return ctx.refuse(md.line, "JOURNAL {s} is where the record lives, and no declared MOUNT keeps it: a record that dies with the power is not a record", .{rec});
+    }
 
     // pins
     var pins: std.ArrayList(Pin) = .{};
@@ -967,6 +990,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .console = console,
         .slots = slots,
         .identity = identity,
+        .journal = journal,
         .rationale = md.rationale,
         .services = svc_slice,
         .capabilities = cap_slice,

@@ -12,7 +12,35 @@ attest qemu_identity -- ed25519, fingerprint KEY1
 attest: signed 21 bytes with this device's key and verified them against its public half
 attest: one bit flipped in the message, and the same signature is refused
 boot: attest (pid N) exited 0
-boot: judge -- the boot matches its expectation (/etc/expected, 11 lines)
+boot: start record -- pid N -- /stzos journal
+journal /data/boot.journal -- no record yet: this is the first boot, and its entry is written after the verdict
+boot: record (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 13 lines)
+boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict matched)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system
+again: the same machine, booted again on the same disk:
+again: boot: stzos init -- machine qemu_identity (hosted / x86_64 / qemu_pc) -- pid 1
+again: boot: console /dev/ttyS0
+again: boot: mount proc at /proc -- done
+again: boot: mount sysfs at /sys -- done
+again: boot: mount devtmpfs at /dev -- done
+again: boot: mount ext4 at /data -- done
+again: boot: grant process (effectful)
+again: boot: grant filesystem (effectful)
+again: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint KEY1
+again: boot: start attest -- pid N -- /stzos attest
+again: attest qemu_identity -- ed25519, fingerprint KEY1
+again: attest: signed 21 bytes with this device's key and verified them against its public half
+again: attest: one bit flipped in the message, and the same signature is refused
+again: boot: attest (pid N) exited 0
+again: boot: start record -- pid N -- /stzos journal
+again: journal /data/boot.journal -- 1 entry, every one chained to the one before it and signed by this device
+again: journal:   seq=1 prev=- machine=qemu_identity declaration=a48c59fbf8070f67 verdict=matched
+again: boot: record (pid N) exited 0
+again: boot: judge -- the boot matches its expectation (/etc/expected, 13 lines)
+again: boot: journal -- /data/boot.journal: 1 entry verified, entry 2 appended and signed (verdict matched)
+again: boot: every service has ended -- init has nothing left to keep alive
+again: boot: init halts the machine -- reboot(RESTART)
+again: reboot: Restarting system

@@ -19,7 +19,8 @@ DEFINE MACHINE qemu_identity AS (
   ARCH x86_64,
   KERNEL linux,
   CONSOLE "/dev/ttyS0",
-  IDENTITY "/data/device.key"
+  IDENTITY "/data/device.key",
+  JOURNAL "/data/boot.journal"
 ) RATIONALE "The smallest machine that is somebody: one key, made once, kept where the power cannot take it"
 
 DEFINE CAPABILITY process AS (
@@ -42,3 +43,10 @@ DEFINE SERVICE attest AS (
   RESTART never,
   NEEDS [process, filesystem]
 ) RATIONALE "The witness: it signs with the device's own key, verifies the signature, and then shows a tampered message being refused"
+
+DEFINE SERVICE record AS (
+  RUN ["/stzos", "journal"],
+  RESTART never,
+  AFTER [attest],
+  NEEDS [process, filesystem]
+) RATIONALE "The record, read back from inside the machine that wrote it: every entry chained and signed, printed without its hash and without its signature because what an auditor reads first is what happened"

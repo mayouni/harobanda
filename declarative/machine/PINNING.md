@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-3809f24df3232e5d2c1b9a100a60379567e49883d687787af5ac2202eb47b7fc
+b41640da56e91a49e0a9d98e60d661ed19adfbaf4da223895c67e2b7b1a1b395
 ```
 
-(Before the IDENTITY seat of 2026-09-14 (IDN-1):
+(Before the JOURNAL seat of 2026-09-14 (JRN-1):
+`3809f24df3232e5d2c1b9a100a60379567e49883d687787af5ac2202eb47b7fc`,
+85/85; the widening added A20, R67, R68, R69 and gave A2 its `JOURNAL`.
+Before the IDENTITY seat of 2026-09-14 (IDN-1):
 `0f8f291470adba76343ceecf6d102e027acf5b33e0737fb09a44542478ddb719`,
 81/81; the widening added A19, R64, R65, R66 and gave A2 its
 `IDENTITY`. Before the EGRESS seat of 2026-09-14 (EGR-1):
@@ -59,7 +62,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **85/85** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **89/89** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -114,6 +117,30 @@ not committed ... the next boot is A`, and the card read back still
 booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
+
+## The machine's own record, chained and signed (JRN-1)
+
+`JOURNAL` on a hosted MACHINE: one line per boot, hash-chained and
+signed by the device's key, recording what the machine WAS and what it
+judged of itself — never what a world did, which is the world's to keep.
+Fixture-first: A20 accepts it, R67 refuses a journal on a machine with
+no IDENTITY ("an unsigned record is anybody's"), R68 refuses one that
+dies with the power, R69 a relative path. **89/89**, from 85/85.
+
+The chain's own logic is judged beside the code (`src/journal.zig`, a
+unit test): three entries verify, a single word changed in entry two is
+caught with its position and its reason, and a signature from another
+device is refused. The claim is the fiscal one, stated exactly:
+inalterability is not that a record cannot be changed — any file can —
+but that a change cannot go UNNOTICED.
+
+Two machines keep one. `qemu_identity` is booted TWICE on the same disk
+(**46 lines**): the first boot finds no record and writes entry 1 after
+its verdict; the second reads entry 1 back from inside the machine,
+verifies it, prints it, and appends entry 2. `makeen_box` (**121
+lines**) carries it across four card boots, and the entry the unmet
+trial wrote is the one worth reading: `verdict differed` — the box
+writing down that its boot was not the declared one.
 
 ## The device's own name, judged across four boots (IDN-1)
 

@@ -429,7 +429,12 @@ diagram. This is where the floor pays each band of it:
 2. ~~Budgets: a memory and CPU ceiling per service.~~ **Built (BDG-1).**
 3. The envelope at the kernel: namespaces and allowed system calls
    derived from CAPABILITY.
-4. The signed journal and a trusted clock.
+4. ~~The signed journal~~ **Built (JRN-1)** as the machine's own boot
+   record: hash-chained, signed by the device's key, verified before it
+   is extended. A TRUSTED CLOCK is still the seam -- the entries carry
+   no timestamp, because a board with no clock would be writing the
+   epoch wearing the authority of a date, and the sequence is the
+   order. A world's journal of business records sits above this one.
 5. ~~The per-device identity.~~ **Built (IDN-1)** as `IDENTITY` on a
    hosted machine: an Ed25519 key made on first boot and kept on a
    declared partition. What remains is the fleet's half -- a box
