@@ -40,6 +40,19 @@
         "members": 2,
         "link": "salle"
       }
+    },
+    {
+      "id": "FA4",
+      "name": "the till IS the peer the box promises an address to, and the fleet can now say so",
+      "source": "DEFINE FLEET salle_makeen AS (\n  LINK salle\n) RATIONALE \"one estate\"\nDEFINE MEMBER boitier AS (\n  DECLARATION \"box.machine\",\n  HARDWARE \"52:54:00:12:34:01\"\n) RATIONALE \"x\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:34:61\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "box.machine": "DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER imprimante AS (NETWORK salle, HARDWARE \"52:54:00:12:34:60\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\nDEFINE PEER caisse AS (NETWORK salle, HARDWARE \"52:54:00:12:34:61\", ADDRESS \"192.168.10.40\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 2,
+        "link": "salle"
+      }
     }
   ],
   "rejects": [
@@ -162,6 +175,56 @@
       "source": "DEFINE FLEET salle_makeen AS () RATIONALE \"one estate\"\nDEFINE MEMBER absent AS (\n  DECLARATION \"nowhere.machine\"\n) RATIONALE \"x\"\n",
       "files": {},
       "refusal": "cannot be read"
+    },
+    {
+      "id": "FR14",
+      "name": "a member's hardware is six pairs, because that is what a server recognises",
+      "source": "DEFINE FLEET salle_makeen AS (\n  LINK salle\n) RATIONALE \"one estate\"\nDEFINE MEMBER boitier AS (\n  DECLARATION \"box.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"the till\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "box.machine": "DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER imprimante AS (NETWORK salle, HARDWARE \"52:54:00:12:34:60\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\nDEFINE PEER caisse AS (NETWORK salle, HARDWARE \"52:54:00:12:34:61\", ADDRESS \"192.168.10.40\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "HARDWARE is six pairs"
+    },
+    {
+      "id": "FR15",
+      "name": "one device, one member",
+      "source": "DEFINE FLEET salle_makeen AS (\n  LINK salle\n) RATIONALE \"one estate\"\nDEFINE MEMBER boitier AS (\n  DECLARATION \"box.machine\",\n  HARDWARE \"52:54:00:12:34:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:34:61\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "box.machine": "DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER imprimante AS (NETWORK salle, HARDWARE \"52:54:00:12:34:60\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\nDEFINE PEER caisse AS (NETWORK salle, HARDWARE \"52:54:00:12:34:61\", ADDRESS \"192.168.10.40\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "is already boitier's hardware"
+    },
+    {
+      "id": "FR16",
+      "name": "a device that asks on a served link and is in nobody's register will never get an address",
+      "source": "DEFINE FLEET salle_makeen AS (\n  LINK salle\n) RATIONALE \"one estate\"\nDEFINE MEMBER boitier AS (\n  DECLARATION \"box.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER etranger AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:77:77:77\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "box.machine": "DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER imprimante AS (NETWORK salle, HARDWARE \"52:54:00:12:34:60\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\nDEFINE PEER caisse AS (NETWORK salle, HARDWARE \"52:54:00:12:34:61\", ADDRESS \"192.168.10.40\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "promises no address to"
+    },
+    {
+      "id": "FR17",
+      "name": "a device cannot be promised one address and take another",
+      "source": "DEFINE FLEET salle_makeen AS (\n  LINK salle\n) RATIONALE \"one estate\"\nDEFINE MEMBER boitier AS (\n  DECLARATION \"box.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER poste AS (\n  DECLARATION \"poste.machine\",\n  HARDWARE \"52:54:00:12:34:61\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "box.machine": "DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER imprimante AS (NETWORK salle, HARDWARE \"52:54:00:12:34:60\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\nDEFINE PEER caisse AS (NETWORK salle, HARDWARE \"52:54:00:12:34:61\", ADDRESS \"192.168.10.40\") RATIONALE \"x\"\n",
+        "poste.machine": "DEFINE MACHINE poste AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.7/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "is promised 192.168.10.40"
+    },
+    {
+      "id": "FR18",
+      "name": "the server is not one of the devices it serves",
+      "source": "DEFINE FLEET salle_makeen AS (\n  LINK salle\n) RATIONALE \"one estate\"\nDEFINE MEMBER boitier AS (\n  DECLARATION \"box.machine\",\n  HARDWARE \"52:54:00:12:34:60\"\n) RATIONALE \"x\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:34:61\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "box.machine": "DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER imprimante AS (NETWORK salle, HARDWARE \"52:54:00:12:34:60\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\nDEFINE PEER caisse AS (NETWORK salle, HARDWARE \"52:54:00:12:34:61\", ADDRESS \"192.168.10.40\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "cannot be its own peer"
     }
   ]
 }

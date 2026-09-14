@@ -29,10 +29,20 @@ OB=zig-out/image/$BOX
 OT=zig-out/image/$TILL
 LOG=zig-out/wsl/names.txt
 PORT=${STZOS_NAMES_PORT:-14567}
-TILL_MAC=52:54:00:12:34:61        # the `caisse` peer, declared in the box
-STRANGER_MAC=52:54:00:77:77:77    # nobody
-BOX_MAC=52:54:00:12:34:01
+FLEET=machines/salle_makeen.fleet
+S=zig-out/cross/x86_64-linux-musl/stzos
+# Read from the DECLARATION, never from a constant here (HDW-1). These
+# two addresses used to be literals in this file, which made this script
+# the only place in the estate where a fact about a deployment lived
+# outside a declaration -- and the fleet court had no way to check that
+# the address the box promises and the device that claims it are one.
+TILL_MAC=$("$S" fleet "$FLEET" hardware caisse)
+BOX_MAC=$("$S" fleet "$FLEET" hardware boitier)
+STRANGER_MAC=52:54:00:77:77:77    # nobody, and deliberately in no declaration
 mkdir -p zig-out/wsl
+if [ -z "$TILL_MAC" ] || [ -z "$BOX_MAC" ]; then
+  echo "the fleet did not say which devices these are -- $S fleet $FLEET"; exit 1
+fi
 
 # Rewrite a derived boot.cmd onto the pair's own wire. The user-mode
 # netdev QEMU is given by default is a network of one; a socket netdev

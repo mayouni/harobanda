@@ -50,7 +50,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos ask    <name>                          (what does a name mean on this network? from inside a device on it)
         \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
-        \\  stzos fleet  <file.fleet> [verify <member> <record>]   (machines judged together; one device's record checked by another)
+        \\  stzos fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
         \\  stzos court  --fleet [declarative/fleet/fixtures.json]
         \\  stzos version
         \\
@@ -292,6 +292,26 @@ pub fn main() !u8 {
             else => return e,
         };
 
+        if (args.len >= 4 and std.mem.eql(u8, args[3], "hardware")) {
+            // One line, for a script that needs to plug this member in.
+            // Before HDW-1 the hardware address of a device under test
+            // was a constant in a shell script, which is the one place a
+            // fact about a deployment must never live.
+            if (args.len < 5) {
+                try out.print("stzos: fleet hardware takes a member\n", .{});
+                return 1;
+            }
+            const m = f.member(args[4]) orelse {
+                try out.print("fleet {s} -- there is no member called {s}\n", .{ f.name, args[4] });
+                return 1;
+            };
+            const hw = m.hardware_text orelse {
+                try out.print("fleet {s} -- {s} does not say which device it is\n", .{ f.name, args[4] });
+                return 1;
+            };
+            try out.print("{s}\n", .{hw});
+            return 0;
+        }
         if (args.len >= 4 and std.mem.eql(u8, args[3], "verify")) {
             if (args.len < 6) {
                 try out.print("stzos: fleet verify takes a member and a record file\n", .{});
@@ -344,6 +364,15 @@ pub fn main() !u8 {
                 if (n.domain) |d| try out.print(", serves {s}", .{d});
             };
             try out.print(")", .{});
+            // which physical unit, and which promise it answers to. The
+            // join is the whole point of HARDWARE being here (HDW-1).
+            if (m.hardware_text) |hw| {
+                if (fleet.promisedTo(f, m)) |p| {
+                    try out.print(" -- {s}, promised {s} as {s}", .{ hw, p.address, p.name });
+                } else {
+                    try out.print(" -- {s}", .{hw});
+                }
+            }
             if (m.fingerprint) |fp| {
                 try out.print(" -- enrolled, fingerprint {s}\n", .{fp[0..]});
             } else if (m.machine.journal != null) {

@@ -22,5 +22,5 @@ foreign: fleet atelier -- 0 entries verified before it
 unenrolled: fleet atelier -- temoin has no KEY in this fleet: nobody can speak for its records until its own fingerprint is enrolled
 === the estate's own fleet, judged ===
 salle: fleet salle_makeen -- 2 members on salle, served by boitier -- judged, no refusal
-salle:   boitier -- makeen_names (makeen_names.machine, 192.168.10.1/24, serves makeen) -- not enrolled
-salle:   caisse -- caisse_makeen (caisse_makeen.machine, asks) -- not enrolled
+salle:   boitier -- makeen_names (makeen_names.machine, 192.168.10.1/24, serves makeen) -- 52:54:00:12:34:01 -- not enrolled
+salle:   caisse -- caisse_makeen (caisse_makeen.machine, asks) -- 52:54:00:12:34:61, promised 192.168.10.40 as caisse -- not enrolled

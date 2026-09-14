@@ -460,7 +460,10 @@ diagram. This is where the floor pays each band of it:
 11. ~~The fleet court: a set of machine files judged together.~~
     **Built (FLT-1)**, and it turned out to be two things: the checks
     no single machine can fail, and the enrolment that makes one
-    device's record checkable by another.
+    device's record checkable by another. HDW-1 then closed its own
+    first seam: a member says WHICH DEVICE it is, so the address a
+    server promises and the machine that will claim it are held against
+    each other instead of agreeing by hand in a script.
 12. Haro's runtime as the image's second binary, and Ring++'s
     Linux-class row measured on the three machines.
 

@@ -5,8 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-caafed59342bc87c75efe291696eb4c493ff7a6a1af72048fa1aadb9454c0dee
+bb1f8349ec64fc458b5a4c6a80dbd30a8ab400cf853640080ae134c4730e4c3b
 ```
+
+(Before the HARDWARE clause of 2026-09-14 (HDW-1):
+`caafed59342bc87c75efe291696eb4c493ff7a6a1af72048fa1aadb9454c0dee`,
+16/16; the widening added FA4 and FR14-FR18, and gave MEMBER its
+`HARDWARE`.)
 
 Born at 16/16 with the fleet court of 2026-09-14 (FLT-1). Re-pin this
 digest in the same commit that changes `fixtures.json`, as the machine
@@ -16,7 +21,7 @@ grammar's own `PINNING.md` requires of itself.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/fleet.zig`) | `zig build court` / `stzos court --fleet` | **16/16** — 3 accepts, 13 rejects |
+| Zig (`src/fleet.zig`) | `zig build court` / `stzos court --fleet` | **22/22** — 4 accepts, 18 rejects |
 
 `zig build court` runs BOTH grammars: the machine fixtures first, the
 fleet fixtures after. One step, two courts, because a fleet is no better
@@ -40,6 +45,23 @@ The parser takes a `Resolver` rather than reading the disk: the court
 hands over the fixture's own texts, the CLI reads files beside the fleet
 file. A fixture stays one self-contained case and the court needs no
 scratch directory.
+
+## The join, and the constant it replaced (HDW-1)
+
+`HARDWARE` on a MEMBER says which physical unit it is, and five
+refusals hold the promise against the machine: hardware that is not an
+address (FR14), two members claiming one device (FR15), a device that
+asks on a served link and is in nobody's register (FR16), a device
+promised one address that takes another (FR17), and a server that
+appears in its own register (FR18). **22/22**, from 16/16.
+
+What it removed is worth more than what it added. The correspondence
+between the address `makeen_names` promises and the device that claims
+it lived in a `-device ...,mac=` flag in `experiment/os6_names.sh`.
+That script now reads both addresses through `stzos fleet <file>
+hardware <member>`, and the proof is that **the 66-line names pin
+matched unchanged** on the first run afterwards: the declaration
+supplies exactly what the constants did, and now the court can check it.
 
 ## The checks these fixtures exist for
 

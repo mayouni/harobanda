@@ -34,6 +34,7 @@ declares a `FLEET` is refused by name, and a fleet file that declares a
 |---|---|---|
 | `DECLARATION` | string | required — a `.machine` file, resolved beside this fleet file. It must be readable (FR13) and must itself be judged; a member's own refusal is reported WITH the member, because a line number in a file the reader did not open is not an answer (FR12) |
 | `KEY` | string | optional — the member's enrolled Ed25519 **public** key, 64 hex characters (FR6) |
+| `HARDWARE` | string | optional — which physical unit this member is, six pairs of hex (FR14). One device, one member (FR15) |
 
 ## Enrolment is not prophecy
 
@@ -53,6 +54,35 @@ That is the whole of enrolment and it is deliberately manual: a fleet
 that enrolled whatever key answered would attribute records to whatever
 device happened to be plugged in.
 
+## Why HARDWARE is here and not in the machine file
+
+A machine file is a DESIGN, and one design images many devices. A
+hardware address belongs to one of them. It is the same distinction the
+key already makes: both are facts a DEPLOYMENT learns, never facts a
+design states, so both live on the member.
+
+What it buys is the join. `machines/makeen_names.machine` promises
+`192.168.10.40` to a peer identified by a hardware address;
+`machines/caisse_makeen.machine` is the till and says nothing about its
+own hardware. Until HDW-1 the only thing connecting the two was a
+`-device ...,mac=` flag inside `experiment/os6_names.sh` — the one fact
+about that deployment that was not declared anywhere, in a repository
+whose whole argument is that such facts must be.
+
+With `HARDWARE` on the member the court holds the promise and the
+machine against each other (FR16, FR17, FR18), the roll says which
+promise each member answers to, and the script reads the address from
+the declaration through `stzos fleet <file> hardware <member>` instead
+of carrying a constant.
+
+```
+caisse -- caisse_makeen (caisse_makeen.machine, asks) -- 52:54:00:12:34:61, promised 192.168.10.40 as caisse
+```
+
+A `PEER` that no member claims is NOT refused: the kitchen printer is a
+declared peer of the box and will never be an stzos machine. The fleet
+checks the members it has, and says nothing about the rest of the wire.
+
 ## What the fleet refuses (the checks no single machine can fail)
 
 | id | refused |
@@ -70,6 +100,11 @@ device happened to be plugged in.
 | FR11 | a `LINK` with a member asking by dhcp and no member serving it |
 | FR12 | a member whose own declaration is refused |
 | FR13 | a member naming a declaration that cannot be read |
+| FR14 | a `HARDWARE` that is not six pairs of hex |
+| FR15 | two members declaring the same hardware — one device, one member |
+| FR16 | a member that asks by dhcp on a served link whose hardware the server has in no `PEER`: it would never get an address, and there is no pool to fall back on |
+| FR17 | a member the server promises one address and which takes another itself |
+| FR18 | the link's own server declaring hardware that appears in its own register — a server does not ask itself for an address |
 
 ## Attribution: one machine verifying another's record
 
@@ -96,10 +131,11 @@ reported rather than guessed at.
 
 ## Named seams (stated, not hidden)
 
-- **A machine cannot say its own hardware address**, so a fleet cannot
-  check that the `PEER` a server declares for a link is the member that
-  will ask for it. The count and the addresses are checked; the identity
-  of the asking device is not.
+- ~~A machine cannot say its own hardware address.~~ **Closed (HDW-1)**
+  by putting `HARDWARE` on the MEMBER rather than the machine. What is
+  still open: a member's hardware is declared, never OBSERVED, so a
+  device plugged in with a different address is caught by the server
+  refusing it a lease and not by the court.
 - **Forwarding between links** — a fleet declares one `LINK`. A machine
   that routes between two is an act nothing declares yet.
 - **Revocation** — a fleet records the key a device has. Nothing yet

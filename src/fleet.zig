@@ -97,6 +97,18 @@ pub const Member = struct {
     /// the enrolled public key, absent until the device has booted once
     key: ?Ed25519.PublicKey,
     key_text: ?[]const u8,
+    /// WHICH PHYSICAL UNIT this member is, on the wire (HDW-1).
+    ///
+    /// It belongs here and not in the machine file for the same reason
+    /// the key does: a machine file is a DESIGN that can image many
+    /// devices, and a hardware address is a fact about one of them. Both
+    /// are things a deployment learns, never things a design states.
+    ///
+    /// With it, the fleet can check the one thing NAM-1 and FLT-1 left
+    /// to a shell script: that the addresses a server promises and the
+    /// members that will ask for them are the same devices.
+    hardware: ?[6]u8,
+    hardware_text: ?[]const u8,
     /// the fingerprint that key implies -- the same 16 hex the device
     /// prints on its own console, so the two can be compared by eye
     fingerprint: ?[16]u8,
@@ -196,6 +208,14 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
             fingerprint = journal.fingerprintOf(key.?.toBytes());
         }
 
+        var hardware: ?[6]u8 = null;
+        var hardware_text: ?[]const u8 = null;
+        if (machine.find(d, "HARDWARE")) |c| {
+            const t = try machine.wantString(&ctx, c);
+            hardware = machine.parseMac(t) orelse return ctx.refuse(c.line, "HARDWARE is six pairs of hex separated by colons (52:54:00:12:34:61), and '{s}' is not: it is what a server recognises this device by, so it is the device's and not a word for it", .{t});
+            hardware_text = t;
+        }
+
         const text = resolver.read(path) orelse return ctx.refuse(d.line, "MEMBER {s} names {s}, which cannot be read from beside this fleet file", .{ d.name, path });
         var inner = Refusal{};
         const m = machine.declare(arena, text, &inner) catch |e| switch (e) {
@@ -216,6 +236,9 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
             if (key_text != null and e.key_text != null and std.mem.eql(u8, key_text.?, e.key_text.?)) {
                 return ctx.refuse(d.line, "this key is already {s}'s key: two members cannot be the same device, and a key that appears twice attributes one device's records to two", .{e.name});
             }
+            if (hardware != null and e.hardware != null and std.mem.eql(u8, &hardware.?, &e.hardware.?)) {
+                return ctx.refuse(d.line, "{s} is already {s}'s hardware: one device, one member", .{ hardware_text.?, e.name });
+            }
         }
 
         try members.append(arena, .{
@@ -224,6 +247,8 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
             .declaration = path,
             .key = key,
             .key_text = key_text,
+            .hardware = hardware,
+            .hardware_text = hardware_text,
             .fingerprint = fingerprint,
             .machine = m,
             .rationale = d.rationale,
@@ -268,6 +293,37 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
             }
         }
 
+        // Now that a member can say WHICH DEVICE it is, the promise and
+        // the machine can be held against each other. This is the check
+        // the seat exists for: until HDW-1 the only thing connecting the
+        // address a server promises to the device that will claim it was
+        // a `-device ...,mac=` flag in a shell script.
+        if (serves) |sv| {
+            for (f.members) |m| {
+                const hw = m.hardware orelse continue;
+                const mine = linkOf(m.machine, wire) orelse continue;
+                var promised: ?machine.Peer = null;
+                for (sv.machine.peers) |p| {
+                    if (!std.mem.eql(u8, p.network, wire)) continue;
+                    if (std.mem.eql(u8, &p.hardware, &hw)) promised = p;
+                }
+                if (std.mem.eql(u8, m.name, sv.name)) {
+                    // the server answering its own register would be a
+                    // machine handing itself an address it already has
+                    if (promised) |p| return ctx.refuse(m.line, "{s} serves {s} and cannot be its own peer: {s} is declared as {s}, and a server does not ask itself for an address", .{ m.name, wire, m.hardware_text.?, p.name });
+                    continue;
+                }
+                switch (mine.address) {
+                    .dhcp => if (promised == null) {
+                        return ctx.refuse(m.line, "{s} promises no address to {s}: a device that asks on {s} and is in nobody's register will never get one, and no pool exists to fall back on", .{ sv.name, m.hardware_text.?, wire });
+                    },
+                    .static => |st| if (promised) |p| {
+                        return ctx.refuse(m.line, "{s} is promised {s} by {s} and takes {s} itself: one device, one address, written in one place", .{ m.hardware_text.?, p.address, sv.name, st.text });
+                    },
+                }
+            }
+        }
+
         // an address the server has PROMISED is not free to take: the
         // fleet has one place where each address is spoken for, and a
         // second claim on it is a second source of truth
@@ -300,6 +356,21 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
 }
 
 // ---- attribution: one machine verifying another's record ---------------
+
+/// The peer the link's server promises this member an address as, if
+/// the member says which device it is and the server has it in its
+/// register. It is the join HDW-1 exists to make.
+pub fn promisedTo(f: Fleet, m: Member) ?machine.Peer {
+    const wire = f.link orelse return null;
+    const hw = m.hardware orelse return null;
+    const sv = f.server() orelse return null;
+    if (std.mem.eql(u8, sv.name, m.name)) return null;
+    for (sv.machine.peers) |p| {
+        if (!std.mem.eql(u8, p.network, wire)) continue;
+        if (std.mem.eql(u8, &p.hardware, &hw)) return p;
+    }
+    return null;
+}
 
 pub const Attribution = union(enum) {
     /// the record is this member's, entire and in order
@@ -446,6 +517,39 @@ test "a record altered after the fact is refused, and so is one signed by anothe
         .broken => |c| try testing.expectEqual(@as(?usize, 1), c.broken_at),
         else => return error.ForeignKeyAccepted,
     }
+}
+
+test "the promise and the machine are held against each other once a member says which device it is" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const t = T{ .files = &.{ .{ "box.machine", box_src }, .{ "till.machine", till_src } } };
+    var refusal = Refusal{};
+
+    // the till IS the device the box promises 192.168.10.40 to
+    const good =
+        \\DEFINE FLEET f AS (LINK salle) RATIONALE "x"
+        \\DEFINE MEMBER boitier AS (DECLARATION "box.machine", HARDWARE "52:54:00:12:34:01") RATIONALE "x"
+        \\DEFINE MEMBER caisse AS (DECLARATION "till.machine", HARDWARE "52:54:00:12:34:61") RATIONALE "x"
+        \\
+    ;
+    const f = try declare(arena, good, t.resolver(), &refusal);
+    const till = f.member("caisse").?;
+    const p = promisedTo(f, till) orelse return error.NotJoined;
+    try testing.expectEqualStrings("caisse", p.name);
+    try testing.expectEqualStrings("192.168.10.40", p.address);
+    // the box is the server, so it is promised nothing
+    try testing.expect(promisedTo(f, f.member("boitier").?) == null);
+
+    // the same fleet with a device the box has never heard of
+    const stranger =
+        \\DEFINE FLEET f AS (LINK salle) RATIONALE "x"
+        \\DEFINE MEMBER boitier AS (DECLARATION "box.machine") RATIONALE "x"
+        \\DEFINE MEMBER etranger AS (DECLARATION "till.machine", HARDWARE "52:54:00:77:77:77") RATIONALE "x"
+        \\
+    ;
+    try testing.expectError(error.Refused, declare(arena, stranger, t.resolver(), &refusal));
+    try testing.expect(std.mem.indexOf(u8, refusal.message, "promises no address to") != null);
 }
 
 test "the fleet refuses what no single machine can be wrong about" {

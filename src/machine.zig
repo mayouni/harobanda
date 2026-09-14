@@ -523,7 +523,7 @@ fn allowedClauses(kind: Kind) []const []const u8 {
         .USER => &.{ "UID", "GID" },
         .PEER => &.{ "NETWORK", "HARDWARE", "ADDRESS" },
         .FLEET => &.{"LINK"},
-        .MEMBER => &.{ "DECLARATION", "KEY" },
+        .MEMBER => &.{ "DECLARATION", "KEY", "HARDWARE" },
     };
 }
 

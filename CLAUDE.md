@@ -84,6 +84,12 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A fact about a DEPLOYMENT lives in a declaration, or it is not a
+  fact anyone can check** (HDW-1): when one turns up in a script, move
+  it and DELETE the constant -- never add a second place that has to
+  agree. A hardware address and an enrolled key both belong on a fleet
+  MEMBER rather than in a machine file, because a machine file is a
+  design that images many devices and these are facts about one.
 - **A claim only its author can check is not evidence** (FLT-1): a
   device signs its record with a key nobody else holds, so a FLEET
   records the PUBLIC half and any holder of that file can verify any
@@ -283,13 +289,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   daemon's own signal, no timer). The health seat is HEALTH since
   HLT-1 (2026-09-13); a bounded window for the TRIAL itself is still a
   seam.
+- (done 2026-09-14, HDW-1) The hardware clause: `HARDWARE` on a fleet
+  MEMBER, 22/22, and `experiment/os6_names.sh` reads the addresses from
+  the declaration instead of carrying them as constants. Still open:
+  hardware is DECLARED, never observed; revocation (a key a device USED
+  to have); forwarding between two links.
 - (done 2026-09-14, FLT-1) The fleet court: `FLEET` and `MEMBER` in a
-  second file of the same language, 16/16 fixtures, and one device's
-  signed record verified by a holder of nothing but its public key.
-  Named seams it leaves: a machine cannot declare its own HARDWARE
-  address, so the fleet cannot check that a server's `PEER` is the
-  member that will ask for it; revocation (a key a device USED to have)
-  is unrecorded; forwarding between two links is undeclarable.
+  second file of the same language, and one device's signed record
+  verified by a holder of nothing but its public key.
 - (done 2026-09-14, NAM-1) The box as the network's own server of
   addresses and names: `DOMAIN` on a NETWORK, the `PEER` kind, and the
   first paired boot -- `experiment/os6_names.sh` puts two machines on

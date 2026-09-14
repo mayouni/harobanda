@@ -1,3 +1,73 @@
+# HDW-1 — the hardware clause: the last fact about a deployment that lived in a shell script
+
+The sixth act of 2026-09-14, and the smallest. It deletes a constant.
+
+## What was wrong
+
+`machines/makeen_names.machine` promises `192.168.10.40` to a peer
+identified by a hardware address. `machines/caisse_makeen.machine` is
+the till that will claim it and says nothing about its own hardware.
+The only thing connecting the two was this, in `experiment/os6_names.sh`:
+
+```
+TILL_MAC=52:54:00:12:34:61        # the `caisse` peer, declared in the box
+```
+
+A comment. In a shell script. In a repository whose entire argument is
+that a fact about a deployment belongs in a declaration a court can
+read — and the fleet court, one seat old, could not check the one
+correspondence that decides whether the deployment works at all.
+
+## Where it belongs, and why not the machine
+
+On the MEMBER, beside `KEY`. A machine file is a DESIGN and one design
+images many devices; a hardware address belongs to one of them. That is
+exactly the distinction the key already draws: both are facts a
+DEPLOYMENT learns, never facts a design states.
+
+## What the join buys
+
+Five refusals that hold the promise and the machine against each other,
+none of which any single file can fail:
+
+- a device that asks on a served link and is in the server's register
+  under no peer at all -- it will never get an address, because there is
+  no pool to fall back on (FR16);
+- a device the server promises one address and which takes another
+  itself (FR17);
+- the server appearing in its own register, which would be a machine
+  asking itself for an address it already has (FR18);
+- two members claiming one device (FR15), and hardware that is a word
+  rather than an address (FR14).
+
+**22/22**, from 16/16. And the roll now says the join out loud:
+
+```
+caisse -- caisse_makeen (caisse_makeen.machine, asks) -- 52:54:00:12:34:61, promised 192.168.10.40 as caisse
+```
+
+A `PEER` no member claims is deliberately NOT refused. The kitchen
+printer is a declared peer of the box and will never be an stzos
+machine; the fleet checks the members it has and says nothing about the
+rest of the wire.
+
+## The proof is a pin that did not move
+
+`experiment/os6_names.sh` now reads both addresses from the declaration
+through `stzos fleet <file> hardware <member>`. The 66-line names
+transcript **matched unchanged** on the first run afterwards: the
+declaration supplies exactly what the constants did, and now a court can
+check it. A seat whose whole result is that nothing visible changed is
+the right shape for this one.
+
+## The law this pays for
+
+**A fact about a deployment lives in a declaration, or it is not a fact
+anyone can check.** When one turns up in a script, move it and delete
+the constant -- do not add a second place that has to agree.
+
+---
+
 # FLT-1 — the fleet court: machines judged together, and one device's record verified by another
 
 The fifth act of 2026-09-14, and the one the IDENTITY and JOURNAL seats
