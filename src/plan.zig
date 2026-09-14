@@ -173,6 +173,11 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
             if (svc.memory_mb) |mb| try out.print(" -- within {d} MiB", .{mb});
             if (svc.cpu_percent) |pct| try out.print(" -- at most {d}% of a core", .{pct});
             if (svc.user) |u| try out.print(" -- as {s} ({d}:{d})", .{ u.name, u.uid, u.gid });
+            if (svc.sees) |kept| {
+                try out.print(" -- sees [", .{});
+                for (kept, 0..) |name, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", name });
+                try out.print("]", .{});
+            }
             try out.print("\n", .{});
         },
     };

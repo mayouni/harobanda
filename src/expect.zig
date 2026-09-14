@@ -95,17 +95,22 @@ pub fn identityLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
 /// nothing else (NS-1). A world that declared everything this can refuse
 /// says nothing here, and its transcript is what it always was.
 pub fn confineLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    // an arena, because a world that NARROWS its sight (SEE-1) needs the
+    // complement of what it named built somewhere
+    var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
     var any = false;
     for (m.services) |s| {
-        if (confine.Confinement.of(m.*, s).confined()) any = true;
+        if ((try confine.Confinement.ofAlloc(m.*, s, a)).confined()) any = true;
     }
     if (!any) return false;
     try w.print("boot: confine -- ", .{});
     var first = true;
     for (m.services) |s| {
-        const c = confine.Confinement.of(m.*, s);
+        const c = try confine.Confinement.ofAlloc(m.*, s, a);
         if (!c.confined()) continue;
-        var buf: [128]u8 = undefined;
+        var buf: [256]u8 = undefined;
         try w.print("{s}{s} has {s}", .{ if (first) "" else ", ", s.name, c.words(&buf) });
         first = false;
     }

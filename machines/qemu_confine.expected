@@ -4,41 +4,62 @@ boot: mount proc at /proc -- done
 boot: mount sysfs at /sys -- done
 boot: mount devtmpfs at /dev -- done
 boot: mount tmpfs at /data -- done
+boot: mount tmpfs at /var/log -- done
 boot: grant process (effectful)
 boot: grant network (effectful)
 boot: grant filesystem (effectful)
 boot: network lan -- eth0 up 10.0.2.15/24, gateway 10.0.2.2 (dhcp), dns [10.0.2.3], /etc/resolv.conf written
-boot: confine -- sealed has no network of its own, still has no sight of the other worlds and no way to start one, blind has no network of its own and no sight of /data; what a world did not declare, the kernel does not give it
+boot: confine -- sealed has no network of its own, still has no sight of the other worlds and no way to start one, blind has no network of its own and no sight of /data, /var/log, ledger has no sight of /var/log, caisse has no sight of /data; what a world did not declare, the kernel does not give it
 boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
-boot: start sealed -- pid N -- /stzos confined eth0 /data
+boot: start sealed -- pid N -- /stzos confined eth0 /data /var/log
 confined: eth0 -- no such interface from here: this world has a network namespace of its own and there is nothing in it
 confined: processes -- this world is pid N and can see the machine's other processes: one table for everybody
 confined: /data -- mounted here: this world can see the machine's storage
+confined: /var/log -- mounted here: this world can see the machine's storage
 confined: the floor -- refused by the kernel (EPERM): this world cannot change the machine it runs on
 confined: fork -- permitted: this world started another process, and this line is the child speaking
 boot: sealed (pid N) exited 0
-boot: start still -- pid N -- /stzos confined eth0 /data
+boot: start still -- pid N -- /stzos confined eth0 /data /var/log
 confined: eth0 -- present: this world shares the machine's network
 confined: processes -- this world is pid 1 and no other process exists here: a table of its own
 confined: /data -- mounted here: this world can see the machine's storage
+confined: /var/log -- mounted here: this world can see the machine's storage
 confined: the floor -- refused by the kernel (EPERM): this world cannot change the machine it runs on
 confined: fork -- refused by the kernel (EPERM): this world cannot start another process
 boot: still (pid N) exited 0
-boot: start open -- pid N -- /stzos confined eth0 /data
+boot: start open -- pid N -- /stzos confined eth0 /data /var/log
 confined: eth0 -- present: this world shares the machine's network
 confined: processes -- this world is pid N and can see the machine's other processes: one table for everybody
 confined: /data -- mounted here: this world can see the machine's storage
+confined: /var/log -- mounted here: this world can see the machine's storage
 confined: the floor -- refused by the kernel (EPERM): this world cannot change the machine it runs on
 confined: fork -- permitted: this world started another process, and this line is the child speaking
 boot: open (pid N) exited 0
-boot: start blind -- pid N -- /stzos confined eth0 /data
+boot: start blind -- pid N -- /stzos confined eth0 /data /var/log
 confined: eth0 -- no such interface from here: this world has a network namespace of its own and there is nothing in it
 confined: processes -- this world is pid N and can see the machine's other processes: one table for everybody
 confined: /data -- an empty directory and nothing mounted on it: this world has a mount namespace of its own and the machine's storage is not in it
+confined: /var/log -- an empty directory and nothing mounted on it: this world has a mount namespace of its own and the machine's storage is not in it
 confined: the floor -- refused by the kernel (EPERM): this world cannot change the machine it runs on
 confined: fork -- permitted: this world started another process, and this line is the child speaking
 boot: blind (pid N) exited 0
-boot: judge -- the boot matches its expectation (/etc/expected, 20 lines)
+boot: start ledger -- pid N -- /stzos confined eth0 /data /var/log
+confined: eth0 -- present: this world shares the machine's network
+confined: processes -- this world is pid N and can see the machine's other processes: one table for everybody
+confined: /data -- mounted here: this world can see the machine's storage
+confined: /var/log -- an empty directory and nothing mounted on it: this world has a mount namespace of its own and the machine's storage is not in it
+confined: the floor -- refused by the kernel (EPERM): this world cannot change the machine it runs on
+confined: fork -- permitted: this world started another process, and this line is the child speaking
+boot: ledger (pid N) exited 0
+boot: start caisse -- pid N -- /stzos confined eth0 /data /var/log
+confined: eth0 -- present: this world shares the machine's network
+confined: processes -- this world is pid N and can see the machine's other processes: one table for everybody
+confined: /data -- an empty directory and nothing mounted on it: this world has a mount namespace of its own and the machine's storage is not in it
+confined: /var/log -- mounted here: this world can see the machine's storage
+confined: the floor -- refused by the kernel (EPERM): this world cannot change the machine it runs on
+confined: fork -- permitted: this world started another process, and this line is the child speaking
+boot: caisse (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 25 lines)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
 reboot: Restarting system

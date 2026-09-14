@@ -94,13 +94,38 @@ pub const Confinement = struct {
     /// on CONFIG_NET and cannot even be built there (NS-1, found when
     /// unshare answered EINVAL on a machine with no wire).
     pub fn of(m: machine.Machine, svc: machine.Service) Confinement {
+        return ofAlloc(m, svc, null) catch unreachable;
+    }
+
+    /// The same, with somewhere to build a NARROWED list. `SEE-1` lets a
+    /// world keep only the mounts it names, and the paths it may not see
+    /// are then "the machine's mounts minus those" -- a set that has to
+    /// be built. With no allocator the narrowing is skipped and the
+    /// world keeps what `filesystem` alone would give it, which is what
+    /// the derivation in expect.zig needs when it is only counting.
+    pub fn ofAlloc(m: machine.Machine, svc: machine.Service, gpa: ?std.mem.Allocator) !Confinement {
         var c = ofService(svc);
         if (m.networks.len == 0) c.network = true;
-        var sees_files = false;
+        var granted_fs = false;
         for (svc.needs) |n| {
-            if (n == .filesystem) sees_files = true;
+            if (n == .filesystem) granted_fs = true;
         }
-        if (!sees_files) c.hidden = m.mountPaths();
+        if (!granted_fs) {
+            // no grant at all: the machine's storage is not in its tree
+            c.hidden = m.mountPaths();
+            return c;
+        }
+        const kept = svc.sees orelse return c; // the grant, unnarrowed
+        const a = gpa orelse return c;
+        var hide: std.ArrayList([]const u8) = .{};
+        for (m.mounts) |mt| {
+            var named = false;
+            for (kept) |name| {
+                if (std.mem.eql(u8, mt.name, name)) named = true;
+            }
+            if (!named) try hide.append(a, mt.at);
+        }
+        c.hidden = try hide.toOwnedSlice(a);
         return c;
     }
 
@@ -531,6 +556,7 @@ fn svcWith(needs: []const machine.Capability) machine.Service {
         .memory_mb = null,
         .cpu_percent = null,
         .user = null,
+        .sees = null,
         .rationale = "",
     };
 }

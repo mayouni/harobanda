@@ -1,3 +1,91 @@
+# SEE-1 — per-world sight of the machine's storage: `filesystem` stops being all or nothing
+
+The eleventh act of 2026-09-14, and the first envelope seat that needed
+a CLAUSE. The four before it were derived from `NEEDS`, because `NEEDS`
+already knew the answer. Which mounts a world keeps is information no
+existing clause carries, and inventing a derivation for it would have
+been guessing.
+
+## The shape
+
+```
+DEFINE SERVICE ledger AS (
+  RUN [...],
+  NEEDS [process, network, filesystem],
+  SEES [data]
+) RATIONALE "..."
+```
+
+`NEEDS [filesystem]` is the GRANT. `SEES` NARROWS it. That is the whole
+semantics and it settles the awkward question about silence: saying
+nothing does not widen anything, because the world already declared the
+capability, so a world with `filesystem` and no `SEES` keeps every
+declared mount -- which is what every machine written before this clause
+already did, unchanged.
+
+An empty `SEES` is refused rather than meaning nothing: a world that
+wants no storage declares no `filesystem`, and one that wants all of it
+says nothing here.
+
+## What it refuses
+
+Five, and the first is the one that keeps the clause honest:
+
+- `SEES` without `filesystem` in `NEEDS` -- a world cannot choose sight
+  of storage it never asked to touch;
+- a mount this machine does not declare;
+- an empty list;
+- one mount named twice;
+- a machine that declares no `MOUNT` at all, where there is no sight to
+  apportion.
+
+**104/104**, from 98.
+
+## The check that had to move
+
+The mount names could not be validated where the clause is read:
+`MOUNT`s are parsed AFTER `SERVICE`s, so the service loop would be
+asking about something the parser had not read yet. The capability
+check, the empty check and the duplicate check happen in the loop; the
+"is there such a mount" check is a second pass once the mounts exist.
+A refusal must be able to name what the declaration actually contains.
+
+## Judged
+
+`qemu_confine` grew to six worlds and needed a SECOND mount to make the
+choice a choice -- with one mount a world either sees the machine's
+storage or it does not, and there is nothing to apportion. The two new
+worlds are exact mirrors:
+
+```
+boot: start ledger ...
+confined: /data -- mounted here: this world can see the machine's storage
+confined: /var/log -- an empty directory and nothing mounted on it: ...
+
+boot: start caisse ...
+confined: /data -- an empty directory and nothing mounted on it: ...
+confined: /var/log -- mounted here: this world can see the machine's storage
+```
+
+Same machine, same binary, same capability granted to both. The only
+difference between them is which mount each one named, and neither can
+read the other's. That is the shape a business world wants: the till's
+own data, and no sight of what it has no business reading.
+
+The `stzos plan` output names the narrowing too (`-- sees [data]`), so
+an auditor learns which world holds which storage without opening the
+machine file.
+
+## The law this pays for
+
+**Derive while the declaration already knows; add a clause when it does
+not.** Four seats of envelope came out of `NEEDS` without a word of new
+grammar. This one could not, and pretending otherwise -- deriving
+"which mounts" from some proxy -- would have been a guess wearing a
+derivation's clothes.
+
+---
+
 # KCACHE-1 — one kernel per configuration, not one per architecture
 
 Not a seat: a repair to the court's own instrument, made because the

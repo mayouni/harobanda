@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-a3f0d91ab47704acf1a966c3fcdf37df6ce01543dee8bdfadb162caad5ab7727
+c6b02508f3650354c75149918876ffaa8659c8e0bcb7bb1316a677b1d6610d56
 ```
 
-(Before the NAMES seat of 2026-09-14 (NAM-1):
+(Before the SEES seat of 2026-09-14 (SEE-1):
+`a3f0d91ab47704acf1a966c3fcdf37df6ce01543dee8bdfadb162caad5ab7727`,
+98/98; the widening added A22 and R78-R82, and gave SERVICE its
+`SEES`. Before the NAMES seat of 2026-09-14 (NAM-1):
 `b41640da56e91a49e0a9d98e60d661ed19adfbaf4da223895c67e2b7b1a1b395`,
 89/89; the widening added A21, the `PEER` kind, `DOMAIN` on NETWORK,
 and R70–R77. Before the JOURNAL seat of 2026-09-14 (JRN-1):
@@ -65,7 +68,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **98/98** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **104/104** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -120,6 +123,34 @@ not committed ... the next boot is A`, and the card read back still
 booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
+
+## Which storage is whose (SEE-1)
+
+`SEES` on a SERVICE: which of the machine's declared mounts a world
+keeps. `NEEDS [filesystem]` is the grant and this narrows it, which is
+why naming a mount without the capability is refused (R78) -- a world
+cannot choose sight of storage it never asked to touch. A mount this
+machine does not declare (R79), an empty list (R80), one named twice
+(R81) and a machine with no MOUNT at all (R82) are refused too.
+**104/104**, from 98.
+
+Saying nothing keeps every declared mount, so every machine written
+before this clause is unchanged. The FIRST envelope seat that needed a
+clause at all: the four before it were derived from `NEEDS`, because
+`NEEDS` already knew the answer, and which mounts a world keeps is
+information no clause carried.
+
+One check had to move. `MOUNT`s are parsed AFTER `SERVICE`s, so the
+service loop cannot ask whether a named mount exists -- the parser has
+not read it yet. The capability, empty and duplicate checks happen in
+the loop; "is there such a mount" is a second pass once the mounts do
+exist, because a refusal must name what the declaration actually holds.
+
+`machines/qemu_confine.machine` grew a second mount to make the choice a
+choice, and two worlds that are exact mirrors: `ledger` sees `/data` and
+not `/var/log`, `caisse` the other way round. Same machine, same binary,
+same capability granted to both, and the only difference between them is
+which mount each one named.
 
 ## Two machines on one wire (NAM-1)
 

@@ -104,7 +104,7 @@ in the rest of this document is a consequence of it.
 | what you get | what it means, plainly | today |
 |---|---|---|
 | **a floor that is a fact** | every mount, address, identity and start order is declared and in the transcript before your first line runs | real: three machines boot in emulators, pinned transcripts |
-| **an envelope below you** | what the machine refuses, you cannot do; the runtime refuses the capabilities, since BDG-1 the KERNEL holds the resources (`MEMORY` and `CPU` per world, in its own cgroup), and since NS-1/MNT-1 the kernel also holds what `NEEDS` left out -- no network means an empty network namespace, no `process` means fork is refused, no `filesystem` means the machine's declared storage is not in the world's tree at all, and no `process` means the world is alone in a process table of its own where the other worlds have no pids to be named or signalled by and SYS-1 refuses every world, whatever it declared, the calls that would let it change the machine itself | real for capabilities, resources, the network, process creation, the storage and processes a world can see, and the machine's own integrity; per-world choice of WHICH mount to keep is queued |
+| **an envelope below you** | what the machine refuses, you cannot do; the runtime refuses the capabilities, since BDG-1 the KERNEL holds the resources (`MEMORY` and `CPU` per world, in its own cgroup), and since NS-1/MNT-1 the kernel also holds what `NEEDS` left out -- no network means an empty network namespace, no `process` means fork is refused, no `filesystem` means the machine's declared storage is not in the world's tree at all, and no `process` means the world is alone in a process table of its own where the other worlds have no pids to be named or signalled by SYS-1 refuses every world, whatever it declared, the calls that would let it change the machine itself, and SEE-1 lets a world narrow its own sight of the storage to the mounts it names | real for capabilities, resources, the network, process creation, the storage and processes a world can see, and the machine's own integrity; per-world choice of WHICH mount to keep is queued |
 | **an identity from the floor** | you run as a declared USER; a per-device key that never leaves the board comes next | real; the key queued |
 | **a durable place and a clock** | a partition mounted before you speak, with declared options; the clock a capability; a signed journal a named seat | real for the mount; the journal seat named |
 | **one narrative** | your output is a line in the machine's story, with a prefix and a grammar; no syslog, no journald | real |
@@ -432,8 +432,8 @@ diagram. This is where the floor pays each band of it:
    network namespace, the process-creation syscalls, the machine's
    storage and the process table now all follow `NEEDS`, and SYS-1 adds
    the part that follows from nothing a world declares: the calls that
-   would let it change the machine. What remains is per-world choice of
-   which mount to keep -- today `filesystem` is all or nothing
+   would let it change the machine, and SEE-1 the per-world choice of
+   which mount to keep. What remains is whose THREAD it is
    derived from CAPABILITY.
 4. ~~The signed journal~~ **Built (JRN-1)** as the machine's own boot
    record: hash-chained, signed by the device's key, verified before it

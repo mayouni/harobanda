@@ -398,7 +398,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             var needs_pidns = false;
             var needs_seccomp = false;
             for (m.services) |s| {
-                const c = confine.Confinement.of(m.*, s);
+                const c = try confine.Confinement.ofAlloc(m.*, s, arena);
                 if (!c.network) {
                     needs_netns = true;
                     needs_namespaces = true;

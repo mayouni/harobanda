@@ -111,6 +111,17 @@ pub const Service = struct {
     /// the declared identity this service runs as; null is the machine
     /// itself (root), which is what a service gets only by saying nothing
     user: ?*const User,
+    /// WHICH of the machine's declared mounts this world keeps sight of
+    /// (SEE-1). Null is a world that did not narrow the grant, and it
+    /// keeps them all -- the behaviour of every machine written before
+    /// this clause. An empty list is refused rather than meaning
+    /// nothing: a world that wants no storage declares no `filesystem`.
+    ///
+    /// This does not widen anything. `NEEDS [filesystem]` is the grant;
+    /// `SEES` narrows it, which is why naming a mount without the
+    /// capability is refused -- a world cannot choose sight of something
+    /// it never asked to touch.
+    sees: ?[]const []const u8,
     rationale: []const u8,
 };
 
@@ -527,7 +538,7 @@ pub const Decl = struct {
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
         .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "USER" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "USER", "SEES" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
@@ -1012,7 +1023,29 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             };
             if (user == null) return ctx.refuse(c.line, "{s} runs as '{s}', which resolves to nothing: no such USER", .{ d.name, uname });
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .user = user, .rationale = d.rationale });
+
+        // SEES -- which of the machine's mounts this world keeps. Read
+        // after NEEDS, because it narrows a grant and there must be one.
+        var sees: ?[]const []const u8 = null;
+        if (find(d, "SEES")) |c| {
+            var granted_fs = false;
+            for (needs.items) |n| {
+                if (n == .filesystem) granted_fs = true;
+            }
+            if (!granted_fs) return ctx.refuse(c.line, "{s} SEES a mount and needs filesystem for it: a world cannot choose sight of storage it never asked to touch, and SEES narrows that grant rather than making one", .{d.name});
+            const names = try wantNames(&ctx, c);
+            if (names.len == 0) return ctx.refuse(c.line, "an empty SEES is not a declaration: a world that wants no storage declares no filesystem, and one that wants all of it says nothing here", .{});
+            for (names, 0..) |name, i| {
+                for (names[0..i]) |e| if (std.mem.eql(u8, e, name)) {
+                    return ctx.refuse(c.line, "{s} is already named in {s}'s SEES: saying it twice says nothing the once did not", .{ name, d.name });
+                };
+            }
+            // that every name IS a declared mount is judged in a second
+            // pass below: MOUNTs are parsed after SERVICEs, and a check
+            // cannot ask about something the parser has not read yet
+            sees = names;
+        }
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .user = user, .sees = sees, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
 
@@ -1107,6 +1140,22 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
     // confinement names what it may not see, and walking the mounts again
     // in three places is three chances to disagree (MNT-1)
     const mount_slice = try mounts.toOwnedSlice(arena);
+
+    // SEE-1's other half: a world sees a mount this machine DECLARES, or
+    // none. Here rather than in the service loop because the MOUNTs are
+    // parsed after the SERVICEs, and a refusal must be able to name what
+    // the declaration actually contains.
+    for (svc_slice) |sv| {
+        const wants = sv.sees orelse continue;
+        if (mount_slice.len == 0) return ctx.refuse(sv.line, "{s} SEES a mount and this machine declares no MOUNT: there is no sight to apportion", .{sv.name});
+        for (wants) |name| {
+            var found = false;
+            for (mount_slice) |mt| {
+                if (std.mem.eql(u8, mt.name, name)) found = true;
+            }
+            if (!found) return ctx.refuse(sv.line, "{s} SEES {s}, and there is no such MOUNT in this declaration", .{ sv.name, name });
+        }
+    }
     var mount_paths: std.ArrayList([]const u8) = .{};
     for (mount_slice) |mt| try mount_paths.append(arena, mt.at);
     const mount_path_slice = try mount_paths.toOwnedSlice(arena);

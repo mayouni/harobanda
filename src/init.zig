@@ -503,6 +503,7 @@ test "a world with a window is ready at its signal but PROVEN only one window la
         .memory_mb = null,
         .cpu_percent = null,
         .user = null,
+        .sees = null,
         .rationale = "a world that keeps saying it serves",
     };
     const unwatched = machine.Service{
@@ -517,6 +518,7 @@ test "a world with a window is ready at its signal but PROVEN only one window la
         .memory_mb = null,
         .cpu_percent = null,
         .user = null,
+        .sees = null,
         .rationale = "a world that answers for its start and never again",
     };
 
@@ -670,7 +672,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     defer slots.deinit(gpa);
     for (p.steps) |step| if (step == .service) try slots.append(gpa, .{
         .service = step.service,
-        .held = confine.Confinement.of(m.*, step.service.*),
+        .held = try confine.Confinement.ofAlloc(m.*, step.service.*, gpa),
     });
 
     var ab: ?Slots = if (m.slots) |dev| Slots{ .dev = dev } else null;

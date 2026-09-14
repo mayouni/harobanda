@@ -89,6 +89,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   expectation without reading the diff. Doing it blindly pinned three
   machines whose worlds the new filter had broken, and one whose filter
   had silently failed while the boot judged itself a match.
+- **Derive while the declaration already knows; add a CLAUSE when it
+  does not** (SEE-1): four envelope seats came out of `NEEDS` with no
+  new grammar, because `NEEDS` already held the answer. Which mounts a
+  world keeps is information no clause carried, so `SEES` was added
+  rather than derived from a proxy -- that would have been a guess
+  wearing a derivation's clothes. `NEEDS [filesystem]` is the grant and
+  `SEES` narrows it, so `SEES` without the capability is refused and
+  silence keeps every mount.
 - **Some things are refused by what a world IS, not by what it
   declared** (SYS-1): the calls that would let a world change the
   machine it runs on -- mount, reboot, the clock setters, module
@@ -366,10 +374,10 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   seccomp filter on process creation, a mount namespace with the
   declared MOUNTs detached, and a process table of the world's own.
   `machines/qemu_confine.machine` is the witness (four worlds, five
-  questions) and `stzos confined` the verb. SYS-1 then added the one
-  part that is NOT derived: the calls no world may make at all. Still
-  open: whose THREAD it is, and per-world choice of WHICH mount to keep
-  (`filesystem` is all or nothing).
+  questions) and `stzos confined` the verb. SYS-1 added the part that is
+  NOT derived (the calls no world may make at all) and SEE-1 the part
+  that needed a clause (`SEES`, which mounts a world keeps). Still open:
+  whose THREAD it is.
 - (done 2026-09-14, HDW-1) The hardware clause: `HARDWARE` on a fleet
   MEMBER, 22/22, and `experiment/os6_names.sh` reads the addresses from
   the declaration instead of carrying them as constants. Still open:

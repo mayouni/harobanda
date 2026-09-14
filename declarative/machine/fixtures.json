@@ -378,6 +378,25 @@
         },
         "order": []
       }
+    },
+    {
+      "id": "A22",
+      "name": "each world keeps the storage it was given and not the rest",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT logs AS (AT \"/var/log\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE SERVICE ledger AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process, filesystem],\n  SEES [data]\n) RATIONALE \"x\"\nDEFINE SERVICE printer AS (\n  RUN [\"/w\"],\n  RESTART never,\n  AFTER [ledger],\n  NEEDS [process, filesystem],\n  SEES [logs]\n) RATIONALE \"x\"\n",
+      "expect": {
+        "counts": {
+          "services": 2,
+          "capabilities": 2,
+          "mounts": 2,
+          "pins": 0,
+          "networks": 0,
+          "users": 0
+        },
+        "order": [
+          "ledger",
+          "printer"
+        ]
+      }
     }
   ],
   "rejects": [
@@ -842,6 +861,36 @@
       "name": "a machine that asks for its own address is not the one that hands them out",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS dhcp, DOMAIN \"makeen\") RATIONALE \"x\"\n",
       "refusal": "asks for its own address"
+    },
+    {
+      "id": "R78",
+      "name": "a world cannot choose sight of a filesystem it never asked for",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT logs AS (AT \"/var/log\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE SERVICE blind AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process],\n  SEES [data]\n) RATIONALE \"x\"\n",
+      "refusal": "needs filesystem"
+    },
+    {
+      "id": "R79",
+      "name": "a world sees a mount this machine declares, or none",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT logs AS (AT \"/var/log\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE SERVICE ledger AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process, filesystem],\n  SEES [archives]\n) RATIONALE \"x\"\n",
+      "refusal": "no such MOUNT"
+    },
+    {
+      "id": "R80",
+      "name": "an empty SEES is not a declaration",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT logs AS (AT \"/var/log\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE SERVICE ledger AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process, filesystem],\n  SEES []\n) RATIONALE \"x\"\n",
+      "refusal": "an empty SEES"
+    },
+    {
+      "id": "R81",
+      "name": "naming one mount twice says nothing the once did not",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT logs AS (AT \"/var/log\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE SERVICE ledger AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process, filesystem],\n  SEES [data, data]\n) RATIONALE \"x\"\n",
+      "refusal": "already named"
+    },
+    {
+      "id": "R82",
+      "name": "a machine that mounts nothing has no sight to apportion",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE ledger AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process, filesystem],\n  SEES [data]\n) RATIONALE \"x\"\n",
+      "refusal": "declares no MOUNT"
     }
   ]
 }

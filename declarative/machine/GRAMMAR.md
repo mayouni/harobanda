@@ -128,6 +128,7 @@ init; the launcher is the pack).
 | `HEALTH` | number (seconds) | optional — the window within which the daemon must REFRESH its READY path. Requires READY (R53); 0 is refused (R54), and so is a window longer than an hour. See the health rule below |
 | `MEMORY` | number (mebibytes) | optional — the ceiling the KERNEL holds this world to. 0 is refused (R56), and so is a number big enough to be bytes by mistake. See the budget rule below |
 | `CPU` | number (percent of ONE core) | optional — 50 is half a core, 200 is two of them. 0 is refused (R57), and so is more than sixteen cores' worth (R58) |
+| `SEES` | name list | optional — WHICH of the machine's declared mounts this world keeps sight of. `NEEDS [filesystem]` is the grant and this narrows it, so it is refused without that capability (R78); a mount this machine does not declare (R79), an empty list (R80), one named twice (R81), and a machine with no MOUNT at all (R82) are refused. Saying nothing keeps every declared mount, which is what every machine written before this clause did |
 | `USER` | name | optional — a declared USER this service runs as; PID 1 drops to that uid and gid between fork and exec. A name that resolves to nothing is refused at check time (R46). Saying nothing is how a service runs as the machine itself |
 
 ### DEFINE USER — a declared identity
@@ -350,10 +351,9 @@ act — stzlib's rehearse-plan-commit law carried down to the boot.
   fork and a process table of the world's own, where the other worlds
   have no pids at all. `process` is stzlib's "spawn and manage", and
   managing is inspecting and signalling as much as starting. Still open:
-  per-world choice of WHICH mount to keep (`filesystem` is all or
-  nothing today) and `threads`, which is read and deliberately not
-  enforced because a thread the RUNTIME makes is not the world asking
-  for one.
+  `threads`, which is read and deliberately not enforced because a
+  thread the RUNTIME makes is not the world asking for one. Per-world
+  choice of which mount to keep is `SEES` since SEE-1.
 - **What no world may do at all** — SYS-1 refuses every world, whatever
   it declared, the calls that would let it change the machine it runs
   on: mount and unmount, the module and kexec calls, reboot, the clock

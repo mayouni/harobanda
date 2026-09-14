@@ -48,7 +48,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
-        \\  stzos confined [iface] [path]                (what can this WORLD see and do? from inside one)
+        \\  stzos confined [iface] [path...]             (what can this WORLD see and do? from inside one)
         \\  stzos ask    <name>                          (what does a name mean on this network? from inside a device on it)
         \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
@@ -534,8 +534,7 @@ pub fn main() !u8 {
         // keeps the image it was built from -- its binary is a file --
         // and a declared MOUNT is what a world that never asked for the
         // filesystem does not get to see (MNT-1).
-        if (args.len > 3) {
-            const path = args[3];
+        for (args[3..]) |path| {
             // ASK WHETHER IT IS A MOUNT POINT, not whether the path
             // exists. The directory is in the image so that PID 1 has
             // somewhere to mount onto, and it stays there after the
