@@ -206,6 +206,24 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   directory, `mcopy` over a file): on a pipe that never closes it hangs
   forever (33 minutes, AB-1). Every mtools call runs with `-D s`/`-D o`
   and `< /dev/null`; `wsl_cleanup.sh` ends a stuck one.
+- **A heredoc body is not part of an `&&` chain, and the line after the
+  terminator is a NEW command.** `A && python3 - <<PY` runs the chain on
+  its own line; everything after the terminator runs UNCONDITIONALLY,
+  with `$?` still showing the chain's failure, so a guarded script that
+  refused to run is followed by a `git add` that runs anyway on the full
+  file. Probed (`experiment/heredoc_probe.sh`): a command
+  on the same line as the redirect is correctly skipped; one on the next
+  line is not. Cost two sessions one wrong commit each on 2026-09-14 --
+  stzlib-graphics staged a file its own assertion had just refused, and
+  committed another desk's memo under its subject. Put the program in a
+  FILE and `&&` the file.
+- **The Bash tool mangles `\\` inside a heredoc into a real newline**,
+  even with a quoted terminator (`<<'PY'`). A Python replacement
+  carrying a Zig `"...\n"` arrives as a string literal with a line break in
+  it, and Zig refuses it ("string literal contains invalid byte"). Build
+  the escape from `chr(92)`, or -- the standing fix -- write the script
+  to the scratchpad with the file tool and run it by path. Hit twice on
+  2026-09-14.
 - **A one-line `bash -c` through `wsl.exe` loses `$` and `&`** whichever
   tool sends it. Every WSL act is a script file under `experiment/`.
 - **QEMU under `timeout` from a real terminal STOPS silently.** With a
