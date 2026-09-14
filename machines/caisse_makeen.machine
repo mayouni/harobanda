@@ -1,0 +1,64 @@
+-- caisse_makeen.machine -- the till, which knows nothing.
+--
+-- This machine declares no address, no resolver and no printer. It comes
+-- up, asks the link who it is, and is told: its address, the name of the
+-- network, and where to ask about names. Then it asks for the printer BY
+-- NAME, which is the whole scene from RestoLean's B7 -- the thing the
+-- merchant does today by reading a number off a label and typing it in.
+--
+-- It is the CONSUMER of makeen_names.machine, and it is here for the
+-- same reason MicroRing judges the projection: a generated artifact is
+-- judged by what consumes it, never by the generator agreeing with
+-- itself. The box saying it serves `imprimante.makeen` proves nothing.
+-- This machine getting 192.168.10.50 back proves it.
+--
+-- Its hardware address is the `caisse` peer's, declared in the box. Run
+-- with any other, it gets nothing -- experiment/os6_names.sh boots it a
+-- second time as a stranger to show exactly that (NAM-1, 2026-09-14).
+
+DEFINE MACHINE caisse_makeen AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "A till that is told everything it needs by the link it is plugged into, and declares none of it"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The questions are processes"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "It has to ask"
+
+DEFINE NETWORK salle AS (
+  INTERFACE "eth0",
+  ADDRESS dhcp
+) RATIONALE "It asks the link. What comes back -- the address, the domain, the resolver -- is the server's to give and this file's not to guess"
+
+DEFINE SERVICE printer AS (
+  RUN ["/stzos", "ask", "imprimante.makeen"],
+  RESTART never,
+  NEEDS [process, network]
+) RATIONALE "The scene: the till asking for the printer by name, and getting the number it never had to be told"
+
+DEFINE SERVICE short AS (
+  RUN ["/stzos", "ask", "imprimante"],
+  RESTART never,
+  AFTER [printer],
+  NEEDS [process, network]
+) RATIONALE "The same question in the form a person types it: the search domain the lease carried makes the two one question"
+
+DEFINE SERVICE box AS (
+  RUN ["/stzos", "ask", "makeen"],
+  RESTART never,
+  AFTER [short],
+  NEEDS [process, network]
+) RATIONALE "The network's own name answers with the box: the link is not an abstraction, it has an address and that address is a machine"
+
+DEFINE SERVICE absent AS (
+  RUN ["/stzos", "ask", "fantome.makeen"],
+  RESTART never,
+  AFTER [box],
+  NEEDS [process, network]
+) RATIONALE "A name nobody declared: the box must say there is no such name on this network, not guess, and not go and ask the internet on the till's behalf"

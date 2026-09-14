@@ -1,3 +1,117 @@
+# NAM-1 — the box as the network's own server of names, and the first time two machines met on a wire
+
+The fourth act of 2026-09-14, and the first one whose proof needed a
+second machine.
+
+## The ground, which is not ours
+
+RestoLean's B7 states it from the merchant's side. Many boxes do not
+keep their register of leases across a reboot: the kitchen printer
+comes back on a different number and somebody re-types it into the
+till. Makeen lives with this. It has nothing to do with us, and that is
+exactly why it is worth solving — "Makeen would solve a problem he has
+today that has nothing to do with us" is the strongest form a floor's
+value can take.
+
+The answer B7 names is a box that hands out the addresses itself,
+reserves them all, and gives names: `imprimante.makeen`.
+
+## The design is a removal
+
+`DOMAIN` on a NETWORK makes the machine that link's server. `PEER`
+declares who is on it. **There is no pool and no range.** The machine
+serves exactly the peers declared and nobody else.
+
+So the failure is not handled — it is made impossible to have. The
+register of who has which address cannot be lost at a reboot because
+there IS no register: there is the declaration, in git, judged by the
+court before the image was built. And the lease is offered INFINITE
+(option 51, `0xffffffff`), which says the true thing: this address is
+this device's because it was declared, not because a timer has not run
+out yet.
+
+Two more removals, both of them refusals to lie:
+
+- **No router option.** This machine does not forward, and a box that
+  named itself the way out without being one would be lying to every
+  device on the link. Forwarding would be an act, and an act is
+  declared; there is no clause, so there is no forwarding.
+- **No referral.** A name the box does not serve is `NXDOMAIN` — a true
+  statement about this network — never forwarded upstream. The box
+  speaks for its own link and is silent about the rest of the world.
+
+## Judged by the thing that consumes it
+
+Eight refusals and one accept widened the court to **98/98**. Four unit
+tests judge the codec beside the code. But the claim "this box serves
+`imprimante.makeen`" is not proved by the box saying so, and PRJ-2
+already paid for that law: a generated artifact is judged by what
+CONSUMES it.
+
+So `experiment/os6_names.sh` boots **two machines at the same time**,
+joined by a QEMU socket netdev, which is a real L2 segment between
+exactly two machines. It is the first time anything in this repository
+needed more than one. The box is started, and the script waits not for
+a guessed number of seconds but for the line the box itself prints:
+the wire is ready exactly when the server says it is.
+
+`machines/caisse_makeen.machine` declares no address, no resolver and
+no printer. It is the till:
+
+```
+till: boot: network salle -- eth0 up 192.168.10.40/24 (dhcp), dns [192.168.10.1], names on makeen (/etc/resolv.conf)
+till: ask imprimante.makeen -- 192.168.10.50 (from 192.168.10.1)
+till: ask imprimante -- 192.168.10.50 (from 192.168.10.1)
+till: ask makeen -- 192.168.10.1 (from 192.168.10.1)
+till: ask fantome.makeen -- no such name on this network (from 192.168.10.1)
+```
+
+And the seat's own negative, in a third round: the SAME image, with a
+hardware address nobody declared.
+
+```
+stranger: boot: network salle -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
+```
+
+That line was not written for this seat. It is what the DHCP client has
+said since NET-1 when nobody answers, and it is the truth about a
+network that was never told about this device.
+
+## The defect the first paired run exposed
+
+The box **halted**. With no services declared, PID 1 reached `every
+service has ended -- init has nothing left to keep alive` moments after
+its verdict, and was gone before the till finished booting. The till
+was correct to report that nobody answered.
+
+The fix is not a flag. A machine that is its link's server of names has
+not finished when its last one-shot has: every device on that network
+asks it for an address at every boot and for a name whenever somebody
+types one. A box that stopped the moment nobody was asking would be a
+box that works until it is needed. PID 1 now says so and waits:
+
+```
+box: boot: every service has ended -- and this machine is still makeen: a server stops when the machine stops, not when the asking does
+```
+
+## Also paid for here
+
+`zig build cross` caught a `Network` literal in `net.zig` missing its
+new field — the third time that rule has earned itself, and the second
+time on this exact file. The host build was green.
+
+The Bash tool mangled `\n` inside a heredoc into a real newline twice,
+producing a Zig string literal with a line break in it. The standing
+workaround is the one that works: write the Python to the scratchpad
+with the file tool and run it.
+
+## The law this pays for
+
+**A machine that serves a link is not finished when its services are.**
+Serving is a state of the machine, not a task that completes.
+
+---
+
 # JRN-1 — the machine's own record: chained, signed, and never extended when it does not verify
 
 The third act of 2026-09-14, and the one where the scope mattered more

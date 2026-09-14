@@ -56,7 +56,8 @@ floor means adding fixtures first, prose second (the W discipline).
 ```
 file        = declaration { declaration } ;
 declaration = "DEFINE" kind IDENT "AS" "(" [ clauses ] ")" rationale ;
-kind        = "MACHINE" | "SERVICE" | "CAPABILITY" | "MOUNT" | "PIN" ;
+kind        = "MACHINE" | "SERVICE" | "CAPABILITY" | "MOUNT" | "PIN"
+            | "NETWORK" | "USER" | "PEER" ;
 rationale   = "RATIONALE" STRING ;                       (mandatory)
 
 clauses     = clause { "," clause } [ "," ] ;
@@ -71,7 +72,7 @@ clause outside its kind's table is refused naming the allowed set
 (R12); a clause given twice is refused (R30). `DEFINE` is the one verb
 (R1, R3).
 
-## The five kinds
+## The kinds
 
 ### DEFINE MACHINE — exactly one, and first (R9, R10)
 
@@ -148,6 +149,7 @@ visibly the one with no USER line.
 | `GATEWAY` | string `"a.b.c.d"` | optional, static only — a dhcp network learns its gateway (R37); not an address is refused (R40) |
 | `EGRESS` | string list of destinations, or the word `none` | optional — how far this network REACHES. A list writes one route per destination and NO default route; `none` writes no route at all. Saying nothing is today's behaviour: a declared GATEWAY becomes a default route. `none` with a GATEWAY is refused (R60), an empty list is refused (R61), and a destination is an address and a prefix, never a name (R62). See the egress rule below |
 | `DNS` | string list | optional, static only — the servers; a dhcp network learns them |
+| `DOMAIN` | string | optional, static only — the name this link answers to, which makes this machine the link's own SERVER of addresses and names (`"makeen"`). A dhcp link is refused (R77): a machine that asks for its own address is not the one that hands them out. A domain is lowercase labels, digits and the hyphen, separated by dots |
 
 A NETWORK needs the `network` capability granted (R36: silence is
 refusal, as for a service). A NETWORK is to the wire what a MOUNT is to
@@ -215,6 +217,45 @@ after OS-2's transcripts interleaved: AFTER had only ordered spawns —
 name (R5). The real guarantee is the image's — a profile ships no
 shell — and this refusal is the grammar's echo of it: the declaration
 cannot even ask.
+
+### DEFINE PEER — somebody else on a link this machine serves
+
+| clause | value | obligation |
+|---|---|---|
+| `NETWORK` | ident | required — a NETWORK declared in this file (R75) that declares a `DOMAIN` (R71) |
+| `HARDWARE` | string | required — six pairs of hex, colon-separated (R74): what the machine recognises a returning device by. One device, one name |
+| `ADDRESS` | string `"a.b.c.d"` | required — the one address this device is given. It must be on that link (R70), it may not be the machine's own (R73), and no two peers may share one (R72) |
+
+A peer's NAME is its name on the wire, so it must be one: lowercase
+letters, digits and the hyphen, not at either end (R76). The estate
+writes `makeen_box` with an underscore and DNS cannot carry one, so the
+court refuses rather than rewriting — a silently corrected name is a
+name the author no longer knows.
+
+**There is no pool and no range.** A machine that declares a `DOMAIN`
+serves exactly the peers declared beside it and nobody else: an
+undeclared device asking for an address gets silence, and its own
+transcript says `no lease after 3 tries (no server answered on this
+network)`, which is the truth about a network it was never declared on.
+
+That is the whole design, and it is a removal rather than a feature.
+The register of who has which address cannot be lost at a reboot,
+because there is no register — there is this file, in git, judged by
+the court before the image was built. The lease is offered as INFINITE
+(option 51, `0xffffffff`) for the same reason: the address is this
+device's because it was declared, not because a timer has not run out.
+
+The machine offers ITSELF as the resolver (option 6) and gives the
+domain (option 15), and deliberately sends **no router option**: it
+does not forward, and a box that named itself the way out without being
+one would be lying to every device on the link. A name it does not
+serve is answered `NXDOMAIN`, never forwarded upstream — the box speaks
+for its own link and is silent about the rest of the world.
+
+`stzos ask <name>` is the witness, and `experiment/os6_names.sh` boots
+the pair that proves it: `machines/makeen_names.machine` serving,
+`machines/caisse_makeen.machine` asking, and the same image booted a
+second time with a hardware address nobody declared, getting nothing.
 
 ### DEFINE CAPABILITY — the name is the capability
 
@@ -299,9 +340,12 @@ act — stzlib's rehearse-plan-commit law carried down to the boot.
 - **Users and identities** — every service runs as the machine today;
   a USER seat with the machine's identity model (MicroRing's Ed25519
   per device is the precedent) is a fixture-first widening.
-- **Network declaration** — `network_up` is a service in A2 because the
-  interface is not yet declarable; a NETWORK kind (address, dhcp,
-  wifi credentials by reference) is queued.
+- **Network declaration** — done (NET-1). What is still queued on it:
+  wifi credentials by reference, IPv6, and lease RENEWAL (a served
+  address is infinite by declaration, but a leased one is not).
+- **Forwarding** — a machine that serves a link does not route between
+  links. A `FORWARD` clause would be an act and would be declared; none
+  exists, so no machine forwards.
 - **Edge boot** — the edge profile is declarable and judged, not yet
   bootable: its substrate is MicroRing's (MicroZig, the flash
   filesystem), and `stzos init` refuses it by name.

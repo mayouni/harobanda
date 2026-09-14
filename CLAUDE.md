@@ -57,6 +57,7 @@ zig-out\bin\stzos.exe check|plan machines\<name>.machine
 bash experiment/judge_guarantees.sh [name]   # the four standing promises, judged twice and pinned (GRT-1)
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/wsl_boot.sh    # then read zig-out/wsl/*.txt
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello   # image, kernel, QEMU boot, judge -> zig-out/wsl/image_qemu_hello.txt
+wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os6_names.sh              # TWO machines on one wire: a box that serves names, a till that asks -> zig-out/wsl/names.txt
 cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-x86_64-linux-musl   # stzr for the image
 ```
 
@@ -81,6 +82,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A machine that SERVES a link is not finished when its services
+  are** (NAM-1): serving is a state of the machine, not a task that
+  completes. A box that halted when its last one-shot exited would be a
+  box that works until it is needed. And a server declares who it
+  serves: no pool, no range -- the declaration is the register, which
+  is why it cannot be lost at a reboot. Never send an option the
+  machine cannot honour (no router option from a box that does not
+  forward) and never answer for a name the link does not own.
 - **A record is the FLOOR's or a world's, never both** (JRN-1): the
   machine's journal says what the machine was and what it judged of
   itself; what a record of business IS belongs to the world that keeps
@@ -242,6 +251,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   daemon's own signal, no timer). The health seat is HEALTH since
   HLT-1 (2026-09-13); a bounded window for the TRIAL itself is still a
   seam.
+- (done 2026-09-14, NAM-1) The box as the network's own server of
+  addresses and names: `DOMAIN` on a NETWORK, the `PEER` kind, and the
+  first paired boot -- `experiment/os6_names.sh` puts two machines on
+  one QEMU socket netdev, a box that serves and a till that asks. The
+  FLEET COURT (a set of machine files judged together, which is what
+  would let one box verify another device's signature) is the seam
+  that seat opens, and `makeen_box` gets its own `DOMAIN` at OS-5,
+  when there is a NIC to serve.
 - (done 2026-09-12, PRJ-1) The edge profile's projection onto
   MicroRing's substrate: `stzos project` writes a real `device.ring`,
   judged by `experiment/judge_project.sh`. What remains is the Device

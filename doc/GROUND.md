@@ -166,12 +166,21 @@ the enterprise stay with the vendor (`B4`, `B5`).
   two slots. The failure domains are answered where they live: the
   router by a box that hands out the addresses and the names itself
   (B7: `imprimante.makeen` instead of a number to re-type, which
-  "solves a problem he has today that has nothing to do with us"); the
+  "solves a problem he has today that has nothing to do with us") --
+  **built** (NAM-1): `DOMAIN` and `PEER` are declarable, and
+  `machines/makeen_names.machine` serving `machines/caisse_makeen.machine`
+  on one wire is the scene itself, the till asking for the printer by
+  name and getting the number nobody typed. There is no pool of
+  addresses to lose at a reboot; the declaration is the register. The
+  clause lands on `makeen_box` when the board does (OS-5): an emulated
+  Pi has no NIC to serve, and a claim the court cannot judge is not
+  one this repository makes; the
   laptop by a machine with no lid, no shell, a watchdog and a boot
   that commits only when it recognises itself; the mains by a restart
   into the committed slot while the kitchen display keeps its local
   queue. The sales journal's inalterability and retention begin as a
-  MOUNT and want a signed-journal seat, named, not built.
+  MOUNT and, since JRN-1, rest on a machine that keeps its own signed
+  chain -- the business record itself stays the world's to define.
 - *The devices.* The remote control on the customer's own phone, the
   kitchen display on a tablet, the management world on the merchant's
   phone: enslaved commodity Android, the touch profile, MakeenOS as a

@@ -1,0 +1,55 @@
+-- makeen_names.machine -- the box as the network's own server of names.
+--
+-- The ground is RestoLean's B7, and it has nothing to do with us. Many
+-- boxes do not keep their register of leases across a reboot: the
+-- kitchen printer comes back on a different number and somebody types
+-- the new one into the till. The merchant lives with it. A box that
+-- hands out the addresses itself, reserves them all, and gives names is
+-- the answer -- `imprimante.makeen`, which does not change because a
+-- power cut happened at two in the morning.
+--
+-- What makes it different from every box that already does this: there
+-- is NO POOL. This machine serves exactly the peers declared below and
+-- nobody else. So the register of who has what cannot be lost, because
+-- there is no register -- there is this file, in git, judged by the
+-- court before the image was built. The failure is not handled. It is
+-- made impossible to have.
+--
+-- A device nobody declared gets no address at all and its own transcript
+-- says so: `no lease after 3 tries (no server answered on this
+-- network)`. That is not a refusal message invented for the occasion,
+-- it is the truth about a network that was never told about it.
+--
+-- This machine and machines/caisse_makeen.machine are booted TOGETHER on
+-- one wire by experiment/os6_names.sh, which is the only way either one
+-- proves anything (NAM-1, 2026-09-14).
+
+DEFINE MACHINE makeen_names AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "The box of a small restaurant: it is the network, so it is the one that says what is on the network"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "A machine that serves a link speaks on it"
+
+DEFINE NETWORK salle AS (
+  INTERFACE "eth0",
+  ADDRESS "192.168.10.1/24",
+  DOMAIN "makeen",
+  EGRESS none
+) RATIONALE "The box IS makeen: it holds the first address on the link, answers for every name on it, and knows no way off it -- a network that serves the dining room does not need to reach the internet to do it"
+
+DEFINE PEER imprimante AS (
+  NETWORK salle,
+  HARDWARE "52:54:00:12:34:60",
+  ADDRESS "192.168.10.50"
+) RATIONALE "The kitchen printer. The same address every day and a name the till can keep, so nobody re-types a number after a reboot"
+
+DEFINE PEER caisse AS (
+  NETWORK salle,
+  HARDWARE "52:54:00:12:34:61",
+  ADDRESS "192.168.10.40"
+) RATIONALE "The till, which asks for the printer by name and should never have to know its number"

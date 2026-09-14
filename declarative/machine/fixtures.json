@@ -362,6 +362,22 @@
         },
         "order": []
       }
+    },
+    {
+      "id": "A21",
+      "name": "the box is the network's server of names: a declared peer has an address and a name that keeps it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"192.168.10.1/24\",\n  DOMAIN \"makeen\"\n) RATIONALE \"The box is the network's address\"\nDEFINE PEER imprimante AS (\n  NETWORK lan,\n  HARDWARE \"b8:27:eb:11:22:33\",\n  ADDRESS \"192.168.10.50\"\n) RATIONALE \"The kitchen printer: the same address every day, and a name the till can keep\"\n",
+      "expect": {
+        "counts": {
+          "services": 0,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "order": []
+      }
     }
   ],
   "rejects": [
@@ -778,6 +794,54 @@
       "name": "a journal lives at an absolute path, like the key that signs it",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"boot.journal\") RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\") RATIONALE \"x\"\n",
       "refusal": "JOURNAL is the absolute path"
+    },
+    {
+      "id": "R70",
+      "name": "a peer of this link lives on this link",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER far AS (NETWORK lan, HARDWARE \"b8:27:eb:11:22:33\", ADDRESS \"10.9.0.5\") RATIONALE \"x\"\n",
+      "refusal": "is not on lan"
+    },
+    {
+      "id": "R71",
+      "name": "a name needs a domain to be a name",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\") RATIONALE \"x\"\nDEFINE PEER imprimante AS (NETWORK lan, HARDWARE \"b8:27:eb:11:22:33\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\n",
+      "refusal": "declares no DOMAIN"
+    },
+    {
+      "id": "R72",
+      "name": "one address, one peer",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER a AS (NETWORK lan, HARDWARE \"b8:27:eb:11:22:33\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\nDEFINE PEER b AS (NETWORK lan, HARDWARE \"b8:27:eb:44:55:66\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\n",
+      "refusal": "is already a's"
+    },
+    {
+      "id": "R73",
+      "name": "a peer cannot take the box's own address",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER greedy AS (NETWORK lan, HARDWARE \"b8:27:eb:11:22:33\", ADDRESS \"192.168.10.1\") RATIONALE \"x\"\n",
+      "refusal": "is the machine's own address on lan"
+    },
+    {
+      "id": "R74",
+      "name": "a hardware address is six pairs, and the box hands out addresses by it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER imprimante AS (NETWORK lan, HARDWARE \"the printer\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\n",
+      "refusal": "HARDWARE is six pairs"
+    },
+    {
+      "id": "R75",
+      "name": "a peer belongs to a network this machine declared",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER imprimante AS (NETWORK wifi, HARDWARE \"b8:27:eb:11:22:33\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\n",
+      "refusal": "no such NETWORK"
+    },
+    {
+      "id": "R76",
+      "name": "a peer's name has to be a name the wire can carry",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"192.168.10.1/24\", DOMAIN \"makeen\") RATIONALE \"x\"\nDEFINE PEER imprimante_cuisine AS (NETWORK lan, HARDWARE \"b8:27:eb:11:22:33\", ADDRESS \"192.168.10.50\") RATIONALE \"x\"\n",
+      "refusal": "cannot be a name on makeen"
+    },
+    {
+      "id": "R77",
+      "name": "a machine that asks for its own address is not the one that hands them out",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS dhcp, DOMAIN \"makeen\") RATIONALE \"x\"\n",
+      "refusal": "asks for its own address"
     }
   ]
 }

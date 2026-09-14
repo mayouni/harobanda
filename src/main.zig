@@ -19,6 +19,8 @@ const court = @import("court.zig");
 const init = @import("init.zig");
 const image = @import("image.zig");
 const net = @import("net.zig");
+const netcfg = @import("netcfg.zig");
+const names = @import("names.zig");
 const update = @import("update.zig");
 const project = @import("project.zig");
 const guarantee = @import("guarantee.zig");
@@ -43,6 +45,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
+        \\  stzos ask    <name>                          (what does a name mean on this network? from inside a device on it)
         \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  stzos version
@@ -226,6 +229,90 @@ pub fn main() !u8 {
         }
         return 0;
     }
+    if (std.mem.eql(u8, verb, "ask")) {
+        // The witness of the NAMES seat, and the whole point of it: a
+        // device that was told nothing but its own address asks the
+        // server that gave it that address what a NAME on this network
+        // means, and says what came back. It is the till asking for the
+        // printer.
+        //
+        // It reads /etc/resolv.conf, which this machine did not choose
+        // and did not invent: the file its own dhcp client wrote from
+        // the lease. A name the server does not serve comes back as "no
+        // such name", never as a guess and never forwarded onward.
+        if (builtin.os.tag != .linux) {
+            try out.print("ask: a Linux act; this binary was built for {s}\n", .{@tagName(builtin.os.tag)});
+            return 2;
+        }
+        if (args.len < 3) {
+            try out.print("stzos: ask takes a name (imprimante.makeen)\n", .{});
+            return 1;
+        }
+        const want = args[2];
+        const conf = std.fs.cwd().readFileAlloc(arena, "/etc/resolv.conf", 1 << 16) catch {
+            try out.print("ask {s} -- no resolver: this machine was never told where to ask (/etc/resolv.conf)\n", .{want});
+            return 0;
+        };
+        var server: ?u32 = null;
+        var lines = std.mem.splitScalar(u8, conf, '\n');
+        while (lines.next()) |line| {
+            const t = std.mem.trim(u8, line, " \t\r");
+            if (!std.mem.startsWith(u8, t, "nameserver ")) continue;
+            if (machine.parseIpv4(std.mem.trim(u8, t["nameserver ".len..], " \t\r"))) |ip| {
+                server = ip;
+                break;
+            }
+        }
+        const sip = server orelse {
+            try out.print("ask {s} -- no resolver: /etc/resolv.conf names none\n", .{want});
+            return 0;
+        };
+        var sbuf: [16]u8 = undefined;
+        const stext = netcfg.fmtIp(&sbuf, sip);
+        const l = std.os.linux;
+        const rc_sock = l.socket(l.AF.INET, l.SOCK.DGRAM, 0);
+        if (l.E.init(rc_sock) != .SUCCESS) {
+            try out.print("ask {s} -- no socket: {s}\n", .{ want, @tagName(l.E.init(rc_sock)) });
+            return 0;
+        }
+        const fd: i32 = @intCast(rc_sock);
+        defer _ = l.close(fd);
+        const tv: l.timeval = .{ .sec = 3, .usec = 0 };
+        _ = l.setsockopt(fd, l.SOL.SOCKET, l.SO.RCVTIMEO, @ptrCast(&tv), @sizeOf(l.timeval));
+        var sa = std.posix.sockaddr.in{
+            .family = l.AF.INET,
+            .port = std.mem.nativeToBig(u16, 53),
+            .addr = std.mem.nativeToBig(u32, sip),
+            .zero = [_]u8{0} ** 8,
+        };
+        var qbuf: [512]u8 = undefined;
+        const id: u16 = 0x5A5A;
+        const qn = names.query(&qbuf, id, want) orelse {
+            try out.print("ask {s} -- that is not a name this machine can ask for\n", .{want});
+            return 1;
+        };
+        var rbuf: [1500]u8 = undefined;
+        var tries: u8 = 0;
+        while (tries < 3) : (tries += 1) {
+            _ = l.sendto(fd, &qbuf, qn, 0, @ptrCast(&sa), @sizeOf(@TypeOf(sa)));
+            const r = l.recvfrom(fd, &rbuf, rbuf.len, 0, null, null);
+            if (l.E.init(r) != .SUCCESS) continue;
+            switch (names.readAnswer(rbuf[0..r], id)) {
+                .address => |ip| {
+                    var ab: [16]u8 = undefined;
+                    try out.print("ask {s} -- {s} (from {s})\n", .{ want, netcfg.fmtIp(&ab, ip), stext });
+                    return 0;
+                },
+                .no_such_name => {
+                    try out.print("ask {s} -- no such name on this network (from {s})\n", .{ want, stext });
+                    return 0;
+                },
+                .malformed => continue,
+            }
+        }
+        try out.print("ask {s} -- {s} did not answer\n", .{ want, stext });
+        return 0;
+    }
     if (std.mem.eql(u8, verb, "reach")) {
         // The witness of the EGRESS seat, as `stzos id` is the USER
         // seat's: it asks the KERNEL whether this machine knows a way to
@@ -314,8 +401,8 @@ pub fn main() !u8 {
         }
         const m = (try load(arena, args[2], out)) orelse return 1;
         if (std.mem.eql(u8, verb, "check")) {
-            try out.print("machine {s} -- {s} / {s} / kernel {s} -- {d} service(s), {d} capabilit{s}, {d} mount(s), {d} pin(s), {d} network(s) -- judged, no refusal\n", .{
-                m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.kernel), m.services.len, m.capabilities.len, if (m.capabilities.len == 1) "y" else "ies", m.mounts.len, m.pins.len, m.networks.len,
+            try out.print("machine {s} -- {s} / {s} / kernel {s} -- {d} service(s), {d} capabilit{s}, {d} mount(s), {d} pin(s), {d} network(s), {d} peer(s) -- judged, no refusal\n", .{
+                m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.kernel), m.services.len, m.capabilities.len, if (m.capabilities.len == 1) "y" else "ies", m.mounts.len, m.pins.len, m.networks.len, m.peers.len,
             });
             return 0;
         }
@@ -394,4 +481,5 @@ test {
     _ = init;
     _ = expect;
     _ = journal;
+    _ = names;
 }

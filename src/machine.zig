@@ -193,8 +193,73 @@ pub const Network = struct {
     gateway: ?Ipv4,
     dns: []const Ipv4,
     egress: Egress,
+    /// the name this link answers to, when the machine is the network's
+    /// own server of names (NAM-1). Saying it makes this machine the one
+    /// that hands out the addresses on this link and answers for the
+    /// names of everything on it: the box IS `makeen`, and a declared
+    /// peer is `imprimante.makeen`. Null is a machine that is merely ON a
+    /// network somebody else serves.
+    domain: ?[]const u8,
     rationale: []const u8,
 };
+
+/// Somebody else on this link, declared here by the machine that serves
+/// it: a hardware address (who asks), an address (what it is given), and
+/// a name (what everyone else calls it).
+///
+/// The whole design is in what is ABSENT. There is no pool and no range:
+/// a peer this machine was not told about gets no address at all, so the
+/// register of who has what cannot be lost at a reboot -- there is no
+/// register, there is the declaration. The failure the merchant lives
+/// with, a box that forgets its leases overnight and renumbers the
+/// kitchen printer, is not handled here; it is made impossible to have.
+pub const Peer = struct {
+    name: []const u8,
+    line: usize,
+    network: []const u8,
+    hardware: [6]u8,
+    hardware_text: []const u8,
+    ip: u32,
+    address: []const u8,
+    rationale: []const u8,
+};
+
+/// six pairs of hex, colon-separated: the only thing a DHCP server can
+/// recognise a returning device by.
+pub fn parseMac(s: []const u8) ?[6]u8 {
+    var mac: [6]u8 = undefined;
+    var it = std.mem.splitScalar(u8, s, ':');
+    var n: usize = 0;
+    while (it.next()) |part| : (n += 1) {
+        if (n == 6 or part.len != 2) return null;
+        mac[n] = std.fmt.parseInt(u8, part, 16) catch return null;
+    }
+    if (n != 6) return null;
+    return mac;
+}
+
+/// what a name on the wire may be made of. Lowercase letters, digits and
+/// the hyphen, not at either end. The estate writes `makeen_box` with an
+/// underscore and DNS cannot carry one, so this refuses rather than
+/// rewriting: a silently corrected name is a name the author no longer
+/// knows.
+pub fn isLabel(s: []const u8) bool {
+    if (s.len == 0 or s.len > 63) return false;
+    if (s[0] == '-' or s[s.len - 1] == '-') return false;
+    for (s) |ch| {
+        const ok = (ch >= 'a' and ch <= 'z') or (ch >= '0' and ch <= '9') or ch == '-';
+        if (!ok) return false;
+    }
+    return true;
+}
+
+/// a domain is one or more labels: `makeen`, or `makeen.local`.
+pub fn isDomain(s: []const u8) bool {
+    if (s.len == 0 or s.len > 253) return false;
+    var it = std.mem.splitScalar(u8, s, '.');
+    while (it.next()) |part| if (!isLabel(part)) return false;
+    return true;
+}
 
 pub fn parseIpv4(s: []const u8) ?u32 {
     var ip: u32 = 0;
@@ -253,6 +318,9 @@ pub const Machine = struct {
     mounts: []const Mount,
     pins: []const Pin,
     networks: []const Network,
+    /// everyone else this machine serves on a link it declares a DOMAIN
+    /// for: an address that never changes and a name that goes with it
+    peers: []const Peer,
     users: []const User,
 
     pub fn granted(self: Machine, c: Capability) bool {
@@ -434,7 +502,7 @@ const Clause = struct {
     value: Value,
 };
 
-const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER };
+const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER };
 
 const Decl = struct {
     kind: Kind,
@@ -451,8 +519,9 @@ fn allowedClauses(kind: Kind) []const []const u8 {
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
-        .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS", "EGRESS" },
+        .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS", "EGRESS", "DOMAIN" },
         .USER => &.{ "UID", "GID" },
+        .PEER => &.{ "NETWORK", "HARDWARE", "ADDRESS" },
     };
 }
 
@@ -516,7 +585,7 @@ fn parseDecl(ctx: *Ctx) Error!Decl {
     const kind_tok = ctx.next();
     const kind = if (kind_tok.tag == .keyword) std.meta.stringToEnum(Kind, kind_tok.text) else null;
     if (kind == null) {
-        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the machine kinds are closed (MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER)", .{kind_tok.text});
+        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the machine kinds are closed (MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER)", .{kind_tok.text});
     }
     const name = try ctx.expect(.ident, "a lower_snake name");
     const as_tok = ctx.next();
@@ -803,7 +872,54 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
                 },
             }
         }
-        try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .rationale = d.rationale });
+        // DOMAIN -- the machine is this link's own server of names
+        // (NAM-1). It is the one clause that turns a machine from an
+        // inhabitant of a network into the network's address.
+        var domain: ?[]const u8 = null;
+        if (find(d, "DOMAIN")) |c| {
+            if (address == .dhcp) return ctx.refuse(c.line, "{s} asks for its own address by dhcp, and a machine that asks for its own address is not the one that hands them out: a serving link declares a static ADDRESS", .{d.name});
+            const s = try wantString(&ctx, c);
+            if (!isDomain(s)) return ctx.refuse(c.line, "'{s}' cannot be a domain: a name on the wire is lowercase letters, digits and the hyphen, in labels separated by dots", .{s});
+            domain = s;
+        }
+        try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .domain = domain, .rationale = d.rationale });
+    };
+
+    // peers: who else is on a link this machine serves. Read after the
+    // networks, because every check a peer needs is a fact about its link.
+    var peers: std.ArrayList(Peer) = .{};
+    for (decls.items) |d| if (d.kind == .PEER) {
+        const nc = try required(&ctx, d, "NETWORK");
+        const nname = try wantIdent(&ctx, nc);
+        var link: ?Network = null;
+        for (nets.items) |n| if (std.mem.eql(u8, n.name, nname)) {
+            link = n;
+        };
+        const net = link orelse return ctx.refuse(nc.line, "PEER {s} is on {s}, and there is no such NETWORK in this declaration", .{ d.name, nname });
+        const dom = net.domain orelse return ctx.refuse(d.line, "PEER {s} is on {s}, and {s} declares no DOMAIN: a machine that does not serve a link has no addresses to give out on it and no names to answer for", .{ d.name, nname, nname });
+        if (!isLabel(d.name)) return ctx.refuse(d.line, "'{s}' cannot be a name on {s}: a name on the wire is lowercase letters, digits and the hyphen, not at either end", .{ d.name, dom });
+        const hw_c = try required(&ctx, d, "HARDWARE");
+        const hw_text = try wantString(&ctx, hw_c);
+        const mac = parseMac(hw_text) orelse return ctx.refuse(hw_c.line, "HARDWARE is six pairs of hex separated by colons (b8:27:eb:11:22:33), and '{s}' is not: it is what this machine recognises a returning device by, so it is the device's, not a word for it", .{hw_text});
+        const ac2 = try required(&ctx, d, "ADDRESS");
+        const atext = try wantString(&ctx, ac2);
+        const ip = parseIpv4(atext) orelse return ctx.refuse(ac2.line, "'{s}' is not an address (a.b.c.d): a peer is given one address, not a range", .{atext});
+        // a DOMAIN refuses a dhcp ADDRESS above, so a link with a domain
+        // is static -- said here rather than assumed.
+        const self = switch (net.address) {
+            .static => |s| s,
+            .dhcp => return ctx.refuse(d.line, "PEER {s} is on {s}, which asks for its own address", .{ d.name, nname }),
+        };
+        const mask: u32 = if (self.prefix == 0) 0 else ~@as(u32, 0) << @intCast(32 - @as(u6, self.prefix));
+        if ((ip & mask) != (self.ip & mask)) return ctx.refuse(ac2.line, "{s} is not on {s} ({s}): a machine hands out addresses on its own link and nowhere else", .{ atext, nname, self.text });
+        if (ip == self.ip) return ctx.refuse(ac2.line, "{s} is the machine's own address on {s}: the one address on this link it cannot give away", .{ atext, nname });
+        for (peers.items) |e| {
+            if (!std.mem.eql(u8, e.network, nname)) continue;
+            if (e.ip == ip) return ctx.refuse(ac2.line, "{s} is already {s}'s: one address, one peer, or the name does not mean anything", .{ atext, e.name });
+            if (std.mem.eql(u8, e.hardware_text, hw_text)) return ctx.refuse(hw_c.line, "{s} is already {s}'s hardware: one device, one name", .{ hw_text, e.name });
+            if (std.mem.eql(u8, e.name, d.name)) return ctx.refuse(d.line, "{s}.{s} is already declared: one name, one peer", .{ d.name, dom });
+        }
+        try peers.append(arena, .{ .name = d.name, .line = d.line, .network = nname, .hardware = mac, .hardware_text = hw_text, .ip = ip, .address = atext, .rationale = d.rationale });
     };
 
     // services
@@ -997,6 +1113,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .mounts = try mounts.toOwnedSlice(arena),
         .pins = try pins.toOwnedSlice(arena),
         .networks = try nets.toOwnedSlice(arena),
+        .peers = try peers.toOwnedSlice(arena),
         .users = user_slice,
     };
 }

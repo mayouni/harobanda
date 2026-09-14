@@ -144,7 +144,15 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
                 for (n.dns, 0..) |d, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", d.text });
                 try out.print("]", .{});
             }
-            try out.print("\n", .{});
+            // the link this machine SERVES, and everyone it will serve on
+            // it: the register of who has which address is the
+            // declaration itself, so the plan reads it out in full (NAM-1)
+            if (n.domain) |dom| {
+                try out.print(" -- serves {s}\n", .{dom});
+                for (m.peers) |pr| if (std.mem.eql(u8, pr.network, n.name)) {
+                    try out.print("  peer {s}.{s} -- {s} for {s}\n", .{ pr.name, dom, pr.address, pr.hardware_text });
+                };
+            } else try out.print("\n", .{});
         },
         .service => |svc| {
             try out.print("start {s} --", .{svc.name});

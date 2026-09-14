@@ -160,6 +160,13 @@ mkdir -p "$OUT" zig-out/wsl
     cp "$OUT/sd.img" "$OUT/sd.pristine.img"   # the card as flashed, before any boot wrote to it
   fi
   ls -la "$OUT" | grep -v '^total' | grep -v ' root$\| empty$\| firmware$'
+  # STZOS_NO_BOOT: derive and build the image and stop there. The
+  # PAIR of machines that meet on a wire (NAM-1) is booted by
+  # experiment/os6_names.sh, which needs both images built and
+  # neither booted on its own -- a box with nobody to serve would
+  # sit at its timeout, and a device with no server would be right
+  # to say nobody answered.
+  if [ -n "${STZOS_NO_BOOT:-}" ]; then echo "=== boot skipped (STZOS_NO_BOOT): the image is built and judged elsewhere ==="; echo "exit 0"; exit 0; fi
   echo "=== boot ==="
   # stdin from /dev/null and --foreground: run from a real terminal, QEMU
   # -nographic tries to put the tty into raw mode; under `timeout` it sits

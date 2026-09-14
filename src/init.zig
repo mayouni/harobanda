@@ -29,6 +29,7 @@ const builtin = @import("builtin");
 const machine = @import("machine.zig");
 const plan = @import("plan.zig");
 const netcfg = @import("netcfg.zig");
+const names = @import("names.zig");
 const expect = @import("expect.zig");
 const journal = @import("journal.zig");
 
@@ -353,6 +354,53 @@ fn writeKernelFile(path: []const u8, data: []const u8) !void {
 /// Delegate the controllers and make one group per budgeted world. A
 /// machine that declares no budget touches none of this and says
 /// nothing: the plumbing a declaration did not ask for is not built.
+/// Become this link's own server of addresses and names (NAM-1).
+///
+/// PID 1 takes the two ports itself and forks only the loop, so a port
+/// this machine could not take is reported by the process whose lines
+/// are judged, in the order the boot happened. The child says nothing:
+/// a server answering devices at its own pace would write a different
+/// transcript every boot, and the transcript is the fixture (BDG-1).
+///
+/// The forked server is not a world. It is not declared, it has no
+/// RESTART, and it is not waited on -- it is this machine being what it
+/// said it was. If it dies, the reaper below says so by pid and the
+/// boot no longer matches what was expected, which is the truth.
+fn serveNames(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machine.Network, led: *Ledger) !bool {
+    const iface = try gpa.dupe(u8, n.interface);
+    const srv = names.open(iface) catch |e| {
+        try led.say("boot: names {s} -- {s} could not be served: {s} (the ports a server needs are 67 and 53)\n", .{ n.name, n.interface, @errorName(e) });
+        return false;
+    };
+    var mine: std.ArrayList(machine.Peer) = .{};
+    for (m.peers) |p| if (std.mem.eql(u8, p.network, n.name)) {
+        try mine.append(gpa, p);
+    };
+    const self = switch (n.address) {
+        .static => |s| s,
+        .dhcp => return false,
+    };
+    const link: names.Link = .{
+        .self_ip = self.ip,
+        .mask = if (self.prefix == 0) 0 else ~@as(u32, 0) << @intCast(32 - @as(u6, self.prefix)),
+        .domain = n.domain.?,
+        .peers = mine.items,
+    };
+    // everything this machine will say about the link is said BEFORE the
+    // fork, so the two processes never contend for the console
+    _ = try expect.namesLines(led.w(), m, n, "boot: ");
+    try led.echo();
+    const pid = std.posix.fork() catch |e| {
+        try led.say("boot: names {s} -- the server could not be started: {s}\n", .{ n.name, @errorName(e) });
+        return false;
+    };
+    if (pid == 0) names.run(srv, link);
+    // the parent keeps no fd to the ports: the child is the server
+    std.posix.close(srv.dhcp_fd);
+    std.posix.close(srv.dns_fd);
+    return true;
+}
+
 fn cgroupPrepare(m: *const machine.Machine, out: *std.Io.Writer) BudgetState {
     var any = false;
     for (m.services) |s| {
@@ -621,6 +669,11 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     for (p.steps) |step| if (step == .service) try slots.append(gpa, .{ .service = step.service });
 
     var ab: ?Slots = if (m.slots) |dev| Slots{ .dev = dev } else null;
+    // the link this machine became the server of, if it declared one.
+    // It is the reason a box with no running world is not a box with
+    // nothing left to do (NAM-1).
+    var serving: ?[]const u8 = null;
+    var said_serving = false;
     if (opts.hold and ab != null) try out.print("boot: --hold: a trial will not be committed and the watchdog will not be fed -- the rollback instrument\n", .{});
 
     for (p.steps) |step| switch (step) {
@@ -676,7 +729,15 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                 continue;
             }
             try out.flush();
-            _ = try netcfg.bringUp(n, led.w(), "boot: ");
+            const up = try netcfg.bringUp(n, led.w(), "boot: ");
+            // the machine becomes its link's own server of names, if it
+            // declared itself one (NAM-1). The two ports are taken HERE,
+            // by PID 1, so that "this machine could not become the server
+            // it declared itself" is said in order in the transcript that
+            // is judged; only the loop is forked.
+            if (up and n.domain != null) {
+                if (try serveNames(gpa, m, n, &led)) serving = n.domain;
+            }
             try led.echo();
         },
         .service => {}, // started below, when what it comes AFTER is ready
@@ -883,8 +944,22 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                     try led.say("boot: {s} never started -- {s}\n", .{ s.service.name, why });
                 };
             }
-            try out.print("boot: every service has ended -- init has nothing left to keep alive\n", .{});
-            break;
+            if (serving) |dom| {
+                // A machine that is its link's server of names has not
+                // finished when its last one-shot has. Every device on
+                // this network asks it for an address at every boot and
+                // for a name whenever somebody types one; a box that
+                // stopped the moment nobody was asking would be a box
+                // that works until it is needed (NAM-1).
+                if (!said_serving) {
+                    try out.print("boot: every service has ended -- and this machine is still {s}: a server stops when the machine stops, not when the asking does\n", .{dom});
+                    said_serving = true;
+                    try out.flush();
+                }
+            } else {
+                try out.print("boot: every service has ended -- init has nothing left to keep alive\n", .{});
+                break;
+            }
         }
         if (opts.turns) |t| if (turns >= t) {
             try out.print("boot: --turns {d} reached with {d} service(s) still running -- the instrument ends what a real init never would\n", .{ turns, alive });

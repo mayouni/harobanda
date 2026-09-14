@@ -439,7 +439,15 @@ diagram. This is where the floor pays each band of it:
    hosted machine: an Ed25519 key made on first boot and kept on a
    declared partition. What remains is the fleet's half -- a box
    verifying ANOTHER device's signature, which needs the fleet court.
-6. The box as the network's server of addresses and names.
+6. ~~The box as the network's server of addresses and names.~~
+   **Built (NAM-1)** as `DOMAIN` on a NETWORK and the `PEER` kind, and
+   proved by two machines booted together on one wire: the till learns
+   its address, the domain and the resolver from the link, then asks
+   for the printer by name. There is no pool -- the declaration is the
+   register, which is why it cannot be lost at a reboot. What remains
+   is a link a machine ROUTES between, which would be an act and would
+   be declared, and the clause on `makeen_box` itself, which waits on
+   the hardware (OS-5) because an emulated Pi has no NIC to serve.
 7. The model as a pinned asset of the image.
 8. NEEDS judged against a world's own manifest and the placement
    contract.

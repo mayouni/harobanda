@@ -5,10 +5,13 @@
 `fixtures.json` sha256:
 
 ```
-b41640da56e91a49e0a9d98e60d661ed19adfbaf4da223895c67e2b7b1a1b395
+a3f0d91ab47704acf1a966c3fcdf37df6ce01543dee8bdfadb162caad5ab7727
 ```
 
-(Before the JOURNAL seat of 2026-09-14 (JRN-1):
+(Before the NAMES seat of 2026-09-14 (NAM-1):
+`b41640da56e91a49e0a9d98e60d661ed19adfbaf4da223895c67e2b7b1a1b395`,
+89/89; the widening added A21, the `PEER` kind, `DOMAIN` on NETWORK,
+and R70–R77. Before the JOURNAL seat of 2026-09-14 (JRN-1):
 `3809f24df3232e5d2c1b9a100a60379567e49883d687787af5ac2202eb47b7fc`,
 85/85; the widening added A20, R67, R68, R69 and gave A2 its `JOURNAL`.
 Before the IDENTITY seat of 2026-09-14 (IDN-1):
@@ -62,7 +65,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **89/89** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **98/98** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -117,6 +120,50 @@ not committed ... the next boot is A`, and the card read back still
 booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
+
+## Two machines on one wire (NAM-1)
+
+`DOMAIN` on a NETWORK and the `PEER` kind: the machine becomes its
+link's own server of addresses and names. Fixture-first: A21 accepts
+the shape, and eight refusals say what a served link is — a peer off
+the link (R70), a peer on a link with no domain (R71), two peers on one
+address (R72), a peer on the machine's own address (R73), a hardware
+address that is a word rather than six pairs (R74), a link this file
+never declared (R75), a name the wire cannot carry (R76), and a link
+that asks for its own address by dhcp (R77). **98/98**, from 89/89.
+
+The codec is judged beside the code (`src/names.zig`, four tests): a
+declared device is answered with the address it was declared and an
+undeclared one with silence; an offer carries the resolver, the domain,
+an infinite lease and **no router**; the box answers for its peers,
+for the short form, case-insensitively, and for itself, and says there
+is no such name for anything else; an answer to another question is not
+an answer.
+
+And then the thing itself, which nothing else in this repository has
+done before: **two machines, booted at the same time, on one wire**
+(`experiment/os6_names.sh`, **66 lines**, `machines/names.expected`).
+`makeen_names` serves and waits. `caisse_makeen` declares no address,
+no resolver and no printer, learns all three from the link, and asks:
+
+```
+till: boot: network salle -- eth0 up 192.168.10.40/24 (dhcp), dns [192.168.10.1], names on makeen (/etc/resolv.conf)
+till: ask imprimante.makeen -- 192.168.10.50 (from 192.168.10.1)
+till: ask makeen -- 192.168.10.1 (from 192.168.10.1)
+till: ask fantome.makeen -- no such name on this network (from 192.168.10.1)
+```
+
+The third round is the seat's own negative: the SAME image with a
+hardware address nobody declared, which gets nothing at all and is
+right to say so.
+
+```
+stranger: boot: network salle -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
+```
+
+The generator agreeing with itself would have proved nothing here; the
+box's claim is judged by the device that consumed it, which is the law
+PRJ-2 paid for.
 
 ## The machine's own record, chained and signed (JRN-1)
 

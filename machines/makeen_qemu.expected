@@ -8,7 +8,7 @@ boot: grant process (effectful)
 boot: grant filesystem (effectful)
 boot: grant network (effectful)
 boot: refuse gpio (effectful)
-boot: network lan -- eth0 up 10.0.2.15/24, gateway 10.0.2.2 (dhcp), dns [10.0.2.3]
+boot: network lan -- eth0 up 10.0.2.15/24, gateway 10.0.2.2 (dhcp), dns [10.0.2.3], /etc/resolv.conf written
 boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
 boot: start kds -- pid N -- /stzr /app/kds.luau
 kds: the kitchen display world is up on the Makeen box (aarch64, stzr under PID 1)

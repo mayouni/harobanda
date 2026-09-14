@@ -55,6 +55,19 @@ pub const Lease = struct {
     gateway: ?u32,
     dns: [3]u32 = .{ 0, 0, 0 },
     ndns: u8 = 0,
+    /// the name of the network this address belongs to (option 15), when
+    /// the server that gave it is the link's own server of names. It is
+    /// what makes `imprimante` and `imprimante.makeen` the same question
+    /// on a device that was told nothing but its own address (NAM-1).
+    /// Held BY VALUE: the option points into the receive buffer of the
+    /// exchange that carried it, and that buffer is gone by the time
+    /// anyone reads the lease.
+    domain_buf: [64]u8 = undefined,
+    domain_len: u8 = 0,
+
+    pub fn domain(self: *const Lease) []const u8 {
+        return self.domain_buf[0..self.domain_len];
+    }
 };
 
 fn sockIn(ip: u32, port: u16) linux.sockaddr {
@@ -208,6 +221,17 @@ fn bringUpLinux(n: *const machine.Network, out: *std.Io.Writer, prefix: []const 
             }
             try out.print("]", .{});
         }
+        // everything after `up` on a dhcp line is the server's to give,
+        // and the expectation wildcards it: what this machine LEARNED
+        // belongs here, not on a line of its own
+        if (writeResolv(lease)) {
+            const dom = lease.domain();
+            if (dom.len > 0) {
+                try out.print(", names on {s} (/etc/resolv.conf)", .{dom});
+            } else {
+                try out.print(", /etc/resolv.conf written", .{});
+            }
+        }
     } else if (n.dns.len > 0) {
         try out.print(", dns [", .{});
         for (n.dns, 0..) |d, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", d.text });
@@ -217,6 +241,38 @@ fn bringUpLinux(n: *const machine.Network, out: *std.Io.Writer, prefix: []const 
     // the reach, said once and derived: a machine that declares none says
     // nothing here, and its transcript is what it always was
     if (egress_ok) _ = try expect.egressLine(out, n, prefix);
+    return true;
+}
+
+/// Write down where this machine was told to ask for names (NAM-1).
+///
+/// A device that learns its address from a server also learns who
+/// answers for names on that link, and a world that wants to reach
+/// `imprimante` has to be able to read it somewhere. `/etc/resolv.conf`
+/// is that somewhere, in the one form every tool already knows how to
+/// read -- this machine does not invent a second place for a fact the
+/// world already has a name for.
+///
+/// Only on a dhcp lease. A static machine was told its addresses in its
+/// own declaration and has no server to learn from.
+fn writeResolv(l: Lease) bool {
+    if (l.ndns == 0) return false;
+    var buf: [256]u8 = undefined;
+    var n: usize = 0;
+    const dom = l.domain();
+    if (dom.len > 0) {
+        const line = std.fmt.bufPrint(buf[n..], "search {s}\n", .{dom}) catch return false;
+        n += line.len;
+    }
+    var i: u8 = 0;
+    while (i < l.ndns) : (i += 1) {
+        var db: [16]u8 = undefined;
+        const line = std.fmt.bufPrint(buf[n..], "nameserver {s}\n", .{fmtIp(&db, l.dns[i])}) catch return false;
+        n += line.len;
+    }
+    const f = std.fs.cwd().createFile("/etc/resolv.conf", .{ .truncate = true }) catch return false;
+    defer f.close();
+    f.writeAll(buf[0..n]) catch return false;
     return true;
 }
 
@@ -250,6 +306,7 @@ const dhcp_magic = [4]u8{ 99, 130, 83, 99 };
 const OPT_MASK = 1;
 const OPT_ROUTER = 3;
 const OPT_DNS = 6;
+const OPT_DOMAIN = 15;
 const OPT_REQUESTED_IP = 50;
 const OPT_MSG_TYPE = 53;
 const OPT_SERVER_ID = 54;
@@ -261,7 +318,7 @@ const REQUEST = 3;
 const ACK = 5;
 const NAK = 6;
 
-const Offer = struct { ip: u32, server: u32, mask: u32, router: ?u32, dns: [3]u32, ndns: u8, kind: u8 };
+const Offer = struct { ip: u32, server: u32, mask: u32, router: ?u32, dns: [3]u32, ndns: u8, kind: u8, domain: []const u8 = "" };
 
 fn build(buf: *[576]u8, xid: u32, mac: [6]u8, kind: u8, requested: ?u32, server: ?u32) usize {
     @memset(buf, 0);
@@ -339,6 +396,7 @@ fn parse(pkt: []const u8, xid: u32) ?Offer {
             OPT_SERVER_ID => if (len >= 4) {
                 o.server = std.mem.readInt(u32, v[0..4], .big);
             },
+            OPT_DOMAIN => o.domain = v,
             else => {},
         }
         i = end;
@@ -409,7 +467,12 @@ fn dhcp(iface: []const u8, mac: [6]u8, out: *std.Io.Writer, prefix: []const u8, 
             }
             const a = parse(rbuf[0..r], xid) orelse continue;
             if (a.kind == ACK) {
-                return .{ .ip = a.ip, .prefix = @intCast(@popCount(a.mask)), .gateway = a.router, .dns = a.dns, .ndns = a.ndns };
+                var l = Lease{ .ip = a.ip, .prefix = @intCast(@popCount(a.mask)), .gateway = a.router, .dns = a.dns, .ndns = a.ndns };
+                if (a.domain.len > 0 and a.domain.len <= l.domain_buf.len) {
+                    @memcpy(l.domain_buf[0..a.domain.len], a.domain);
+                    l.domain_len = @intCast(a.domain.len);
+                }
+                return l;
             }
             if (a.kind == NAK) break;
         }

@@ -27,6 +27,9 @@ pub fn run(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
         // by hand is by hand: this verb does what it is told and narrows
         // nothing. A reach is a machine's to declare (EGR-1).
         .egress = .unrestricted,
+        // and serves nobody: being the network's server of names is a
+        // machine's to DECLARE, never a flag on a command line (NAM-1).
+        .domain = null,
         .rationale = "",
     };
     if (!std.mem.eql(u8, args[1], "dhcp")) {

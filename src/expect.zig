@@ -117,6 +117,33 @@ pub fn budgetLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
 /// here, like every judged line -- netcfg prints it and derive() writes
 /// it. Nothing is said for a network that declares no reach, so every
 /// machine written before this seat has the transcript it always had.
+/// The lines a machine says when it is its link's own server of names
+/// (NAM-1): one for the link, one for every peer it will answer for.
+///
+/// The per-peer lines are here on purpose. The register of who has which
+/// address is the thing a vendor's box keeps in a file and loses at a
+/// reboot; here it is in the DECLARATION, so the boot can read it out in
+/// full and the transcript that is judged carries it. An auditor reading
+/// this file knows every device the network will admit.
+pub fn namesLines(w: *std.Io.Writer, m: *const machine.Machine, n: *const machine.Network, prefix: []const u8) !bool {
+    const dom = n.domain orelse return false;
+    const self = switch (n.address) {
+        .static => |s| s.text,
+        .dhcp => return false,
+    };
+    var count: usize = 0;
+    for (m.peers) |p| if (std.mem.eql(u8, p.network, n.name)) {
+        count += 1;
+    };
+    try w.print("{s}names {s} -- {s}: this machine is {s}, {d} declared peer{s}, and no address for anyone else\n", .{
+        prefix, n.name, dom, self, count, if (count == 1) "" else "s",
+    });
+    for (m.peers) |p| if (std.mem.eql(u8, p.network, n.name)) {
+        try w.print("{s}names {s} -- {s}.{s} is {s} for {s}\n", .{ prefix, n.name, p.name, dom, p.address, p.hardware_text });
+    };
+    return true;
+}
+
 pub fn egressLine(w: *std.Io.Writer, n: *const machine.Network, prefix: []const u8) !bool {
     switch (n.egress) {
         .unrestricted => return false,
@@ -194,6 +221,10 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
                 },
             }
             _ = try egressLine(w, n, "boot: ");
+            // a machine with no NIC behind the declared interface cannot
+            // be that link's server: under the emulator's lens it says
+            // nothing here, and that difference is the emulator's lack
+            if (!lens.network_absent) _ = try namesLines(w, m, n, "boot: ");
         },
         .service => {},
     };
