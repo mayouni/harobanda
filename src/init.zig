@@ -30,6 +30,7 @@ const machine = @import("machine.zig");
 const plan = @import("plan.zig");
 const netcfg = @import("netcfg.zig");
 const names = @import("names.zig");
+const confine = @import("confine.zig");
 const expect = @import("expect.zig");
 const journal = @import("journal.zig");
 
@@ -564,6 +565,10 @@ const State = enum { pending, running, exited, never };
 
 const Slot = struct {
     service: *const machine.Service,
+    /// what the kernel will hold this world to, read off the machine and
+    /// the service together and settled ONCE, here, because the spawn
+    /// path has the service and not the machine (NS-1)
+    held: confine.Confinement = .{ .network = true, .process = true, .threads = true },
     state: State = .pending,
     pid: i32 = 0,
     code: u32 = 0,
@@ -663,7 +668,10 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
 
     var slots: std.ArrayList(Slot) = .{};
     defer slots.deinit(gpa);
-    for (p.steps) |step| if (step == .service) try slots.append(gpa, .{ .service = step.service });
+    for (p.steps) |step| if (step == .service) try slots.append(gpa, .{
+        .service = step.service,
+        .held = confine.Confinement.of(m.*, step.service.*),
+    });
 
     var ab: ?Slots = if (m.slots) |dev| Slots{ .dev = dev } else null;
     // the link this machine became the server of, if it declared one.
@@ -813,6 +821,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         .refused => try out.flush(),
     }
     _ = try expect.healthLine(led.w(), m);
+    // what the kernel will refuse each world, said before any of them runs
+    _ = try expect.confineLine(led.w(), m);
     try led.echo();
     try startReady(gpa, slots.items, &led);
     try out.flush();
@@ -1039,7 +1049,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                     try led.say("boot: {s} -- restart {s}, but gave up after {d} restarts\n", .{ c.service.name, @tagName(c.service.restart), c.restarts });
                 } else {
                     c.restarts += 1;
-                    const again = spawn(gpa, c.service) catch |e| {
+                    const again = spawn(gpa, c.service, c.held) catch |e| {
                         try led.say("boot: restart {s} -- could not spawn: {s}\n", .{ c.service.name, @errorName(e) });
                         break;
                     };
@@ -1151,7 +1161,7 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
                 };
             }
             if (!ok) continue;
-            const started = spawn(gpa, s.service) catch |e| {
+            const started = spawn(gpa, s.service, s.held) catch |e| {
                 s.state = .never;
                 try led.say("boot: start {s} -- could not spawn: {s}\n", .{ s.service.name, @errorName(e) });
                 progressed = true;
@@ -1186,7 +1196,7 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
 /// there is no privilege left to change the group with.
 const Started = struct { pid: i32, gate: std.posix.fd_t };
 
-fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service) !Started {
+fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Confinement) !Started {
     var argv = try gpa.alloc(?[*:0]const u8, svc.run.len + 1);
     defer gpa.free(argv);
     for (svc.run, 0..) |a, i| argv[i] = (try gpa.dupeZ(u8, a)).ptr;
@@ -1203,6 +1213,24 @@ fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service) !Started {
         var latch: [1]u8 = undefined;
         _ = std.posix.read(gate[0], &latch) catch {}; // PID 1's word, or its death
         std.posix.close(gate[0]);
+        // What the kernel will hold this world to, before it is a world
+        // at all: the namespace it cannot leave and the filter it cannot
+        // lift (NS-1). Both must happen BEFORE the exec, and the unshare
+        // before the drop to a declared USER, which is the last moment
+        // this child has the privilege to ask for a namespace.
+        const applied = confine.apply(held);
+        if (held.confined() and applied.trouble != null) {
+            // The machine said, in a line the court reads, that this
+            // world would be held to what it declared. If the kernel
+            // cannot do it, the promise is broken -- and a machine that
+            // cannot keep a promise does not start the world and pretend.
+            // The boot then differs from its expectation, which holds a
+            // trial, which is the whole point of judging one's own boot.
+            var msg: [320]u8 = undefined;
+            const line = std.fmt.bufPrint(&msg, "boot: {s} -- NOT STARTED: the kernel cannot hold it to what it declared ({s}); the machine does not run a world whose envelope it could not build\n", .{ svc.name, applied.trouble.? }) catch "boot: a world could not be confined\n";
+            _ = std.posix.write(1, line) catch {};
+            std.posix.exit(125);
+        }
         if (svc.user) |u| {
             std.posix.setgid(u.gid) catch std.posix.exit(126);
             std.posix.setuid(u.uid) catch std.posix.exit(126);

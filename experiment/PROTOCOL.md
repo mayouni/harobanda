@@ -1,3 +1,100 @@
+# NS-1 — namespaces and seccomp: the kernel keeps the promise NEEDS has been making since the first day
+
+The seventh act of 2026-09-14, and the only one so far that added no
+clause at all.
+
+## The promise that was kept by good manners
+
+`NEEDS` has said what each world requires since the first machine file.
+The runtime refused what was not granted; the KERNEL handed it over
+anyway. A world that never declared `network` could open a socket. A
+world that never declared `process` could fork. The declaration was
+true about intent and false about the machine.
+
+Here the kernel keeps it instead, derived and never declared:
+
+| the world's NEEDS omits | what the kernel does |
+|---|---|
+| `network` | it runs in its own EMPTY network namespace -- the interface is not refused, it is not there |
+| `process` | `fork`, `vfork` and `clone` without `CLONE_THREAD` return EPERM |
+
+## Why the vocabulary already fit
+
+stzlib's nine capabilities separate `process` from `threads`, and the
+kernel separates them at exactly the same seam: one `clone` makes either,
+and one bit of its first argument says which. The filter tests that bit,
+which is what makes the refusal precise rather than a blanket ban on
+`clone` that would break every runtime that threads. A vocabulary
+written for a virtual twin turned out to name the distinction the kernel
+actually makes.
+
+## The one deliberately NOT enforced
+
+`threads`. A capability says what the WORLD may do, and a thread the
+RUNTIME creates for its own housekeeping is not the world asking: stzr
+is a process this machine starts, not a program the declaration wrote.
+Refusing it a thread because a Luau script never asked for threading
+would punish the runtime for the world's declaration. The machinery to
+refuse it is built and judged; the seat that decides whose thread it is
+is not.
+
+## Judged
+
+`machines/qemu_confine.machine` -- three worlds, one witness, and the
+only difference between them is what their own NEEDS say:
+
+```
+boot: confine -- sealed has no network of its own, still has no way to start another process
+confined: eth0 -- no such interface from here: this world has a network namespace of its own and there is nothing in it
+confined: fork -- permitted: this world started another process, and this line is the child speaking
+confined: eth0 -- present: this world shares the machine's network
+confined: fork -- refused by the kernel (EPERM): this world cannot start another process
+```
+
+`stzos confined` asks a sharper question than `stzos reach`: not whether
+the machine knows a WAY to an address, but whether the interface EXISTS
+from where the world stands. "No such interface" is a different answer
+from "no route" in the way that matters -- there is nothing here to be
+refused.
+
+And the flagship earned something. `makeen_box` declares `NEEDS
+[network, filesystem]` for both its worlds -- no `process` -- so both
+now run under a filter that refuses process creation. **All 125 lines
+across four card boots match**, which means stzr genuinely does not
+fork: the declaration was TRUE, and the kernel now holds it.
+
+## Three defects, and the second is the serious one
+
+**The witness said everything twice.** A fork copies the buffer as well
+as the process, so the child's flush re-emitted what the parent had not
+yet written. Flush before forking.
+
+**The confinement was ANNOUNCED and did nothing.** The first run printed
+`sealed has no network of its own` while sealed had the whole network:
+`unshare` failed, `apply` recorded the failure in a field nobody read,
+and the boot went on. That is the exact defect this repository exists to
+refuse -- a claim the machine did not keep, in the transcript that is
+its evidence. PID 1 now does not start a world whose envelope it could
+not build: it says so and exits 125, the boot differs from its
+expectation, and a trial holds.
+
+**And the reason it failed was a claim that was empty anyway.**
+`unshare` answered EINVAL because `CONFIG_NET_NS` depends on
+`CONFIG_NET`, which a machine with no declared network never enables.
+The right fix was not to force the option on: a machine with no wire has
+no network to keep a world off, so there is nothing to refuse and
+nothing to say. `qemu_hello` went back to the transcript it has had
+since the first day, which is the correct outcome and looks like no
+work at all.
+
+## The law this pays for
+
+**A promise the machine announces and cannot keep is worse than one it
+never made.** When the mechanism behind a declared guarantee fails,
+refuse the act and say so; never print the guarantee and continue.
+
+---
+
 # HDW-1 — the hardware clause: the last fact about a deployment that lived in a shell script
 
 The sixth act of 2026-09-14, and the smallest. It deletes a constant.

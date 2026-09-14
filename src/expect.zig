@@ -32,6 +32,7 @@
 
 const std = @import("std");
 const machine = @import("machine.zig");
+const confine = @import("confine.zig");
 const plan = @import("plan.zig");
 
 pub const fmt_banner = "boot: stzos init -- machine {s} ({s} / {s} / {s}) -- pid {d}{s}\n";
@@ -87,6 +88,28 @@ pub fn healthLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
 pub fn identityLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     const path = m.identity orelse return false;
     try w.print("boot: identity -- ed25519, custody a file at {s} -- *\n", .{path});
+    return true;
+}
+
+/// What the KERNEL holds each world to, derived from its NEEDS and from
+/// nothing else (NS-1). A world that declared everything this can refuse
+/// says nothing here, and its transcript is what it always was.
+pub fn confineLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    var any = false;
+    for (m.services) |s| {
+        if (confine.Confinement.of(m.*, s).confined()) any = true;
+    }
+    if (!any) return false;
+    try w.print("boot: confine -- ", .{});
+    var first = true;
+    for (m.services) |s| {
+        const c = confine.Confinement.of(m.*, s);
+        if (!c.confined()) continue;
+        var buf: [128]u8 = undefined;
+        try w.print("{s}{s} has {s}", .{ if (first) "" else ", ", s.name, c.words(&buf) });
+        first = false;
+    }
+    try w.print("; what a world did not declare, the kernel does not give it\n", .{});
     return true;
 }
 
@@ -238,6 +261,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
     _ = try identityLine(w, m);
     _ = try budgetLine(w, m);
     _ = try healthLine(w, m);
+    _ = try confineLine(w, m);
     // every service starts; a one-shot is ready when it has exited 0, a
     // daemon when spawned or, if it declares READY, when it has signalled
     for (p.steps) |step| if (step == .service) {
@@ -459,6 +483,7 @@ test "the board's expectation is derived from the declaration, line for line" {
         \\boot: network lan -- eth0 up 192.168.10.1/24, gateway 192.168.10.254, dns [1.1.1.1]
         \\boot: watchdog armed (/dev/watchdog)
         \\boot: health -- serve every 3s; a world that stops refreshing stops the watchdog
+        \\boot: confine -- once has no way to start another process, serve has no way to start another process; what a world did not declare, the kernel does not give it
         \\boot: start once -- pid N -- /stzos id -- as world (1000:1000)
         \\boot: once (pid N) exited 0
         \\boot: start serve -- pid N -- /stzr /app/serve.luau

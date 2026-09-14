@@ -28,6 +28,7 @@
 
 const std = @import("std");
 const machine = @import("machine.zig");
+const confine = @import("confine.zig");
 const plan = @import("plan.zig");
 const expect = @import("expect.zig");
 
@@ -386,6 +387,25 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             if (budgeted) {
                 try w.print("CONFIG_CGROUPS=y\nCONFIG_MEMCG=y\nCONFIG_CGROUP_SCHED=y\nCONFIG_FAIR_GROUP_SCHED=y\nCONFIG_CFS_BANDWIDTH=y\n", .{});
             }
+            // ... and the kernel that can hold a world to what it did NOT
+            // declare (NS-1). NAMESPACES is the menu NET_NS lives under
+            // and tinyconfig closes it, which is the trap OS-3 paid for;
+            // SECCOMP_FILTER is what makes a filter more than a mode.
+            // Only when a world is actually confined: a machine carries
+            // the kernel its own declaration needs and nothing else.
+            var needs_netns = false;
+            var needs_seccomp = false;
+            for (m.services) |s| {
+                const c = confine.Confinement.of(m.*, s);
+                if (!c.network) needs_netns = true;
+                if (!c.process or !c.threads) needs_seccomp = true;
+            }
+            // NET_NS lives under NAMESPACES, which tinyconfig closes, and
+            // under NET, which only a machine with a declared network
+            // opens -- so it is asked for only where it can be built and
+            // only where it means something.
+            if (needs_netns) try w.print("CONFIG_NAMESPACES=y\nCONFIG_NET_NS=y\n", .{});
+            if (needs_seccomp) try w.print("CONFIG_SECCOMP=y\nCONFIG_SECCOMP_FILTER=y\n", .{});
         }
         if (block) |b| {
             // BLOCK and BLK_DEV are menus tinyconfig closes; VIRTIO_MENU

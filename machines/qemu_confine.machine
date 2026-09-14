@@ -1,0 +1,69 @@
+-- qemu_confine.machine -- the machine that proves what a world was not
+-- given.
+--
+-- Three worlds, one witness, and the only difference between them is
+-- what their own NEEDS say. No clause was added for this: the
+-- declaration has said what each world requires since the first day, and
+-- until NS-1 the runtime refused what was not granted while the kernel
+-- handed it over anyway. A world that never declared the network could
+-- still open a socket. The promise was kept by good manners.
+--
+-- Now the kernel keeps it, and each world is asked two questions from
+-- INSIDE itself: is the interface there at all, and may I start another
+-- process? The answers should form a table that only the declarations
+-- above them explain.
+--
+--   sealed   no network declared  -> eth0 is not there; fork permitted
+--   still    no process declared  -> eth0 is there; fork refused, EPERM
+--   open     both declared        -> eth0 is there; fork permitted
+--
+-- The first answer is the sharp one. `stzos reach` asks whether the
+-- machine knows a WAY to an address, which is the EGRESS seat's
+-- question; this asks whether the interface EXISTS from where the world
+-- stands. In an empty network namespace it does not, and "no such
+-- interface" is a different answer from "no route" in the way that
+-- matters: there is nothing here to be refused (NS-1, 2026-09-14).
+
+DEFINE MACHINE qemu_confine AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "The smallest machine that shows a world being held to what it declared, and two worlds beside it that were not"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The machine may start worlds; whether a WORLD may start another is each world's own to declare"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "The machine speaks, so there is a network for a world to be kept out of"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The witness is a file on the machine; what it reports about is the network and the fork, never the disk"
+
+DEFINE NETWORK lan AS (
+  INTERFACE "eth0",
+  ADDRESS dhcp
+) RATIONALE "An interface that really exists on this machine, so that a world which cannot see it is being kept from something real"
+
+DEFINE SERVICE sealed AS (
+  RUN ["/stzos", "confined", "eth0"],
+  RESTART never,
+  NEEDS [process, filesystem]
+) RATIONALE "It never declared the network, so it runs in an empty network namespace of its own: eth0 is not absent-from-permission, it is absent"
+
+DEFINE SERVICE still AS (
+  RUN ["/stzos", "confined", "eth0"],
+  RESTART never,
+  AFTER [sealed],
+  NEEDS [network, filesystem]
+) RATIONALE "It never declared process creation, so the kernel refuses its fork with EPERM -- and it can still see the network it did declare, which is what makes the two refusals independent"
+
+DEFINE SERVICE open AS (
+  RUN ["/stzos", "confined", "eth0"],
+  RESTART never,
+  AFTER [still],
+  NEEDS [process, network, filesystem]
+) RATIONALE "It declared both, so it is held to nothing: the control that shows the other two answers come from their declarations and not from the witness"

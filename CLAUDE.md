@@ -84,6 +84,21 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A promise the machine ANNOUNCES and cannot keep is worse than one
+  it never made** (NS-1): when the mechanism behind a declared guarantee
+  fails, refuse the act and say so -- never print the guarantee and
+  carry on. PID 1 does not start a world whose envelope the kernel could
+  not build; it exits 125 with the reason, the boot differs from its
+  expectation, and a trial holds.
+- **The envelope is DERIVED from NEEDS, never declared** (NS-1): a world
+  that did not ask for `network` gets an empty network namespace, one
+  that did not ask for `process` is refused fork and clone-without-
+  CLONE_THREAD. `threads` is deliberately NOT enforced -- a thread the
+  RUNTIME makes for its own housekeeping is not the world asking, and
+  refusing it would punish stzr for a Luau script's declaration. A
+  machine with no declared network confines nobody off one: the claim
+  would be empty, and CONFIG_NET_NS cannot even be built without
+  CONFIG_NET.
 - **A fact about a DEPLOYMENT lives in a declaration, or it is not a
   fact anyone can check** (HDW-1): when one turns up in a script, move
   it and DELETE the constant -- never add a second place that has to
@@ -289,6 +304,12 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   daemon's own signal, no timer). The health seat is HEALTH since
   HLT-1 (2026-09-13); a bounded window for the TRIAL itself is still a
   seam.
+- (done 2026-09-14, NS-1) Namespaces and seccomp per service, derived
+  from NEEDS with no new clause: `machines/qemu_confine.machine` is the
+  witness and `stzos confined` the verb. Still open: a MOUNT namespace
+  (a world still sees the whole filesystem) and a PID namespace (it
+  still sees the process table); whose THREAD it is; and a world's own
+  syscall surface beyond process creation.
 - (done 2026-09-14, HDW-1) The hardware clause: `HARDWARE` on a fleet
   MEMBER, 22/22, and `experiment/os6_names.sh` reads the addresses from
   the declaration instead of carrying them as constants. Still open:

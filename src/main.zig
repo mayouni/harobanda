@@ -26,6 +26,7 @@ const project = @import("project.zig");
 const guarantee = @import("guarantee.zig");
 const journal = @import("journal.zig");
 const fleet = @import("fleet.zig");
+const confine = @import("confine.zig");
 const expect = @import("expect.zig");
 
 pub const version = "0.1.0";
@@ -47,6 +48,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  stzos id                                     (uid and gid, from inside a machine)
         \\  stzos reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
+        \\  stzos confined [iface]                       (what can this WORLD see and do? from inside one)
         \\  stzos ask    <name>                          (what does a name mean on this network? from inside a device on it)
         \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
@@ -473,6 +475,64 @@ pub fn main() !u8 {
         try out.print("ask {s} -- {s} did not answer\n", .{ want, stext });
         return 0;
     }
+    if (std.mem.eql(u8, verb, "confined")) {
+        // The witness of the NS-1 seat, as `stzos id` is the USER seat's
+        // and `stzos reach` is the EGRESS seat's: it asks, FROM INSIDE A
+        // WORLD, what that world can actually do -- and both questions
+        // have a negative that only a confined world can give.
+        //
+        // The interface question is the sharp one. `reach` asks whether
+        // the machine knows a WAY to an address; this asks whether the
+        // interface exists AT ALL from where the caller stands. In an
+        // empty network namespace it does not, and ENODEV is a different
+        // answer from "no route" in the way that matters: there is
+        // nothing here to be refused.
+        if (builtin.os.tag != .linux) {
+            try out.print("confined: a Linux act; this binary was built for {s}\n", .{@tagName(builtin.os.tag)});
+            return 2;
+        }
+        const l = std.os.linux;
+        const iface = if (args.len > 2) args[2] else "eth0";
+        const rc_sock = l.socket(l.AF.INET, l.SOCK.DGRAM, 0);
+        if (l.E.init(rc_sock) == .SUCCESS) {
+            const fd: i32 = @intCast(rc_sock);
+            defer _ = l.close(fd);
+            var ifr: l.ifreq = std.mem.zeroes(l.ifreq);
+            @memcpy(ifr.ifrn.name[0..iface.len], iface);
+            switch (l.E.init(l.ioctl(fd, l.SIOCGIFFLAGS, @intFromPtr(&ifr)))) {
+                .SUCCESS => try out.print("confined: {s} -- present: this world shares the machine's network\n", .{iface}),
+                .NODEV => try out.print("confined: {s} -- no such interface from here: this world has a network namespace of its own and there is nothing in it\n", .{iface}),
+                else => |e| try out.print("confined: {s} -- the kernel refused the question: {s}\n", .{ iface, @tagName(e) }),
+            }
+        } else {
+            try out.print("confined: no socket at all: {s}\n", .{@tagName(l.E.init(rc_sock))});
+        }
+
+        // and whether this world may make another process. A permitted
+        // fork is PROVEN by forking, not by the absence of an error: the
+        // child says so and is reaped.
+        //
+        // FLUSH FIRST. A fork copies the buffer as well as the process,
+        // and the child's own flush would say everything the parent had
+        // not yet written -- which is how this witness first reported the
+        // interface twice (NS-1).
+        try out.flush();
+        const rc_fork = l.fork();
+        switch (l.E.init(rc_fork)) {
+            .SUCCESS => {
+                if (rc_fork == 0) {
+                    try out.print("confined: fork -- permitted: this world started another process, and this line is the child speaking\n", .{});
+                    try out.flush();
+                    l.exit(0);
+                }
+                var status: u32 = 0;
+                _ = l.wait4(@intCast(rc_fork), &status, 0, null);
+            },
+            .PERM => try out.print("confined: fork -- refused by the kernel (EPERM): this world cannot start another process\n", .{}),
+            else => |e| try out.print("confined: fork -- {s}\n", .{@tagName(e)}),
+        }
+        return 0;
+    }
     if (std.mem.eql(u8, verb, "reach")) {
         // The witness of the EGRESS seat, as `stzos id` is the USER
         // seat's: it asks the KERNEL whether this machine knows a way to
@@ -649,6 +709,7 @@ test {
     _ = init;
     _ = expect;
     _ = journal;
+    _ = confine;
     _ = names;
     _ = fleet;
 }
