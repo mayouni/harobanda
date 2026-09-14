@@ -1,3 +1,100 @@
+# FLT-1 — the fleet court: machines judged together, and one device's record verified by another
+
+The first act of 2026-09-15, and the one the IDENTITY and JOURNAL seats
+were waiting for.
+
+## The gap it closes
+
+A device makes its own Ed25519 key on first boot and never sends the
+private half anywhere (IDN-1). It signs its own boot record with it
+(JRN-1). Put those together and you get a record only its author can
+verify — which is attribution nobody else can test, and the IDENTITY
+seat already ruled on that shape of thing: a signature nobody tried to
+break is a claim, not evidence.
+
+A fleet closes it with arithmetic rather than trust. It records each
+member's PUBLIC key, which proves nothing about anyone else and may be
+held by anyone, so **any holder of the fleet file can verify any
+member's record** and no secret takes part in the act.
+
+## Why a second file and not a bigger one
+
+Every check until now could be made by reading one machine. These
+cannot be made that way at all:
+
+- two boxes that each declare themselves the server of `makeen` are each
+  a faultless machine, and together they are a network where two
+  machines hand out the same addresses and neither is wrong;
+- two machines that each take `192.168.10.7` are each correct alone;
+- a till that asks for an address on a link nobody serves never gets
+  one, and nothing in its own file is wrong.
+
+Facts about a SET belong in a file about a set. It is the SAME language
+— same tokenizer, same clause machinery, same refusal channel — and a
+file is judged by which kinds it may contain. A machine file declaring a
+`FLEET` is refused by name; a fleet file declaring a `MACHINE` is
+refused by name.
+
+`src/fleet.zig`'s third unit test says it best: it declares both
+machines successfully, one after the other, and then refuses the fleet
+they make.
+
+## Enrolment is not prophecy
+
+A `KEY` cannot be declared before the device that makes it exists. So a
+member without one is NOT refused — it is reported, in these words:
+*KEEPS A RECORD AND IS NOT ENROLLED: nobody can verify what it signs*.
+The court refuses what is wrong; the roll says what is incomplete.
+
+Enrolment stays manual on purpose. A fleet that enrolled whatever key
+answered would attribute records to whatever device happened to be
+plugged in. The enrolled key implies the fingerprint the device prints
+on its own console, so the roll prints it and an operator compares the
+two by eye.
+
+## Judged
+
+**16/16** fleet fixtures (`declarative/fleet/fixtures.json`), every
+reject a case where each machine is faultless alone. **Three unit
+tests** on attribution. And the whole arc on a real device
+(`experiment/os7_fleet.sh`, **26 lines** pinned), where the negatives
+decide it:
+
+```
+verify:     temoin: 1 entry verified against the enrolled key (fingerprint FP1), and no secret took part
+tampered:   temoin: entry 1 is not this device's: the entry's own bytes do not hash to the hash it carries
+foreign:    temoin: entry 1 is not this device's: this device's key did not sign this entry
+unenrolled: temoin has no KEY in this fleet: nobody can speak for its records
+```
+
+The device makes a NEW key on every run of that script and the pin still
+holds — each distinct key becomes `KEY1`, `KEY2`, … in order of
+appearance, so the persistence claim survives and only the randomness is
+erased.
+
+## Two defects, one of them old
+
+`stzos attest --export` failed on the device with `cannot read
+--export: FileNotFound`: the verb took the first argument as its file
+path and a flag is not a path. Fixed by picking the first argument that
+is not a flag.
+
+And the normaliser matched `fingerprint [0-9a-f]+` against a transcript
+containing `fingerprint after its next boot`, so it read the `af` of
+`after` as a fingerprint and wrote a token into the middle of an English
+word. Values are now MARKED by `sed` at their exact lengths before `awk`
+maps the distinct ones. **The same fragility had been in
+`experiment/os2_image.sh` since IDN-1**, unexposed only because no line
+there ever put a word after `fingerprint`.
+
+## The law this pays for
+
+**A claim only its author can check is not evidence.** The floor holds
+the secret; the fleet holds what anyone may check; and the two never
+meet in one place.
+
+---
+
 # NAM-1 — the box as the network's own server of names, and the first time two machines met on a wire
 
 The fourth act of 2026-09-14, and the first one whose proof needed a

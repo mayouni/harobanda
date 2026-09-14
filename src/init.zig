@@ -239,13 +239,10 @@ const Identity = struct {
     created: bool,
 };
 
-fn fingerprintOf(public: [32]u8) [16]u8 {
-    var digest: [32]u8 = undefined;
-    std.crypto.hash.sha2.Sha256.hash(&public, &digest, .{});
-    var hex: [16]u8 = undefined;
-    _ = std.fmt.bufPrint(&hex, "{x}", .{digest[0..8]}) catch unreachable;
-    return hex;
-}
+// the fingerprint is worded once, in journal.zig, because the FLEET
+// prints the same 16 hex from an enrolled public key and the two must
+// be comparable by eye (FLT-1)
+const fingerprintOf = journal.fingerprintOf;
 
 /// Load this device's key, or make it the first time. A failure here is
 /// said and not hidden: a machine that declares an identity and cannot

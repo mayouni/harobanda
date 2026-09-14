@@ -45,7 +45,16 @@ pub fn build(b: *std.Build) void {
     court_cmd.addArg("court");
     court_cmd.addArg("declarative/machine/fixtures.json");
     court_cmd.setCwd(b.path("."));
-    b.step("court", "Judge the machine grammar by its pinned fixtures").dependOn(&court_cmd.step);
+    const court_step = b.step("court", "Judge the machine grammar and the fleet grammar by their pinned fixtures");
+    court_step.dependOn(&court_cmd.step);
+
+    // the fleet court: the checks no single machine can be wrong about
+    const fleet_cmd = b.addRunArtifact(exe);
+    fleet_cmd.addArg("court");
+    fleet_cmd.addArg("--fleet");
+    fleet_cmd.addArg("declarative/fleet/fixtures.json");
+    fleet_cmd.setCwd(b.path("."));
+    court_step.dependOn(&fleet_cmd.step);
 
     // the machine targets: static, musl, one flag each
     const cross = b.step("cross", "Build stzos for the hosted-profile machine targets (static musl)");

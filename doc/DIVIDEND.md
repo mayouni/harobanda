@@ -437,8 +437,12 @@ diagram. This is where the floor pays each band of it:
    order. A world's journal of business records sits above this one.
 5. ~~The per-device identity.~~ **Built (IDN-1)** as `IDENTITY` on a
    hosted machine: an Ed25519 key made on first boot and kept on a
-   declared partition. What remains is the fleet's half -- a box
-   verifying ANOTHER device's signature, which needs the fleet court.
+   declared partition. ~~What remains is the fleet's half.~~ **Also
+   built (FLT-1)**: a `FLEET` records each member's PUBLIC key, so a
+   box verifies ANOTHER device's signed record holding no secret at
+   all. What remains is revocation -- a key a device USED to have, which
+   is what a box rebuilt on a new card needs if its old records are to
+   stay readable.
 6. ~~The box as the network's server of addresses and names.~~
    **Built (NAM-1)** as `DOMAIN` on a NETWORK and the `PEER` kind, and
    proved by two machines booted together on one wire: the till learns
@@ -453,7 +457,10 @@ diagram. This is where the floor pays each band of it:
    contract.
 9. The twin reading the machine file as its profile.
 10. A display seat for hosted machines.
-11. The fleet court: a set of machine files judged together.
+11. ~~The fleet court: a set of machine files judged together.~~
+    **Built (FLT-1)**, and it turned out to be two things: the checks
+    no single machine can fail, and the enrolment that makes one
+    device's record checkable by another.
 12. Haro's runtime as the image's second binary, and Ring++'s
     Linux-class row measured on the three machines.
 

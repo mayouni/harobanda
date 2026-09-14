@@ -25,10 +25,12 @@ const update = @import("update.zig");
 const project = @import("project.zig");
 const guarantee = @import("guarantee.zig");
 const journal = @import("journal.zig");
+const fleet = @import("fleet.zig");
 const expect = @import("expect.zig");
 
 pub const version = "0.1.0";
 const default_fixtures = "declarative/machine/fixtures.json";
+const default_fleet_fixtures = "declarative/fleet/fixtures.json";
 
 fn usage(out: *std.Io.Writer) !void {
     try out.print(
@@ -48,9 +50,20 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos ask    <name>                          (what does a name mean on this network? from inside a device on it)
         \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
+        \\  stzos fleet  <file.fleet> [verify <member> <record>]   (machines judged together; one device's record checked by another)
+        \\  stzos court  --fleet [declarative/fleet/fixtures.json]
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
+}
+
+/// The first argument that is not a flag. A verb that takes an optional
+/// file AND optional flags must not read "--export" as a filename, which
+/// is how the fleet witness first failed: the device refused to publish
+/// and said FileNotFound about a flag (FLT-1).
+fn firstPath(args: []const []const u8) ?[]const u8 {
+    for (args) |a| if (!std.mem.startsWith(u8, a, "--")) return a;
+    return null;
 }
 
 fn load(arena: std.mem.Allocator, path: []const u8, out: *std.Io.Writer) !?machine.Machine {
@@ -114,7 +127,7 @@ pub fn main() !u8 {
         // wrote it. An auditor reading this file elsewhere runs the same
         // check with the same public key; nothing here is privileged
         // except the private half, which never appears (JRN-1).
-        const path = if (args.len > 2) args[2] else "/etc/machine";
+        const path = firstPath(args[2..]) orelse "/etc/machine";
         const m = (try load(arena, path, out)) orelse return 1;
         const rec_path = m.journal orelse {
             try out.print("journal: {s} declares no JOURNAL\n", .{m.name});
@@ -153,6 +166,18 @@ pub fn main() !u8 {
                 return 1;
             },
         };
+        // A record that cannot leave the machine can only be checked by
+        // the machine, which is attribution nobody else can test. With
+        // --export the entries come out as the exact bytes that were
+        // signed, ready to be verified by any holder of the fleet file.
+        for (args[2..]) |a| if (std.mem.eql(u8, a, "--export")) {
+            var lines = std.mem.splitScalar(u8, text, '\n');
+            while (lines.next()) |raw| {
+                const line = std.mem.trimRight(u8, raw, "\r");
+                if (line.len == 0) continue;
+                try out.print("record {s}\n", .{line});
+            }
+        };
         const check = journal.verify(text, pair.public_key);
         if (check.broken_at) |n| {
             try out.print("journal {s} -- entry {d} does not verify: {s}\n", .{ rec_path, n, check.reason });
@@ -176,7 +201,7 @@ pub fn main() !u8 {
         // that it stops verifying the moment the message changes. The
         // second half is the one worth printing: a signature nobody
         // tried to break is a claim, not evidence.
-        const path = if (args.len > 2) args[2] else "/etc/machine";
+        const path = firstPath(args[2..]) orelse "/etc/machine";
         const m = (try load(arena, path, out)) orelse return 1;
         const key_path = m.identity orelse {
             try out.print("attest: {s} declares no IDENTITY: this machine has no key to sign with\n", .{m.name});
@@ -207,11 +232,15 @@ pub fn main() !u8 {
             try out.print("attest: the signature failed: {s}\n", .{@errorName(e)});
             return 1;
         };
-        var digest: [32]u8 = undefined;
-        std.crypto.hash.sha2.Sha256.hash(&pair.public_key.toBytes(), &digest, .{});
-        var hex: [16]u8 = undefined;
-        _ = std.fmt.bufPrint(&hex, "{x}", .{digest[0..8]}) catch {};
+        const hex = journal.fingerprintOf(pair.public_key.toBytes());
         try out.print("attest {s} -- ed25519, fingerprint {s}\n", .{ m.name, hex });
+        // ENROLMENT: the public half, in the form a fleet file takes.
+        // A device may publish this and nothing else; the private half
+        // has never left the partition it was made on. Behind a flag, so
+        // the boots already pinned say exactly what they said before.
+        for (args[2..]) |a| if (std.mem.eql(u8, a, "--export")) {
+            try out.print("enrol {s} ed25519 {x} -- KEY for this machine's MEMBER in a fleet\n", .{ m.name, pair.public_key.toBytes() });
+        };
         sig.verify(msg, pair.public_key) catch {
             try out.print("attest: the device's own signature did not verify -- this machine cannot prove it is itself\n", .{});
             return 1;
@@ -226,6 +255,108 @@ pub fn main() !u8 {
             return 1;
         } else |_| {
             try out.print("attest: one bit flipped in the message, and the same signature is refused\n", .{});
+        }
+        return 0;
+    }
+    if (std.mem.eql(u8, verb, "fleet")) {
+        // The fleet court on one file, and the act the fleet exists for.
+        //
+        // `stzos fleet <file>` judges the set and prints the roll: who is
+        // in it, what each one is, and -- the part that matters -- which
+        // members nobody can yet speak for, because no key has been
+        // enrolled. A refusal here is a fact about the SET; every machine
+        // in it may be faultless alone (FLT-1).
+        //
+        // `stzos fleet <file> verify <member> <record>` attributes a
+        // signed boot record to a member using only the public key the
+        // fleet holds. No secret takes part, so anyone holding the fleet
+        // file can perform it: another box on the wire, the court here,
+        // an auditor years from now.
+        if (args.len < 3) {
+            try out.print("stzos: fleet takes a fleet file\n", .{});
+            return 1;
+        }
+        const path = args[2];
+        const src = std.fs.cwd().readFileAlloc(arena, path, 1 << 20) catch |e| {
+            try out.print("stzos: cannot read {s}: {s}\n", .{ path, @errorName(e) });
+            return 1;
+        };
+        const dir = std.fs.path.dirname(path) orelse "";
+        const disk = fleet.Disk{ .arena = arena, .base = dir };
+        var refusal = fleet.Refusal{};
+        const f = fleet.declare(arena, src, disk.resolver(), &refusal) catch |e| switch (e) {
+            error.Refused => {
+                try out.print("fleet (line {d}): {s}\n", .{ refusal.line, refusal.message });
+                return 1;
+            },
+            else => return e,
+        };
+
+        if (args.len >= 4 and std.mem.eql(u8, args[3], "verify")) {
+            if (args.len < 6) {
+                try out.print("stzos: fleet verify takes a member and a record file\n", .{});
+                return 1;
+            }
+            const who = args[4];
+            const record = std.fs.cwd().readFileAlloc(arena, args[5], 1 << 20) catch |e| {
+                try out.print("stzos: cannot read {s}: {s}\n", .{ args[5], @errorName(e) });
+                return 1;
+            };
+            switch (fleet.attribute(f, who, record)) {
+                .verified => |c| {
+                    const m = f.member(who).?;
+                    try out.print("fleet {s} -- {s}: {d} entr{s} verified against the enrolled key (fingerprint {s}), and no secret took part\n", .{
+                        f.name, who, c.verified, if (c.verified == 1) "y" else "ies", m.fingerprint.?[0..],
+                    });
+                    return 0;
+                },
+                .broken => |c| {
+                    try out.print("fleet {s} -- {s}: entry {d} is not this device's: {s}\n", .{ f.name, who, c.broken_at.?, c.reason });
+                    try out.print("fleet {s} -- {d} entr{s} verified before it\n", .{ f.name, c.verified, if (c.verified == 1) "y" else "ies" });
+                    return 1;
+                },
+                .not_enrolled => {
+                    try out.print("fleet {s} -- {s} has no KEY in this fleet: nobody can speak for its records until its own fingerprint is enrolled\n", .{ f.name, who });
+                    return 1;
+                },
+                .no_such_member => {
+                    try out.print("fleet {s} -- there is no member called {s}\n", .{ f.name, who });
+                    return 1;
+                },
+            }
+        }
+
+        try out.print("fleet {s} -- {d} member{s}", .{ f.name, f.members.len, if (f.members.len == 1) "" else "s" });
+        if (f.link) |l| {
+            try out.print(" on {s}", .{l});
+            if (f.server()) |s| try out.print(", served by {s}", .{s.name}) else try out.print(", served by nobody in this fleet", .{});
+        } else try out.print(", no shared link declared", .{});
+        try out.print(" -- judged, no refusal\n", .{});
+        var unenrolled: usize = 0;
+        for (f.members) |m| {
+            try out.print("  {s} -- {s} ({s}", .{ m.name, m.machine.name, m.declaration });
+            if (f.link) |l| for (m.machine.networks) |n| {
+                if (!std.mem.eql(u8, n.name, l)) continue;
+                switch (n.address) {
+                    .static => |st| try out.print(", {s}", .{st.text}),
+                    .dhcp => try out.print(", asks", .{}),
+                }
+                if (n.domain) |d| try out.print(", serves {s}", .{d});
+            };
+            try out.print(")", .{});
+            if (m.fingerprint) |fp| {
+                try out.print(" -- enrolled, fingerprint {s}\n", .{fp[0..]});
+            } else if (m.machine.journal != null) {
+                unenrolled += 1;
+                try out.print(" -- KEEPS A RECORD AND IS NOT ENROLLED: nobody can verify what it signs\n", .{});
+            } else {
+                try out.print(" -- not enrolled\n", .{});
+            }
+        }
+        if (unenrolled > 0) {
+            try out.print("fleet {s} -- {d} member{s} {s} a signed record that no holder of this file can check; enrol from the line the device prints on its own console\n", .{
+                f.name, unenrolled, if (unenrolled == 1) "" else "s", if (unenrolled == 1) "keeps" else "keep",
+            });
         }
         return 0;
     }
@@ -361,6 +492,14 @@ pub fn main() !u8 {
         return update.run(gpa, args[2..], out);
     }
     if (std.mem.eql(u8, verb, "court")) {
+        // two grammars, two fixture files, one court. The fleet's cases
+        // carry the machine files they name inside themselves, so a
+        // fixture is self-contained and needs no scratch directory.
+        if (args.len > 2 and std.mem.eql(u8, args[2], "--fleet")) {
+            const path = if (args.len > 3) args[3] else default_fleet_fixtures;
+            const failures = try court.runFleet(gpa, path, out);
+            return if (failures == 0) 0 else 1;
+        }
         const path = if (args.len > 2) args[2] else default_fixtures;
         const failures = try court.run(gpa, path, out);
         return if (failures == 0) 0 else 1;
@@ -482,4 +621,5 @@ test {
     _ = expect;
     _ = journal;
     _ = names;
+    _ = fleet;
 }

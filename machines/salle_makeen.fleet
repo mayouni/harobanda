@@ -1,0 +1,32 @@
+-- salle_makeen.fleet -- the dining room at Makeen, judged as one thing.
+--
+-- Every check this file makes is one no single machine can fail. The box
+-- is a faultless machine on its own; so is a second box that also calls
+-- itself the server of `makeen`. Together they are a network where two
+-- machines hand out the same addresses and neither one is wrong. That is
+-- what a fleet is for: the coherence of a SET, declared where the set is.
+--
+-- LINK says these machines share a wire, which is what makes the address
+-- checks mean anything. Without it a fleet is an estate and not a
+-- network, and only the identity checks apply.
+--
+-- No member carries a KEY yet, and the court does not refuse that: a
+-- device's key is made on the device, on its first boot, from its own
+-- randomness, and a declaration written beforehand cannot know it.
+-- `stzos fleet` reports who is unenrolled rather than pretending
+-- otherwise. `machines/fleet_temoin.machine` and
+-- `experiment/os7_fleet.sh` show the whole arc on a real device: a key
+-- made, published, enrolled, and a record verified by somebody who does
+-- not hold the secret (FLT-1, 2026-09-14).
+
+DEFINE FLEET salle_makeen AS (
+  LINK salle
+) RATIONALE "One room, one wire: the box that is the network's address and everything that asks it for one"
+
+DEFINE MEMBER boitier AS (
+  DECLARATION "makeen_names.machine"
+) RATIONALE "The box. It serves the link, so the fleet lets exactly one member do that and this is the one"
+
+DEFINE MEMBER caisse AS (
+  DECLARATION "caisse_makeen.machine"
+) RATIONALE "The till. It declares no address at all and is told one, which is only coherent because a member of this fleet serves the link it asks on"

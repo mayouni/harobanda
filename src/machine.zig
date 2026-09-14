@@ -342,7 +342,7 @@ pub const Error = error{ Refused, OutOfMemory };
 
 // ---- tokens --------------------------------------------------------------
 
-const Tag = enum { ident, keyword, string, number, lparen, rparen, lbracket, rbracket, comma, eof };
+pub const Tag = enum { ident, keyword, string, number, lparen, rparen, lbracket, rbracket, comma, eof };
 
 const Token = struct {
     tag: Tag,
@@ -360,20 +360,20 @@ fn isWordChar(c: u8) bool {
     return isLower(c) or isUpper(c);
 }
 
-const Ctx = struct {
+pub const Ctx = struct {
     arena: Allocator,
     src: []const u8,
     refusal: *Refusal,
     toks: []Token = &.{},
     pos: usize = 0,
 
-    fn refuse(self: *Ctx, line: usize, comptime fmt: []const u8, args: anytype) Error {
+    pub fn refuse(self: *Ctx, line: usize, comptime fmt: []const u8, args: anytype) Error {
         self.refusal.line = line;
         self.refusal.message = std.fmt.allocPrint(self.arena, fmt, args) catch return error.OutOfMemory;
         return error.Refused;
     }
 
-    fn tokenize(self: *Ctx) Error!void {
+    pub fn tokenize(self: *Ctx) Error!void {
         var list: std.ArrayList(Token) = .{};
         var i: usize = 0;
         var line: usize = 1;
@@ -471,7 +471,7 @@ const Ctx = struct {
         self.toks = try list.toOwnedSlice(self.arena);
     }
 
-    fn peek(self: *Ctx) Token {
+    pub fn peek(self: *Ctx) Token {
         return self.toks[self.pos];
     }
     fn next(self: *Ctx) Token {
@@ -496,15 +496,15 @@ const Value = union(enum) {
     string_list: []const []const u8,
 };
 
-const Clause = struct {
+pub const Clause = struct {
     name: []const u8,
     line: usize,
     value: Value,
 };
 
-const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER };
+pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER };
 
-const Decl = struct {
+pub const Decl = struct {
     kind: Kind,
     name: []const u8,
     line: usize,
@@ -522,6 +522,8 @@ fn allowedClauses(kind: Kind) []const []const u8 {
         .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS", "EGRESS", "DOMAIN" },
         .USER => &.{ "UID", "GID" },
         .PEER => &.{ "NETWORK", "HARDWARE", "ADDRESS" },
+        .FLEET => &.{"LINK"},
+        .MEMBER => &.{ "DECLARATION", "KEY" },
     };
 }
 
@@ -577,7 +579,7 @@ fn parseValue(ctx: *Ctx) Error!Value {
     }
 }
 
-fn parseDecl(ctx: *Ctx) Error!Decl {
+pub fn parseDecl(ctx: *Ctx) Error!Decl {
     const verb = ctx.next();
     if (!(verb.tag == .keyword and std.mem.eql(u8, verb.text, "DEFINE"))) {
         return ctx.refuse(verb.line, "Unknown verb '{s}': the machine verb set is closed (DEFINE)", .{verb.text});
@@ -585,7 +587,7 @@ fn parseDecl(ctx: *Ctx) Error!Decl {
     const kind_tok = ctx.next();
     const kind = if (kind_tok.tag == .keyword) std.meta.stringToEnum(Kind, kind_tok.text) else null;
     if (kind == null) {
-        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the machine kinds are closed (MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER)", .{kind_tok.text});
+        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the kinds are closed (MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER)", .{kind_tok.text});
     }
     const name = try ctx.expect(.ident, "a lower_snake name");
     const as_tok = ctx.next();
@@ -627,18 +629,18 @@ fn parseDecl(ctx: *Ctx) Error!Decl {
 
 // ---- typed clause readers ------------------------------------------------
 
-fn find(d: Decl, name: []const u8) ?Clause {
+pub fn find(d: Decl, name: []const u8) ?Clause {
     for (d.clauses) |c| if (std.mem.eql(u8, c.name, name)) return c;
     return null;
 }
 
-fn wantIdent(ctx: *Ctx, c: Clause) Error![]const u8 {
+pub fn wantIdent(ctx: *Ctx, c: Clause) Error![]const u8 {
     return switch (c.value) {
         .ident => |s| s,
         else => ctx.refuse(c.line, "Clause {s} takes a word", .{c.name}),
     };
 }
-fn wantString(ctx: *Ctx, c: Clause) Error![]const u8 {
+pub fn wantString(ctx: *Ctx, c: Clause) Error![]const u8 {
     return switch (c.value) {
         .string => |s| s,
         else => ctx.refuse(c.line, "Clause {s} takes a string", .{c.name}),
@@ -668,7 +670,7 @@ fn wantEnum(ctx: *Ctx, comptime E: type, c: Clause, comptime what: []const u8) E
     const word = try wantIdent(ctx, c);
     return std.meta.stringToEnum(E, word) orelse ctx.refuse(c.line, "{s} is {s}, not '{s}'", .{ c.name, what, word });
 }
-fn required(ctx: *Ctx, d: Decl, name: []const u8) Error!Clause {
+pub fn required(ctx: *Ctx, d: Decl, name: []const u8) Error!Clause {
     return find(d, name) orelse ctx.refuse(d.line, "{s} is required on {s} {s}", .{ name, @tagName(d.kind), d.name });
 }
 
@@ -684,6 +686,13 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
     var decls: std.ArrayList(Decl) = .{};
     while (ctx.peek().tag != .eof) try decls.append(arena, try parseDecl(&ctx));
     if (decls.items.len == 0) return ctx.refuse(1, "A machine file declares exactly one MACHINE; this file declares nothing", .{});
+
+    // one language, two files. A machine file says what ONE machine is;
+    // FLEET and MEMBER say which machines are one estate, which is a fact
+    // about no single machine and belongs in a fleet file (FLT-1).
+    for (decls.items) |d| if (d.kind == .FLEET or d.kind == .MEMBER) {
+        return ctx.refuse(d.line, "{s} belongs to a fleet file, not a machine file: a machine declares what one machine IS, and no machine can say who else is in its estate", .{@tagName(d.kind)});
+    };
 
     // one MACHINE, first
     var machines: usize = 0;

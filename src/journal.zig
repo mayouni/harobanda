@@ -164,14 +164,18 @@ pub fn verify(text: []const u8, public: Ed25519.PublicKey) Check {
 /// Write one entry, chained to whatever is already there. The caller has
 /// verified first: a chain that does not verify is never extended, because
 /// an entry appended after a broken one would launder the break.
-pub fn append(
-    path: []const u8,
+/// One entry, formatted and signed, as the exact bytes that go on the
+/// line. Worded ONCE here: `verify` reads back what this writes, and two
+/// spellings of one record would verify differently (MicroRing's rule --
+/// a signature is over the bytes, not over the object they came from).
+pub fn entry(
+    arena: std.mem.Allocator,
     pair: Ed25519.KeyPair,
     check: Check,
     machine_name: []const u8,
     declaration: [16]u8,
     verdict: Verdict,
-) !usize {
+) ![]const u8 {
     const seq = check.verified + 1;
     var payload_buf: [512]u8 = undefined;
     const payload = try std.fmt.bufPrint(&payload_buf, "seq={d} prev={s} machine={s} declaration={s} verdict={s}", .{
@@ -188,8 +192,32 @@ pub fn append(
     const sig = try pair.sign(payload, null);
     const sig_bytes = sig.toBytes();
 
-    var line_buf: [1024]u8 = undefined;
-    const line = try std.fmt.bufPrint(&line_buf, "{s} hash={s} sig={x}\n", .{ payload, hash[0..], &sig_bytes });
+    return std.fmt.allocPrint(arena, "{s} hash={s} sig={x}\n", .{ payload, hash[0..], &sig_bytes });
+}
+
+/// The fingerprint a public key implies: the same 16 hex a device prints
+/// on its own console at every boot, so an enrolled key and a booting
+/// device can be compared by eye (IDN-1, shared with the fleet at FLT-1).
+pub fn fingerprintOf(public: [32]u8) [16]u8 {
+    var digest: [32]u8 = undefined;
+    Sha256.hash(&public, &digest, .{});
+    var hex: [16]u8 = undefined;
+    _ = std.fmt.bufPrint(&hex, "{x}", .{digest[0..8]}) catch unreachable;
+    return hex;
+}
+
+pub fn append(
+    path: []const u8,
+    pair: Ed25519.KeyPair,
+    check: Check,
+    machine_name: []const u8,
+    declaration: [16]u8,
+    verdict: Verdict,
+) !usize {
+    const seq = check.verified + 1;
+    var buf: [4096]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&buf);
+    const line = try entry(fba.allocator(), pair, check, machine_name, declaration, verdict);
 
     const f = std.fs.cwd().openFile(path, .{ .mode = .write_only }) catch |e| switch (e) {
         error.FileNotFound => try std.fs.cwd().createFile(path, .{ .mode = 0o600 }),

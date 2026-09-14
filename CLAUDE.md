@@ -58,6 +58,8 @@ bash experiment/judge_guarantees.sh [name]   # the four standing promises, judge
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/wsl_boot.sh    # then read zig-out/wsl/*.txt
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello   # image, kernel, QEMU boot, judge -> zig-out/wsl/image_qemu_hello.txt
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os6_names.sh              # TWO machines on one wire: a box that serves names, a till that asks -> zig-out/wsl/names.txt
+wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os7_fleet.sh              # a device publishes its key, a fleet enrols it, its record is verified by something that never held the secret -> zig-out/wsl/fleet.txt
+zig-out\bin\stzos.exe fleet machines\salle_makeen.fleet     # the roll: who is in the set, and who nobody can speak for yet
 cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-x86_64-linux-musl   # stzr for the image
 ```
 
@@ -82,6 +84,18 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   worded ONCE in `src/expect.zig` for init and the derivation alike --
   never reword one side. The emulator's lacks are a `Lens` per board
   (`qemu_lens`), never a loosened comparison.
+- **A claim only its author can check is not evidence** (FLT-1): a
+  device signs its record with a key nobody else holds, so a FLEET
+  records the PUBLIC half and any holder of that file can verify any
+  member. The floor holds the secret, the fleet holds what anyone may
+  check, and the two never meet in one place. Enrolment stays MANUAL --
+  a fleet that enrolled whatever key answered would attribute records
+  to whatever device was plugged in -- and a member with no key is
+  REPORTED, never guessed at.
+- **Some facts are about a SET and belong in a file about a set**
+  (FLT-1): two boxes that each serve `makeen` are each faultless and
+  together they are a broken network. One language, two files, and a
+  file is judged by which kinds it may contain.
 - **A machine that SERVES a link is not finished when its services
   are** (NAM-1): serving is a state of the machine, not a task that
   completes. A box that halted when its last one-shot exited would be a
@@ -269,6 +283,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   daemon's own signal, no timer). The health seat is HEALTH since
   HLT-1 (2026-09-13); a bounded window for the TRIAL itself is still a
   seam.
+- (done 2026-09-15, FLT-1) The fleet court: `FLEET` and `MEMBER` in a
+  second file of the same language, 16/16 fixtures, and one device's
+  signed record verified by a holder of nothing but its public key.
+  Named seams it leaves: a machine cannot declare its own HARDWARE
+  address, so the fleet cannot check that a server's `PEER` is the
+  member that will ask for it; revocation (a key a device USED to have)
+  is unrecorded; forwarding between two links is undeclarable.
 - (done 2026-09-14, NAM-1) The box as the network's own server of
   addresses and names: `DOMAIN` on a NETWORK, the `PEER` kind, and the
   first paired boot -- `experiment/os6_names.sh` puts two machines on

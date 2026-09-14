@@ -1,0 +1,61 @@
+-- fleet_temoin.machine -- a device that publishes what a fleet needs,
+-- and nothing more.
+--
+-- Until now a machine's signed record could be verified only by the
+-- machine itself, because the key never left the partition it was made
+-- on. That is attribution nobody else can test, and a claim nobody can
+-- test is not evidence -- the same argument the IDENTITY seat made about
+-- a signature nobody tried to break.
+--
+-- A fleet fixes it with arithmetic, not trust. This machine exports the
+-- PUBLIC half of its key, which anyone may hold and which proves nothing
+-- about anyone else, and it exports its record as the exact bytes that
+-- were signed. Somebody writes the key into a fleet file once; from then
+-- on any holder of that file can verify any record this device signs,
+-- with no secret taking part anywhere in the act.
+--
+-- The private half never appears, in this file or in the transcript, and
+-- the machine has no way to send it: there is no shell and the only
+-- verbs on the boot path are the ones declared here.
+--
+-- Booted TWICE by the court, because a device has no record of a boot
+-- until that boot has been judged: the first boot makes the key and
+-- writes entry 1 after its verdict, and the second is where the record
+-- can be read back and published (FLT-1, 2026-09-14).
+
+DEFINE MACHINE fleet_temoin AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  IDENTITY "/data/device.key",
+  JOURNAL "/data/boot.journal"
+) RATIONALE "A device that can be spoken for by somebody who does not hold its secret"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The witnesses are processes"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The key and the record are files on a declared partition"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where the key and the record live: a partition that survives the power"
+
+DEFINE SERVICE enrol AS (
+  RUN ["/stzos", "attest", "--export"],
+  RESTART never,
+  NEEDS [process, filesystem]
+) RATIONALE "The device publishing who it is: the public half, in the form a fleet file takes. Enrolment is somebody reading this line and writing it down, deliberately by hand -- a fleet that enrolled whatever key answered would attribute records to whatever device happened to be plugged in"
+
+DEFINE SERVICE publish AS (
+  RUN ["/stzos", "journal", "--export"],
+  RESTART never,
+  AFTER [enrol],
+  NEEDS [process, filesystem]
+) RATIONALE "The record as the exact bytes that were signed, so it can be carried off the machine and checked by someone who was never on it"

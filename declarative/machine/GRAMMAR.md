@@ -74,6 +74,12 @@ clause outside its kind's table is refused naming the allowed set
 
 ## The kinds
 
+`FLEET` and `MEMBER` are kinds of this same language and are refused in
+a machine file by name: a machine declares what ONE machine is, and no
+machine can say who else is in its estate. They are the fleet grammar's,
+`declarative/fleet/GRAMMAR.md` (FLT-1).
+
+
 ### DEFINE MACHINE — exactly one, and first (R9, R10)
 
 | clause | value | obligation |

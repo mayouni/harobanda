@@ -243,10 +243,17 @@ mkdir -p "$OUT" zig-out/wsl
   # that matters survives the normalisation -- the same key in three
   # boots reads as KEY1 three times, and a key that changed would read as
   # KEY2 and convict (IDN-1).
+  # ... and the PUBLIC KEY a device publishes with `attest --export`,
+  # the same way. The values are MARKED by sed at their exact lengths
+  # first, because /[0-9a-f]+/ matches ordinary English too: the fleet
+  # witness's first run read the "af" of "after" as a fingerprint and
+  # wrote a normalised token into the middle of a word (FLT-1).
   sed -e 's/\r$//' "$OUT/transcript.txt" \
     | sed -n '/^.*boot: stzos init/,$p' | sed -e '1s/^.*boot: stzos init/boot: stzos init/' \
     | sed -E 's/pid ([2-9]|[1-9][0-9]+)\b/pid N/g' \
-    | awk '{ while (match($0, /fingerprint [0-9a-f]+/)) { fp = substr($0, RSTART + 12, RLENGTH - 12); if (!(fp in seen)) { n++; seen[fp] = "KEY" n } $0 = substr($0, 1, RSTART + 11) seen[fp] substr($0, RSTART + RLENGTH) } print }' \
+    | sed -e 's/hash=[0-9a-f]\{64\}/hash=H/g' -e 's/sig=[0-9a-f]\{128\}/sig=S/g' \
+    | sed -e 's/ed25519 \([0-9a-f]\{64\}\)/ed25519 @@K@\1@@K@/g' -e 's/fingerprint \([0-9a-f]\{16\}\)/fingerprint @@K@\1@@K@/g' \
+    | awk '{ while (match($0, /@@K@[0-9a-f]+@@K@/)) { fp = substr($0, RSTART + 4, RLENGTH - 8); if (!(fp in seen)) { n++; seen[fp] = "KEY" n } $0 = substr($0, 1, RSTART - 1) seen[fp] substr($0, RSTART + RLENGTH) } print }' \
     | sed -e '/^qemu exit$/d; /^qemu exit [0-9]*$/d' > "$OUT/transcript.normalised"
   if [ ! -f "machines/$NAME.expected" ]; then
     echo "JUDGED: no expectation pinned for $NAME yet -- machines/$NAME.expected is missing; this boot's normalised transcript is at $OUT/transcript.normalised"

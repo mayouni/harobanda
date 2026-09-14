@@ -9,6 +9,7 @@
 const std = @import("std");
 const machine = @import("machine.zig");
 const plan = @import("plan.zig");
+const fleet = @import("fleet.zig");
 
 fn str(v: ?std.json.Value) ?[]const u8 {
     if (v) |x| return switch (x) {
@@ -149,6 +150,114 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
         if (machine.declare(arena_state.allocator(), source, &refusal)) |m| {
             failures += 1;
             try out.print("  FAIL {s} {s} -- accepted as machine '{s}', expected a refusal containing '{s}'\n", .{ id, name, m.name, fragment });
+        } else |_| {
+            if (std.mem.indexOf(u8, refusal.message, fragment) != null) {
+                try out.print("  ok   {s} {s} -- line {d}: {s}\n", .{ id, name, refusal.line, refusal.message });
+            } else {
+                failures += 1;
+                try out.print("  FAIL {s} {s} -- refused for the wrong reason: line {d}: {s} (expected '{s}')\n", .{ id, name, refusal.line, refusal.message, fragment });
+            }
+        }
+    }
+
+    try out.print("{d}/{d} -- {d} accepts, {d} rejects, {d} failures\n", .{ total - failures, total, accepts.items.len, rejects.items.len, failures });
+    return failures;
+}
+
+// ---- the fleet court (FLT-1) -------------------------------------------
+//
+// The same shape, one file up: accepts carry the member count and the
+// link, rejects carry the fragment their refusal must contain. What is
+// different is that a fleet case is a SET, so each case carries the
+// machine files it names inside itself (`files`), and the court hands
+// those to the parser instead of the disk. A fixture stays one
+// self-contained case and the court needs no scratch directory.
+
+const Files = struct {
+    obj: std.json.ObjectMap,
+
+    fn read(context: *const anyopaque, path: []const u8) ?[]const u8 {
+        const self: *const Files = @alignCast(@ptrCast(context));
+        return str(self.obj.get(path));
+    }
+    fn resolver(self: *const Files) fleet.Resolver {
+        return .{ .context = self, .readFn = read };
+    }
+};
+
+pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Writer) !usize {
+    const bytes = try std.fs.cwd().readFileAlloc(gpa, fixtures_path, 1 << 22);
+    defer gpa.free(bytes);
+    var parsed = try std.json.parseFromSlice(std.json.Value, gpa, bytes, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    const grammar = str(root.get("grammar")) orelse return error.BadFixtureFile;
+    const version = str(root.get("version")) orelse return error.BadFixtureFile;
+    if (!std.mem.eql(u8, grammar, "fleet")) return error.BadFixtureFile;
+    try out.print("fleet conformance -- grammar {s} v{s}, judged by {s}\n", .{ grammar, version, fixtures_path });
+
+    var failures: usize = 0;
+    var total: usize = 0;
+
+    const accepts = root.get("accepts").?.array;
+    for (accepts.items) |case_v| {
+        total += 1;
+        const case = case_v.object;
+        const id = str(case.get("id")).?;
+        const name = str(case.get("name")).?;
+        const source = str(case.get("source")).?;
+        const files = Files{ .obj = case.get("files").?.object };
+
+        var arena_state = std.heap.ArenaAllocator.init(gpa);
+        defer arena_state.deinit();
+        const arena = arena_state.allocator();
+        var refusal = fleet.Refusal{};
+        const f = fleet.declare(arena, source, files.resolver(), &refusal) catch {
+            failures += 1;
+            try out.print("  FAIL {s} {s} -- refused: fleet (line {d}): {s}\n", .{ id, name, refusal.line, refusal.message });
+            continue;
+        };
+
+        var why: ?[]const u8 = null;
+        const expect = case.get("expect").?.object;
+        if (int(expect.get("members"))) |w| if (@as(i64, @intCast(f.members.len)) != w) {
+            why = try std.fmt.allocPrint(arena, "members: expected {d} got {d}", .{ w, f.members.len });
+        };
+        if (expect.get("link")) |lv| switch (lv) {
+            .string => |want| {
+                const got = f.link orelse "";
+                if (!std.mem.eql(u8, got, want)) why = try std.fmt.allocPrint(arena, "link: expected {s} got '{s}'", .{ want, got });
+            },
+            .null => if (f.link) |got| {
+                why = try std.fmt.allocPrint(arena, "link: expected none, got {s}", .{got});
+            },
+            else => {},
+        };
+        if (why) |w| {
+            failures += 1;
+            try out.print("  FAIL {s} {s} -- {s}\n", .{ id, name, w });
+        } else {
+            try out.print("  ok   {s} {s}\n", .{ id, name });
+        }
+    }
+
+    const rejects = root.get("rejects").?.array;
+    for (rejects.items) |case_v| {
+        total += 1;
+        const case = case_v.object;
+        const id = str(case.get("id")).?;
+        const name = str(case.get("name")).?;
+        const source = str(case.get("source")).?;
+        const fragment = str(case.get("refusal")).?;
+        const files = Files{ .obj = case.get("files").?.object };
+
+        var arena_state = std.heap.ArenaAllocator.init(gpa);
+        defer arena_state.deinit();
+        var refusal = fleet.Refusal{};
+        if (fleet.declare(arena_state.allocator(), source, files.resolver(), &refusal)) |f| {
+            failures += 1;
+            try out.print("  FAIL {s} {s} -- accepted as fleet '{s}' ({d} members), expected a refusal containing '{s}'\n", .{ id, name, f.name, f.members.len, fragment });
         } else |_| {
             if (std.mem.indexOf(u8, refusal.message, fragment) != null) {
                 try out.print("  ok   {s} {s} -- line {d}: {s}\n", .{ id, name, refusal.line, refusal.message });

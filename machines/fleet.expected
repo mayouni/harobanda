@@ -1,0 +1,26 @@
+=== the device: two boots, a key made once and a record it can publish ===
+device: enrol fleet_temoin ed25519 KEY1 -- KEY for this machine's MEMBER in a fleet
+device: enrol fleet_temoin ed25519 KEY1 -- KEY for this machine's MEMBER in a fleet
+device: record seq=1 prev=- machine=fleet_temoin declaration=3766180a75088e11 verdict=matched hash=H sig=S
+carried: 1 entry off the machine, as the exact bytes that were signed
+=== the roll before enrolment ===
+roll: fleet atelier -- 1 member, no shared link declared -- judged, no refusal
+roll:   temoin -- fleet_temoin (fleet_temoin.machine) -- KEEPS A RECORD AND IS NOT ENROLLED: nobody can verify what it signs
+roll: fleet atelier -- 1 member keeps a signed record that no holder of this file can check; enrol from the line the device prints on its own console
+=== the roll after enrolment ===
+roll: fleet atelier -- 1 member, no shared link declared -- judged, no refusal
+roll:   temoin -- fleet_temoin (fleet_temoin.machine) -- enrolled, fingerprint FP1
+=== the act: a record verified by somebody who does not hold the secret ===
+verify: fleet atelier -- temoin: 1 entry verified against the enrolled key (fingerprint FP1), and no secret took part
+=== negative 1: one word changed, and it is the verdict ===
+tampered: fleet atelier -- temoin: entry 1 is not this device's: the entry's own bytes do not hash to the hash it carries: it was altered after it was written
+tampered: fleet atelier -- 0 entries verified before it
+=== negative 2: the same record offered as another device's ===
+foreign: fleet atelier -- temoin: entry 1 is not this device's: this device's key did not sign this entry
+foreign: fleet atelier -- 0 entries verified before it
+=== negative 3: a member nobody has enrolled ===
+unenrolled: fleet atelier -- temoin has no KEY in this fleet: nobody can speak for its records until its own fingerprint is enrolled
+=== the estate's own fleet, judged ===
+salle: fleet salle_makeen -- 2 members on salle, served by boitier -- judged, no refusal
+salle:   boitier -- makeen_names (makeen_names.machine, 192.168.10.1/24, serves makeen) -- not enrolled
+salle:   caisse -- caisse_makeen (caisse_makeen.machine, asks) -- not enrolled
