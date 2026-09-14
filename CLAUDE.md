@@ -283,7 +283,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   daemon's own signal, no timer). The health seat is HEALTH since
   HLT-1 (2026-09-13); a bounded window for the TRIAL itself is still a
   seam.
-- (done 2026-09-15, FLT-1) The fleet court: `FLEET` and `MEMBER` in a
+- (done 2026-09-14, FLT-1) The fleet court: `FLEET` and `MEMBER` in a
   second file of the same language, 16/16 fixtures, and one device's
   signed record verified by a holder of nothing but its public key.
   Named seams it leaves: a machine cannot declare its own HARDWARE

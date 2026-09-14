@@ -1,6 +1,6 @@
 # FLT-1 — the fleet court: machines judged together, and one device's record verified by another
 
-The first act of 2026-09-15, and the one the IDENTITY and JOURNAL seats
+The fifth act of 2026-09-14, and the one the IDENTITY and JOURNAL seats
 were waiting for.
 
 ## The gap it closes
