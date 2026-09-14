@@ -56,6 +56,15 @@ pub fn build(b: *std.Build) void {
     fleet_cmd.setCwd(b.path("."));
     court_step.dependOn(&fleet_cmd.step);
 
+    // the guided tour is judged too: a lesson that points at a machine
+    // somebody renamed is a tutorial that lies, and this turns the court
+    // red in the commit that made it (LRN-1)
+    const learn_cmd = b.addRunArtifact(exe);
+    learn_cmd.addArg("learn");
+    learn_cmd.addArg("--check");
+    learn_cmd.setCwd(b.path("."));
+    court_step.dependOn(&learn_cmd.step);
+
     // the machine targets: static, musl, one flag each
     const cross = b.step("cross", "Build stzos for the hosted-profile machine targets (static musl)");
     const triples = [_][]const u8{ "x86_64-linux-musl", "aarch64-linux-musl" };

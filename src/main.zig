@@ -25,6 +25,7 @@ const update = @import("update.zig");
 const project = @import("project.zig");
 const guarantee = @import("guarantee.zig");
 const journal = @import("journal.zig");
+const learn = @import("learn.zig");
 const fleet = @import("fleet.zig");
 const confine = @import("confine.zig");
 const expect = @import("expect.zig");
@@ -55,6 +56,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  stzos fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
         \\  stzos court  --fleet [declarative/fleet/fixtures.json]
+        \\  stzos learn  [n] [--all] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
         \\  stzos version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -111,6 +113,59 @@ pub fn main() !u8 {
     }
     const verb = args[1];
 
+    if (std.mem.eql(u8, verb, "learn")) {
+        // The tour lives in the binary, beside the verbs it teaches, so
+        // `--check` can walk every path a lesson names and the court can
+        // run that check. A tutorial in a document has no judge, and a
+        // guarantee you have only seen SUCCEED is a claim (LRN-1).
+        var n: ?usize = null;
+        var want_all = false;
+        var want_check = false;
+        var want_run = false;
+        for (args[2..]) |a| {
+            if (std.mem.eql(u8, a, "--all")) want_all = true
+            else if (std.mem.eql(u8, a, "--check")) want_check = true
+            else if (std.mem.eql(u8, a, "--run")) want_run = true
+            else n = std.fmt.parseInt(usize, a, 10) catch null;
+        }
+        if (want_check) {
+            const missing = try learn.check(out);
+            return if (missing == 0) 0 else 1;
+        }
+        if (want_all) {
+            try learn.all(out);
+            return 0;
+        }
+        const which = n orelse {
+            try learn.list(out);
+            return 0;
+        };
+        if (which == 0 or which > learn.lessons.len) {
+            try out.print("stzos: there are {d} lessons\n", .{learn.lessons.len});
+            return 1;
+        }
+        try learn.one(out, which);
+        if (!want_run) return 0;
+        const l = learn.lessons[which - 1];
+        if (!l.runnable) {
+            try out.print("  (this one is not this binary's to run -- copy the command above)\n\n", .{});
+            return 0;
+        }
+        // spawn OURSELVES with the lesson's own words, so what runs is
+        // exactly what the lesson printed and not a paraphrase of it
+        var it = std.mem.tokenizeScalar(u8, l.run["stzos ".len..], ' ');
+        var argv: std.ArrayList([]const u8) = .{};
+        try argv.append(arena, args[0]);
+        while (it.next()) |word| try argv.append(arena, word);
+        try out.print("  RUNNING\n\n", .{});
+        try out.flush();
+        var child = std.process.Child.init(argv.items, arena);
+        _ = child.spawnAndWait() catch |e| {
+            try out.print("  could not run it: {s}\n", .{@errorName(e)});
+            return 1;
+        };
+        return 0;
+    }
     if (std.mem.eql(u8, verb, "version")) {
         try out.print("stzos {s}\n", .{version});
         return 0;
@@ -827,4 +882,5 @@ test {
     _ = confine;
     _ = names;
     _ = fleet;
+    _ = learn;
 }

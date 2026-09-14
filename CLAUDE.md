@@ -60,6 +60,8 @@ wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello   #
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os6_names.sh              # TWO machines on one wire: a box that serves names, a till that asks -> zig-out/wsl/names.txt
 wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os7_fleet.sh              # a device publishes its key, a fleet enrols it, its record is verified by something that never held the secret -> zig-out/wsl/fleet.txt
 zig-out\bin\stzos.exe fleet machines\salle_makeen.fleet     # the roll: who is in the set, and who nobody can speak for yet
+zig-out\bin\stzos.exe learn                                 # the guided tour: 18 lessons, each with a command, the lines to look for, and a way to BREAK it
+zig-out\bin\stzos.exe learn 7                               # one lesson in full; `--all` for every one, `--run` where the command is this binary's
 cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-x86_64-linux-musl   # stzr for the image
 ```
 
@@ -69,6 +71,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A TUTORIAL is a claim about the system, so it is judged like one**
+  (LRN-1): the guided tour lives in `src/learn.zig` beside the verbs it
+  teaches, every lesson declares the paths it names, and `zig build
+  court` runs `stzos learn --check` over them. Anything that tells a
+  reader what they will see must fail loudly when that stops being true.
+  Each lesson carries a BREAK IT step, because a guarantee only ever
+  seen to succeed is a claim and not evidence.
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.

@@ -1,3 +1,81 @@
+# LRN-1 — the guided tour, and why a tutorial needs a judge like everything else
+
+Asked for by the author: a way to SEE what was built, didactically,
+rather than read twenty-four protocol entries in reverse order.
+
+## Where it lives, and why not in a document
+
+Everything here is judged by something that would notice if it drifted:
+the grammar by its fixtures, the boot by its own expectation, the
+transcript by its pin. A tutorial written as prose has no such judge. It
+says "run this and you will see that", and nothing checks that the file
+still exists, that the verb is still spelled that way, or that the line
+it tells you to look for is still printed.
+
+So the curriculum is a table in `src/learn.zig`, beside the verbs it
+teaches, and every lesson declares the paths it names. `stzos learn
+--check` walks them, and **`zig build court` runs that check** -- so a
+lesson pointing at a machine somebody renamed turns the court red in the
+commit that renamed it.
+
+Probed, as the doctrine requires: run `stzos learn --check` from outside
+the repository and it names every missing path and exits 1; from inside,
+it exits 0. A judge that cannot convict is not judging.
+
+## The shape of a lesson
+
+Six fields, and the fourth is the whole point.
+
+```
+  THE QUESTION       what you do not yet know
+  RUN                one command, copy-pasteable
+  LOOK FOR           the exact lines that answer it
+  BREAK IT           a change you make so the machine convicts YOU
+  THE LAW IT PAID FOR   the doctrine sentence, verbatim
+  THE FULL STORY     where the account lives
+```
+
+**Break it** is why this is a tutorial and not a tour. A guarantee you
+have only seen SUCCEED is a claim; one you have watched refuse you is
+evidence. That is the same argument IDN-1 made about a signature nobody
+tried to break, turned on the reader: add a shell to a RUN and watch the
+grammar refuse it by name; change a word in a pinned transcript and
+watch the court produce a diff; give a confined world the capability it
+lacked and watch the interface appear.
+
+## Eighteen lessons, six acts
+
+```
+I.   THE DECLARATION      a machine is a text file, judged before anything runs
+II.  THE BOOT             it narrates, it judges ITSELF, and a pin judges that
+III. WHAT A WORLD MAY DO  the envelope, the floor, whose storage, the budgets, the reach
+IV.  WHO A DEVICE IS      the key, the signed record, attribution by a stranger
+V.   THE NETWORK          the box as its link's server of names; facts about a SET
+VI.  THE FLAGSHIP         four card boots, a held trial, and the four promises
+```
+
+The acts are ordered so that a reader who stops half way has finished a
+whole part of the story, and a unit test enforces that an act never
+returns after another has begun.
+
+## What runs, and what does not
+
+`stzos learn <n> --run` spawns THIS binary with the lesson's own words,
+so what executes is exactly what the lesson printed rather than a
+paraphrase of it. It works for the four lessons whose command is a verb
+of this binary. The boots are WSL scripts and are never spawned from
+here: the machine that runs them is not the machine you type on, and
+pretending otherwise would be the first lie in a tutorial about not
+lying.
+
+## The law this pays for
+
+**A tutorial is a claim about the system, so it is judged like one.**
+Anything that tells a reader what they will see must fail loudly when
+that stops being true.
+
+---
+
 # THR-1 — whose thread it is: the question dissolved rather than answered
 
 The twelfth act of 2026-09-14, and the last named seam in the envelope.
