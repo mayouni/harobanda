@@ -124,6 +124,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   both ways on all three -- broken pin exits 1, clean pin exits 0 --
   because a judge that always convicts is as useless as one that never
   does. `judge_guarantees.sh` was already right and is the shape.
+  **A verdict must be RETURNED and RECEIVED; either alone is decoration**
+  (NAM-2): `os6_names.sh` captured `stzos fleet ... hardware` and tested
+  whether the answer was EMPTY. A refused fleet prints its refusal on
+  STDOUT and exits 1, so the guard passed, a whole sentence became a MAC,
+  and the run failed two minutes later with a symptom. `if ! VAR=$(...)`.
+  When a caller tests the CONTENT of an answer, ask what that variable
+  holds when the thing that produced it refused.
 - **A promise the machine ANNOUNCES and cannot keep is worse than one it
   never made** (NS-1): when the mechanism behind a declared guarantee
   fails, refuse the act and say so. PID 1 does not start a world whose
@@ -390,7 +397,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   digests are pinned).
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

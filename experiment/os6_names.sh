@@ -36,12 +36,23 @@ S=zig-out/cross/x86_64-linux-musl/stzos
 # the only place in the estate where a fact about a deployment lived
 # outside a declaration -- and the fleet court had no way to check that
 # the address the box promises and the device that claims it are one.
-TILL_MAC=$("$S" fleet "$FLEET" hardware caisse)
-BOX_MAC=$("$S" fleet "$FLEET" hardware boitier)
+# Ask for the addresses, and READ THE VERDICT rather than the emptiness
+# of the answer. A refused fleet does not answer empty: it prints the
+# refusal on stdout and exits 1, so `[ -z ... ]` was false and this
+# script went on to boot QEMU with a MAC that was a whole sentence. It
+# then failed four steps later with "the box never said it was serving",
+# which is a symptom and not the cause. Same family as VDCT-1: the
+# verdict existed and the caller was not reading it.
+if ! TILL_MAC=$("$S" fleet "$FLEET" hardware caisse); then
+  echo "the fleet is refused, so there are no devices to be:"; echo "$TILL_MAC"; exit 1
+fi
+if ! BOX_MAC=$("$S" fleet "$FLEET" hardware boitier); then
+  echo "the fleet is refused, so there are no devices to be:"; echo "$BOX_MAC"; exit 1
+fi
 STRANGER_MAC=52:54:00:77:77:77    # nobody, and deliberately in no declaration
 mkdir -p zig-out/wsl
 if [ -z "$TILL_MAC" ] || [ -z "$BOX_MAC" ]; then
-  echo "the fleet did not say which devices these are -- $S fleet $FLEET"; exit 1
+  echo "the fleet named no hardware for these members -- $S fleet $FLEET"; exit 1
 fi
 
 # Rewrite a derived boot.cmd onto the pair's own wire. The user-mode

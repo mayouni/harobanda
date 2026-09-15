@@ -1,3 +1,84 @@
+# NAM-2 — a guard that checked for an empty answer, not for a refusal
+
+Found by running lesson 15's break and then running the script that reads
+the same fleet. Fourth seat out of a BREAK IT step.
+
+## The guard
+
+`os6_names.sh` reads the two hardware addresses out of the FLEET rather
+than carrying them as constants of its own, which is HDW-1 and is right.
+Then:
+
+```sh
+TILL_MAC=$("$S" fleet "$FLEET" hardware caisse)
+BOX_MAC=$("$S" fleet "$FLEET" hardware boitier)
+if [ -z "$TILL_MAC" ] || [ -z "$BOX_MAC" ]; then
+  echo "the fleet did not say which devices these are"; exit 1
+fi
+```
+
+The guard is looking for an absent answer. A refused fleet does not give
+one: it prints its refusal, on **stdout**, and exits 1. So `$TILL_MAC`
+held the sentence *"fleet (line 38): boitier promises no address to
+52:54:00:99:99:99 ..."*, `-z` was false, and the script sailed past its
+own check.
+
+It then built two images, wrote a QEMU command line whose `mac=` was a
+whole English sentence, booted both machines, waited for a server that
+could not come up, and failed after about two minutes with:
+
+```
+the box never said it was serving
+```
+
+Which is true, and is four steps downstream of anything a reader could
+act on.
+
+## Why this is VDCT-1 one level up
+
+VDCT-1 was a judge that rendered a verdict and did not RETURN it --
+`tee` answered for the run. This is the mirror: a verdict WAS returned,
+correctly, and the caller read something else. Between them they cover
+both halves of the same sentence. A verdict has to be returned AND
+received; either side alone is decoration.
+
+The tell is the same in both: a script that reports a symptom long after
+the cause, in a place the cause is not visible from.
+
+## The fix, and what was kept
+
+```sh
+if ! TILL_MAC=$("$S" fleet "$FLEET" hardware caisse); then
+  echo "the fleet is refused, so there are no devices to be:"; echo "$TILL_MAC"; exit 1
+fi
+```
+
+The emptiness check is KEPT underneath, because it was written for a
+different case that still exists -- a fleet that judges clean and names
+no hardware for a member. Two questions, two guards, rather than one
+guard asked to answer both.
+
+Probed both ways:
+
+| fleet | before | after |
+|---|---|---|
+| a member with an undeclared HARDWARE | ran 2 minutes, `the box never said it was serving` | **2 seconds**, the refusal quoted |
+| the committed fleet | clean, 68 lines, exit 0 | clean, 68 lines, exit 0 |
+
+Grepped every other script under `experiment/` for a capture of the same
+shape. The only one is a `cat` of a pin file.
+
+## The law this pays for
+
+**A verdict must be RETURNED and RECEIVED; either alone is decoration**
+(with VDCT-1). When a caller tests the CONTENT of an answer -- empty,
+non-empty, matching some shape -- ask what that variable holds when the
+thing that produced it refused. Refusals travel on stdout here, so a
+capture that ignores the status captures the refusal as data and carries
+it forward as if it were an answer.
+
+---
+
 # JRN-2 — the test named for a POSITION never checked the position
 
 Lesson 13 of the guided tour points at one unit test as its entire
