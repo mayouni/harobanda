@@ -83,7 +83,12 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   knows** -- two unit tests hold that shape. Its first reader hit all
   five gaps within the hour and was left with a dirty working tree. And
   a BREAK IT step is RUN before it is promised: three of the first nine
-  refused for a different reason than the lesson claimed.
+  refused for a different reason than the lesson claimed. **A step that
+  boots a machine the reader has EDITED always ends with the pin
+  refusing the transcript** -- the loudest thing on their screen, and the
+  tour described only the machine's own judge until they reported it.
+  That warning is DERIVED from the step (a `.machine` file plus
+  `os2_image.sh`), not written per lesson: six needed it.
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.

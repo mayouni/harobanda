@@ -269,10 +269,10 @@ pub const lessons = [_]Lesson{
             .expect = &.{
                 "It still boots. Then it judges itself and says so:",
                 "",
-                "  boot: judge -- the boot matches its expectation (/etc/expected, N lines)",
+                "  boot: judge -- the boot matches its expectation (/etc/expected, 18 lines)",
                 "",
-                "with N larger than the 16 it counted before, because your service added",
-                "lines to BOTH the transcript and the expectation.",
+                "Eighteen, where it counted 16 before: your service added lines to BOTH the",
+                "transcript and the expectation.",
                 "",
                 "It MATCHES, because the expectation was derived from the same file you just",
                 "edited -- change the machine and its expectation changes with it. To see a",
@@ -809,6 +809,33 @@ pub fn glossary(w: *std.Io.Writer) !void {
     try w.print("\n", .{});
 }
 
+/// The pin that will refuse this break's boot, or null if the step does
+/// not boot an edited machine. Derived from what the step already knows
+/// -- the file it edits and the command it runs -- rather than written
+/// out in each lesson, because six lessons need it and a seventh will be
+/// written by somebody who has forgotten.
+fn pinStem(b: Break) ?[]const u8 {
+    const suffix = ".machine";
+    if (!std.mem.endsWith(u8, b.file, suffix)) return null;
+    if (std.mem.indexOf(u8, b.then, "os2_image.sh") == null) return null;
+    return b.file[0 .. b.file.len - suffix.len];
+}
+
+/// The same pin as a repository path, for `--check` to walk: the lessons
+/// spell Windows paths and the judge needs a real one.
+fn pinPath(b: Break, buf: []u8) ?[]const u8 {
+    const stem = pinStem(b) orelse return null;
+    const ext = ".expected";
+    if (stem.len + ext.len > buf.len) return null;
+    @memcpy(buf[0..stem.len], stem);
+    @memcpy(buf[stem.len..][0..ext.len], ext);
+    const out = buf[0 .. stem.len + ext.len];
+    for (out) |*c| {
+        if (c.* == '\\') c.* = '/';
+    }
+    return out;
+}
+
 fn renderBreak(w: *std.Io.Writer, b: Break) !void {
     if (b.proves.len + "  BREAK IT -- to prove ".len <= 76) {
         try w.print("  BREAK IT -- to prove {s}\n", .{b.proves});
@@ -846,6 +873,32 @@ fn renderBreak(w: *std.Io.Writer, b: Break) !void {
     if (b.expect.len > 0) {
         try w.print("\n    {d}. You should see:\n\n", .{step});
         try block(w, "         ", b.expect);
+        step += 1;
+    }
+    // Derived, never written per lesson, because it was FORGOTTEN once
+    // and once is how you learn it will be forgotten again: a boot of a
+    // machine you have edited ALWAYS ends with the pin refusing the
+    // transcript, and that is the loudest thing on the reader's screen.
+    // The first reader of this tour ran lesson 5, got the line the
+    // lesson promised, and then got a FAIL underneath it that the lesson
+    // had never mentioned.
+    if (pinStem(b)) |stem| {
+        try w.print("\n    {d}. AND THEN A FAILURE, WHICH IS CORRECT:\n\n", .{step});
+        try w.print("         JUDGED: FAIL -- the transcript differs from {s}.expected:\n", .{stem});
+        try block(w, "         ", &.{
+            "  ... followed by a diff of every line you changed.",
+            "",
+            "Do not be alarmed, and do not undo anything yet. TWO different judges",
+            "ran. The first is the machine judging ITSELF, above: its expectation is",
+            "derived from the declaration, so when you edit the machine both sides",
+            "move together and it still matches. The second is the PIN -- a stored",
+            "copy of what a RIGHT boot of this machine says, which does not move,",
+            "because somebody committed it deliberately. You changed the machine, so",
+            "the pin is now describing a different machine, and it says so.",
+            "",
+            "That is lesson 6 arriving early, and it is the whole reason both judges",
+            "exist. The undo below makes it match again.",
+        });
         step += 1;
     }
     if (b.undo.len > 0) {
@@ -894,11 +947,20 @@ pub fn all(w: *std.Io.Writer) !void {
 /// it rather than the first time a reader tries to follow along.
 pub fn check(w: *std.Io.Writer) !usize {
     var missing: usize = 0;
+    var buf: [256]u8 = undefined;
     for (lessons, 1..) |l, i| {
         for (l.needs) |p| {
             std.fs.cwd().access(p, .{}) catch {
                 missing += 1;
                 try w.print("  lesson {d} names {s}, which is not there\n", .{ i, p });
+            };
+        }
+        // the pin the lesson promises will refuse the boot is a path the
+        // lesson NAMES, even though no lesson wrote it down
+        if (pinPath(l.breakit, &buf)) |pin| {
+            std.fs.cwd().access(pin, .{}) catch {
+                missing += 1;
+                try w.print("  lesson {d} promises a refusal from {s}, which is not there\n", .{ i, pin });
             };
         }
     }
@@ -955,6 +1017,29 @@ test "a BREAK IT step never leaves the reader to guess" {
             try t.expect(b.note.len > 0);
         }
     }
+}
+
+test "a step that boots an edited machine warns about the pin it will fail" {
+    const t = std.testing;
+    var buf: [256]u8 = undefined;
+    var warned: usize = 0;
+    for (lessons) |l| {
+        const b = l.breakit;
+        const boots = std.mem.indexOf(u8, b.then, "os2_image.sh") != null;
+        const edits_machine = std.mem.endsWith(u8, b.file, ".machine");
+        // the warning is DERIVED, so the only way to get it wrong is for
+        // the derivation to stop firing: assert it fires exactly when a
+        // reader would see JUDGED: FAIL and nowhere else
+        try t.expectEqual(boots and edits_machine, pinStem(b) != null);
+        if (pinPath(b, &buf)) |pin| {
+            warned += 1;
+            try t.expect(std.mem.startsWith(u8, pin, "machines/"));
+            try t.expect(std.mem.endsWith(u8, pin, ".expected"));
+            try t.expect(std.mem.indexOfScalar(u8, pin, '\\') == null);
+        }
+    }
+    // lessons 4, 5, 7, 9, 10 and 11 all edit a pinned machine and boot it
+    try t.expectEqual(@as(usize, 6), warned);
 }
 
 test "a lesson that can be run names this binary" {

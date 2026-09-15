@@ -151,6 +151,42 @@ the declaration, so editing the machine moves both sides together. It
 matches, the lesson says WHY it matches, and it points at the flagship's
 `unmet:` section for the only mismatch there is.
 
+## The second thing the same reader found: the judge nobody mentioned
+
+They ran lesson 5 the next morning and reported the output did not match.
+It did -- the line the lesson promised was there, word for word, and the
+count it predicted (18, up from 16) was exact. But the lesson had
+described ONE judge and the script runs TWO, and the second one FAILS:
+
+```
+boot: judge -- the boot matches its expectation (/etc/expected, 18 lines)
+...
+JUDGED: FAIL -- the transcript differs from machines/qemu_hello.expected:
+```
+
+Both are correct and they say opposite-sounding things, which is the
+whole point of having both. The machine's own expectation is DERIVED
+from the declaration, so editing the machine moves both sides and it
+still matches. The PIN does not move: somebody committed it as a claim
+that a RIGHT boot of this machine says exactly this. Edit the machine
+and the pin is describing a different machine, and says so.
+
+The reader saw the FAIL last, in a diff twenty lines long, and reasonably
+concluded the lesson was wrong.
+
+**Six lessons had this hole, not one** -- 4, 5, 7, 9, 10 and 11 all edit a
+pinned machine and then boot it. So the warning is DERIVED rather than
+written per lesson: a step whose `file` ends in `.machine` and whose
+`then` runs `os2_image.sh` gets an extra rendered section naming the
+exact pin that will refuse it, why the refusal is right, and an
+instruction not to undo anything yet. A unit test asserts it fires on
+exactly those six and nowhere else, and `--check` now walks the derived
+`.expected` path too -- a lesson cannot promise a refusal from a pin that
+is not there.
+
+Derivation over repetition for the usual reason: six lessons need this
+and the seventh will be written by somebody who has forgotten.
+
 ## What this seat is actually about
 
 The instrument was already right -- the curriculum in the binary, the
