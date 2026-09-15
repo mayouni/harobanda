@@ -89,6 +89,15 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   tour described only the machine's own judge until they reported it.
   That warning is DERIVED from the step (a `.machine` file plus
   `os2_image.sh`), not written per lesson: six needed it.
+  **A quotation is the machine's words or it is not a quotation**
+  (LRN-2): `--check` now requires every LOOK FOR line that begins like a
+  transcript line to appear verbatim in some `machines/*.expected`,
+  whitespace normalised. Twenty-three did not, across four lessons --
+  trimmed prefixes, dropped paths, a word capitalised for emphasis
+  INSIDE the quotation. Wrap it, elide it visibly with `...`, or put the
+  emphasis in the prose. A BREAK IT's `expect` is exempt by
+  construction: it is what the reader sees after changing the machine,
+  so it is verified by RUNNING it and nothing else can.
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.
@@ -397,7 +406,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   digests are pinned).
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

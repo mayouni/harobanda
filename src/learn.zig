@@ -773,7 +773,8 @@ pub const lessons = [_]Lesson{
             "  before it and signed by this device",
             "  again: journal:   seq=1 prev=- machine=qemu_identity",
             "  declaration=a48c59fbf8070f67 verdict=matched",
-            "  again: boot: journal -- 1 entry verified, entry 2 appended and signed",
+            "  again: boot: journal -- /data/boot.journal: 1 entry verified, entry 2",
+            "  appended and signed (verdict matched)",
             "",
             "Read that `seq=1` line, because it is the whole record and it is meant to be",
             "readable. `prev=-` says nothing came before it. `declaration=` is a digest of",
@@ -841,9 +842,14 @@ pub const lessons = [_]Lesson{
             "",
             "The device boots twice, makes its key once, and publishes the PUBLIC half:",
             "",
-            "  device:  enrol fleet_temoin ed25519 KEY1 -- KEY for this machine's MEMBER",
-            "  device:  enrol fleet_temoin ed25519 KEY1        (again -- the same key)",
+            "  device: enrol fleet_temoin ed25519 KEY1 -- KEY for this machine's MEMBER",
+            "  in a fleet",
+            "  device: enrol fleet_temoin ed25519 KEY1 -- KEY for this machine's MEMBER",
+            "  in a fleet",
             "  carried: 1 entry off the machine, as the exact bytes that were signed",
+            "",
+            "-- the same line twice, because the device booted twice and made its key",
+            "once.",
             "",
             "`as the exact bytes` is the rule, not a flourish. The signature is over the",
             "bytes on the line, never over an object they were parsed into, so two",
@@ -852,8 +858,8 @@ pub const lessons = [_]Lesson{
             "Then the roll, BEFORE anyone enrols that key -- and this is the line to",
             "read twice:",
             "",
-            "  roll: temoin -- fleet_temoin.machine -- KEEPS A RECORD AND IS NOT",
-            "        ENROLLED: nobody can verify what it signs",
+            "  roll:   temoin -- fleet_temoin (fleet_temoin.machine) -- KEEPS A RECORD",
+            "  AND IS NOT ENROLLED: nobody can verify what it signs",
             "",
             "The fleet does not guess. It does not accept whatever key answered. It",
             "REPORTS that it cannot speak for this device, in capitals, and says what to",
@@ -863,17 +869,19 @@ pub const lessons = [_]Lesson{
             "After a human writes the key in, the same roll reads `enrolled, fingerprint",
             "FP1`, and then the act itself:",
             "",
-            "  verify: 1 entry verified against the enrolled key (fingerprint FP1), and",
-            "          no secret took part",
+            "  verify: fleet atelier -- temoin: 1 entry verified against the enrolled",
+            "  key (fingerprint FP1), and no secret took part",
             "",
             "Three negatives follow, and they refuse for THREE DIFFERENT REASONS, which",
             "is the part that makes them evidence rather than decoration:",
             "",
-            "  tampered:   the entry's own bytes do not hash to the hash it carries: it",
-            "              was altered after it was written",
-            "  foreign:    this device's key did not sign this entry",
-            "  unenrolled: temoin has no KEY in this fleet: nobody can speak for its",
-            "              records until its own fingerprint is enrolled",
+            "  tampered: fleet atelier -- temoin: entry 1 is not this device's: the",
+            "  entry's own bytes do not hash to the hash it carries: it was altered",
+            "  after it was written",
+            "  foreign: fleet atelier -- temoin: entry 1 is not this device's: this",
+            "  device's key did not sign this entry",
+            "  unenrolled: fleet atelier -- temoin has no KEY in this fleet: nobody can",
+            "  speak for its records until its own fingerprint is enrolled",
             "",
             "Altered, misattributed, unattributable. The machine says WHICH.",
             "",
@@ -951,10 +959,12 @@ pub const lessons = [_]Lesson{
             "",
             "The box, which declares who it serves and says so before anyone asks:",
             "",
-            "  box: names salle -- makeen: this machine is 192.168.10.1/24, 2 declared",
-            "       peers, and no address for anyone else",
-            "  box: names salle -- imprimante.makeen is 192.168.10.50 for 52:54:00:12:34:60",
-            "  box: names salle -- caisse.makeen is 192.168.10.40 for 52:54:00:12:34:61",
+            "  box: boot: names salle -- makeen: this machine is 192.168.10.1/24, 2",
+            "  declared peers, and no address for anyone else",
+            "  box: boot: names salle -- imprimante.makeen is 192.168.10.50 for",
+            "  52:54:00:12:34:60",
+            "  box: boot: names salle -- caisse.makeen is 192.168.10.40 for",
+            "  52:54:00:12:34:61",
             "",
             "`no address for anyone else` is the whole design. There is no pool and no",
             "range. The register of who has which address IS the declaration, in git,",
@@ -970,8 +980,8 @@ pub const lessons = [_]Lesson{
             "The till declares NO address, NO resolver and NO printer, and learns all",
             "three from the link:",
             "",
-            "  till: network salle -- eth0 up 192.168.10.40/24 (dhcp), dns",
-            "        [192.168.10.1], names on makeen (/etc/resolv.conf)",
+            "  till: boot: network salle -- eth0 up 192.168.10.40/24 (dhcp), dns",
+            "  [192.168.10.1], names on makeen (/etc/resolv.conf)",
             "",
             "then asks FOUR questions, and the answers differ in a way worth reading",
             "slowly:",
@@ -989,8 +999,8 @@ pub const lessons = [_]Lesson{
             "Then the line the box prints when its own services are done, which is this",
             "seat's law in the machine's own words:",
             "",
-            "  box: every service has ended -- and this machine is still makeen: a server",
-            "       stops when the machine stops, not when the asking does",
+            "  box: boot: every service has ended -- and this machine is still makeen: a",
+            "  server stops when the machine stops, not when the asking does",
             "",
             "And last, the stranger -- the SAME image, booted with a hardware address",
             "nobody declared. It gets no lease, and every question comes back `no",
@@ -1000,11 +1010,11 @@ pub const lessons = [_]Lesson{
             "Read its final three lines, because they are the only ones of their kind in",
             "this whole tour:",
             "",
-            "  stranger: judge -- the boot differs from its expectation: 1 line(s)",
-            "            expected and not said, 1 said and not expected",
-            "  stranger: judge -- expected, not said: network salle -- eth0 up *",
-            "  stranger: judge -- said, not expected: network salle -- eth0 dhcp: no",
-            "            lease after 3 tries",
+            "  stranger: boot: judge -- the boot differs from its expectation",
+            "  (/etc/expected): 1 line(s) expected and not said, 1 said and not expected",
+            "  stranger: boot: judge -- expected, not said: network salle -- eth0 up *",
+            "  stranger: boot: judge -- said, not expected: network salle -- eth0 dhcp:",
+            "  no lease after 3 tries (no server answered on this network)",
             "",
             "That is a machine judging its OWN boot and convicting itself, naming both",
             "sides of the difference. Lesson 5 could not show you this -- editing a",
@@ -1163,30 +1173,92 @@ pub const lessons = [_]Lesson{
     // ---- VI. the flagship ----------------------------------------------
     .{
         .act = "VI. THE FLAGSHIP",
-        .title = "The Makeen box: four boots of one card, and a verdict it refused to commit",
+        .title = "The Makeen box: four boots, three cards, and a verdict it refused to commit",
         .question = "A box in a restaurant takes an update at two in the morning and it is wrong. Then what?",
         .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh makeen_box",
         .look = &.{
-            "boot:   slot B -- committed: every service is ready and has held its health",
-            "        window and the boot matches its expectation; config.txt now boots B",
-            "steady: boot: identity -- ... already on this device, fingerprint KEY1",
-            "hold:   the same trial on a pristine card, held:",
-            "unmet:  boot: journal -- /data/boot.journal: the chain begins, entry 1 signed",
-            "        by this device (verdict differed)",
+            "129 lines, four boots, and they are NOT four boots of one card. Check the",
+            "fingerprints and the labels:",
             "",
-            "Four boots of one SD card in one transcript, 129 lines. Read the last one",
-            "twice, and note the three words in its parentheses: VERDICT DIFFERED. The box",
-            "wrote down, in its own signed record, that its own boot was not the declared",
-            "one. That is the line an auditor wants, and the line a vendor's box would",
-            "never keep about itself.",
+            "  section   what its identity line says        what it is",
+            "  -------   ------------------------------     ---------------------",
+            "  boot:     created ... fingerprint KEY1        the trial",
+            "  steady:   already ... fingerprint KEY1        the SAME card again",
+            "  hold:     created ... fingerprint KEY2        a PRISTINE card",
+            "  unmet:    created ... fingerprint KEY3        another pristine card",
+            "",
+            "Three cards. KEY1 appears twice because that card kept its key across a",
+            "power cycle, which is lesson 12's whole claim; KEY2 and KEY3 are different",
+            "because a new card is a new device. The court maps each DISTINCT fingerprint",
+            "to KEY1, KEY2, KEY3 rather than blanking them, which is the only reason any",
+            "of this is visible.",
+            "",
+            "Now the instrument. An update arrives; the box boots it in the OTHER slot as",
+            "a trial, and must earn the right to keep it:",
+            "",
+            "  boot: slot B -- a trial (committed is A); the watchdog holds the rollback",
+            "        until the boot is judged",
+            "  boot: slot B -- committed: every service is ready and has held its health",
+            "        window and the boot matches its expectation; config.txt now boots B,",
+            "        A is the fallback",
+            "",
+            "Read that as the conjunction it is: ready, AND held its window, AND matched.",
+            "All three, or no commit. Then the part to read most",
+            "carefully, because it is the only evidence that any of this was real:",
+            "",
+            "  card: config.txt after the trial:",
+            "  card: os_prefix=slots/B/",
+            "  card: [tryboot]",
+            "  card: os_prefix=slots/A/",
+            "",
+            "That is the actual file on the actual card. B is what boots now; A is what",
+            "the firmware falls back to. The commit is not a log line claiming a commit --",
+            "it is four lines of a file, printed so you can check them.",
+            "",
+            "Compare that block against the same block after the other two trials. Both",
+            "read `os_prefix=slots/A/` first. The card still boots the OLD slot. Nothing",
+            "was kept.",
+            "",
+            "And the `unmet:` boot is the one to read twice. It is the same trial judged",
+            "against the BOARD's expectation instead of the emulator's, so the emulator's",
+            "missing hardware shows up as a difference -- and the box names all four",
+            "sides of it:",
+            "",
+            "  unmet: boot: judge -- the boot differs from its expectation",
+            "         (/etc/expected): 2 line(s) expected and not said, 2 said and not",
+            "         expected",
+            "  unmet: boot: judge -- expected, not said: network lan -- eth0 up",
+            "         192.168.10.1/24",
+            "  unmet: boot: judge -- expected, not said: watchdog armed (/dev/watchdog)",
+            "  unmet: boot: judge -- said, not expected: network lan -- eth0: no such",
+            "         interface (NODEV)",
+            "  unmet: boot: judge -- said, not expected: watchdog -- off by the boot line",
+            "         (the emulator resets on arming); a trial cannot roll back by",
+            "         hardware here",
+            "",
+            "then writes that verdict into its own signed record:",
+            "",
+            "  unmet: boot: journal -- /data/boot.journal: the chain begins, entry 1",
+            "         signed by this device (verdict differed)",
+            "",
+            "and refuses to keep the update:",
+            "",
+            "  unmet: boot: slot B -- held: every service is ready but the boot is not",
+            "         the one expected; not committed, the watchdog is no longer fed --",
+            "         the next boot is A",
+            "",
+            "Every service was ready. Both worlds were serving. And it still refused,",
+            "because readiness was never the test -- the test is whether the boot is the",
+            "DECLARED one. That is the line an auditor wants, and the line a vendor's box",
+            "would never keep about itself.",
         },
         .breakit = .{
             .proves = "that the transcript already carries its own negative",
-            .note = "Find the `hold:` section. That is the rollback instrument running on a fresh copy of the card: the update is never committed, the watchdog stops being fed, and on real hardware the board would reset into the slot that was working. The emulator cannot arm a watchdog, and the transcript says so plainly rather than pretending it did.",
+            .note = "Nothing to edit: this machine needs an SD card and a board to be broken properly, and the transcript already carries three negatives of its own. Read them as a set. `hold:` is a trial that passes every check and is deliberately not committed -- the rollback instrument proving it can decline. `unmet:` is a trial that passes every check EXCEPT the verdict, and declines by itself. And `boot: refuse gpio (effectful)` near the top is a capability the machine DECLARED and the profile refused, said out loud rather than dropped. Two honesty lines are worth noticing while you are there: `watchdog -- off by the boot line (the emulator resets on arming)` and `--halt-on-verdict: the court ends what a real init never would`. The emulator cannot do two things this box depends on, and the transcript says which, rather than quietly pretending otherwise -- which is why OS-5 waits on hardware.",
         },
         .law = "A trial commits only on a match, and no expectation is no commit.",
         .story = "declarative/machine/PINNING.md",
-        .needs = &.{ "machines/makeen_box.machine", "experiment/os2_image.sh" },
+        .needs = &.{ "machines/makeen_box.machine", "machines/makeen_box.expected", "experiment/os2_image.sh" },
     },
     .{
         .act = "VI. THE FLAGSHIP",
@@ -1413,9 +1485,66 @@ pub fn all(w: *std.Io.Writer) !void {
 /// somebody renamed is a tutorial that lies, and this is what stops it:
 /// `zig build court` runs this, so the lie fails in the commit that made
 /// it rather than the first time a reader tries to follow along.
+/// Prefixes that mark a line as something a MACHINE said, rather than
+/// the tour's own prose. A lesson may paraphrase freely; what it
+/// presents as a quotation has to be one.
+const said_prefixes = [_][]const u8{
+    "boot:",     "again:",  "steady:",    "hold:",      "unmet:",
+    "card:",     "box:",    "till:",      "stranger:",  "confined:",
+    "attest:",   "journal", "kds:",       "poste:",     "modest:",
+    "swarm:",    "greedy:", "reach ",     "ask ",       "device:",
+    "roll:",     "verify:", "tampered:",  "foreign:",   "unenrolled:",
+    "salle:",    "carried:",
+};
+
+fn looksSaid(line: []const u8) bool {
+    const t = std.mem.trim(u8, line, " ");
+    for (said_prefixes) |p| {
+        if (std.mem.startsWith(u8, t, p)) return true;
+    }
+    return false;
+}
+
+/// Append `text` to `out` with every run of whitespace collapsed to one
+/// space, so the tour's hand-wrapping cannot make a quote look different
+/// from the single long line a pin holds.
+fn flatten(out: *std.ArrayList(u8), alloc: std.mem.Allocator, text: []const u8) !void {
+    var space = false;
+    for (text) |c| {
+        if (c == ' ' or c == '\t' or c == '\n' or c == '\r') {
+            space = true;
+            continue;
+        }
+        if (space and out.items.len > 0) try out.append(alloc, ' ');
+        space = false;
+        try out.append(alloc, c);
+    }
+}
+
+/// Every machines/*.expected, flattened into one haystack.
+fn pinHaystack(alloc: std.mem.Allocator) ![]u8 {
+    var hay: std.ArrayList(u8) = .{};
+    var dir = try std.fs.cwd().openDir("machines", .{ .iterate = true });
+    defer dir.close();
+    var it = dir.iterate();
+    while (try it.next()) |e| {
+        if (e.kind != .file) continue;
+        if (!std.mem.endsWith(u8, e.name, ".expected")) continue;
+        const text = try dir.readFileAlloc(alloc, e.name, 1 << 22);
+        defer alloc.free(text);
+        try flatten(&hay, alloc, text);
+        try hay.append(alloc, '\n');
+    }
+    return hay.toOwnedSlice(alloc);
+}
+
 pub fn check(w: *std.Io.Writer) !usize {
     var missing: usize = 0;
     var buf: [256]u8 = undefined;
+    var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena_state.deinit();
+    const alloc = arena_state.allocator();
+    const hay = try pinHaystack(alloc);
     for (lessons, 1..) |l, i| {
         for (l.needs) |p| {
             std.fs.cwd().access(p, .{}) catch {
@@ -1431,11 +1560,50 @@ pub fn check(w: *std.Io.Writer) !usize {
                 try w.print("  lesson {d} promises a refusal from {s}, which is not there\n", .{ i, pin });
             };
         }
+
+        // EVERY LINE A LESSON QUOTES MUST BE A LINE A MACHINE SAID.
+        //
+        // The paths were checked from the first day and the quotations
+        // never were, which is the larger claim of the two: a reader
+        // comparing their screen against the lesson is comparing it
+        // against these strings. Dropping a `boot: ` prefix or a
+        // `/data/boot.journal: ` path to make a line fit turns a
+        // quotation into a paraphrase wearing quotation's clothes, and
+        // that had happened in four lessons before anything looked.
+        //
+        // Only LOOK FOR is checked. A BREAK IT's `expect` is what the
+        // reader sees AFTER changing the machine, so no pin can hold it.
+        var j: usize = 0;
+        while (j < l.look.len) : (j += 1) {
+            if (!looksSaid(l.look[j])) continue;
+            var quote: std.ArrayList(u8) = .{};
+            defer quote.deinit(alloc);
+            try flatten(&quote, alloc, l.look[j]);
+            // join the continuation lines the tour wrapped by hand
+            var k = j + 1;
+            while (k < l.look.len and l.look[k].len > 2 and
+                std.mem.startsWith(u8, l.look[k], "  ") and !looksSaid(l.look[k])) : (k += 1)
+            {
+                // no explicit space: the continuation begins with the
+                // tour's own indent, and flatten turns that into exactly
+                // one separator
+                try flatten(&quote, alloc, l.look[k]);
+            }
+            const q = std.mem.trim(u8, quote.items, " ");
+            // short fragments and deliberate elisions are not claims
+            if (q.len < 25) continue;
+            if (std.mem.indexOf(u8, q, "...") != null) continue;
+            if (std.mem.indexOf(u8, hay, q) == null) {
+                missing += 1;
+                try w.print("  lesson {d} quotes a line no pin holds:\n    {s}\n", .{ i, q });
+            }
+            j = k - 1;
+        }
     }
     if (missing == 0) {
-        try w.print("learn -- {d} lessons, every path they name is present\n", .{lessons.len});
+        try w.print("learn -- {d} lessons: every path they name is present, and every line they quote is a line a machine said\n", .{lessons.len});
     } else {
-        try w.print("learn -- {d} path(s) named by a lesson are missing\n", .{missing});
+        try w.print("learn -- {d} claim(s) a lesson makes do not hold\n", .{missing});
     }
     return missing;
 }

@@ -1,3 +1,74 @@
+# LRN-2 — the tour quoted the machine, and nothing checked the quotations
+
+`stzos learn --check` walked every path a lesson names from its first
+day, and `zig build court` has run it since. It never looked at the lines
+a lesson QUOTES, which is the larger claim of the two: a reader comparing
+their screen against a lesson is comparing it against those strings.
+
+## How it surfaced
+
+Writing lesson 17 meant reading the flagship's 129-line transcript
+closely, and four of the lines the draft quoted were not what the machine
+says. Three had a word capitalised for emphasis inside the quotation
+(`ready AND has held`, `ready BUT the boot`, `(VERDICT DIFFERED)`), one
+had lost a `(NODEV)`. Emphasis belongs in the prose; a quotation is
+either the machine's words or it is a paraphrase wearing quotation's
+clothes.
+
+That was enough to suspect a class rather than an incident, so a
+throwaway script compared every quoted line in the tour against
+`machines/*.expected`. Twenty-three did not match, across four lessons:
+
+- lesson 15, five lines that had lost their `boot: ` prefix -- `box:
+  names salle ...` where the machine says `box: boot: names salle ...`
+- lesson 14, six lines that had lost their subject -- `verify: 1 entry
+  verified ...` where the machine says `verify: fleet atelier -- temoin:
+  1 entry verified ...`
+- lesson 13, a journal line that had lost its path and its verdict
+- lesson 14 again, one line carrying an annotation I had written INSIDE
+  the quotation (`(again -- the same key)`)
+
+Every one of them was mine, made while wrapping a long line to fit, and
+every one of them would have sent a reader looking for text their machine
+never prints.
+
+## The guard
+
+`--check` now flattens every `machines/*.expected` into one haystack and
+requires that each LOOK FOR line beginning like a transcript line appears
+in it, whitespace normalised so the tour's hand-wrapping cannot hide a
+difference. Continuations are joined; fragments under 25 characters and
+lines carrying a deliberate `...` elision are exempt.
+
+A BREAK IT's `expect` is exempt BY CONSTRUCTION, and that exemption is
+the interesting part of the design: those lines are what the reader sees
+AFTER changing the machine, so no pin can hold them. Four such lines
+exist today -- lesson 5's `18 lines`, lesson 10's `12 tasks made`, lesson
+11's two -- and each was verified by RUNNING the break rather than by
+checking it against anything.
+
+Probed: one `boot: ` prefix dropped from a lesson 15 quote, rebuilt, and
+`--check` convicts with the offending line printed. Restored, green.
+
+## What this says about the first LRN-1 design
+
+LRN-1 built a check for the part that was easy to check -- do these files
+exist -- and the tour then spent its whole life making a different kind
+of claim. Eight lessons in, the score is four seats found in the system
+(VDCT-1, EGR-2, JRN-2, NAM-2) and two classes of defect found in the tour
+itself: break steps that promised the wrong answer, and quotations that
+were not quotations.
+
+## The law this pays for
+
+**A quotation is the machine's words or it is not a quotation.** Do not
+trim a prefix, a path or a parenthetical to make a line fit, and never
+capitalise a word inside one for emphasis -- wrap it, elide it visibly
+with `...`, or put the emphasis in the prose. What a tutorial presents as
+something the machine SAID must be findable in a pin.
+
+---
+
 # NAM-2 — a guard that checked for an empty answer, not for a refusal
 
 Found by running lesson 15's break and then running the script that reads
