@@ -1,3 +1,99 @@
+# VDCT-1 — three judges that convicted on screen and reported success
+
+Found by a reader doing lesson 6 of the guided tour, which is the whole
+argument for having a BREAK IT step.
+
+## What lesson 6 asks you to do
+
+Change one character in `machines/qemu_hello.expected` -- the pinned
+transcript -- boot the machine, and watch the court refuse it. It does,
+exactly as promised:
+
+```
+JUDGED: FAIL -- the transcript differs from machines/qemu_hello.expected:
+-boot: console /dev/ttyS9
++boot: console /dev/ttyS0
+```
+
+One character, thirty-four lines identical, and the court found the one.
+Then the script printed `exit 0` and returned 0 to the shell.
+
+## The bug is one line, and it is the last line
+
+```sh
+{
+  ... the whole run: derive, stage, kernel, image, boot, judge ...
+  echo "exit 0"
+} 2>&1 | tee "$LOG"
+```
+
+**A pipeline exits with its LAST command's status**, and the last command
+is `tee`, which always succeeds. So `os2_image.sh` returned 0 whatever
+happened inside it. Not only the verdict: EVERY `exit 1` in that block
+-- a kernel build that failed, a missing cross binary, `sfdisk` refusing,
+`cpio` never running, the derive refused before staging -- printed its
+message and then exited 0. Eighteen of them.
+
+And the `echo "exit 0"` was a hardcoded string that looked like a status
+report. It sat directly beneath `JUDGED: FAIL` and said the opposite.
+
+## Then grep for the rest of it
+
+Per the dimension rule, the other judges were checked rather than
+assumed:
+
+| script | before | now |
+|---|---|---|
+| `os2_image.sh` | `} 2>&1 \| tee "$LOG"` -- always 0 | `exit "${PIPESTATUS[0]}"` |
+| `os6_names.sh` | `} 2>&1 \| tee "$LOG"` -- always 0 | `exit "${PIPESTATUS[0]}"` |
+| `os7_fleet.sh` | `} \| tee -a "$BODY"` then a `cp` -- always 0 | verdict carried past the copy |
+| `judge_guarantees.sh` | already `exit 1` on FAIL | unchanged; it is the shape |
+
+`os5_board.sh` and `zigcc_probe2.sh` also pipe to `tee`, and neither
+renders a verdict: one captures a serial line, the other reads a
+compiler's command line. Checked, not guessed at.
+
+## Probed in both directions, because one direction proves nothing
+
+A judge that always convicts is as useless as one that never does, so
+each was run twice -- once with a pin broken at a named line, once with
+it restored:
+
+```
+os2_image.sh   broken pin -> exit 1     clean pin -> exit 0
+os7_fleet.sh   broken pin -> exit 1     clean pin -> exit 0
+os6_names.sh   broken pin -> exit 1     clean pin -> exit 0
+```
+
+Both callers of `os2_image.sh` were then run end to end. Neither breaks:
+`os6_names.sh` invokes it with `STZOS_NO_BOOT=1`, which exits 0
+explicitly, and `os7_fleet.sh` checks for a file rather than a status.
+No script here uses `set -e`, which is why the defect could sit this long
+without anything visibly going wrong.
+
+## Why it lasted
+
+Every one of these scripts was read by a person every time it ran. A
+human sees `JUDGED: FAIL` and a twenty-line diff and stops. The exit code
+is for the reader who is not there -- a `&&` chain, a CI step, a script
+calling a script -- and that reader had been told success for as long as
+these judges have existed.
+
+The court (`zig build court`) was probed with a mutated judge in fresh
+processes before its scoreboard was ever written. The BOOT judges never
+were. They rendered their verdicts into a terminal, and a verdict that
+only reaches a terminal is a verdict that only convicts people who are
+looking.
+
+## The law this pays for
+
+**A verdict that does not reach the EXIT CODE only convicts someone who
+is watching.** A judge whose ruling a caller cannot read is a judge in
+name. Print the verdict AND return it; a pipeline hides it, so take
+`${PIPESTATUS[0]}` and never let `tee` answer for the run.
+
+---
+
 # LRN-1 — the guided tour, and what its first reader taught it within the hour
 
 Asked for by the author: a way to SEE what was built, didactically,

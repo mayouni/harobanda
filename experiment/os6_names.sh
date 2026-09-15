@@ -121,12 +121,21 @@ await_server() { # $1 = transcript, $2 = seconds
   } > zig-out/wsl/names.normalised
   echo "--- transcript"; cat zig-out/wsl/names.normalised
   echo "=== judge ==="
+  VERDICT=0
   if [ ! -f machines/names.expected ]; then
     echo "JUDGED: nothing pinned yet -- this run's text is at zig-out/wsl/names.normalised"
   elif diff -u machines/names.expected zig-out/wsl/names.normalised > zig-out/wsl/names.diff; then
     echo "JUDGED: the two machines said what machines/names.expected says, line for line ($(wc -l < zig-out/wsl/names.normalised) lines)"
   else
     echo "JUDGED: FAIL -- the pair differs from machines/names.expected:"; cat zig-out/wsl/names.diff
+    VERDICT=1
   fi
-  echo "exit 0"
+  echo "exit $VERDICT"
+  exit "$VERDICT"
 } 2>&1 | tee "$LOG"
+#
+# THE VERDICT IS THE BLOCK'S, NOT tee's. A pipeline exits with its LAST
+# command's status, so this script exited 0 however the judge ruled, and
+# nothing automated could hear it. Same defect as os2_image.sh, found by
+# the guided tour's lesson 6 and then grepped for (LRN-1).
+exit "${PIPESTATUS[0]}"

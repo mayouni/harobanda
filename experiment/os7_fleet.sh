@@ -125,14 +125,24 @@ sed -e 's/\r$//' -e 's/hash=[0-9a-f]*/hash=H/g' -e 's/sig=[0-9a-f]*/sig=S/g' \
 
 {
   echo "=== judge ==="
+  VERDICT=0
   if [ ! -f machines/fleet.expected ]; then
     echo "JUDGED: nothing pinned yet -- this run's text is at zig-out/wsl/fleet.normalised"
   elif diff -u machines/fleet.expected zig-out/wsl/fleet.normalised > zig-out/wsl/fleet.diff; then
     echo "JUDGED: the arc matches machines/fleet.expected line for line ($(grep -c . zig-out/wsl/fleet.normalised) lines)"
   else
     echo "JUDGED: FAIL -- the arc differs from machines/fleet.expected:"; cat zig-out/wsl/fleet.diff
+    VERDICT=1
   fi
-  echo "exit 0"
+  echo "exit $VERDICT"
+  exit "$VERDICT"
 } | tee -a "$BODY"
+#
+# THE VERDICT IS THE BLOCK'S, NOT tee's. A pipeline exits with its LAST
+# command's status, so this script exited 0 however the judge ruled, and
+# nothing automated could hear it. Same defect as os2_image.sh, found by
+# the guided tour's lesson 6 and then grepped for (LRN-1).
+VERDICT=${PIPESTATUS[0]}
 
 cp "$BODY" "$LOG"
+exit "$VERDICT"

@@ -285,15 +285,31 @@ mkdir -p "$OUT" zig-out/wsl
     | sed -e 's/ed25519 \([0-9a-f]\{64\}\)/ed25519 @@K@\1@@K@/g' -e 's/fingerprint \([0-9a-f]\{16\}\)/fingerprint @@K@\1@@K@/g' \
     | awk '{ while (match($0, /@@K@[0-9a-f]+@@K@/)) { fp = substr($0, RSTART + 4, RLENGTH - 8); if (!(fp in seen)) { n++; seen[fp] = "KEY" n } $0 = substr($0, 1, RSTART - 1) seen[fp] substr($0, RSTART + RLENGTH) } print }' \
     | sed -e '/^qemu exit$/d; /^qemu exit [0-9]*$/d' > "$OUT/transcript.normalised"
+  # A machine with no pin yet is not a failure: this run is how its
+  # first transcript gets made. A pin that REFUSES the transcript is.
+  VERDICT=0
   if [ ! -f "machines/$NAME.expected" ]; then
     echo "JUDGED: no expectation pinned for $NAME yet -- machines/$NAME.expected is missing; this boot's normalised transcript is at $OUT/transcript.normalised"
   elif diff -u "machines/$NAME.expected" "$OUT/transcript.normalised" > "$OUT/transcript.diff"; then
     echo "JUDGED: the boot transcript matches machines/$NAME.expected line for line ($(wc -l < "$OUT/transcript.normalised") lines)"
   else
     echo "JUDGED: FAIL -- the transcript differs from machines/$NAME.expected:"; cat "$OUT/transcript.diff"
+    VERDICT=1
   fi
-  echo "exit 0"
+  echo "exit $VERDICT"
+  exit "$VERDICT"
 } 2>&1 | tee "$LOG"
 # everything above streams to the terminal AND to the log, so a run from
 # a real terminal shows its progress (the first run looked hung: it wrote
 # only the log, and its QEMU was stopped on the tty -- see the boot step)
+#
+# THE VERDICT IS THE BLOCK'S, NOT tee's. A pipeline exits with its LAST
+# command's status, so for as long as this script ended at the `tee`
+# above it exited 0 whatever happened inside -- a refused pin, a kernel
+# build that failed, a missing cross binary, a cpio that never ran. The
+# judge convicted on screen and nothing automated could hear it, which
+# is the one thing a judge may not do. Every `exit 1` in the block above
+# was swallowed the same way. Found by the guided tour's own lesson 6
+# (LRN-1): the reader breaks a pin, watches JUDGED: FAIL, and the script
+# reports success.
+exit "${PIPESTATUS[0]}"

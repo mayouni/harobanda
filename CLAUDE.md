@@ -108,6 +108,16 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 - **Assert the mechanism**: the court was probed with a mutated judge in
   fresh processes (wrong count, wrong fragment, valid source posing as
   reject -> three reds) before its scoreboard was written.
+- **A verdict that does not reach the EXIT CODE only convicts someone who
+  is WATCHING** (VDCT-1): `os2_image.sh`, `os6_names.sh` and
+  `os7_fleet.sh` each ended `} | tee "$LOG"`, and a pipeline exits with
+  its LAST command's status -- so all three printed `JUDGED: FAIL` with
+  a diff and returned 0, as did every `exit 1` inside those blocks (a
+  failed kernel build, a missing cross binary, a refused derive).
+  `exit "${PIPESTATUS[0]}"`; never let `tee` answer for the run. Probed
+  both ways on all three -- broken pin exits 1, clean pin exits 0 --
+  because a judge that always convicts is as useless as one that never
+  does. `judge_guarantees.sh` was already right and is the shape.
 - **A promise the machine ANNOUNCES and cannot keep is worse than one it
   never made** (NS-1): when the mechanism behind a declared guarantee
   fails, refuse the act and say so. PID 1 does not start a world whose
@@ -363,7 +373,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   digests are pinned).
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

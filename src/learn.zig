@@ -763,6 +763,10 @@ pub fn list(w: *std.Io.Writer) !void {
     try w.print("  BEFORE YOU START\n", .{});
     try w.print("    Run everything from the repository root, D:\\GitHub\\stzos, so that a\n", .{});
     try w.print("    path like machines\\qemu_hello.machine means what the lesson thinks.\n", .{});
+    try w.print("    That stays true even with this binary on your PATH: the lessons spell\n", .{});
+    try w.print("    it {s}, and if you can type just `stzos`\n", .{EXE});
+    try w.print("    then do -- but still from the root, because the MACHINE paths are\n", .{});
+    try w.print("    relative and the command name no longer tells you where to stand.\n", .{});
     try w.print("    New to the words? {s} learn --words\n\n", .{EXE});
     var act: []const u8 = "";
     for (lessons, 1..) |l, i| {
