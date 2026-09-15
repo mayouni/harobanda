@@ -1,3 +1,84 @@
+# JRN-2 — the test named for a POSITION never checked the position
+
+Lesson 13 of the guided tour points at one unit test as its entire
+evidence, so writing the lesson meant reading the test. Third seat in
+three lessons found this way.
+
+## What it claimed, and what it asserted
+
+`a chain verifies, and an altered entry is named by its position`,
+`src/journal.zig`:
+
+```zig
+const tampered = try std.mem.replaceOwned(u8, alloc, text, "seq=2 prev=", "seq=2 prev=");
+const with_lie = try std.mem.replaceOwned(u8, alloc, tampered, "verdict=matched hash", "verdict=perfect hash");
+const broken = verify(with_lie, pair.public_key);
+try std.testing.expect(broken.broken_at != null);
+try std.testing.expect(broken.verified < 3);
+```
+
+Three things wrong, in rising order of seriousness.
+
+The first line replaces a string **with itself**. A no-op that reads
+like an act.
+
+The second replaces over the WHOLE text, and entries one and two both
+say `verdict=matched`, so it altered BOTH. The chain therefore broke at
+entry **1**, while the comment above it said "ALTER the second entry's
+payload" and the test's own name said the position was the point.
+
+And the assertions look at neither. `Check` carries `broken_at` (1-based)
+and `reason` (in words). The test asked only whether SOMETHING was wrong
+SOMEWHERE. It would have passed had the chain broken at any entry, for
+any of the eight reasons `verify` can give.
+
+So the test passed, the name was false, and lesson 13 quoted the name.
+
+## What it asserts now
+
+Tampering line by line, only the line beginning `seq=2 `:
+
+```
+broken_at == 2     the position it is named for
+verified == 1      entry one still verifies: the break is where the lie
+                   is, and not before it
+reason contains    "do not hash to the hash it carries"
+```
+
+and the foreign-key half, which asserted `broken_at != null`, now
+requires `broken_at == 1` and `verified == 0`: offered to a device that
+signed none of it, the refusal starts at the first line rather than
+somewhere.
+
+## Probed
+
+The tamper was pointed at `seq=1 ` instead and the suite run in a fresh
+build: `expected 2, found 1`. The old assertions passed that same
+mutation. A test that cannot fail for the right reason is not asserting
+the mechanism, it is keeping it company.
+
+## Why this one is worth a tag
+
+The court was probed with a mutated judge before its scoreboard was
+written, and that is the doctrine. But the UNIT tests were never held to
+it, and this one had drifted from its own name -- quietly, in the file
+that carries the strongest claim in the repository. Inalterability is
+that a change cannot go unnoticed; the test for it was not noticing
+where.
+
+Writing a tutorial that cites a test is a good way to find out whether
+the test says what you think. That is now three lessons and three seats:
+VDCT-1 from lesson 6, EGR-2 from lesson 11, this from lesson 13.
+
+## The law this pays for
+
+**A test named for a property must assert that property.** `expect(x !=
+null)` under a name that promises WHICH is a test of the name, not of the
+mechanism. When a test's name, its comment and its assertions disagree,
+the assertions are what runs.
+
+---
+
 # EGR-2 — the boot announced a perimeter it was not keeping
 
 Found by a reader doing lesson 11 of the guided tour, one lesson after

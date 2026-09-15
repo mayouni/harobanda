@@ -107,7 +107,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   filter had silently failed while the boot judged itself a match.
 - **Assert the mechanism**: the court was probed with a mutated judge in
   fresh processes (wrong count, wrong fragment, valid source posing as
-  reject -> three reds) before its scoreboard was written.
+  reject -> three reds) before its scoreboard was written. **A test
+  named for a property must ASSERT that property** (JRN-2): the journal's
+  "an altered entry is named by its position" checked only `broken_at !=
+  null`, and tampered with a whole-text replace that hit entry one as
+  well -- so it broke at 1 while the name said 2, and passed. When a
+  test's name, its comment and its assertions disagree, the assertions
+  are what runs.
 - **A verdict that does not reach the EXIT CODE only convicts someone who
   is WATCHING** (VDCT-1): `os2_image.sh`, `os6_names.sh` and
   `os7_fleet.sh` each ended `} | tee "$LOG"`, and a pipeline exits with
@@ -384,7 +390,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   digests are pinned).
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

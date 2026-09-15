@@ -278,19 +278,44 @@ test "a chain verifies, and an altered entry is named by its position" {
     try std.testing.expectEqual(@as(usize, 3), check.verified);
     try std.testing.expectEqual(@as(?usize, null), check.broken_at);
 
-    // ALTER the second entry's payload: one word, the verdict, which is
-    // exactly the field someone would want to change
-    const tampered = try std.mem.replaceOwned(u8, alloc, text, "seq=2 prev=", "seq=2 prev=");
+    // ALTER ONLY THE SECOND ENTRY: one word, the verdict, which is
+    // exactly the field someone would want to change.
+    //
+    // Line by line, and not with a replace over the whole text: entries
+    // ONE and TWO both say verdict=matched, so a whole-text replace
+    // altered both and the chain broke at 1 while this test's name --
+    // "named by its position" -- claimed it was about 2. It also
+    // asserted only that SOMETHING was wrong. A test that does not check
+    // the position cannot be the test that the position is right
+    // (read for LRN-1's lesson 13).
+    var tampered: std.ArrayList(u8) = .{};
+    defer tampered.deinit(alloc);
+    var lines = std.mem.splitScalar(u8, text, '\n');
+    while (lines.next()) |line| {
+        if (line.len == 0) continue;
+        if (std.mem.startsWith(u8, line, "seq=2 ")) {
+            const lie = try std.mem.replaceOwned(u8, alloc, line, "verdict=matched", "verdict=perfect");
+            defer alloc.free(lie);
+            try tampered.appendSlice(alloc, lie);
+        } else {
+            try tampered.appendSlice(alloc, line);
+        }
+        try tampered.append(alloc, '\n');
+    }
     alloc.free(text);
-    defer alloc.free(tampered);
-    const with_lie = try std.mem.replaceOwned(u8, alloc, tampered, "verdict=matched hash", "verdict=perfect hash");
-    defer alloc.free(with_lie);
-    const broken = verify(with_lie, pair.public_key);
-    try std.testing.expect(broken.broken_at != null);
-    try std.testing.expect(broken.verified < 3);
 
-    // ... and a signature from another device is refused as well
+    const broken = verify(tampered.items, pair.public_key);
+    // the POSITION, because that is what this test is named for
+    try std.testing.expectEqual(@as(?usize, 2), broken.broken_at);
+    // entry one still verifies: the break is where the lie is, not before it
+    try std.testing.expectEqual(@as(usize, 1), broken.verified);
+    // and the REASON, in the machine's own words
+    try std.testing.expect(std.mem.indexOf(u8, broken.reason, "do not hash to the hash it carries") != null);
+
+    // ... and a signature from another device is refused as well, at the
+    // FIRST entry, because no entry of this chain is that device's
     const other = Ed25519.KeyPair.generate();
-    const foreign = verify(with_lie, other.public_key);
-    try std.testing.expect(foreign.broken_at != null);
+    const foreign = verify(tampered.items, other.public_key);
+    try std.testing.expectEqual(@as(?usize, 1), foreign.broken_at);
+    try std.testing.expectEqual(@as(usize, 0), foreign.verified);
 }
