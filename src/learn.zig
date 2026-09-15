@@ -28,6 +28,10 @@
 //! `stzos learn --check` over them.
 
 const std = @import("std");
+/// the floor's own deny list, so a lesson that counts it cannot drift
+/// from it: the count below is this array's length, not a word somebody
+/// typed (lesson 8)
+const confine = @import("confine.zig");
 
 /// How to make the machine refuse YOU. A guarantee you have only watched
 /// succeed is a claim; one that has turned you down is evidence.
@@ -395,22 +399,37 @@ pub const lessons = [_]Lesson{
         .question = "Is there anything a declaration should never be able to ask for?",
         .run = "(read the output of lesson 7 and find the lines beginning `boot: floor` and `confined: the floor`)",
         .look = &.{
-            "boot: floor -- the machine is not a world's to change: none may mount or",
+            "PID 1 says it ONCE, before it starts anything at all:",
+            "",
+            "  boot: floor -- the machine is not a world's to change: none may mount or",
             "  unmount, set the clock, load a module, rename the host, make or enter a",
             "  namespace, trace another process, or reboot the box",
-            "confined: the floor -- refused by the kernel (EPERM)",
             "",
-            "Read that second line under `open`, the world that declared EVERYTHING. It is",
-            "refused too. Twenty-five system calls are closed to every world on every",
-            "machine, because no declaration should ever ask for them.",
+            "and then every one of the six worlds reports the same thing from inside:",
+            "",
+            "  sealed   confined: the floor -- refused by the kernel (EPERM)",
+            "  still    confined: the floor -- refused by the kernel (EPERM)",
+            "  open     confined: the floor -- refused by the kernel (EPERM)",
+            "  blind    confined: the floor -- refused by the kernel (EPERM)",
+            "  ledger   confined: the floor -- refused by the kernel (EPERM)",
+            "  caisse   confined: the floor -- refused by the kernel (EPERM)",
+            "",
+            "Six for six, byte for byte. Now look back at lesson 7's grid and find the",
+            "row for `open`: process, network AND filesystem -- every capability the",
+            "grammar has. It is refused exactly like `blind`, which declared almost",
+            "nothing.",
+            "",
+            std.fmt.comptimePrint("That is because these {d} calls are not governed by NEEDS at all. They are", .{confine.off_limits.len}),
+            "refused by what a world IS. There is no clause that grants them, because a",
+            "clause that COULD grant them is a clause somebody will eventually use.",
         },
         .breakit = .{
             .proves = "that this one is not a declaration's to ask for at all",
-            .note = "There is no clause to set and no flag to pass, so there is nothing to edit. If you want to watch it bite once more, notice that all six worlds in lesson 7 print the same refusal, including the one that was granted every capability the grammar has.",
+            .note = std.fmt.comptimePrint("There is nothing to edit, and that IS the lesson: no clause to set, no flag to pass, no line you could add to a declaration that would get any of it back. The list is {d} names long and lives in src/confine.zig as `off_limits`, each one grouped under the sentence that explains it -- the filesystem tree is the declaration's, the kernel is the image's, the machine's life is PID 1's. Read it: it is the shortest statement in this repository of what a world is not.", .{confine.off_limits.len}),
         },
         .law = "Some things are refused by what a world IS, not by what it declared.",
         .story = "experiment/PROTOCOL.md (SYS-1)",
-        .needs = &.{"experiment/PROTOCOL.md"},
+        .needs = &.{ "src/confine.zig", "experiment/PROTOCOL.md" },
     },
     .{
         .act = "III. WHAT A WORLD MAY DO",

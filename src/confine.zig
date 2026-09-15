@@ -258,7 +258,7 @@ const audit_arch: u32 = switch (builtin.cpu.arch) {
 /// A call absent on an architecture is simply skipped -- `nrOf` returns
 /// null and no instruction is emitted, so the filter never tests a
 /// number that means something else here.
-const off_limits = [_][]const u8{
+pub const off_limits = [_][]const u8{
     // the filesystem tree is the declaration's, not a world's
     "mount",       "umount2",        "pivot_root",
     // the kernel is the image's
