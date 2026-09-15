@@ -1,3 +1,100 @@
+# EGR-2 — the boot announced a perimeter it was not keeping
+
+Found by a reader doing lesson 11 of the guided tour, one lesson after
+VDCT-1 came out of lesson 6. The BREAK IT steps are earning their keep.
+
+## What the step asks
+
+Replace `EGRESS ["10.9.0.0/16"]` with `EGRESS ["0.0.0.0/0"]` -- declare a
+reach to everything -- and boot. The witness duly changes:
+
+```
+-reach 8.8.8.8 -- no route: this machine knows no way there
++reach 8.8.8.8 -- a route exists: this machine knows a way there
+```
+
+And so does PID 1's announcement, into a sentence that is false twice:
+
+```
+boot: egress lan -- 0.0.0.0/0 and nowhere else: no default route
+```
+
+`0.0.0.0/0` has no `else`. And a route to `0.0.0.0/0` through the
+declared gateway is not merely LIKE a default route, it is bit for bit
+what the `unrestricted` branch installs when a machine declares no
+EGRESS at all. The boot claimed a perimeter while installing none.
+
+## Why it is the NS-1 defect with the sign flipped
+
+NS-1 is about announcing a confinement the mechanism failed to apply. In
+this case the mechanism did exactly what the declaration said; it was the
+SENTENCE that was wrong, and wrong in the direction that reassures. An
+operator reading `and nowhere else: no default route` in a boot log would
+conclude the box was confined. It was reachable to the open internet on
+the same screen, four lines down.
+
+The two halves of every claim in this repository are the announcement and
+the fact, and lessons 7 and 9 both teach the reader to check that they
+move together. Here they moved together and the announcement was still a
+lie, because it was worded for one case and printed for two.
+
+## The fix, and where it had to go
+
+`egressLine` in `src/expect.zig` -- the ONE place this line is worded,
+which is the doctrine holding up. A destination whose prefix is 0 is a
+default route, so:
+
+```
+boot: egress lan -- 0.0.0.0/0: a DEFAULT route, so this machine knows a way anywhere
+```
+
+Nothing else moved: no committed machine declares a prefix-0 destination,
+and `qemu_egress` re-booted clean against its existing pin afterwards
+(exit 0).
+
+## The grammar question this does NOT decide
+
+`EGRESS ["0.0.0.0/0"]` and no EGRESS clause at all now reach the same
+addresses by two different routes through the code. Whether the grammar
+should REFUSE the explicit form -- say it one way -- is the author's
+ruling, not this seat's, and it is left open deliberately. There is an
+argument either way: one spelling per meaning, against an operator's
+right to be explicit about a decision. What the seat settles is only that
+whichever is written, the boot says what it did.
+
+Noted and not changed while there: with `EGRESS [...]` the gateway is
+used but the `boot: network` line does not name it, while with no EGRESS
+it does (`, gateway 10.0.2.2`). The note means "a default route via this
+gateway", which was true of exactly one branch until today. It is now
+true of two and printed for one. A seam, named here rather than widened
+silently.
+
+## What the transcripts actually distinguish
+
+Running both forms is worth doing for its own sake, because they are NOT
+the same record:
+
+| declaration | `boot: egress` line | `boot: network` line | 8.8.8.8 |
+|---|---|---|---|
+| `EGRESS ["10.9.0.0/16"]` | the perimeter, named | no gateway | no route |
+| `EGRESS ["0.0.0.0/0"]` | a DEFAULT route | no gateway | a route exists |
+| no EGRESS clause | **absent entirely** | `, gateway 10.0.2.2` | a route exists |
+
+Compare lesson 9, where `SEES [data, logs]` and no SEES clause produced a
+byte-identical transcript. Here silence and explicitness reach the same
+addresses and leave different evidence: an explicit EGRESS records that
+someone decided, and silence records that nobody did.
+
+## The law this pays for
+
+**A sentence worded for one case and printed for two is a lie in the
+second.** When a branch grows a value it was not written for -- here a
+prefix of 0, which turns a list of destinations into a default route --
+re-read the sentence that branch prints before trusting the mechanism
+under it.
+
+---
+
 # VDCT-1 — three judges that convicted on screen and reported success
 
 Found by a reader doing lesson 6 of the guided tour, which is the whole

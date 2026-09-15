@@ -229,6 +229,17 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   routing table. Say precisely what that is and is not -- the machine
   knows no way there; it is not prevented from finding one. A packet
   filter is a named seam, never claimed.
+- **A sentence worded for one case and printed for two is a lie in the
+  second** (EGR-2): `egressLine` appended "and nowhere else: no default
+  route" to every declared destination list, so `EGRESS ["0.0.0.0/0"]`
+  -- which installs exactly what `unrestricted` installs -- announced a
+  perimeter while the witness four lines down reached 8.8.8.8. NS-1 with
+  the sign flipped: the mechanism obeyed and the SENTENCE lied, in the
+  direction that reassures. When a branch grows a value it was not
+  written for, re-read what it prints. Whether the grammar should REFUSE
+  the explicit spelling is the author's ruling and is left open; that
+  `boot: network` names the gateway for one branch and not the other is
+  a named seam, not widened.
 - **Closed grammars have no host escape.** A shell is refused by name in
   RUN; do not add a command-string form, an env-expansion, a hook.
 - **The transcript is the fixture; it is never stored.** Rendered from
@@ -373,7 +384,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   digests are pinned).
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

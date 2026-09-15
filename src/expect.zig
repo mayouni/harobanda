@@ -201,9 +201,26 @@ pub fn egressLine(w: *std.Io.Writer, n: *const machine.Network, prefix: []const 
             return true;
         },
         .to => |dests| {
+            // A destination whose prefix is 0 IS a default route:
+            // 0.0.0.0/0 through the declared gateway is bit for bit what
+            // `unrestricted` installs. Announcing "and nowhere else: no
+            // default route" over one would claim a perimeter the
+            // machine is not keeping -- the same defect as NS-1 with the
+            // sign flipped, since here the boot UNDERSTATES what the box
+            // can reach. Found by a reader doing lesson 11 of the tour,
+            // where `EGRESS ["0.0.0.0/0"]` made 8.8.8.8 reachable while
+            // this line still said there was no way there.
+            var everywhere = false;
+            for (dests) |d| {
+                if (d.prefix == 0) everywhere = true;
+            }
             try w.print("{s}egress {s} -- ", .{ prefix, n.name });
             for (dests, 0..) |d, i| try w.print("{s}{s}", .{ if (i > 0) ", " else "", d.text });
-            try w.print(" and nowhere else: no default route\n", .{});
+            if (everywhere) {
+                try w.print(": a DEFAULT route, so this machine knows a way anywhere\n", .{});
+            } else {
+                try w.print(" and nowhere else: no default route\n", .{});
+            }
             return true;
         },
     }
