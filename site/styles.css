@@ -68,8 +68,15 @@ code,pre{font-family:var(--mono);}
 .brand{font-family:var(--serif);font-weight:600;font-size:17px;letter-spacing:-.01em;
   display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;}
 .brand svg{width:22px;height:14px;color:var(--river);flex:none;}
-.brand span{color:var(--muted);font-family:var(--mono);font-size:11px;
+.brand .brandtag{color:var(--muted);font-family:var(--mono);font-size:11px;
   letter-spacing:.1em;text-transform:uppercase;font-weight:400;}
+.brandmark{display:block;width:118px;height:30px;flex:none;background:var(--river);
+  -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
+          mask:url(harobanda-logo.png) left center / contain no-repeat;}
+@media(max-width:560px){
+  .brand .brandtag{display:none;}
+  .brandmark{width:104px;height:27px;}
+}
 .nav{margin-left:auto;display:flex;gap:clamp(9px,1.4vw,20px);align-items:center;}
 .nav a{font-size:13.5px;color:var(--muted);text-decoration:none;font-weight:500;}
 .nav a:hover{color:var(--river);}
@@ -271,5 +278,23 @@ p code{color:var(--laterite);}
 .osdelta .new{color:var(--ink);}
 .osdelta .new::before{content:"→";position:absolute;left:0;color:var(--river);font-family:var(--mono);}
 .osdelta .new b{color:var(--river);font-weight:600;}
+
+/* ---------- brand imagery ---------- */
+.bridge-hero{width:100%;height:clamp(240px,34vw,460px);background:var(--river);opacity:.9;
+  -webkit-mask:url(harobanda-bridge.png) center 42% / cover no-repeat;
+          mask:url(harobanda-bridge.png) center 42% / cover no-repeat;
+  margin-top:clamp(14px,3vw,30px);}
+@media(max-width:640px){
+  .bridge-hero{height:clamp(180px,52vw,280px);
+    -webkit-mask-position:60% 45%;mask-position:60% 45%;}
+}
+.bridge-cap{margin:14px auto 0;font-size:12.5px;color:var(--muted);text-align:center;
+  font-family:var(--mono);letter-spacing:.04em;}
+
+.foot .foot-in{display:flex;align-items:center;gap:clamp(16px,3vw,30px);flex-wrap:wrap;}
+.footmark{display:block;width:120px;height:30px;flex:none;background:var(--river);opacity:.55;
+  -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
+          mask:url(harobanda-logo.png) left center / contain no-repeat;}
+.foot .foot-in p{flex:1;min-width:280px;}
 
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
