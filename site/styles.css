@@ -248,7 +248,7 @@ code,pre{font-family:var(--mono);}
 .honest li b{color:var(--ink);font-weight:600;}
 
 .foot{border-top:1px solid var(--line);padding:clamp(30px,4vw,44px) 0;margin-top:clamp(20px,4vw,40px);}
-.foot:has(.bridge-band){border-top:0;padding-top:0;margin-top:clamp(12px,2vw,22px);}
+.foot:has(.bridge-band){border-top:0;padding-top:0;margin-top:0;}
 .foot p{font-size:13.5px;color:var(--muted);line-height:1.6;}
 
 p code{color:var(--laterite);}
@@ -285,9 +285,9 @@ p code{color:var(--laterite);}
 .footmark{display:block;width:158px;height:40px;flex:none;background:var(--river);opacity:.55;
   -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
           mask:url(harobanda-logo.png) left center / contain no-repeat;}
-.foot .foot-in p{max-width:66ch;}
-.bridge-band{display:block;width:100%;height:auto;aspect-ratio:1675 / 470;object-fit:cover;
-  object-position:center 78%;margin:0 0 clamp(20px,2.6vw,28px);}
+.foot .foot-in p{max-width:66ch;text-wrap:pretty;}
+.bridge-band{display:block;width:100%;height:auto;aspect-ratio:1675 / 430;object-fit:cover;
+  object-position:center 72%;margin:0 0 clamp(2px,0.6vw,8px);}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) .bridge-band{filter:brightness(1.95) saturate(1.05);}
 }
