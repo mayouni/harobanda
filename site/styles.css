@@ -282,7 +282,7 @@ p code{color:var(--laterite);}
 
 /* ---------- brand imagery ---------- */
 .foot .foot-in{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
-.footmark{display:block;width:120px;height:30px;flex:none;background:var(--river);opacity:.55;
+.footmark{display:block;width:158px;height:40px;flex:none;background:var(--river);opacity:.55;
   -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
           mask:url(harobanda-logo.png) left center / contain no-repeat;}
 .foot .foot-in p{max-width:66ch;}
