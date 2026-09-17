@@ -130,7 +130,8 @@ code,pre{font-family:var(--mono);}
 .hero{padding-top:clamp(38px,6vw,68px);padding-bottom:clamp(28px,4vw,44px);}
 .hero-grid{display:grid;grid-template-columns:1fr 1.02fr;gap:clamp(28px,4.5vw,54px);align-items:start;}
 @media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:32px;}}
-.hero h1{font-size:clamp(44px,8vw,84px);font-weight:500;letter-spacing:-.025em;line-height:.98;}
+.hero h1{font-size:clamp(40px,5.6vw,72px);font-weight:500;letter-spacing:-.025em;line-height:1;}
+.hero h1 .l1{white-space:nowrap;}
 .hero h1 em{font-style:italic;color:var(--river);font-weight:400;}
 .hero-sub{margin-top:22px;font-family:var(--serif);font-size:clamp(18px,2.3vw,22px);
   line-height:1.42;color:var(--ink);max-width:38ch;}
