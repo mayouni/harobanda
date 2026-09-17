@@ -70,12 +70,12 @@ code,pre{font-family:var(--mono);}
 .brand svg{width:22px;height:14px;color:var(--river);flex:none;}
 .brand .brandtag{color:var(--muted);font-family:var(--mono);font-size:11px;
   letter-spacing:.1em;text-transform:uppercase;font-weight:400;}
-.brandmark{display:block;width:168px;height:42px;flex:none;background:var(--river);
+.brandmark{display:block;width:200px;height:50px;flex:none;background:var(--river);
   -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
           mask:url(harobanda-logo.png) left center / contain no-repeat;}
 @media(max-width:560px){
   .brand .brandtag{display:none;}
-  .brandmark{width:150px;height:38px;}
+  .brandmark{width:176px;height:44px;}
 }
 .nav{margin-left:auto;display:flex;gap:clamp(9px,1.4vw,20px);align-items:center;}
 .nav a{font-size:13.5px;color:var(--muted);text-decoration:none;font-weight:500;}
