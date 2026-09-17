@@ -285,11 +285,10 @@ p code{color:var(--laterite);}
   -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
           mask:url(harobanda-logo.png) left center / contain no-repeat;}
 .foot .foot-in p{flex:1;min-width:280px;}
-.foot-bridge{display:block;width:100%;height:auto;
-  margin:0 0 clamp(24px,3vw,36px);}
+.bridge-band{display:block;width:100%;height:auto;margin:0;}
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]) .foot-bridge{filter:brightness(1.95) saturate(1.05);}
+  :root:not([data-theme="light"]) .bridge-band{filter:brightness(1.95) saturate(1.05);}
 }
-:root[data-theme="dark"] .foot-bridge{filter:brightness(1.95) saturate(1.05);}
+:root[data-theme="dark"] .bridge-band{filter:brightness(1.95) saturate(1.05);}
 
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
