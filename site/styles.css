@@ -234,7 +234,7 @@ code,pre{font-family:var(--mono);}
 
 .diagram{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:clamp(18px,3vw,30px);overflow-x:auto;}
 .diagram svg{display:block;min-width:560px;width:100%;height:auto;}
-.diagram-img{display:block;width:100%;height:auto;border-radius:14px;}
+.diagram-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line-strong);}
 
 .steps{display:flex;flex-direction:column;gap:2px;counter-reset:s;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);}
 .step{background:var(--surface);padding:16px 20px 16px 58px;position:relative;}
