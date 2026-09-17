@@ -285,7 +285,8 @@ p code{color:var(--laterite);}
   -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
           mask:url(harobanda-logo.png) left center / contain no-repeat;}
 .foot .foot-in p{flex:1;min-width:280px;}
-.bridge-band{display:block;width:100%;height:auto;margin:0;}
+.bridge-band{display:block;width:100%;height:auto;aspect-ratio:1675 / 660;object-fit:cover;
+  object-position:center bottom;margin:0;}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) .bridge-band{filter:brightness(1.95) saturate(1.05);}
 }
