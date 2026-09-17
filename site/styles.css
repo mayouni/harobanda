@@ -70,12 +70,12 @@ code,pre{font-family:var(--mono);}
 .brand svg{width:22px;height:14px;color:var(--river);flex:none;}
 .brand .brandtag{color:var(--muted);font-family:var(--mono);font-size:11px;
   letter-spacing:.1em;text-transform:uppercase;font-weight:400;}
-.brandmark{display:block;width:118px;height:30px;flex:none;background:var(--river);
+.brandmark{display:block;width:168px;height:42px;flex:none;background:var(--river);
   -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
           mask:url(harobanda-logo.png) left center / contain no-repeat;}
 @media(max-width:560px){
   .brand .brandtag{display:none;}
-  .brandmark{width:104px;height:27px;}
+  .brandmark{width:150px;height:38px;}
 }
 .nav{margin-left:auto;display:flex;gap:clamp(9px,1.4vw,20px);align-items:center;}
 .nav a{font-size:13.5px;color:var(--muted);text-decoration:none;font-weight:500;}
@@ -247,7 +247,7 @@ code,pre{font-family:var(--mono);}
 .honest li::before{content:"—";position:absolute;left:0;color:var(--laterite);font-family:var(--mono);}
 .honest li b{color:var(--ink);font-weight:600;}
 
-.foot{border-top:1px solid var(--line);padding-block:44px;margin-top:clamp(20px,4vw,40px);}
+.foot{border-top:1px solid var(--line);padding:0 0 clamp(30px,4vw,44px);margin-top:clamp(20px,4vw,40px);}
 .foot p{font-size:13.5px;color:var(--muted);line-height:1.6;}
 
 p code{color:var(--laterite);}
@@ -280,13 +280,12 @@ p code{color:var(--laterite);}
 .osdelta .new b{color:var(--river);font-weight:600;}
 
 /* ---------- brand imagery ---------- */
-.bridge-hero{width:100%;height:clamp(240px,34vw,460px);background:var(--river);opacity:.9;
-  -webkit-mask:url(harobanda-bridge.png) center 42% / cover no-repeat;
-          mask:url(harobanda-bridge.png) center 42% / cover no-repeat;
-  margin-top:clamp(14px,3vw,30px);}
+.bridge-hero{width:100%;height:clamp(250px,33vw,430px);background:var(--river);opacity:.9;
+  -webkit-mask:url(harobanda-bridge.png) center bottom / cover no-repeat;
+          mask:url(harobanda-bridge.png) center bottom / cover no-repeat;
+  margin-top:clamp(4px,1.5vw,14px);}
 @media(max-width:640px){
-  .bridge-hero{height:clamp(180px,52vw,280px);
-    -webkit-mask-position:60% 45%;mask-position:60% 45%;}
+  .bridge-hero{height:clamp(180px,50vw,300px);}
 }
 .bridge-cap{margin:14px auto 0;font-size:12.5px;color:var(--muted);text-align:center;
   font-family:var(--mono);letter-spacing:.04em;}
@@ -296,9 +295,9 @@ p code{color:var(--laterite);}
   -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
           mask:url(harobanda-logo.png) left center / contain no-repeat;}
 .foot .foot-in p{flex:1;min-width:280px;}
-.foot-bridge{width:100%;height:clamp(66px,9vw,104px);background:var(--river);opacity:.42;
-  -webkit-mask:url(harobanda-bridge.png) center 56% / cover no-repeat;
-          mask:url(harobanda-bridge.png) center 56% / cover no-repeat;
+.foot-bridge{width:100%;height:clamp(104px,13vw,150px);background:var(--river);opacity:.4;
+  -webkit-mask:url(harobanda-bridge.png) center 46% / cover no-repeat;
+          mask:url(harobanda-bridge.png) center 46% / cover no-repeat;
   margin-bottom:clamp(24px,3.4vw,36px);}
 
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
