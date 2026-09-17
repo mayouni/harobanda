@@ -296,5 +296,9 @@ p code{color:var(--laterite);}
   -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
           mask:url(harobanda-logo.png) left center / contain no-repeat;}
 .foot .foot-in p{flex:1;min-width:280px;}
+.foot-bridge{width:100%;height:clamp(66px,9vw,104px);background:var(--river);opacity:.42;
+  -webkit-mask:url(harobanda-bridge.png) center 56% / cover no-repeat;
+          mask:url(harobanda-bridge.png) center 56% / cover no-repeat;
+  margin-bottom:clamp(24px,3.4vw,36px);}
 
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
