@@ -175,13 +175,13 @@ code,pre{font-family:var(--mono);}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:18px 16px;display:flex;flex-direction:column;gap:9px;}
 .card .n{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:.1em;}
 .card h4{font-size:18px;color:var(--river);letter-spacing:0;}
-.card p{font-size:15px;color:var(--muted);line-height:1.5;}
+.card p{font-size:15.5px;color:var(--ink);line-height:1.6;}
 .kind h4{color:var(--ink);font-size:19px;font-family:var(--serif);}
 .kind .tagline{font-family:var(--mono);font-size:13px;color:var(--laterite);letter-spacing:.04em;text-transform:uppercase;}
-.kind p{font-size:15px;color:var(--muted);line-height:1.55;}
+.kind p{font-size:15.5px;color:var(--ink);line-height:1.6;}
 .kind p b{color:var(--ink);font-weight:600;}
 .card ul{margin:2px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
-.card li{font-size:14.5px;line-height:1.45;color:var(--muted);padding-left:15px;position:relative;}
+.card li{font-size:16px;line-height:1.6;color:var(--ink);padding-left:18px;position:relative;}
 .card li::before{content:"›";position:absolute;left:0;color:var(--river);font-family:var(--mono);}
 .card li b{color:var(--ink);font-weight:600;}
 
