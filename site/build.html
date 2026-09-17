@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build on Harobanda</title>
+<meta name="description" content="Your apps as declared services, the polyglot Haro family, local-first by default, and one binary to any device — PC, Raspberry Pi, phone or sensor.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html">
+      <svg viewBox="0 0 44 28" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6"><line x1="1" y1="21" x2="43" y2="21"/><line x1="11" y1="5" x2="11" y2="21"/><line x1="33" y1="5" x2="33" y2="21"/><path d="M11 5 L2 21 M11 5 L20 21 M33 5 L26 21 M33 5 L42 21" stroke-width="1"/></g></svg>
+      Harobanda <span>the declared machine</span>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html" class="active">Build</a>
+      <a href="ai.html">AI &amp; agents</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="field.html">In the field</a>
+      <span class="theme-wrap"><button class="theme" id="themeBtn" aria-label="Toggle colour theme">Theme</button></span>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">Build on it</p>
+    <h1>Your apps, your languages, one binary to any device.</h1>
+    <p class="lead">What runs on a declared machine, the polyglot Haro family it hosts, the local-first model, and how you ship it — from a laptop to a PC, a Pi, a phone or a sensor.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Your apps, declared</p>
+      <h2>Restricted, not empty. You bring the programs; you declare them.</h2>
+    </div>
+    <div class="prose" style="margin-bottom:clamp(24px,3vw,34px)">
+      <p class="lead">A declared machine refuses a shell, a store and an installer. It does not refuse your software. What runs on it is whatever you declare as a <em>service</em> — a long-running program or a one-shot — provided it says what it needs. The restriction is not “few apps.” It is “nothing you did not declare.”</p>
+    </div>
+    <div class="grid2" style="align-items:start;gap:clamp(22px,3vw,36px);margin-bottom:clamp(28px,3.5vw,42px)">
+      <div class="term" aria-label="Declaring an application as a service">
+        <div class="term-bar"><i></i><i></i><i></i><b>declaring an app — a SERVICE</b></div>
+<pre><span class="kw">DEFINE SERVICE</span> counter <span class="kw">AS</span> (
+  RUN [<span class="c">"/app/counter"</span>],
+  RESTART always,
+  READY <span class="c">"/run/counter.ready"</span>,
+  NEEDS [network, filesystem]
+) <span class="kw">RATIONALE</span> <span class="d">"the point-of-sale world;</span>
+<span class="d">             it says when it is serving"</span></pre>
+      </div>
+      <div class="stack-gap">
+        <div class="steps">
+          <div class="step"><b>RUN</b><p>The exact program to start, with its arguments — never through a shell.</p></div>
+          <div class="step"><b>RESTART always</b><p>The machine keeps it alive, and says so in the transcript when it restarts.</p></div>
+          <div class="step"><b>READY</b><p>The program's own signal that it is serving; nothing that depends on it starts before.</p></div>
+          <div class="step"><b>NEEDS</b><p>What the machine must grant. Everything not listed is refused — no network, no disk, no reaching another program.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="prose" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p><b>What is “the program” in RUN?</b> Whatever you point it at. It can be a self-contained executable the machine launches directly — anything compiled to run on Linux — or a program written in a family language that the on-image runtime executes. To the machine both are the same: the one process to start, confined to what it declared and kept alive. So you bring existing binaries, or you write in the Haro family below.</p>
+    </div>
+    <p class="eyebrow" style="margin-bottom:14px;">The floor, and the Haro family that runs on it</p>
+    <p class="prose" style="margin-bottom:16px;color:var(--muted);font-size:15px;line-height:1.6;">Harobanda is the floor. You can bring any self-contained program that honours the envelope — or use the <b style="color:var(--ink)">Haro family</b>, a coherent set of open tools already usable in real projects. It is also the answer to “what web server, what app server, what agentic server”: there is no stack to assemble.</p>
+    <div class="langs" style="margin-bottom:18px;">
+      <span class="lbl">one engine, five language surfaces:</span>
+      <span class="lang">Luau</span><span class="lang">Ring</span><span class="lang">Python</span><span class="lang">JavaScript</span><span class="lang">PHP</span>
+    </div>
+    <div class="fam" style="margin-bottom:clamp(20px,2.6vw,26px)">
+      <div class="fam-row"><span class="nm">Haro</span><span class="rl"><b>The polyglot engine.</b> One VM, compiler and runtime behind several language surfaces — Luau, Ring, Python, JavaScript, PHP — so a team writes in the language it already knows, and it all runs on the same engine. Luau and Ring run today.</span><span class="stage now">Luau &amp; Ring today</span></div>
+      <div class="fam-row"><span class="nm">HaroServ</span><span class="rl"><b>The web and agentic server.</b> Hosts your web services and your agents alike — declared services, an embedded database, local-first sync — in one static binary. Already usable in real projects.</span><span class="stage now">usable today</span></div>
+      <div class="fam-row"><span class="nm">HaroScript</span><span class="rl"><b>Mobile apps and local pages.</b> Hy-native mobile apps (hybrid + native) and local-first web pages from one codebase, reached by a link or a QR. Already usable in real projects.</span><span class="stage now">usable today</span></div>
+      <div class="fam-row"><span class="nm">MicroHaro</span><span class="rl"><b>IoT and the edge.</b> The same declaration projected down to a microcontroller — sensors and small devices. Already usable in real projects.</span><span class="stage now">usable today</span></div>
+    </div>
+    <p class="prose" style="margin-bottom:18px;color:var(--muted);font-size:14.5px;line-height:1.6;">The server, the pages and the edge substrate are proven and in use today. Unifying them onto the one Haro engine — the successor to the one they run on now — is what turns them into a single coherent, sovereign system, from the machine to the application.</p>
+    <p class="pull prose">No separate web stack to assemble, and no second language at the boundary. <b>One engine, many languages; one host, every app.</b></p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">The programming model</p>
+      <h2>Local-first by default. One OS under every app.</h2>
+    </div>
+    <div class="prose stack-gap" style="margin-bottom:clamp(24px,3vw,34px)">
+      <p class="lead">Two ideas shape how you build on Harobanda — and both keep the operating system at the centre, as the one floor every part of your solution stands on.</p>
+    </div>
+    <div class="grid2" style="margin-bottom:clamp(24px,3vw,34px)">
+      <div class="panel">
+        <p class="eyebrow" style="margin-bottom:10px">Local-first by default</p>
+        <p style="font-size:14.5px;line-height:1.6;color:var(--ink)">The data lives on the device, and the app works straight from it. The network is optional: when it is there you sync, when it is gone nothing stops. A shop till, a clinic queue, a bank counter cannot pause every time the connection drops — and here they do not have to.</p>
+        <p style="font-size:14px;line-height:1.6;color:var(--muted);margin-top:12px">The machine is what makes it real: a fixed address and a durable store, brought up and mounted before any program speaks — so local-first is a property of the floor, not a hope inside each app.</p>
+      </div>
+      <div class="panel">
+        <p class="eyebrow" style="margin-bottom:10px">One OS hosts the whole Haro family</p>
+        <p style="font-size:14.5px;line-height:1.6;color:var(--ink)">Harobanda is the floor, and it hosts everything the Haro family produces — each declared as a service on the same machine: the <b>Haro</b> language and engine; the <b>web and agentic server</b>; <b>hy-native mobile apps</b> (hybrid + native) and local-first pages; and <b>IoT and edge</b> programs.</p>
+        <p style="font-size:14px;line-height:1.6;color:var(--muted);margin-top:12px">One family, one language, one host. Your rules are written once, and the OS runs them unchanged wherever it places them — the counter, the tablet, the sensor — with no second runtime to stand up and no rewrite at the boundary. A small team keeps one floor, not four stacks.</p>
+      </div>
+    </div>
+    <p class="pull prose">The connection is a guest, not a foundation — and the operating system is the one host beneath the server, the app, the page and the device.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">From your laptop to the device</p>
+      <h2>One binary. Any platform. No toolchain to install.</h2>
+    </div>
+    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="lead">The strategic promise is deliberately blunt: one small command — <code>harb</code> — does everything, and it is a single file you drop onto any laptop. No SDK, no build environment to assemble, no dependency to resolve. If you can copy one file, you can develop, boot and ship a machine.</p>
+      <p>You write the <code>.machine</code> file in any editor, on Windows, macOS or Linux. <code>harb check</code> and <code>harb plan</code> need nothing else. <code>harb boot</code> runs the whole machine in an emulator on that same laptop — no board required to see it work. When it is right, the same command writes the image to the real device.</p>
+    </div>
+    <p class="eyebrow" style="margin-bottom:14px;">The same file, projected to four kinds of device</p>
+    <div class="four" style="margin-bottom:clamp(24px,3vw,32px)">
+      <div class="card kind"><span class="tagline">hosted shape</span><h4>A normal PC</h4><p>x86_64. Boots the image directly, or in an emulator first. The everyday server or counter box.</p></div>
+      <div class="card kind"><span class="tagline">hosted shape</span><h4>A Raspberry&nbsp;Pi</h4><p>arm64. Written to an SD card with two slots, so an update is tried once and rolled back by the board itself.</p></div>
+      <div class="card kind"><span class="tagline">touch shape · design</span><h4>A tablet or phone</h4><p>The device's kernel kept; everything above it is your declaration. One world, no app drawer.</p></div>
+      <div class="card kind"><span class="tagline">edge shape</span><h4>A sensor or MCU</h4><p>No kernel at all — the program is the device. The same file, projected down to a microcontroller.</p></div>
+    </div>
+    <p class="eyebrow" style="margin-bottom:14px;">Getting it onto a device you already have</p>
+    <div class="prose" style="margin-bottom:clamp(24px,3vw,32px)">
+      <p>You do not upgrade an existing OS into Harobanda — you <em>replace</em> it, the way you install any operating system, with a whole image. On a <b>PC or laptop</b>, write the image to a USB stick or a spare disk and boot from it; it can sit beside the old system or take the machine over entirely. On a <b>Raspberry&nbsp;Pi</b>, flash the SD card and slot it in. The box then boots your declaration instead of whatever ran before.</p>
+      <p style="margin-top:14px;color:var(--muted);">Phones are the honest exception, and the reason is the whole argument of this site: most consumer phones weld the software to the hardware and lock the bootloader, so no operating system but the vendor's may boot on them. The touch shape targets hardware where that lock can be opened; otherwise the vendor's weld <em>is</em> the wall. Sovereignty, or its absence, is decided at the bootloader.</p>
+    </div>
+    <div class="hilite">
+      <p class="eyebrow">The strategic requirement</p>
+      <p><b>Same file, same command, every target.</b> You do not learn a new toolchain per device — you change one word in the declaration, the board, and re-derive the image. Then <code>harb</code> writes it: to a PC's disk, a Pi's SD card, or a device's flash. Two slots and a watchdog make the first boot a trial, so a bad deploy returns to the version that worked, with no one on site.</p>
+    </div>
+    <a class="nextcta" href="ai.html"><span class="t"><span class="lbl">Next</span><h3>AI &amp; agents</h3></span><span class="arrow">→</span></a>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p style="max-width:64ch;">Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The machine — Harobanda</title>
+<meta name="description" content="Not a new kernel — a new idea of an operating system on proven Linux LTS. Four promises kept before the hardware is bought, and a system learnable in an evening.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html">
+      <svg viewBox="0 0 44 28" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6"><line x1="1" y1="21" x2="43" y2="21"/><line x1="11" y1="5" x2="11" y2="21"/><line x1="33" y1="5" x2="33" y2="21"/><path d="M11 5 L2 21 M11 5 L20 21 M33 5 L26 21 M33 5 L42 21" stroke-width="1"/></g></svg>
+      Harobanda <span>the declared machine</span>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="machine.html" class="active">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="ai.html">AI &amp; agents</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="field.html">In the field</a>
+      <span class="theme-wrap"><button class="theme" id="themeBtn" aria-label="Toggle colour theme">Theme</button></span>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">The machine</p>
+    <h1>Not a new kernel. A new idea of an operating system.</h1>
+    <p class="lead">Built on the Linux you already trust, a declared machine keeps four promises before any hardware is bought, judges its own boot, and is learnable in an evening. Here is how it works, and who it serves.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Not a new kernel</p>
+      <h2>We didn't reinvent the wheel. We rethought the vehicle.</h2>
+    </div>
+    <div class="prose stack-gap">
+      <p class="lead">Underneath, Harobanda runs the same <b>Linux LTS</b> kernel as Ubuntu, Red Hat and nearly every distribution in production today — the same proven code, the same drivers, the same hardware support, the same decades of hardening. The kernel is not where the dogma lives, and it is not what we set out to replace.</p>
+      <p>What we rethought is everything the industry treats as inevitable <em>above</em> the kernel: that an operating system must carry a shell, a package manager, a service manager, mutable configuration, a login, an account, a store. None of that is the kernel's doing. It is convention — and convention is exactly where the ecosystem, and its costs, took hold.</p>
+      <p>So we deconstructed the dogma and rebuilt the operating system from first principles — the same method the wider Softanza project applies to every layer — keeping the one part that is genuinely hard and genuinely proven, and replacing the part that was only ever habit with a single idea: <b>declare it, judge it, govern it.</b></p>
+      <p class="muted">For an IT team that is the reassuring part: no exotic kernel to certify, no unproven drivers, no new hardware-compatibility matrix. The substrate is the Linux you already trust; the discipline above it is what is new.</p>
+    </div>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">On the ground · what it changes</p>
+      <h2>Four promises, kept before the hardware is bought.</h2>
+    </div>
+    <div class="prose" style="margin-bottom:clamp(24px,3vw,34px)">
+      <p class="lead">Whatever the solution — a shop counter, a clinic, a bank branch, a border post — four promises decide whether the work survives a bad day. On an ordinary OS each is a hope. Here each is a line the machine declares and the court checks before any device is switched on.</p>
+    </div>
+    <div class="grounds">
+      <div class="ground-row">
+        <div class="p"><span class="en">Always reachable</span><span class="lc">a fixed address</span></div>
+        <div class="prob"><b>The problem.</b> A fridge trips the breaker; the router reboots; it hands the server a new address; the phones and tablets can no longer find it, and a morning's work is stranded.</div>
+        <div class="fix"><b>The machine</b> declares its own address and brings it up before any program runs. It is the same after every power cut, because it was never handed out by anyone.</div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">A stable name</span><span class="lc">it serves its own names</span></div>
+        <div class="prob"><b>The problem.</b> The printer comes back on a different number after every outage, and someone re-types it into three devices before service can start.</div>
+        <div class="fix"><b>The machine</b> is the network's name-giver: the printer is reached by name, on a number nobody must remember or re-enter. The register cannot be lost, because it is the declaration.</div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">A durable log</span><span class="lc">a record that survives</span></div>
+        <div class="prob"><b>The problem.</b> Sales, doses, or filings kept only in a browser or in memory vanish when the address changes or the power drops — and an auditor has nothing to read.</div>
+        <div class="fix"><b>The machine</b> mounts a durable store before any program speaks, and signs its own record so a later change to it cannot go unnoticed. The evidence is there, and it is tamper-evident.</div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Survives the cut</span><span class="lc">two slots, a watchdog</span></div>
+        <div class="prob"><b>The problem.</b> A breaker, a bad update at 2 a.m., or a technician who unplugs your socket to plug in theirs — and the box does not come back, or comes back broken.</div>
+        <div class="fix"><b>The machine</b> keeps two copies of itself and a hardware timer. A new version is tried once; if it does not recognise its own boot, the box restarts into the one that worked. No one drives out to fix it.</div>
+      </div>
+    </div>
+    <div class="trio" style="margin-top:clamp(24px,3vw,34px)">
+      <div class="panel">
+        <p class="eyebrow" style="margin-bottom:10px">For the programmer</p>
+        <p style="font-size:14px;line-height:1.6;color:var(--ink)">The machine is its own configuration and its own documentation: one text file with a reason on every line, so there is no hidden state to reverse-engineer and no wiki to keep in sync. Write in the language you know — Luau, Python, JavaScript — and the same logic runs wherever the machine places it.</p>
+      </div>
+      <div class="panel">
+        <p class="eyebrow" style="margin-bottom:10px">For the system administrator</p>
+        <p style="font-size:14px;line-height:1.6;color:var(--ink)">No shell to secure and no packages to patch — most of what you usually guard is simply not there. A fleet is a set of files: reproducible, versioned, diffable. Updates are trials that roll back by hardware, and each box tells you what it is and whether its record is whole. Less to defend, and nothing that drifts overnight.</p>
+      </div>
+      <div class="panel">
+        <p class="eyebrow" style="margin-bottom:10px">For the auditor</p>
+        <p style="font-size:14px;line-height:1.6;color:var(--ink)">Because there is no shell, there is no undocumented change to hunt for — none can exist. Each program runs as its own declared identity, so who-may-do-what is written into the floor. And administrator access shows up as the <em>absence</em> of a line, not a choice buried in a setting. The machine answers the auditor in its own words.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">The experience</p>
+      <h2>Learnable in an evening. Judged at every step.</h2>
+    </div>
+    <div class="grid2" style="align-items:start;gap:clamp(22px,3vw,38px)">
+      <div class="stack-gap">
+        <p class="lead prose">The whole loop is the same five verbs the machine lives by, driven by one command: <code style="font-family:var(--mono);font-size:.85em;color:var(--laterite)">harb</code>. There is no configuration to discover and no hidden state to unravel. Every command tells you what it did and why.</p>
+        <div class="steps">
+          <div class="step"><b>Declare it</b><p>Write a <code>.machine</code> file. Every line must say why it is there.</p></div>
+          <div class="step"><b>Judge it — <code>harb check</code></b><p>The court accepts it, or refuses it in plain words: <code>needs the network, which nothing here grants.</code></p></div>
+          <div class="step"><b>Plan it — <code>harb plan</code></b><p>See the order things will happen in, before any of it does. A mistake is caught here, not at 2 a.m.</p></div>
+          <div class="step"><b>Boot it — <code>harb boot</code></b><p>The whole machine boots in an emulator and judges its own transcript against what the file said.</p></div>
+          <div class="step"><b>Break it</b><p>Change one line and watch the machine catch the difference. A guarantee you have only seen succeed is a claim.</p></div>
+        </div>
+        <p class="muted prose">No board is needed to learn any of this — it runs on a plain laptop.</p>
+      </div>
+      <div class="stack-gap">
+        <div class="term" aria-label="The guided tour">
+          <div class="term-bar"><i></i><i></i><i></i><b>harb learn — the guided tour</b></div>
+<pre><span class="d">$</span> <span class="b">harb</span> learn
+
+  a guided tour of a declared machine,
+  in <span class="c">18 lessons</span>.
+
+  I.   the declaration   judged before it runs
+  II.  the boot          it judges <span class="c">itself</span>
+  III. what a program may do   its envelope
+  IV.  who a device is   its key, its record
+  V.   the network       it serves its own names
+  VI.  the whole box     many boots, one card
+
+  each lesson: a command, the lines to
+  look for, and a way to <span class="r">break</span> it.</pre>
+        </div>
+        <div class="term" aria-label="Four programs, one machine, only the declaration differs">
+          <div class="term-bar"><i></i><i></i><i></i><b>only the declaration differs</b></div>
+<pre><span class="d">program   may use            network   start</span>
+sealed    data                <span class="r">none</span>      ok
+still     network, data       yes       <span class="r">refused</span>
+open      network, data, run  yes       ok
+blind     run only            <span class="r">none</span>      ok
+<span class="d">──</span>
+<span class="d">boot:</span> what a program did not ask for,
+      the machine does not give it
+<span class="d">boot:</span> and no program may change the
+      machine it runs on <span class="r">(refused for all)</span></pre>
+        </div>
+        <div class="term" aria-label="The four promises, judged not claimed">
+          <div class="term-bar"><i></i><i></i><i></i><b>harb guarantees — judged, not claimed</b></div>
+<pre>  always reachable   <span class="k">KEPT</span>
+  a stable name      <span class="k">KEPT</span>
+  a durable log      <span class="k">KEPT</span>
+  survives the cut   <span class="k">KEPT</span>
+
+  <span class="d">4 of 4 promised, 4 kept — on the real</span>
+  <span class="d">device. Each named, against the box's</span>
+  <span class="d">own evidence.</span></pre>
+        </div>
+      </div>
+    </div>
+    <p class="pull prose" style="margin-top:clamp(30px,4vw,44px)">A guarantee you have only ever seen succeed is a claim; <b>one you have watched refuse you is evidence.</b> So the tour hands you the way to break every promise it makes.</p>
+    <a class="nextcta" href="build.html"><span class="t"><span class="lbl">Next</span><h3>Build on it</h3></span><span class="arrow">→</span></a>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p style="max-width:64ch;">Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

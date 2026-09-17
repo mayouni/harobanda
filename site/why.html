@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why Harobanda</title>
+<meta name="description" content="Three differences separate a declared machine from every commercial OS, open-source distribution and phone OS: what it is for, what it sells you, and what no one can take away.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html">
+      <svg viewBox="0 0 44 28" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6"><line x1="1" y1="21" x2="43" y2="21"/><line x1="11" y1="5" x2="11" y2="21"/><line x1="33" y1="5" x2="33" y2="21"/><path d="M11 5 L2 21 M11 5 L20 21 M33 5 L26 21 M33 5 L42 21" stroke-width="1"/></g></svg>
+      Harobanda <span>the declared machine</span>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html" class="active">Why</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="ai.html">AI &amp; agents</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="field.html">In the field</a>
+      <span class="theme-wrap"><button class="theme" id="themeBtn" aria-label="Toggle colour theme">Theme</button></span>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow lat">Why Harobanda</p>
+    <h1>Every OS you can buy is shaped by its vendor. This one is shaped by your solution.</h1>
+    <p class="lead">Three differences separate a declared machine from everything else you could run — in what it is <em>for</em>, what it <em>sells</em> you, and what no one else can <em>take away</em>.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow lat">The gap</p>
+      <h2>Three kinds of operating system — and you control none of them.</h2>
+    </div>
+    <div class="prose" style="margin-bottom:clamp(26px,3vw,36px)">
+      <p class="lead">Whatever you run today is one of three, and each takes the floor away from you in its own way.</p>
+    </div>
+    <div class="trio" style="margin-bottom:clamp(26px,3vw,38px)">
+      <div class="card kind">
+        <span class="tagline">the commercial OS</span>
+        <h4>Shaped by a business model</h4>
+        <p>The account you sign in with, the store you cannot remove, the telemetry you cannot see, the update you cannot refuse, the support that ends on a date someone else picks. <b>None of it serves your job</b> — it serves the vendor's revenue, and the forest of apps you must install is the product.</p>
+      </div>
+      <div class="card kind">
+        <span class="tagline">the open-source distribution</span>
+        <h4>Free to read, still not yours</h4>
+        <p>Even a free system is governed by the company that curates it. You inherit its package repositories, its defaults and its release calendar; you keep a plugin ecosystem alive; you live in dependency hell, where upgrading one thing moves ten others. <b>Free is not the same as sovereign.</b></p>
+      </div>
+      <div class="card kind">
+        <span class="tagline">the phone OS</span>
+        <h4>Hardware and software, fused</h4>
+        <p>The sharpest case. The vendor welds the two together so tightly that you cannot run your own system on their device, and cannot have their device's abilities on hardware you chose. <b>The user — and the designer — is closed inside a link neither can open.</b></p>
+      </div>
+    </div>
+    <div class="cmp">
+      <div class="h">What sits inside</div>
+      <div class="h them">Their OS — commercial or a curated distribution</div>
+      <div class="h us">Harobanda</div>
+      <div class="lbl">An account to sign in</div>
+      <div class="them-c">Required, tied to the vendor</div>
+      <div class="us-c"><b>None.</b> No identity anyone else holds</div>
+      <div class="lbl">A store &amp; a package manager</div>
+      <div class="them-c">Built in; a jungle to install and maintain</div>
+      <div class="us-c"><b>None.</b> Nothing is installed at run time</div>
+      <div class="lbl">Dependencies</div>
+      <div class="them-c">A graph you must keep satisfied; things break each other</div>
+      <div class="us-c">The machine is one closed image; nothing to resolve</div>
+      <div class="lbl">Updates</div>
+      <div class="them-c">Pushed, or a risky upgrade you run by hand</div>
+      <div class="us-c">A new image, tried once, <b>rolled back by hardware</b> if wrong</div>
+      <div class="lbl">The bootloader &amp; the hardware</div>
+      <div class="them-c">Vendor-controlled; on phones, welded to the software</div>
+      <div class="us-c">Ordinary hardware you chose; the machine is your own source</div>
+      <div class="lbl">End of support</div>
+      <div class="them-c">A date the vendor or the distro picks</div>
+      <div class="us-c"><b>No vendor to end it</b></div>
+    </div>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Difference one · the solution mindset</p>
+      <h2>The solution comes first. The machine is derived from it.</h2>
+    </div>
+    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="lead">You do not bend your solution to fit the OS. You write down what your solution must guarantee — a fixed address the devices can find, a log that survives a power cut, a data store that never leaves the building, a clean restart after the mains drop — and the machine is <em>derived</em> from that sheet. It does exactly one job, and it can prove it does.</p>
+      <p>A machine is one text file. Each line is a plain fact: what it is, what storage it mounts, which programs it keeps running, and what it is allowed to touch. There is no configuration to discover later and no hidden state to reverse-engineer — <b>the machine is its file.</b></p>
+    </div>
+    <div class="panel ex prose" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="eyebrow lat" style="margin-bottom:10px">An example</p>
+      <p style="font-size:15.5px;line-height:1.6;">A temperature sensor in a cold room, running on a general-purpose Linux, still needs kernel updates, a package manager, remote-login hardening and service configuration — <em>none of which have anything to do with measuring temperature.</em> Each is a door for a problem and a job for someone who is not there. A declared machine has none of it, because none of it was declared. The sensor's job is the whole of the machine.</p>
+    </div>
+    <div class="versus">
+      <div class="them">
+        <h4>A general-purpose OS</h4>
+        <ul>
+          <li>Built for everyone, adapted by you to one job</li>
+          <li>Ships with far more than your solution needs</li>
+          <li>Configured by hand; the config drifts over time</li>
+          <li>You hope it behaves; you cannot prove it will</li>
+        </ul>
+      </div>
+      <div class="us">
+        <h4>A declared machine</h4>
+        <ul>
+          <li>Built for one job, derived from what that job needs</li>
+          <li>Contains only what was declared, nothing more</li>
+          <li>Is its file; a change is a new file, judged again</li>
+          <li>Proves its boot against its own declaration, every time</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Difference two · no business model, no jungle</p>
+      <h2>Nothing on the machine is selling you anything — or rotting.</h2>
+    </div>
+    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="lead">There is no account, no store, no telemetry, no per-seat licence, and no vendor living inside the system. And there is no package manager — so no dependency hell, and no plugin jungle to keep alive. What the machine runs is a closed list shipped in its image; nothing is installed at run time, nothing is discovered, and a change is a whole new image.</p>
+      <p>This also means the machine <em>cannot rot.</em> On an ordinary system — free or paid — packages update, break each other, and the machine you deployed is not the machine running a year later. A declared machine is the same machine on its thousandth boot as on its first, because nothing on it changes after the image is built.</p>
+    </div>
+    <div class="panel ex prose" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="eyebrow lat" style="margin-bottom:10px">An example</p>
+      <p style="font-size:15.5px;line-height:1.6;">A shop's tablet running a payment app, a messenger, a video app and a browser is not a tool for the job — it is a distraction from it, and an open door for whatever the vendor wants installed next. Half the staff's day goes to keeping it working. A declared machine runs one thing: the job. There is no drawer to fill, no notification to dismiss, and nothing on it that anyone profits from.</p>
+    </div>
+    <p class="eyebrow" style="margin-bottom:14px;">What it refuses — and why that is the point</p>
+    <div class="refuses" style="margin-bottom:clamp(24px,3vw,32px)">
+      <div><b>shell</b><span>No hidden command line to slip in through. There is nothing on the machine to type into.</span></div>
+      <div><b>package manager</b><span>Nothing installed after the image is built — so no dependency hell, ever.</span></div>
+      <div><b>store &amp; plugins</b><span>No catalogue, no marketplace, no plugin jungle to grow and rot. One job, shipped whole.</span></div>
+      <div><b>drift</b><span>No settings that quietly change over months. The machine is its file; a change is a new file.</span></div>
+    </div>
+    <p class="pull prose">The jungle is not held back by a policy someone can relax later. <b>It is refused by the grammar itself</b> — there is no sentence in the language that even asks for a shell, a store or an installer.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Difference three · sovereignty by design</p>
+      <h2>Sovereignty is what no one else can withdraw.</h2>
+    </div>
+    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="lead">You do not truly own a system you cannot rebuild, whose updates you cannot decline, and whose support ends on a date someone else chose. These are not hypotheticals. A major phone maker once removed the ability to unlock the bootloader on every device it had sold, worldwide, in a single update, with no warning. When the vendor lives inside the system, the vendor decides — and can decide against you.</p>
+      <p>The phone is the extreme, and worth naming plainly: the vendor fuses the hardware and the software so that neither can leave the other. Sovereignty is the opposite. You choose ordinary, replaceable hardware, and you own the system that runs on it; the two are joined by <em>your declaration</em>, not by a vendor's weld. Sovereignty here has exactly one meaning — <b>nothing anyone else can withdraw</b> — and it has never meant “every line is ours.” The kernel underneath is kept as pinned source, rebuilt by your own toolchain: borrowed, but impossible to take back. And the whole machine is one text file plus a short list of exact fingerprints, which you can hand to any provider you choose. Reversibility stops being a clause in a contract and becomes the thing itself.</p>
+    </div>
+    <div class="diagram" style="margin-bottom:clamp(26px,3.5vw,38px)" aria-label="The machine as a bridge: your solution's programs above, spanning the promises it must keep and the hardware that keeps them">
+      <svg viewBox="0 0 920 340" role="img" style="font-family:var(--sans)">
+        <text x="460" y="30" text-anchor="middle" style="font-family:var(--mono);font-size:12px;letter-spacing:1.5px;fill:var(--muted)">WHAT YOUR SOLUTION RUNS</text>
+        <g text-anchor="middle">
+          <g><rect x="80" y="50" width="150" height="40" rx="8" style="fill:var(--raise);stroke:var(--line-strong)"/><text x="155" y="75" style="font-size:13px;fill:var(--ink)">the app logic</text></g>
+          <g><rect x="255" y="50" width="150" height="40" rx="8" style="fill:var(--raise);stroke:var(--line-strong)"/><text x="330" y="75" style="font-size:13px;fill:var(--ink)">local data</text></g>
+          <g><rect x="430" y="50" width="150" height="40" rx="8" style="fill:var(--raise);stroke:var(--line-strong)"/><text x="505" y="75" style="font-size:13px;fill:var(--ink)">the interface</text></g>
+          <g><rect x="605" y="50" width="150" height="40" rx="8" style="fill:var(--raise);stroke:var(--line-strong)"/><text x="680" y="75" style="font-size:13px;fill:var(--ink)">on-device AI</text></g>
+        </g>
+        <g style="stroke:var(--river);opacity:.5" stroke-width="1">
+          <line x1="155" y1="90" x2="230" y2="150"/><line x1="330" y1="90" x2="360" y2="150"/><line x1="505" y1="90" x2="500" y2="150"/><line x1="680" y1="90" x2="620" y2="150"/>
+        </g>
+        <rect x="40" y="150" width="840" height="58" rx="10" style="fill:var(--river-wash);stroke:var(--river)" stroke-width="1.4"/>
+        <text x="460" y="177" text-anchor="middle" style="font-family:var(--serif);font-size:22px;font-weight:600;fill:var(--river)">HAROBANDA</text>
+        <text x="460" y="196" text-anchor="middle" style="font-family:var(--mono);font-size:11px;fill:var(--river-bright)">the declared machine — one file, judged before it boots</text>
+        <g style="stroke:var(--line-strong)" stroke-width="1.4"><line x1="150" y1="208" x2="150" y2="280"/><line x1="770" y1="208" x2="770" y2="280"/></g>
+        <line x1="40" y1="240" x2="880" y2="240" style="stroke:var(--line-strong)" stroke-width="1" stroke-dasharray="2 5"/>
+        <text x="460" y="254" text-anchor="middle" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;fill:var(--muted)">ONE FILE SPANS BOTH BANKS</text>
+        <rect x="40" y="280" width="320" height="46" rx="9" style="fill:var(--laterite-wash);stroke:var(--laterite)"/>
+        <text x="200" y="301" text-anchor="middle" style="font-family:var(--serif);font-size:13.5px;font-style:italic;fill:var(--laterite)">the promises it must keep</text>
+        <text x="200" y="316" text-anchor="middle" style="font-family:var(--mono);font-size:10px;fill:var(--muted)">what the job needs</text>
+        <rect x="560" y="280" width="320" height="46" rx="9" style="fill:var(--surface);stroke:var(--line-strong)"/>
+        <text x="720" y="301" text-anchor="middle" style="font-family:var(--mono);font-size:12.5px;fill:var(--ink)">ordinary hardware</text>
+        <text x="720" y="316" text-anchor="middle" style="font-family:var(--mono);font-size:10px;fill:var(--muted)">chosen by you, never welded shut</text>
+      </svg>
+    </div>
+    <div class="panel ex prose">
+      <p class="eyebrow lat" style="margin-bottom:10px">An example</p>
+      <p style="font-size:15.5px;line-height:1.6;">An organisation whose most sensitive records must never leave its walls cannot <em>prove</em> that on a system it does not control. A declared machine can: one line says the box knows no route to the outside world, and the court refuses to build the machine if anything on it contradicts that line. “The data stays here” stops being a promise on paper and becomes a fact the machine itself enforces. Compare the usual offer — a management console the vendor lets you build, while the agent, the service and the ownership stay theirs: <em>you own the screen, not the power.</em></p>
+    </div>
+    <a class="nextcta" href="machine.html"><span class="t"><span class="lbl">Next</span><h3>The machine — how it works</h3></span><span class="arrow">→</span></a>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p style="max-width:64ch;">Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
