@@ -287,5 +287,9 @@ p code{color:var(--laterite);}
 .foot .foot-in p{flex:1;min-width:280px;}
 .foot-bridge{display:block;width:100%;max-width:640px;height:auto;
   margin:0 auto clamp(22px,3vw,34px);}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .foot-bridge{filter:brightness(1.95) saturate(1.05);}
+}
+:root[data-theme="dark"] .foot-bridge{filter:brightness(1.95) saturate(1.05);}
 
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
