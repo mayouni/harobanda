@@ -123,39 +123,52 @@
   a guided tour of a declared machine,
   in <span class="c">18 lessons</span>.
 
-  I.   the declaration   judged before it runs
-  II.  the boot          it judges <span class="c">itself</span>
-  III. what a program may do   its envelope
-  IV.  who a device is   its key, its record
-  V.   the network       it serves its own names
-  VI.  the whole box     many boots, one card
+  I.   THE DECLARATION       1 · 2 · 3
+  II.  THE BOOT              4 · 5 · 6
+  III. WHAT A WORLD MAY DO   7 · 8 · 9 · 10 · 11
+  IV.  WHO A DEVICE IS       12 · 13 · 14
+  V.   THE NETWORK           15 · 16
+  VI.  THE FLAGSHIP          17 · 18
 
-  each lesson: a command, the lines to
-  look for, and a way to <span class="r">break</span> it.</pre>
+  <span class="d">harb learn &lt;n&gt;        one lesson, in full</span>
+  <span class="d">harb learn &lt;n&gt; --run  and run its command</span>
+  <span class="d">harb learn --words    a world, a pin, a court</span></pre>
         </div>
-        <div class="term" aria-label="Four programs, one machine, only the declaration differs">
-          <div class="term-bar"><i></i><i></i><i></i><b>only the declaration differs</b></div>
-<pre><span class="d">program   may use            network   start</span>
-sealed    data                <span class="r">none</span>      ok
-still     network, data       yes       <span class="r">refused</span>
-open      network, data, run  yes       ok
-blind     run only            <span class="r">none</span>      ok
+        <div class="term" aria-label="Lesson 7: six worlds run the same command, and only their declarations differ">
+          <div class="term-bar"><i></i><i></i><i></i><b>harb learn 7 — only the declaration differs</b></div>
+<pre><span class="d">six worlds · one command · only NEEDS differ</span>
+
+world    declared                      eth0     /data    fork
+sealed   process, filesystem           <span class="r">absent</span>   <span class="k">mounted</span>  <span class="k">permitted</span>
+still    network, filesystem           <span class="k">present</span>  <span class="k">mounted</span>  <span class="r">REFUSED</span>
+open     process, network, filesystem  <span class="k">present</span>  <span class="k">mounted</span>  <span class="k">permitted</span>
+blind    process                       <span class="r">absent</span>   <span class="r">empty</span>    <span class="k">permitted</span>
+ledger   all three, SEES [data]        <span class="k">present</span>  <span class="k">mounted</span>  <span class="k">permitted</span>
+caisse   all three, SEES [logs]        <span class="k">present</span>  <span class="r">empty</span>    <span class="k">permitted</span>
 <span class="d">──</span>
-<span class="d">boot:</span> what a program did not ask for,
-      the machine does not give it
-<span class="d">boot:</span> and no program may change the
-      machine it runs on <span class="r">(refused for all)</span></pre>
+<span class="d">none of this grid is declared — it is worked</span>
+<span class="d">out FROM what each world asked for. what a</span>
+<span class="d">world did not ask for, the kernel does not give.</span></pre>
         </div>
-        <div class="term" aria-label="The four promises, judged not claimed">
-          <div class="term-bar"><i></i><i></i><i></i><b>harb guarantees — judged, not claimed</b></div>
-<pre>  always reachable   <span class="k">KEPT</span>
+        <div class="term" aria-label="Lesson 18: the four promises judged twice — against the derived expectation, and against what the emulator actually printed">
+          <div class="term-bar"><i></i><i></i><i></i><b>harb learn 18 — the four promises, judged twice</b></div>
+<pre><span class="d">judged by name, twice — two texts keep them,</span>
+<span class="d">neither keeps all, so the box is not flattered</span>
+
+against the board's EXPECTATION:
+  always reachable   <span class="k">KEPT</span>
   a stable name      <span class="k">KEPT</span>
   a durable log      <span class="k">KEPT</span>
-  survives the cut   <span class="k">KEPT</span>
+  survives the cut   <span class="r">NOT KEPT</span>
+  <span class="d">4 promised, 3 kept</span>
 
-  <span class="d">4 of 4 promised, 4 kept — on the real</span>
-  <span class="d">device. Each named, against the box's</span>
-  <span class="d">own evidence.</span></pre>
+against what the emulator PRINTED:
+  always reachable   <span class="r">NOT KEPT</span>  <span class="d">no wire in QEMU</span>
+  a stable name      <span class="r">NOT KEPT</span>
+  a durable log      <span class="k">KEPT</span>
+  survives the cut   <span class="r">NOT KEPT</span>  <span class="d">watchdog off</span>
+  <span class="d">4 promised, 1 kept — the honest number,</span>
+  <span class="d">until a card goes into a real Pi 4</span></pre>
         </div>
       </div>
     </div>
