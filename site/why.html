@@ -155,32 +155,7 @@
       <p class="lead">You do not truly own a system you cannot rebuild, whose updates you cannot decline, and whose support ends on a date someone else chose. These are not hypotheticals. A major phone maker once removed the ability to unlock the bootloader on every device it had sold, worldwide, in a single update, with no warning. When the vendor lives inside the system, the vendor decides — and can decide against you.</p>
       <p>The phone is the extreme, and worth naming plainly: the vendor fuses the hardware and the software so that neither can leave the other. Sovereignty is the opposite. You choose ordinary, replaceable hardware, and you own the system that runs on it; the two are joined by <em>your declaration</em>, not by a vendor's weld. Sovereignty here has exactly one meaning — <b>nothing anyone else can withdraw</b> — and it has never meant “every line is ours.” The kernel underneath is kept as pinned source, rebuilt by your own toolchain: borrowed, but impossible to take back. And the whole machine is one text file plus a short list of exact fingerprints, which you can hand to any provider you choose. Reversibility stops being a clause in a contract and becomes the thing itself.</p>
     </div>
-    <div class="diagram" style="margin-bottom:clamp(26px,3.5vw,38px)" aria-label="The machine as a bridge: your solution's programs above, spanning the promises it must keep and the hardware that keeps them">
-      <svg viewBox="0 0 920 340" role="img" style="font-family:var(--sans)">
-        <text x="460" y="30" text-anchor="middle" style="font-family:var(--mono);font-size:12px;letter-spacing:1.5px;fill:var(--muted)">WHAT YOUR SOLUTION RUNS</text>
-        <g text-anchor="middle">
-          <g><rect x="80" y="50" width="150" height="40" rx="8" style="fill:var(--raise);stroke:var(--line-strong)"/><text x="155" y="75" style="font-size:13px;fill:var(--ink)">the app logic</text></g>
-          <g><rect x="255" y="50" width="150" height="40" rx="8" style="fill:var(--raise);stroke:var(--line-strong)"/><text x="330" y="75" style="font-size:13px;fill:var(--ink)">local data</text></g>
-          <g><rect x="430" y="50" width="150" height="40" rx="8" style="fill:var(--raise);stroke:var(--line-strong)"/><text x="505" y="75" style="font-size:13px;fill:var(--ink)">the interface</text></g>
-          <g><rect x="605" y="50" width="150" height="40" rx="8" style="fill:var(--raise);stroke:var(--line-strong)"/><text x="680" y="75" style="font-size:13px;fill:var(--ink)">on-device AI</text></g>
-        </g>
-        <g style="stroke:var(--river);opacity:.5" stroke-width="1">
-          <line x1="155" y1="90" x2="230" y2="150"/><line x1="330" y1="90" x2="360" y2="150"/><line x1="505" y1="90" x2="500" y2="150"/><line x1="680" y1="90" x2="620" y2="150"/>
-        </g>
-        <rect x="40" y="150" width="840" height="58" rx="10" style="fill:var(--river-wash);stroke:var(--river)" stroke-width="1.4"/>
-        <text x="460" y="177" text-anchor="middle" style="font-family:var(--serif);font-size:22px;font-weight:600;fill:var(--river)">HAROBANDA</text>
-        <text x="460" y="196" text-anchor="middle" style="font-family:var(--mono);font-size:11px;fill:var(--river-bright)">the declared machine — one file, judged before it boots</text>
-        <g style="stroke:var(--line-strong)" stroke-width="1.4"><line x1="150" y1="208" x2="150" y2="280"/><line x1="770" y1="208" x2="770" y2="280"/></g>
-        <line x1="40" y1="240" x2="880" y2="240" style="stroke:var(--line-strong)" stroke-width="1" stroke-dasharray="2 5"/>
-        <text x="460" y="254" text-anchor="middle" style="font-family:var(--mono);font-size:10px;letter-spacing:1px;fill:var(--muted)">ONE FILE SPANS BOTH BANKS</text>
-        <rect x="40" y="280" width="320" height="46" rx="9" style="fill:var(--laterite-wash);stroke:var(--laterite)"/>
-        <text x="200" y="301" text-anchor="middle" style="font-family:var(--serif);font-size:13.5px;font-style:italic;fill:var(--laterite)">the promises it must keep</text>
-        <text x="200" y="316" text-anchor="middle" style="font-family:var(--mono);font-size:10px;fill:var(--muted)">what the job needs</text>
-        <rect x="560" y="280" width="320" height="46" rx="9" style="fill:var(--surface);stroke:var(--line-strong)"/>
-        <text x="720" y="301" text-anchor="middle" style="font-family:var(--mono);font-size:12.5px;fill:var(--ink)">ordinary hardware</text>
-        <text x="720" y="316" text-anchor="middle" style="font-family:var(--mono);font-size:10px;fill:var(--muted)">chosen by you, never welded shut</text>
-      </svg>
-    </div>
+    <img class="diagram-img" style="margin-bottom:clamp(26px,3.5vw,38px)" src="harobanda-diagram-1.jpg" alt="Harobanda as a bridge: your solution's programs span the promises the machine must keep and the ordinary hardware that keeps them" width="1376" height="768">
     <div class="panel ex prose">
       <p class="eyebrow lat" style="margin-bottom:10px">An example</p>
       <p style="font-size:15.5px;line-height:1.6;">An organisation whose most sensitive records must never leave its walls cannot <em>prove</em> that on a system it does not control. A declared machine can: one line says the box knows no route to the outside world, and the court refuses to build the machine if anything on it contradicts that line. “The data stays here” stops being a promise on paper and becomes a fact the machine itself enforces. Compare the usual offer — a management console the vendor lets you build, while the agent, the service and the ownership stay theirs: <em>you own the screen, not the power.</em></p>
