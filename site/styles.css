@@ -54,6 +54,7 @@ code,pre{font-family:var(--mono);}
 .eyebrow.lat{color:var(--laterite);}
 .lead{font-family:var(--serif);font-size:clamp(19px,2.4vw,23px);line-height:1.45;
   color:var(--ink);font-weight:400;}
+.prose p:not(.lead):not(.eyebrow):not(.pull){font-size:17.5px;line-height:1.65;}
 .muted{color:var(--muted);}
 .sec-head{display:flex;flex-direction:column;gap:14px;margin-bottom:clamp(26px,4vw,42px);}
 .sec-head h2{font-size:clamp(27px,4.2vw,44px);}
