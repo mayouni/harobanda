@@ -78,7 +78,7 @@ code,pre{font-family:var(--mono);}
   .brand .brandtag{display:none;}
   .brandmark{width:194px;height:48px;}
 }
-.nav{margin-left:auto;display:flex;gap:clamp(9px,1.4vw,20px);align-items:center;}
+.nav{margin-left:auto;display:flex;gap:clamp(15px,2vw,30px);align-items:center;}
 .nav a{font-size:15px;color:var(--muted);text-decoration:none;font-weight:500;}
 .nav a:hover{color:var(--river);}
 .nav a.active{color:var(--river);}
