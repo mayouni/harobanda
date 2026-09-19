@@ -71,12 +71,10 @@ code,pre{font-family:var(--mono);}
 .brand svg{width:22px;height:14px;color:var(--river);flex:none;}
 .brand .brandtag{color:var(--muted);font-family:var(--mono);font-size:13px;
   letter-spacing:.1em;text-transform:uppercase;font-weight:400;}
-.brandmark{display:block;width:228px;height:57px;flex:none;background:var(--river);
-  -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
-          mask:url(harobanda-logo.png) left center / contain no-repeat;}
+.brandmark{display:block;height:57px;width:auto;flex:none;}
 @media(max-width:560px){
   .brand .brandtag{display:none;}
-  .brandmark{width:194px;height:48px;}
+  .brandmark{height:48px;}
 }
 .nav{margin-left:auto;display:flex;gap:clamp(15px,2vw,30px);align-items:center;}
 .nav a{font-size:15px;color:var(--muted);text-decoration:none;font-weight:500;}
@@ -235,6 +233,15 @@ code,pre{font-family:var(--mono);}
 .diagram{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:clamp(18px,3vw,30px);overflow-x:auto;}
 .diagram svg{display:block;min-width:560px;width:100%;height:auto;}
 .diagram-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line-strong);}
+.diagram-img.dark-only{display:none;}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .diagram-img.light-only{display:none;}
+  :root:not([data-theme="light"]) .diagram-img.dark-only{display:block;}
+}
+:root[data-theme="dark"] .diagram-img.light-only{display:none;}
+:root[data-theme="dark"] .diagram-img.dark-only{display:block;}
+:root[data-theme="light"] .diagram-img.light-only{display:block;}
+:root[data-theme="light"] .diagram-img.dark-only{display:none;}
 
 .steps{display:flex;flex-direction:column;gap:2px;counter-reset:s;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);}
 .step{background:var(--surface);padding:16px 20px 16px 58px;position:relative;}
@@ -286,9 +293,13 @@ p code{color:var(--laterite);}
 
 /* ---------- brand imagery ---------- */
 .foot .foot-in{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
-.footmark{display:block;width:158px;height:40px;flex:none;background:var(--river);opacity:.55;
-  -webkit-mask:url(harobanda-logo.png) left center / contain no-repeat;
-          mask:url(harobanda-logo.png) left center / contain no-repeat;}
+.footmark{display:block;height:40px;width:auto;flex:none;opacity:.55;}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .brandmark,
+  :root:not([data-theme="light"]) .footmark{filter:brightness(2.1) saturate(1.05);}
+}
+:root[data-theme="dark"] .brandmark,
+:root[data-theme="dark"] .footmark{filter:brightness(2.1) saturate(1.05);}
 .foot .foot-in p{max-width:66ch;text-wrap:pretty;}
 .bridge-band{display:block;width:100%;height:auto;aspect-ratio:1675 / 430;object-fit:cover;
   object-position:center 72%;margin:0 0 clamp(2px,0.6vw,8px);}
