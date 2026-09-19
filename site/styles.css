@@ -315,7 +315,7 @@ p code{color:var(--laterite);}
   .credits{align-self:flex-start;}
 }
 .bridge-band{display:block;width:100%;height:auto;aspect-ratio:1675 / 430;object-fit:cover;
-  object-position:center 72%;margin:0 0 clamp(2px,0.6vw,8px);}
+  object-position:center 72%;margin:0 0 clamp(28px,4.5vw,56px);}
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]) .bridge-band{filter:brightness(1.95) saturate(1.05);}
 }
