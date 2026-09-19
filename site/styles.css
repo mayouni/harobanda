@@ -305,7 +305,7 @@ p code{color:var(--laterite);}
 .foot .foot-in:has(.credits){flex-direction:row;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:clamp(28px,4vw,56px);}
 .foot-id{display:flex;flex-direction:column;align-items:flex-start;gap:14px;max-width:56ch;}
 .credits{display:flex;flex-direction:column;align-items:flex-start;gap:clamp(10px,1.4vw,14px);}
-.foot:has(.bridge-band){padding-bottom:clamp(52px,7vw,96px);}
+.foot:has(.bridge-band){padding-bottom:clamp(140px,16vw,280px);}
 .credit-logos{display:flex;flex-direction:row;align-items:center;gap:clamp(14px,2vw,28px);}
 .credit-logo{height:clamp(76px,8.5vw,100px);width:auto;flex:none;}
 .credits .credit-line{font-size:14px;color:var(--muted);text-align:left;line-height:1.5;}
