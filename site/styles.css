@@ -306,10 +306,8 @@ p code{color:var(--laterite);}
 .foot-id{display:flex;flex-direction:column;align-items:flex-start;gap:14px;max-width:56ch;}
 .credits{display:flex;flex-direction:row;align-items:flex-end;gap:clamp(26px,3.5vw,52px);}
 .credit{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;}
-.credit-label{font-size:14px;color:var(--muted);line-height:1.35;max-width:16ch;}
-.credit-logo{height:clamp(84px,10vw,112px);width:auto;flex:none;}
-:root[data-theme="dark"] .credit-logo.efn{filter:invert(1);}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .credit-logo.efn{filter:invert(1);}}
+.credit-label{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--muted);line-height:1.4;max-width:18ch;}
+.credit-logo{height:clamp(90px,10vw,118px);width:auto;flex:none;}
 @media(max-width:640px){
   .foot .foot-in:has(.credits){flex-direction:column;align-items:flex-start;}
   .credits{align-self:flex-start;}
