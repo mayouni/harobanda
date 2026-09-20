@@ -35,6 +35,26 @@ KERN_LINE = (198, 191, 176)
 HAIR      = (213, 205, 189)
 
 
+# ---- type scale -----------------------------------------------------------
+# Calibrated against the hand-authored diagrams 1-3, not guessed. The page
+# renders a diagram 952px wide, so image pixels shrink by 0.69 on the way to
+# the reader. Measured in those three: labels land at 19-22px on screen, and
+# their SUB-labels are the SAME size as their titles. Text inside a diagram
+# is never shrunk to say it matters less -- that is the site's rule, and it
+# does not stop at the edge of a picture.
+READ   = 32   # the one readable size, mono or sans -> ~21px on screen
+TITLE  = 40   # a primary label
+KICKER = 26   # an uppercase mono label, letterspaced
+
+
+def fit(font, s, max_w, where):
+    """A label wider than its box is a defect, not a rendering detail."""
+    w = font.getlength(s) / S
+    if w > max_w:
+        raise SystemExit("OVERFLOW in %s: %r needs %.0fpx, has %.0f" % (where, s, w, max_w))
+    return s
+
+
 def sans(sz, w="Regular"):
     return ImageFont.truetype(str(FONTS / ("IBMPlexSans-%s.woff" % w)), int(sz * S))
 
@@ -144,6 +164,23 @@ def chip(d, x, y, w, h, label, font, fill, ink=BG, ls=1.6):
     d.polygon(rr_path(x*S, y*S, (x+w)*S, (y+h)*S, (h/2)*S), fill=fill)
     cap = font.getbbox("H")[3] - font.getbbox("H")[1]
     centre_ls(d, x + w/2, y + h/2 + (cap/2)/S, label, font, ink, ls)
+
+
+def arrow_down(d, x, y0, y1, fill=HAIR, lw=2.4, head=9):
+    """A plain downward arrow. Logical units."""
+    rule(d, x, y0, x, y1, fill, lw)
+    w = int(lw*S)
+    d.line([((x-head)*S, (y1-head-1)*S), (x*S, y1*S)], fill=fill, width=w)
+    d.line([(x*S, y1*S), ((x+head)*S, (y1-head-1)*S)], fill=fill, width=w)
+
+
+def link_peer(d, x0, x1, y, fill=HAIR, lw=2.4, head=9):
+    """A link with the same weight at both ends: neither side is the parent."""
+    rule(d, x0, y, x1, y, fill, lw)
+    w = int(lw*S)
+    for x, s in ((x0, 1), (x1, -1)):
+        d.line([((x + s*head)*S, (y-head)*S), (x*S, y*S)], fill=fill, width=w)
+        d.line([(x*S, y*S), ((x + s*head)*S, (y+head)*S)], fill=fill, width=w)
 
 
 def chevron(d, x, y, size=9, fill=HAIR, lw=2.0):

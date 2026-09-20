@@ -29,15 +29,22 @@ carrying no diagram at all.
 | **neutrals** | `#e3dfd4`, `#deddd8`, `#d1c9bc` taupe, `#c2cece` pale blue-grey |
 | **refusal** | brick red, only for a crossed path or a NOT KEPT |
 | **shapes** | rounded rectangles with a slightly rough, hand-drawn stroke |
-| **type** | sans-serif for primary labels; **monospace** for secondary annotations, band captions and the small strip lines |
+| **type** | IBM Plex Sans and Mono, vendored in `diagrams/fonts/`. One readable size — `READ = 32` — for **everything** a reader reads, mono or sans. `TITLE = 40` for a primary label, `KICKER = 26` letterspaced for an uppercase tag. A code block may sit below `READ`; nothing else may |
 | **connectors** | thin grey elbow lines, no heavy arrowheads |
 | **icons** | small, single-weight line icons, right-aligned inside a band |
 
 Two standing constraints, both from the site's own doctrine:
 
-- **No small text to signal lesser importance.** Inside a diagram, a
-  secondary label is distinguished by being monospace and grey, never by
-  being unreadably small.
+- **No small text to signal lesser importance, and the rule does not stop at
+  the edge of a picture.** A secondary label is told apart by font, weight and
+  colour — monospace and grey against sans and dark — never by being set
+  smaller. This was measured, not assumed: the page renders a diagram 952px
+  wide, so image pixels shrink by 0.69 before anyone reads them, and in
+  diagrams 1–3 both titles and sub-labels land at 19–22px on screen. The
+  first cut of diagrams 4–7 ran at roughly half that and shrank its
+  sub-labels below its titles; all four were refit. `house.fit()` now refuses
+  to render a label wider than its box, so the pressure of a bigger type size
+  falls on the wording, where it belongs.
 - **Claim only what is true.** Where a diagram shows something that is a
   direction rather than a fact today, it must say so in the image, the way
   `harb learn 18` prints the honest number.
@@ -53,7 +60,7 @@ Two standing constraints, both from the site's own doctrine:
 | 5 | `harobanda-diagram-5.jpg` | machine | *survives the cut*, 48% | **live** |
 | 6 | `harobanda-diagram-6.jpg` | build | opens the page, 11% | **live** |
 | 7 | `harobanda-diagram-7.jpg` | why | *difference one*, 46% | **live** |
-| 8 | `harobanda-diagram-8.jpg` | enterprise | before the three cards, 35% | slot placed |
+| 8 | `harobanda-diagram-8.jpg` | enterprise | before the three cards, 35% | **live** |
 | 9 | `harobanda-diagram-9.jpg` | index | *what just happened*, 31% | slot placed |
 | 10 | `harobanda-diagram-10.jpg` | field | before the two cases, 40% | slot placed |
 

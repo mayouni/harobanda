@@ -12,10 +12,16 @@ sentence worded for one case and printed for four is a lie in three of them,
 so the card marks the three lines that NAME the target and the invariant
 moves to the bottom band, where it holds for every one of them.
 
+Refit to the calibrated type scale in house.py. The declaration keeps a
+smaller size than the labels around it: a code block is the one thing the
+site's type rule exempts, and 27 characters of real grammar will not fit a
+card at reading size without becoming fake grammar.
+
     python site/diagrams/diagram6.py
 """
-from house import (W, H, S, canvas, save, band, dashed, rule, rr_path,
+from house import (W, S, canvas, save, band, dashed, rule, rr_path, fit,
                    sans, mono, text, ls_text, centre_ls,
+                   READ, TITLE, KICKER,
                    INK, MUTED, OLD_FILL, OLD_LINE, OLD_TEXT,
                    NEW_FILL, NEW_LINE, NEW_TEXT, NEW_SUB, ORANGE,
                    KERN_FILL, KERN_LINE, HAIR)
@@ -23,17 +29,17 @@ from house import (W, H, S, canvas, save, band, dashed, rule, rr_path,
 img, d = canvas(6)
 
 ML = MR = 68
-CARD_X, CARD_W = ML, 402
-CARD_Y, CARD_H = 150, 320
-DEV_X,  DEV_W  = 640, W - MR - 640
-TRUNK          = 560
-TOP, BOT       = 140, 610
+CARD_X, CARD_W, CARD_Y, CARD_H = ML, 560.0, 132, 336.0
+DEV_X, DEV_W = 760, W - MR - 760
+TRUNK = 700
+TOP, DBH, DGAP = 132, 100.0, 16.0
 
-centre_ls(d, W/2, 58, "ONE FILE.  ONE COMMAND.  FOUR KINDS OF DEVICE.",
-          mono(19, "Medium"), INK, 3.2)
+f_read, f_readm = mono(READ), mono(READ, "Medium")
+f_title, f_kick, f_code = sans(TITLE, "SemiBold"), mono(KICKER, "Medium"), mono(28)
 
-ls_text(d, CARD_X*S, 120*S, "ONE DECLARATION", mono(16, "Medium"), NEW_LINE, 2.4)
-ls_text(d, DEV_X*S,  120*S, "FOUR TARGETS",    mono(16, "Medium"), MUTED,    2.4)
+centre_ls(d, W/2, 48, "ONE FILE.  ONE COMMAND.  FOUR KINDS OF DEVICE.", f_kick, INK, 3.2)
+ls_text(d, CARD_X*S, 104*S, "ONE DECLARATION", f_kick, NEW_LINE, 2.4)
+ls_text(d, DEV_X*S,  104*S, "FOUR TARGETS",    f_kick, MUTED,    2.4)
 
 # ---- the file: real grammar, taken from machines/makeen_box.machine ----
 band(d, CARD_X, CARD_Y, CARD_W, CARD_H, 13, NEW_FILL, NEW_LINE, lw=2.6, amp=1.0)
@@ -44,52 +50,46 @@ LINES = ["DEFINE MACHINE counter AS (",
          "  KERNEL  linux,",
          "  LIBC    musl,",
          ")"]
-f_code = mono(17)
-cy = CARD_Y + CARD_H/2
 for i, ln in enumerate(LINES):
-    text(d, CARD_X + 30, cy - 102 + i*34, ln, f_code, NEW_TEXT)
+    text(d, CARD_X + 36, CARD_Y + 52 + i*40,
+         fit(f_code, ln, CARD_W - 72, "code"), f_code, NEW_TEXT)
 
 # the one orange accent, on the three lines that name the target
-d.polygon(rr_path((CARD_X+14)*S, (cy-85)*S, (CARD_X+22)*S, (cy+17)*S, 4*S), fill=ORANGE)
-text(d, CARD_X + 30, CARD_Y + CARD_H + 28,
-     "PROFILE · ARCH · BOARD name the target", mono(16), MUTED)
+d.polygon(rr_path((CARD_X+18)*S, (CARD_Y+72)*S, (CARD_X+27)*S, (CARD_Y+192)*S, 4*S),
+          fill=ORANGE)
+text(d, CARD_X, CARD_Y + CARD_H + 40,
+     fit(f_read, "these name the target", CARD_W, "card label"), f_read, MUTED)
 
 # ---- the fan ----
-DEV = [("a normal PC",       "x86_64  ·  hosted shape",            False),
-       ("a Raspberry Pi",    "aarch64  ·  two slots, a watchdog",  False),
-       ("a tablet or phone", "touch shape  ·  design",             True),
-       ("a sensor or MCU",   "edge shape  ·  no kernel at all",    False)]
-bh = 100.0
-gap = ((BOT - TOP) - 4*bh) / 3.0
-centres = [TOP + i*(bh + gap) + bh/2 for i in range(4)]
+DEV = [("a normal PC",       "x86_64 · hosted shape", False),
+       ("a Raspberry Pi",    "aarch64 · two slots",   False),
+       ("a tablet or phone", "touch shape · design",  True),
+       ("a sensor or MCU",   "edge shape · no kernel", False)]
+centres = [TOP + i*(DBH + DGAP) + DBH/2 for i in range(4)]
 
-# the fan carries the whole claim, so it is drawn to be seen, not guessed at
-FAN = (176, 169, 153)
-rule(d, CARD_X + CARD_W, cy, TRUNK, cy, FAN, 2.0)
+FAN = (176, 169, 153)                # the fan carries the claim; it is drawn to be seen
+rule(d, CARD_X + CARD_W, CARD_Y + CARD_H/2, TRUNK, CARD_Y + CARD_H/2, FAN, 2.0)
 rule(d, TRUNK, centres[0], TRUNK, centres[-1], FAN, 2.0)
 for c in centres:
     rule(d, TRUNK, c, DEV_X, c, FAN, 2.0)
 
-f_dev, f_sub = sans(26, "SemiBold"), mono(16)
 for (title, sub, design), c in zip(DEV, centres):
-    y = c - bh/2
-    if design:                    # not a fact today, so it is drawn as one that is not
-        pts = rr_path(DEV_X*S, y*S, (DEV_X+DEV_W)*S, (y+bh)*S, 13*S)
+    y = c - DBH/2
+    if design:                       # not a fact today, so it is drawn as one that is not
+        pts = rr_path(DEV_X*S, y*S, (DEV_X+DEV_W)*S, (y+DBH)*S, 13*S)
         d.polygon(pts, fill=OLD_FILL)
         dashed(d, pts, OLD_LINE, int(2.0*S))
         tc, sc = OLD_TEXT, MUTED
     else:
-        band(d, DEV_X, y, DEV_W, bh, 13, NEW_FILL, NEW_LINE, lw=2.4, amp=1.0)
+        band(d, DEV_X, y, DEV_W, DBH, 13, NEW_FILL, NEW_LINE, lw=2.4, amp=1.0)
         tc, sc = NEW_TEXT, NEW_SUB
-    text(d, DEV_X + 34, c - 13, title, f_dev, tc)
-    text(d, DEV_X + 34, c + 20, sub,   f_sub, sc)
+    text(d, DEV_X + 34, y + 38, fit(f_title, title, DEV_W - 68, "dev"), f_title, tc)
+    text(d, DEV_X + 34, y + 74, fit(f_read, sub, DEV_W - 68, "dev sub"), f_read, sc)
 
 # ---- what does not change, for every one of them ----
-KY, KH = 638, 74
+KY, KH = 610, 96
 band(d, ML, KY, W - ML - MR, KH, 13, KERN_FILL, KERN_LINE, lw=2.0, amp=0.8)
-text(d, ML + 34, KY + KH/2, "harb check  ·  harb plan  ·  harb boot",
-     mono(20, "Medium"), INK)
-text(d, W - MR - 34, KY + KH/2, "the same command, every target",
-     mono(17), MUTED, anchor="rm")
+text(d, ML + 36, KY + KH/2, "harb check · harb plan · harb boot", f_readm, INK)
+text(d, W - MR - 36, KY + KH/2, "every target", f_read, MUTED, anchor="rm")
 
 print("wrote", save(img, "harobanda-diagram-6.jpg"))
