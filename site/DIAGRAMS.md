@@ -109,8 +109,13 @@ is the fallback and needs no change.
 | 9 | `harobanda-diagram-9.png` | index | *what just happened*, 31% | **live** (1376 × 500) |
 | 10 | `harobanda-diagram-10.png` | field | before the two cases, 40% | **live** |
 
-**The register is complete: ten diagrams, seven pages, no page without one,
-and every page's first diagram inside its first third.** What remains is to
+**The register is complete: ten diagrams, and every page's first diagram is
+inside its first third.** The site has since grown to nine pages. Two of them
+carry no diagram of their own and both are deliberate: `different.html` took
+diagram 7 with it when the argument was split, and `running.html` would want
+the loop -- which is diagram 9, already opening `index`. Drawing it twice
+would make the second one a restatement, which is what section 9's own
+must-not warns against. What remains is to
 keep it that way — a new section that earns a diagram gets a brief here
 first, and a page that grows long enough to push its opener past a third
 needs re-measuring, not re-arguing.

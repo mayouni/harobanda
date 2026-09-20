@@ -68,7 +68,9 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .menu-btn{display:none;background:none;border:1px solid var(--line-strong);border-radius:7px;
   padding:7px 10px;cursor:pointer;color:var(--ink);margin-left:auto;}
 .menu-btn svg{display:block;width:18px;height:14px;stroke:currentColor;stroke-width:1.9;fill:none;}
-@media(max-width:900px){
+/* 1000, not 900: the nav carries eight items now and collides with the
+   wordmark below about 990. Measured, not guessed. */
+@media(max-width:1000px){
   .menu-btn{display:inline-flex;}
   .nav{position:absolute;top:calc(100% + 1px);left:0;right:0;margin-left:0;flex-direction:column;
     align-items:stretch;gap:0;background:var(--surface);border-bottom:1px solid var(--line);

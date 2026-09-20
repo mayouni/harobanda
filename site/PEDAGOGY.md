@@ -93,9 +93,23 @@ checked against what it claimed. This is the record of what changed after it.
   self-contained Linux executable, and there is no ecosystem you have to join.
   The family is headed *none of it obligatory*.
 
-  One cost, recorded: `machine.html` went from 6.7 screens to 7.8 and is now
-  the longest page. That is finding 4 one page over. Not urgent at 7.8, but
-  the next thing that lands there should be weighed against a split.
+  One cost, recorded: `machine.html` went from 6.7 screens to 7.8 and became
+  the longest page. That was finding 4 one page over, and it was split rather
+  than left — see below.
+
+- **Finding 4, again, one page over. Done.** `machine.html` reached 7.8
+  screens after taking the vocabulary panel, so it was split at the seam it
+  already had: everything up to the four promises answers *what it is and
+  what it changes*, and the last section answers *what it is like to run
+  one*. That became `running.html`. machine went 7.8 to 5.7; the new page is
+  2.8. The nav now carries eight items and the hamburger breakpoint moved
+  from 900 to 1000, measured rather than guessed: eight items and the
+  wordmark collide below about 990.
+
+  `running.html` is the only page with no diagram, deliberately. The loop it
+  would want is diagram 9, which already opens `index`, and the page's own
+  visuals are three transcripts. Drawing the loop twice would make the second
+  one a restatement.
 
 - **Still open: 1 and 5 only,** and they are the same missing artifact — where
   `harb` is published from. Until there is somewhere to point at, the site

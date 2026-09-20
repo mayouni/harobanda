@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Running it — Harobanda</title>
+<meta name="description" content="Five verbs, one command, and a guided tour of eighteen lessons that hands you the way to break every promise it makes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html" aria-label="Harobanda — home">
+      <img class="brandmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="different.html">What is different</a>
+      <a href="machine.html">The machine</a>
+      <a href="running.html" class="active">Running it</a>
+      <a href="build.html">Build</a>
+      <a href="ai.html">AI &amp; agents</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="field.html">In the field</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">Running it</p>
+    <h1>Learnable in an evening. Judged at every step.</h1>
+    <p class="lead">Five verbs, one command, and a guided tour that hands you the way to break every promise it makes. No board is needed for any of it — it runs on a plain laptop.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="grid2" style="align-items:start;gap:clamp(22px,3vw,38px)">
+      <div class="stack-gap">
+        <p class="lead prose">The whole loop is the same five verbs the machine lives by, driven by one command: <code style="font-family:var(--mono);font-size:.85em;color:var(--laterite)">harb</code>. There is no configuration to discover and no hidden state to unravel. Every command tells you what it did and why.</p>
+        <div class="steps">
+          <div class="step"><b>Declare it</b><p>Write a <code>.machine</code> file. Every line must say why it is there.</p></div>
+          <div class="step"><b>Judge it — <code>harb check</code></b><p>The court accepts it, or refuses it in plain words: <code>needs the network, which nothing here grants.</code></p></div>
+          <div class="step"><b>Plan it — <code>harb plan</code></b><p>See the order things will happen in, before any of it does. A mistake is caught here, not at 2 a.m.</p></div>
+          <div class="step"><b>Boot it — <code>harb boot</code></b><p>The whole machine boots in an emulator and judges its own transcript against what the file said.</p></div>
+          <div class="step"><b>Break it</b><p>Change one line and watch the machine catch the difference. A guarantee you have only seen succeed is a claim.</p></div>
+        </div>
+        <p class="muted prose">No board is needed to learn any of this — it runs on a plain laptop.</p>
+      </div>
+      <div class="stack-gap">
+        <div class="term" aria-label="The guided tour">
+          <div class="term-bar"><i></i><i></i><i></i><b>harb learn — the guided tour</b></div>
+<pre><span class="d">$</span> <span class="b">harb</span> learn
+
+  a guided tour of a declared machine,
+  in <span class="c">18 lessons</span>.
+
+  I.   THE DECLARATION       1 · 2 · 3
+  II.  THE BOOT              4 · 5 · 6
+  III. WHAT A WORLD MAY DO   7 · 8 · 9 · 10 · 11
+  IV.  WHO A DEVICE IS       12 · 13 · 14
+  V.   THE NETWORK           15 · 16
+  VI.  THE FLAGSHIP          17 · 18
+
+  <span class="d">harb learn &lt;n&gt;        one lesson, in full</span>
+  <span class="d">harb learn &lt;n&gt; --run  and run its command</span>
+  <span class="d">harb learn --words    a world, a pin, a court</span></pre>
+        </div>
+        <div class="term" aria-label="Lesson 7: six worlds run the same command, and only their declarations differ">
+          <div class="term-bar"><i></i><i></i><i></i><b>harb learn 7 — only the declaration differs</b></div>
+<pre><span class="d">six worlds · one command · only NEEDS differ</span>
+
+world    declared                      eth0     /data    fork
+sealed   process, filesystem           <span class="r">absent</span>   <span class="k">mounted</span>  <span class="k">permitted</span>
+still    network, filesystem           <span class="k">present</span>  <span class="k">mounted</span>  <span class="r">REFUSED</span>
+open     process, network, filesystem  <span class="k">present</span>  <span class="k">mounted</span>  <span class="k">permitted</span>
+blind    process                       <span class="r">absent</span>   <span class="r">empty</span>    <span class="k">permitted</span>
+ledger   all three, SEES [data]        <span class="k">present</span>  <span class="k">mounted</span>  <span class="k">permitted</span>
+caisse   all three, SEES [logs]        <span class="k">present</span>  <span class="r">empty</span>    <span class="k">permitted</span>
+<span class="d">──</span>
+<span class="d">none of this grid is declared — it is worked</span>
+<span class="d">out FROM what each world asked for. what a</span>
+<span class="d">world did not ask for, the kernel does not give.</span></pre>
+        </div>
+        <div class="term" aria-label="Lesson 18: the four promises judged twice — against the derived expectation, and against what the emulator actually printed">
+          <div class="term-bar"><i></i><i></i><i></i><b>harb learn 18 — the four promises, judged twice</b></div>
+<pre><span class="d">judged by name, twice — two texts keep them,</span>
+<span class="d">neither keeps all, so the box is not flattered</span>
+
+against the board's EXPECTATION:
+  always reachable   <span class="k">KEPT</span>
+  a stable name      <span class="k">KEPT</span>
+  a durable log      <span class="k">KEPT</span>
+  survives the cut   <span class="r">NOT KEPT</span>
+  <span class="d">4 promised, 3 kept</span>
+
+against what the emulator PRINTED:
+  always reachable   <span class="r">NOT KEPT</span>  <span class="d">no wire in QEMU</span>
+  a stable name      <span class="r">NOT KEPT</span>
+  a durable log      <span class="k">KEPT</span>
+  survives the cut   <span class="r">NOT KEPT</span>  <span class="d">watchdog off</span>
+  <span class="d">4 promised, 1 kept — the honest number,</span>
+  <span class="d">until a card goes into a real Pi 4</span></pre>
+        </div>
+      </div>
+    </div>
+    <p class="pull prose" style="margin-top:clamp(30px,4vw,44px)">A guarantee you have only ever seen succeed is a claim; <b>one you have watched refuse you is evidence.</b> So the tour hands you the way to break every promise it makes.</p>
+    <a class="nextcta" href="build.html"><span class="t"><span class="lbl">Next</span><h3>Build on it</h3></span><span class="arrow">→</span></a>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    <p>Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
