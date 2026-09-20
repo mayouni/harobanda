@@ -62,7 +62,13 @@ Two standing constraints, both from the site's own doctrine:
 | 7 | `harobanda-diagram-7.jpg` | why | *difference one*, 46% | **live** |
 | 8 | `harobanda-diagram-8.jpg` | enterprise | before the three cards, 35% | **live** |
 | 9 | `harobanda-diagram-9.jpg` | index | *what just happened*, 31% | **live** (1376 × 500) |
-| 10 | `harobanda-diagram-10.jpg` | field | before the two cases, 40% | slot placed |
+| 10 | `harobanda-diagram-10.jpg` | field | before the two cases, 40% | **live** |
+
+**The register is complete: ten diagrams, seven pages, no page without one,
+and every page's first diagram inside its first third.** What remains is to
+keep it that way — a new section that earns a diagram gets a brief here
+first, and a page that grows long enough to push its opener past a third
+needs re-measuring, not re-arguing.
 
 Depths are measured in the browser at 1380 × 900, not estimated. They shift
 downwards a few points as each image lands and the page grows — an image is
