@@ -21,6 +21,7 @@
     <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
     <nav class="nav" id="nav">
       <a href="why.html" class="active">Why</a>
+      <a href="different.html">What is different</a>
       <a href="machine.html">The machine</a>
       <a href="build.html">Build</a>
       <a href="ai.html">AI &amp; agents</a>
@@ -34,8 +35,19 @@
   <section class="wrap pagehead">
     <p class="eyebrow lat">Why Harobanda</p>
     <h1>Every OS you can buy is shaped by its vendor. This one is shaped by your solution.</h1>
-    <p class="lead">Three differences separate a declared machine from everything else you could run — in what it is <em>for</em>, what it <em>sells</em> you, and what no one else can <em>take away</em>.</p>
+    <p class="lead">Where this came from, what it is not, and what is wrong with all three of the systems you could run instead.</p>
   </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow lat">Where this came from</p>
+      <h2>Where an imported system is a liability, not a help.</h2>
+    </div>
+    <div class="prose stack-gap">
+      <p class="lead">This work did not begin at the operating system. It began with real solutions — for shops, clinics, banks, public services — being built for the African context: intermittent power, connectivity that comes and goes, budgets that rule out costly licences and disposable hardware, and data whose sovereignty is not up for negotiation.</p>
+      <p>In that context an imported ecosystem is a liability, not a help: a cloud you cannot reach when the link drops, support that ends on a foreign calendar, hardware you cannot replace from the shop down the road, and terms you cannot audit — in a language of dependencies you did not choose.</p>
+      <p>What these solutions actually needed was the opposite: a box that survives the cut, a name that never moves, records that never leave the room. And those guarantees turned out to live one floor below the application — in the machine itself. <b>So that is where the work went.</b></p>
+    </div>
 
   <section class="wrap block">
     <div class="figure" style="margin-bottom:clamp(34px,4.5vw,52px)">
@@ -124,83 +136,9 @@
     </div>
   </section>
 
-  <section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">Difference one · the solution mindset</p>
-      <h2>The solution comes first. The machine is derived from it.</h2>
-    </div>
-    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
-      <p class="lead">You do not bend your solution to fit the OS. You write down what your solution must guarantee — a fixed address the devices can find, a log that survives a power cut, a data store that never leaves the building, a clean restart after the mains drop — and the machine is <em>derived</em> from that sheet. It does exactly one job, and it can prove it does.</p>
-      <p>A machine is one text file. Each line is a plain fact: what it is, what storage it mounts, which programs it keeps running, and what it is allowed to touch. There is no configuration to discover later and no hidden state to reverse-engineer — <b>the machine is its file.</b></p>
-    </div>
-    <div class="figure" style="margin-bottom:clamp(28px,4vw,44px)">
-      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-7.png" alt="Two panels that differ in what sits at the top. On the left a general-purpose operating system built for everyone, in which your job is one small part; you adapt and subtract, and the panel below shows two things crossed out while the rest is still there. On the right a sheet of what the job must guarantee — a fixed address, a name that never moves, a record that survives, a clean restart — and below it, derived from that sheet, a machine containing exactly those four and nothing more" width="1376" height="768">
-      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-7-narrow.png" alt="Two panels that differ in what sits at the top. On the left a general-purpose operating system built for everyone, in which your job is one small part; you adapt and subtract, and the panel below shows two things crossed out while the rest is still there. On the right a sheet of what the job must guarantee — a fixed address, a name that never moves, a record that survives, a clean restart — and below it, derived from that sheet, a machine containing exactly those four and nothing more" width="640" height="1768">
-    </div>
-    <div class="panel ex prose" style="margin-bottom:clamp(26px,3.5vw,38px)">
-      <p class="eyebrow lat" style="margin-bottom:10px">An example</p>
-      <p style="font-size:18px;line-height:1.6;">A temperature sensor in a cold room, running on a general-purpose Linux, still needs kernel updates, a package manager, remote-login hardening and service configuration — <em>none of which have anything to do with measuring temperature.</em> Each is a door for a problem and a job for someone who is not there. A declared machine has none of it, because none of it was declared. The sensor's job is the whole of the machine.</p>
-    </div>
-    <div class="versus">
-      <div class="them">
-        <h4>A general-purpose OS</h4>
-        <ul>
-          <li>Built for everyone, adapted by you to one job</li>
-          <li>Ships with far more than your solution needs</li>
-          <li>Configured by hand; the config drifts over time</li>
-          <li>You hope it behaves; you cannot prove it will</li>
-        </ul>
-      </div>
-      <div class="us">
-        <h4>A declared machine</h4>
-        <ul>
-          <li>Built for one job, derived from what that job needs</li>
-          <li>Contains only what was declared, nothing more</li>
-          <li>Is its file; a change is a new file, judged again</li>
-          <li>Proves its boot against its own declaration, every time</li>
-        </ul>
-      </div>
-    </div>
+    <a class="nextcta" href="different.html"><span class="t"><span class="lbl">Next</span><h3>What is different</h3></span><span class="arrow">→</span></a>
   </section>
-
-  <section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">Difference two · no business model, no jungle</p>
-      <h2>Nothing on the machine is selling you anything — or rotting.</h2>
-    </div>
-    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
-      <p class="lead">There is no account, no store, no telemetry, no per-seat licence, and no vendor living inside the system. And there is no package manager — so no dependency hell, and no plugin jungle to keep alive. What the machine runs is a closed list shipped in its image; nothing is installed at run time, nothing is discovered, and a change is a whole new image.</p>
-      <p>This also means the machine <em>cannot rot.</em> On an ordinary system — free or paid — packages update, break each other, and the machine you deployed is not the machine running a year later. A declared machine is the same machine on its thousandth boot as on its first, because nothing on it changes after the image is built.</p>
-    </div>
-    <div class="panel ex prose" style="margin-bottom:clamp(26px,3.5vw,38px)">
-      <p class="eyebrow lat" style="margin-bottom:10px">An example</p>
-      <p style="font-size:18px;line-height:1.6;">A shop's tablet running a payment app, a messenger, a video app and a browser is not a tool for the job — it is a distraction from it, and an open door for whatever the vendor wants installed next. Half the staff's day goes to keeping it working. A declared machine runs one thing: the job. There is no drawer to fill, no notification to dismiss, and nothing on it that anyone profits from.</p>
-    </div>
-    <p class="eyebrow" style="margin-bottom:14px;">What it refuses — and why that is the point</p>
-    <div class="refuses" style="margin-bottom:clamp(24px,3vw,32px)">
-      <div><b>shell</b><span>No hidden command line to slip in through. There is nothing on the machine to type into.</span></div>
-      <div><b>package manager</b><span>Nothing installed after the image is built — so no dependency hell, ever.</span></div>
-      <div><b>store &amp; plugins</b><span>No catalogue, no marketplace, no plugin jungle to grow and rot. One job, shipped whole.</span></div>
-      <div><b>drift</b><span>No settings that quietly change over months. The machine is its file; a change is a new file.</span></div>
-    </div>
-    <p class="pull prose">The jungle is not held back by a policy someone can relax later. <b>It is refused by the grammar itself</b> — there is no sentence in the language that even asks for a shell, a store or an installer.</p>
-  </section>
-
-  <section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">Difference three · sovereignty by design</p>
-      <h2>Sovereignty is what no one else can withdraw.</h2>
-    </div>
-    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
-      <p class="lead">You do not truly own a system you cannot rebuild, whose updates you cannot decline, and whose support ends on a date someone else chose. These are not hypotheticals. A major phone maker once removed the ability to unlock the bootloader on every device it had sold, worldwide, in a single update, with no warning. When the vendor lives inside the system, the vendor decides — and can decide against you.</p>
-      <p>The phone is the extreme, and worth naming plainly: the vendor fuses the hardware and the software so that neither can leave the other. Sovereignty is the opposite. You choose ordinary, replaceable hardware, and you own the system that runs on it; the two are joined by <em>your declaration</em>, not by a vendor's weld. Sovereignty here has exactly one meaning — <b>nothing anyone else can withdraw</b> — and it has never meant “every line is ours.” The kernel underneath is kept as pinned source, rebuilt by your own toolchain: borrowed, but impossible to take back. And the whole machine is one text file plus a short list of exact fingerprints, which you can hand to any provider you choose. Reversibility stops being a clause in a contract and becomes the thing itself.</p>
-    </div>
-    <div class="panel ex prose">
-      <p class="eyebrow lat" style="margin-bottom:10px">An example</p>
-      <p style="font-size:18px;line-height:1.6;">An organisation whose most sensitive records must never leave its walls cannot <em>prove</em> that on a system it does not control. A declared machine can: one line says the box knows no route to the outside world, and the court refuses to build the machine if anything on it contradicts that line. “The data stays here” stops being a promise on paper and becomes a fact the machine itself enforces. Compare the usual offer — a management console the vendor lets you build, while the agent, the service and the ownership stay theirs: <em>you own the screen, not the power.</em></p>
-    </div>
-    <a class="nextcta" href="machine.html"><span class="t"><span class="lbl">Next</span><h3>The machine — how it works</h3></span><span class="arrow">→</span></a>
-  </section>
+</main>
 </main>
 
 <footer class="foot">

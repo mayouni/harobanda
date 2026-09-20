@@ -49,6 +49,37 @@ the idea, then evidence it is real, and only then the principles.
 And the journey has no exit. A reader who is fully convinced is handed back
 to the first page.
 
+## What has been done since
+
+The measurements above are the review's baseline and are deliberately left as
+they were taken. A review that quietly updates its own evidence cannot be
+checked against what it claimed. This is the record of what changed after it.
+
+- **Finding 2 — placement. Done.** `why.html` gained *Where this sits*, five
+  rows naming a container, a declarative distribution, an immutable server OS,
+  an embedded build system and a configuration tool, each with the one
+  distinction that matters. Talos is named and called the nearest neighbour,
+  because a section that places every distant cousin and omits the sibling is
+  the omission the reader is certain to notice.
+- **Findings 3 and 4 — the origin, the proof, the split. Done together,**
+  because closing 3 on its own would have made 4 worse: moving the origin onto
+  the longest page would have lengthened it further. The argument was split at
+  the seam it already had. `why.html` keeps the **problem** — where this came
+  from, what it is not, what is wrong with the three kinds of OS. A new
+  `different.html` carries the **answer** — the three differences. `field.html`
+  keeps the cases and the honest limits and becomes what its name always
+  claimed: the **proof**. A short *what is real today*, including the sentence
+  that no customer yet runs a production workload, is mirrored on `index`.
+
+  `why.html` went from 10.4 screens to 5.4; nothing now exceeds 6.7 and
+  nothing is under 2.7. Every page still opens with a diagram inside its first
+  third, so `DIAGRAMS.md`'s rule survived the restructure. The nav gained a
+  seventh item and was measured: it fits from 901px, hamburger below.
+
+- **Still open.** 1 and 5 are blocked on the same missing artifact — where
+  `harb` is published from. 6 (the vocabulary panel) and 7 (the hardware gate,
+  the Haro family) need nothing and can go at any time.
+
 ## The nine questions, in the order he asks them
 
 | # | His question | Where it is answered | Verdict |
@@ -172,11 +203,11 @@ static Linux binary — before naming any of it.
 ## The order of work
 
 1. **Brief A — a `try.html`, and link the repository.** Unblocks findings 1
-   and 5 at once.
-2. **Brief B — place the site** against what the reader already runs.
-3. Move the origin and the honest limits forward (finding 3).
+   and 5 at once. **Blocked** on where `harb` is published from.
+2. ~~Brief B — place the site against what the reader already runs.~~ **Done.**
+3. ~~Move the origin and the honest limits forward (finding 3).~~ **Done.**
 4. Give `index` a plain definition and a stake before the code sample.
-5. Split or reorder `why.html` (finding 4).
+5. ~~Split or reorder `why.html` (finding 4).~~ **Done** — it became `different.html`.
 6. Add the vocabulary panel (finding 6).
 7. Widen the hardware gate; make the Haro family optional (finding 7).
 
