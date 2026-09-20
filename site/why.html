@@ -43,6 +43,39 @@
       <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-1-narrow.png" alt="Harobanda as a bridge: your solution's programs span the promises the machine must keep and the ordinary hardware that keeps them" width="640" height="1140">
     </div>
     <div class="sec-head prose">
+      <p class="eyebrow">Where this sits</p>
+      <h2>It resembles several things you already run.</h2>
+    </div>
+    <div class="prose" style="margin-bottom:clamp(24px,3vw,34px)">
+      <p class="lead">Nothing below is wrong, and you probably use some of it every day. The point of this section is narrower than that: to stop you reading the next five pages as a weaker version of something you have already made up your mind about.</p>
+    </div>
+    <div class="placing">
+      <div class="placing-row">
+        <div><span class="nm">a container</span><span class="eg">Docker, Podman</span></div>
+        <div class="df">Packages a program so it runs the same on somebody else's operating system. A declared machine <b>is</b> the operating system — there is no host underneath it to share, to escape to, or to be patched by someone who is not you.</div>
+      </div>
+      <div class="placing-row">
+        <div><span class="nm">a declarative distribution</span><span class="eg">NixOS, Guix</span></div>
+        <div class="df">Declares what is <em>installed</em>, and rebuilds the system from that description. Here the declaration is not a list of what to install — it is <b>what the machine is</b>. What the file does not name is not on the device, and there is no package manager to reach for at run time.</div>
+      </div>
+      <div class="placing-row">
+        <div><span class="nm">an immutable server OS</span><span class="eg">Talos, CoreOS, Flatcar</span></div>
+        <div class="df">The nearest neighbour, and the same instinct: a read-only system, no shell, updated as a whole image. The difference is what happens after the image is written — the machine <b>keeps the declaration it was derived from and judges its own boot against it</b>, and on a device it rolls back by a hardware timer rather than by an orchestrator that has to still be reachable.</div>
+      </div>
+      <div class="placing-row">
+        <div><span class="nm">an embedded build system</span><span class="eg">Yocto, Buildroot</span></div>
+        <div class="df">Turns a recipe into a firmware image for a device. This produces an image too — and then <b>a court that judges the boot</b> against the very file the image came from. The recipe does not stop mattering the moment the card is flashed.</div>
+      </div>
+      <div class="placing-row">
+        <div><span class="nm">a configuration tool</span><span class="eg">Ansible, Terraform, Puppet</span></div>
+        <div class="df">Converges a running machine towards a state you described, and keeps converging it. A declared machine has <b>no state to converge</b>: a change is a new image, tried once, and returned to the version that worked if the box does not recognise its own boot.</div>
+      </div>
+    </div>
+    <p class="pull prose" style="margin-top:clamp(26px,3vw,36px)">Each of those says what to put <em>on</em> a machine. A declaration says <b>what the machine is</b> — and it is still there at boot, to be judged against.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
       <p class="eyebrow lat">The gap</p>
       <h2>Three kinds of operating system — and you control none of them.</h2>
     </div>

@@ -281,6 +281,20 @@ p code{color:var(--laterite);}
 .hilite p{font-size:18px;line-height:1.5;color:var(--ink);}
 .hilite p b{color:var(--river);font-weight:600;}
 .hilite p code{color:var(--river);}
+/* Placing the site against what the reader already runs. Deliberately NOT
+   .versus or .ground-row: those style one side as the problem and the other
+   as the fix, and nothing in this section is a problem. Name and examples
+   are told apart by font and colour at the same size, as everywhere else. */
+.placing{display:flex;flex-direction:column;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.placing-row{background:var(--surface);display:grid;grid-template-columns:.92fr 1.4fr;
+  gap:clamp(14px,2.2vw,28px);padding:17px 20px;align-items:start;}
+@media(max-width:880px){.placing-row{grid-template-columns:1fr;gap:7px;}}
+.placing .nm{font-size:18px;color:var(--ink);font-weight:600;line-height:1.4;}
+.placing .eg{display:block;font-family:var(--mono);font-size:18px;color:var(--muted);
+  line-height:1.5;margin-top:2px;}
+.placing .df{font-size:18px;color:var(--muted);line-height:1.55;}
+.placing .df b{color:var(--river);font-weight:600;}
 .fam{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
 .fam-row{background:var(--surface);display:grid;grid-template-columns:132px 1fr auto;gap:18px;padding:15px 20px;align-items:baseline;}
 @media(max-width:720px){.fam-row{grid-template-columns:1fr;gap:6px;}}
