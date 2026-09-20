@@ -236,10 +236,23 @@ img{max-width:100%;}
    never re-evaluates: a reader who rotates a tablet would keep the wrong one.
    loading="lazy" means the hidden variant is never fetched, so nobody pays
    for the one they do not see. */
+/* Both variants are capped at the width they were drawn for, so a diagram's
+   text is the same size whichever one the reader gets: labels 17px and
+   titles 21px, against 18px of prose. Uncapped, a picture's text grows with
+   its column while the prose beside it does not -- the wide drawing reached
+   22px at desktop and the narrow one 26px in a half-width window. A diagram
+   is a figure at its natural size, not a thing that stretches. */
+.wide-only{max-width:730px;margin-inline:auto;}
 .narrow-only{display:none;}
 @media(max-width:700px){
   .wide-only{display:none;}
-  .narrow-only{display:block;}
+  /* Capped at the width it was DRAWN for, and centred when the column is
+     wider. A picture's text scales with its column while the prose around
+     it does not, so an uncapped 640px drawing reaches 26px beside 18px body
+     text and shouts. 340px is a phone's own column, which is what the narrow
+     variant was laid out against: its labels land at 17px and its titles at
+     21px, just under and just over the 18px they sit next to. */
+  .narrow-only{display:block;max-width:340px;margin-inline:auto;}
 }
 
 .steps{display:flex;flex-direction:column;gap:2px;counter-reset:s;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);}
