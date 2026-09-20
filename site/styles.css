@@ -60,7 +60,7 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 }
 .nav{margin-left:auto;display:flex;gap:clamp(15px,2vw,30px);align-items:center;}
 .nav a{font-size:16.5px;color:var(--muted);text-decoration:none;font-weight:500;
-  position:relative;}
+  position:relative;white-space:nowrap;}
 .nav a:hover{color:var(--river);}
 .nav a.active{color:var(--river);}
 .nav a.active::after{content:"";position:absolute;left:0;right:0;bottom:-7px;
@@ -68,9 +68,7 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .menu-btn{display:none;background:none;border:1px solid var(--line-strong);border-radius:7px;
   padding:7px 10px;cursor:pointer;color:var(--ink);margin-left:auto;}
 .menu-btn svg{display:block;width:18px;height:14px;stroke:currentColor;stroke-width:1.9;fill:none;}
-/* 1000, not 900: the nav carries eight items now and collides with the
-   wordmark below about 990. Measured, not guessed. */
-@media(max-width:1000px){
+@media(max-width:900px){
   .menu-btn{display:inline-flex;}
   .nav{position:absolute;top:calc(100% + 1px);left:0;right:0;margin-left:0;flex-direction:column;
     align-items:stretch;gap:0;background:var(--surface);border-bottom:1px solid var(--line);
@@ -137,7 +135,7 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .term-bar i{width:9px;height:9px;border-radius:50%;background:var(--panel-line);display:block;}
 .term-bar b{margin-left:8px;font-family:var(--mono);font-size:13px;color:var(--panel-faint);font-weight:400;letter-spacing:.04em;}
 .term pre{margin:0;padding:15px 16px 17px;font-family:var(--mono);font-size:14.5px;line-height:1.7;
-  color:var(--panel-ink);overflow-x:auto;white-space:pre;-webkit-overflow-scrolling:touch;}
+  color:var(--panel-ink);white-space:pre-wrap;overflow-x:hidden;overflow-wrap:break-word;}
 .term .c{color:var(--panel-river);}
 .term .k{color:var(--panel-kept);}
 .term .r{color:var(--panel-lat);}
@@ -224,6 +222,9 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 
 .diagram-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line-strong);}
 .figure{margin:0 0 clamp(28px,4vw,44px);}
+/* A figure that opens a section needs no space above it. One that FOLLOWS
+   something does -- without this the promises table sat on the diagram. */
+* + .figure{margin-top:clamp(30px,4.2vw,48px);}
 /* A diagram is drawn to be read at 952px. Squeezed into a phone's 335 it puts
    its 32px type at 8px on screen, which is no diagram at all -- so on a narrow
    screen it keeps a readable width and the reader scrolls it sideways. */
@@ -244,7 +245,7 @@ img{max-width:100%;}
    its column while the prose beside it does not -- the wide drawing reached
    22px at desktop and the narrow one 26px in a half-width window. A diagram
    is a figure at its natural size, not a thing that stretches. */
-.wide-only{max-width:730px;margin-inline:auto;}
+.wide-only{max-width:730px;}
 .narrow-only{display:none;}
 @media(max-width:700px){
   .wide-only{display:none;}
@@ -254,7 +255,7 @@ img{max-width:100%;}
      text and shouts. 340px is a phone's own column, which is what the narrow
      variant was laid out against: its labels land at 17px and its titles at
      21px, just under and just over the 18px they sit next to. */
-  .narrow-only{display:block;max-width:340px;margin-inline:auto;}
+  .narrow-only{display:block;max-width:340px;}
 }
 
 .steps{display:flex;flex-direction:column;gap:2px;counter-reset:s;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);}

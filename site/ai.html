@@ -21,9 +21,7 @@
     <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
     <nav class="nav" id="nav">
       <a href="why.html">Why</a>
-      <a href="different.html">What is different</a>
       <a href="machine.html">The machine</a>
-      <a href="running.html">Running it</a>
       <a href="build.html">Build</a>
       <a href="ai.html" class="active">AI &amp; agents</a>
       <a href="enterprise.html">Enterprise</a>
@@ -105,12 +103,13 @@ alerts needs network, which nothing grants <span class="r">→ refused</span>
 
 <span class="kw">DEFINE SERVICE</span> assistant <span class="kw">AS</span> (
   RUN [<span class="c">"/app/assistant"</span>],
-  NEEDS [filesystem, inference],  <span class="d">-- read docs, run model;</span>
-                                  <span class="d">   no network at all</span>
+  <span class="d">-- read docs and run the model; no network at all</span>
+  NEEDS [filesystem, inference],
   MEMORY 2048, CPU 200,           <span class="d">-- a ceiling the kernel holds</span>
   READY <span class="c">"/run/assistant.ready"</span>
-) <span class="kw">RATIONALE</span> <span class="d">"answers from the org's own knowledge;</span>
-<span class="d">             nothing leaves the box"</span></pre>
+) <span class="kw">RATIONALE</span>
+  <span class="d">"answers from the org's own knowledge;</span>
+  <span class="d"> nothing leaves the box"</span></pre>
       </div>
       <div class="figure">
         <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-3.jpg" alt="A knowledge assistant governed by Harobanda: the assistant, the on-device knowledge base and model run inside Harobanda's envelope, which has no route to the internet, holds a budget, and records every exchange" width="1376" height="768">
