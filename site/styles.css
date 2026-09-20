@@ -88,6 +88,20 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
   .nav a.active::after{left:2px;right:auto;width:30px;bottom:8px;}
 }
 
+/* The path (StzZui: the-path-shows-every-depth). A map of the branch, not a
+   record of the walk: it reads the same on every page of the branch and only
+   the highlight moves, so a reader who follows it can SEE that he moved. The
+   top depth is the menu's job, so the path shows only what sits under it.
+   Current position by COLOUR ALONE, and hover left unstyled -- the pointer
+   already becomes a hand, and painting hover in the current-position colour
+   claims "you are here" about a place the reader is not. */
+.path{border-bottom:1px solid var(--line);background:var(--surface);}
+.path-in{max-width:1080px;margin:0 auto;padding:11px var(--gutter);
+  display:flex;flex-wrap:wrap;gap:4px clamp(20px,3vw,34px);}
+.path a{font-size:18px;line-height:1.5;color:var(--muted);text-decoration:none;
+  white-space:nowrap;}
+.path a.here{color:var(--river);}
+
 /* ---------- pages ---------- */
 .pagehead{padding-top:clamp(40px,6vw,74px);padding-bottom:clamp(28px,4vw,46px);border-bottom:1px solid var(--line);}
 .pagehead .eyebrow{margin-bottom:14px;}
