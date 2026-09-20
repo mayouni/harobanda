@@ -52,7 +52,7 @@ Two standing constraints, both from the site's own doctrine:
 | 4 | `harobanda-diagram-4.jpg` | machine | *not a new kernel*, 15% | **live** |
 | 5 | `harobanda-diagram-5.jpg` | machine | *survives the cut*, 48% | **live** |
 | 6 | `harobanda-diagram-6.jpg` | build | opens the page, 11% | **live** |
-| 7 | `harobanda-diagram-7.jpg` | why | *difference one*, 46% | slot placed |
+| 7 | `harobanda-diagram-7.jpg` | why | *difference one*, 46% | **live** |
 | 8 | `harobanda-diagram-8.jpg` | enterprise | before the three cards, 35% | slot placed |
 | 9 | `harobanda-diagram-9.jpg` | index | *what just happened*, 31% | slot placed |
 | 10 | `harobanda-diagram-10.jpg` | field | before the two cases, 40% | slot placed |
