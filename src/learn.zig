@@ -1335,7 +1335,7 @@ pub fn list(w: *std.Io.Writer) !void {
     try w.print("\n  harb learn -- a guided tour of a declared machine, in {d} lessons.\n", .{lessons.len});
     try rule(w);
     try w.print("  BEFORE YOU START\n", .{});
-    try w.print("    Run everything from the repository root, D:\\GitHub\\harb, so that a\n", .{});
+    try w.print("    Run everything from the repository root, D:\\GitHub\\harobanda, so that a\n", .{});
     try w.print("    path like machines\\qemu_hello.machine means what the lesson thinks.\n", .{});
     try w.print("    That stays true even with this binary on your PATH: the lessons spell\n", .{});
     try w.print("    it {s}, and if you can type just `harb`\n", .{EXE});
@@ -1503,7 +1503,7 @@ pub fn one(w: *std.Io.Writer, n: usize) !void {
         try wrapped(w, "    ", l.run[1 .. l.run.len - 1]);
         try w.print("\n", .{});
     } else {
-        try w.print("\n  RUN  (from D:\\GitHub\\harb)\n    {s}\n\n", .{l.run});
+        try w.print("\n  RUN  (from D:\\GitHub\\harobanda)\n    {s}\n\n", .{l.run});
     }
     try w.print("  LOOK FOR\n", .{});
     try block(w, "    ", l.look);
