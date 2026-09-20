@@ -70,15 +70,17 @@ def mono(sz, w="Regular"):
     return ImageFont.truetype(str(FONTS / ("IBMPlexMono-%s.woff" % w)), int(sz * S))
 
 
-def canvas(seed, h=H):
+def canvas(seed, h=H, w=W):
     """A seeded canvas: the wobble is random, but the diagram is reproducible.
 
-    `h` is the exception, not the habit. 16:9 is the family's shape; a
-    diagram takes a shorter one only when its own page says so -- the front
-    page's loop must not tower over the card row it introduces.
+    `h` and `w` are exceptions, not habits. 1376 x 768 is the family's shape.
+    A diagram takes a shorter one only when its page says so -- the front
+    page's loop must not tower over the card row it introduces -- and a
+    NARROW one only for the phone variant, which is a different drawing of
+    the same argument, not the same drawing squeezed.
     """
     random.seed(seed)
-    img = Image.new("RGB", (W * S, int(h) * S), BG)
+    img = Image.new("RGB", (int(w) * S, int(h) * S), BG)
     return img, ImageDraw.Draw(img)
 
 

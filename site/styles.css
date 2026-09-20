@@ -145,8 +145,12 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 
 /* ---------- generic ---------- */
 .stack-gap{display:flex;flex-direction:column;gap:clamp(14px,2vw,20px);}
+/* Below 880 the site is one column. Measured at 768, three columns put the
+   comparison table at 188px and a ground row at 170px -- 18px text in a
+   column that narrow is text nobody reads -- and squeezed a terminal into
+   326px. 880 is where .hero-grid already stacks, so it is one rule, not four. */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(18px,2.6vw,30px);}
-@media(max-width:760px){.grid2{grid-template-columns:1fr;}}
+@media(max-width:880px){.grid2{grid-template-columns:1fr;}}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:clamp(20px,2.6vw,28px);}
 .panel.ex{border-left:3px solid var(--laterite);}
 
@@ -170,7 +174,7 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .card li b{color:var(--ink);font-weight:600;}
 
 .cmp{display:grid;grid-template-columns:1.05fr 1.35fr 1.35fr;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);gap:1px;}
-@media(max-width:680px){.cmp{grid-template-columns:1fr;}}
+@media(max-width:880px){.cmp{grid-template-columns:1fr;}}
 .cmp>div{background:var(--surface);padding:13px 18px;font-size:18px;line-height:1.5;}
 .cmp .h{background:var(--raise);font-family:var(--mono);font-size:15px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:500;}
 .cmp .h.us{color:var(--river);}
@@ -207,7 +211,7 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 
 .grounds{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
 .ground-row{background:var(--surface);display:grid;grid-template-columns:.85fr 1.15fr 1fr;gap:18px;padding:18px 20px;align-items:start;}
-@media(max-width:760px){.ground-row{grid-template-columns:1fr;gap:8px;}}
+@media(max-width:880px){.ground-row{grid-template-columns:1fr;gap:8px;}}
 .ground-row .p{display:flex;flex-direction:column;gap:3px;}
 .ground-row .en{font-size:18px;font-weight:600;color:var(--ink);}
 .ground-row .lc{font-family:var(--mono);font-size:13px;color:var(--river);}
@@ -221,12 +225,21 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 /* A diagram is drawn to be read at 952px. Squeezed into a phone's 335 it puts
    its 32px type at 8px on screen, which is no diagram at all -- so on a narrow
    screen it keeps a readable width and the reader scrolls it sideways. */
-@media(max-width:760px){
-  .figure-in{overflow-x:auto;-webkit-overflow-scrolling:touch;
-    margin-inline:calc(var(--gutter) * -1);padding-inline:var(--gutter);}
-  .figure-in .diagram-img{width:660px;max-width:none;}
-  .figure::after{content:"\2194  scroll the diagram to read it";display:block;
-    font-family:var(--mono);font-size:16px;color:var(--muted);margin-top:11px;}
+/* An image FITS. It never scrolls sideways and never widens the page --
+   at any width, on any page. A reader who has to drag a picture to read
+   it is a reader who does not read it. */
+img{max-width:100%;}
+/* A diagram drawn for 952px reads at 7.8px on a phone, and an image may never
+   be dragged sideways -- so the phone gets a DIFFERENT drawing of the same
+   argument, one column at 640px, which lands at about 16px. Swapped in CSS
+   rather than with <picture>, because a <picture> chooses once at load and
+   never re-evaluates: a reader who rotates a tablet would keep the wrong one.
+   loading="lazy" means the hidden variant is never fetched, so nobody pays
+   for the one they do not see. */
+.narrow-only{display:none;}
+@media(max-width:700px){
+  .wide-only{display:none;}
+  .narrow-only{display:block;}
 }
 
 .steps{display:flex;flex-direction:column;gap:2px;counter-reset:s;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);}
