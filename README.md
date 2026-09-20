@@ -1,115 +1,187 @@
-# stzos — the declared machine
+<p align="center">
+  <img src="site/harobanda-logo.png" alt="Harobanda" width="420">
+</p>
 
-The operating layer of the Softanza vertical: the machine beneath
-[stz](../stz). A machine is DECLARED — its profile, the capabilities it
-grants and refuses, its mounts, its pins, the services it keeps alive —
-in a closed language (`.machine`) that is itself declared in stzu and
-judged by pinned fixtures. From the judged declaration a boot plan is
-derived; on a hosted machine one static binary, `stzos`, executes that
-plan as PID 1 and narrates the boot as a transcript. No shell, no
-package manager, no init scripts: the declared machine IS the system.
+<p align="center">
+  <b>The declared machine.</b><br>
+  An operating system you write down — and that judges whether it kept its word.
+</p>
 
-**Status: AB-1 on top of NET-1 and OS-4 — the box has a board, a card, a declared wire, and two slots.** A machine declares its NETWORK as it declares a MOUNT and PID 1 brings it up before any service; the card carries two slots, an update is tried once and committed only when every service has started, and the emulator court reads the card back to judge both the commit and the rollback. The Makeen box is a
-Raspberry Pi 4 Model B (`doc/PROVENANCE.md`, the board ruling). Its
-`.machine` file names the board, and from it the pipeline derives the
-BCM2711 kernel, the card's device tree (mainline plus the mmc aliases
-that make `/dev/mmcblk0p2` a fact), the emulator's tree, and a flashable
-256 MiB SD image with the board's firmware, the kernel, the initramfs
-and an ext4 `/data`. The same board emulated by QEMU (`raspi4b`) boots
-that image and is judged against a pinned transcript; two other
-declared machines (x86_64 and aarch64 `virt`) boot and are judged the
-same way, with stzr running Luau worlds inside. Private. The name `stzos` is
-provisional until the landscape ruling (`doc/PROVENANCE.md`). The
-strategy that this repository serves is the Vision Corpus
-(`D:\GitHub\softanza\vision`); the OS chapter it proposes is
-`doc/VISION.md`.
+---
 
-## What exists today
+A machine here is one text file. It says what the computer is, what it mounts,
+what programs it keeps alive, and what each of them is allowed to touch. From
+that file a boot plan is derived; one static binary executes the plan as PID 1
+and narrates the boot as a transcript; and the transcript is judged against
+what the file said. There is no shell, no package manager and no init scripts,
+because **the declared machine is the system**.
 
-| piece | where | judged by |
-|---|---|---|
-| the machine language v0.1 — grammar, five kinds, closed menus | `declarative/machine/GRAMMAR.md` | 40 pinned fixtures, `zig build court` |
-| the language declared in stzu | `declarative/machine/machine.stzu` | stz's own meta-court (`experiment/judge_machine_stzu.luau`) |
-| the parser and the court-side checks | `src/machine.zig` | unit tests + fixtures |
-| the boot plan, derived and rendered | `src/plan.zig` | fixtures (order, granted set) |
-| the init — PID 1 of a hosted machine | `src/init.zig` | its own boot transcript, run as PID 1 under WSL (`experiment/wsl_boot.sh`) |
-| one static binary, every role, two Linux targets by one flag | `build.zig` (`zig build cross`) | the cross build is the gate on the Linux-only code |
-| the image, derived: initramfs list, kernel fragment, boot line | `src/image.zig` (`stzos image`) | the QEMU boot transcript against `machines/qemu_hello.expected` |
-| the vendored kernel, pinned by digest | `vendor/PIN.md`, `experiment/os2_kernel_fetch.sh` | sha256 from kernel.org's own sums |
-| the imperative half: kernel build, cpio, QEMU, the judge | `experiment/os2_image.sh` (WSL Ubuntu) | `zig-out/wsl/image_<name>.txt` |
-| the reference machines | `machines/` | `makeen_box.machine` (BOARD rpi4, fixture A2 verbatim), `qemu_hello.machine` (x86_64) and `makeen_qemu.machine` (aarch64 `virt`) all boot and are judged against their `.expected` |
-| the board's card: firmware pinned, two derived device trees, the SD image | `experiment/os2_image.sh`, `experiment/dtb_ops.py`, `vendor/rpi-firmware/PIN.txt` | the `raspi4b` boot transcript, 17 lines |
-| the NETWORK kind: PID 1 brings the declared wire up before any service, static or dhcp (a client in the one binary) | `src/netcfg.zig`, `src/net.zig` (`stzos net` by hand) | fixtures A10–A11, R36–R40; the lease in `makeen_qemu.expected` from QEMU's own DHCP server |
-| the edge projection: `stzos project` writes the `device.ring` a MicroRing project is, and names what does not cross over | `src/project.zig` | `machines/cold_room_sensor.device.ring.expected`, judged by `experiment/judge_project.sh` |
-| USER: a declared identity; PID 1 drops to it between fork and exec, and the image derives passwd and group | `src/machine.zig`, `src/init.zig`, `src/image.zig` | fixtures A14, R46–R50; `id: uid=1000 gid=1000` in `qemu_hello.expected`, from inside the machine |
-| READY: a daemon's own word that it is serving, so an A/B trial cannot commit before the worlds are up | `src/init.zig` | fixtures A13, R43–R45; both sides in the rehearsal transcript |
-| A/B slots: an update is a trial before it is a commitment; PID 1 commits only once every service has started, under the watchdog; `stzos update` writes the other slot | `src/init.zig` (the slot logic), `src/update.zig` | fixtures A12, R41–R42; the card read back after a trial and after a held trial, in `makeen_box.expected` |
+It is built on the same Linux LTS kernel that Ubuntu and Red Hat ship. The
+kernel is not what we set out to replace. What we rethought is everything the
+industry treats as inevitable above it.
+
+---
+
+## A whole machine, in nine lines
+
+```
+DEFINE MACHINE hello AS (
+  ARCH x86_64,
+  KERNEL linux
+) RATIONALE "the smallest machine that boots"
+
+DEFINE SERVICE greet AS (
+  RUN ["/app/greet"]
+) RATIONALE "say hello, then exit"
+```
+
+`RATIONALE` is not a comment. The grammar requires it, so every part of a
+machine has to say why it is there.
+
+## The loop
+
+```
+declare  ─→  judge  ─→  plan  ─→  boot  ─→  it judges its own boot
+   ↑                                                    │
+   └────────  a change is a new file, judged again  ─────┘
+```
+
+| verb | what happens |
+|---|---|
+| **declare** | write a `.machine` file |
+| **judge** | the court accepts it, or refuses it in plain words: `needs the network, which nothing here grants.` |
+| **plan** | see the order things will happen in, before any of it does |
+| **boot** | the whole machine boots in an emulator and judges its own transcript against the file |
+| **break it** | change one line and watch the machine catch the difference |
+
+A guarantee you have only ever watched succeed is a claim. One you have
+watched refuse you is evidence — which is why every lesson in the guided tour
+ends by showing you how to break it.
+
+## Try it
+
+You need [Zig](https://ziglang.org) 0.15 and, for booting images, WSL or Linux
+with QEMU. No SDK, no account, nothing to install into your system.
+
+```sh
+zig build -j2                                  # builds the one binary
+zig-out/bin/stzos check machines/qemu_hello.machine
+zig-out/bin/stzos plan  machines/qemu_hello.machine
+zig-out/bin/stzos learn                        # 18 lessons, guided
+zig-out/bin/stzos learn --words                # the vocabulary
+```
+
+Then break something. Add a clause the grammar does not accept, or ask for a
+capability nothing grants, and read what the court says back.
+
+To boot a real image (Linux or WSL, first run fetches and builds a kernel):
+
+```sh
+bash experiment/os2_image.sh qemu_hello        # image, kernel, QEMU, judged
+cat zig-out/wsl/image_qemu_hello.txt
+```
+
+## What is real today
+
+Honesty is part of the design, so these are the plain limits.
+
+- **It is a working system, and a young one.** Declared machines boot and
+  judge themselves in an emulator today. No customer yet runs a critical
+  production workload on one.
+- **The kernel underneath is borrowed on purpose** — the same Linux LTS the
+  major distributions ship, pinned by digest and rebuilt by your own
+  toolchain. Borrowed is not the same as withdrawable.
+- **The card has not met a Pi yet.** The Raspberry Pi 4 image boots under
+  QEMU's `raspi4b` and is judged against a pinned transcript; the real board
+  is the next seat.
+- **Single-binary deployment is the goal, not yet the whole reality.**
+  Declaring, judging and emulating need only this binary; producing a
+  flashable image still calls a standard kernel build underneath.
+- **It will never be a product you buy from a vendor**, because a vendor
+  inside the system is the one thing it refuses. That is not a gap to close.
 
 ## Three profiles, one language
 
 | profile | substrate | init | state |
 |---|---|---|---|
-| **hosted** | a vendored Linux kernel, static musl userland, this binary as PID 1 | `stzos init` | **boots** on x86_64 and aarch64 in QEMU and as the Raspberry Pi 4 image under `raspi4b`, transcripts judged; the card has not met a Pi yet |
-| **edge** | no kernel: the binary is the device (MicroRing's substrate — MicroZig, littlefs) | the cooperative loop | declarable, judged; not yet bootable |
-| **touch** | Android's kernel and init (AOSP fork, ZinOS Touch's design) | Android's, the launcher is the pack | declarable, judged; unbuilt |
+| **hosted** | vendored Linux kernel, static musl userland, this binary as PID 1 | `stzos init` | **boots** on x86_64 and aarch64 under QEMU, and as a Raspberry Pi 4 image under `raspi4b`; transcripts judged |
+| **edge** | no kernel — the binary is the device (MicroRing's substrate) | a cooperative loop | declarable and judged; not yet bootable |
+| **touch** | the device's own kernel and init | the launcher is the pack | declarable and judged; unbuilt |
+
+## Where things are
+
+| what | where | judged by |
+|---|---|---|
+| the machine language — grammar, five kinds, closed menus | `declarative/machine/GRAMMAR.md` | 40 pinned fixtures, `zig build court` |
+| the language, itself declared | `declarative/machine/machine.stzu` | stz's meta-court, `experiment/judge_machine_stzu.luau` |
+| the parser and the court's checks | `src/machine.zig` | unit tests and fixtures |
+| the boot plan, derived | `src/plan.zig` | fixtures (order, granted set) |
+| PID 1 | `src/init.zig` | its own transcript, run for real under WSL |
+| the image: initramfs, kernel fragment, boot line | `src/image.zig` | the QEMU transcript against `machines/*.expected` |
+| the network kind — the wire is up before any service | `src/netcfg.zig`, `src/net.zig` | fixtures A10–A11, R36–R40 |
+| identity: a device's key, and the record it signs | `src/init.zig`, `src/journal.zig` | `machines/qemu_identity.expected` |
+| a fleet — facts about a SET, judged together | `src/fleet.zig` | `machines/fleet.expected`, `experiment/os7_fleet.sh` |
+| A/B slots — an update is a trial, not a commitment | `src/init.zig`, `src/update.zig` | the card read back after a trial and after a held one |
+| the edge projection | `src/project.zig` | `experiment/judge_project.sh` |
+| the guided tour, judged like any other claim | `src/learn.zig` | `stzos learn --check`, in `zig build court` |
+| the reference machines | `machines/` | each boots and is judged against its `.expected` |
+| the vendored kernel, pinned by digest | `vendor/PIN.md` | sha256 from kernel.org's own sums |
 
 ## Commands
 
-```
-zig build -j2                       # zig-out/bin/stzos (host CLI)
-zig build test -j2                  # the unit tests
-zig build court -j2                 # the fixture court: 40/40
-zig build cross -j2                 # zig-out/cross/{x86_64,aarch64}-linux-musl/stzos, static
-zig-out\bin\stzos.exe plan machines\makeen_box.machine
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/wsl_boot.sh   # rehearsal + PID 1 in a namespace, transcripts in zig-out/wsl/
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_env.sh    # once: gcc, make, qemu, flex, bison...
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_kernel_fetch.sh   # once: the pinned kernel tarball
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello   # x86_64: image + kernel + QEMU boot + judge
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh makeen_qemu  # aarch64: the Makeen box on virt, with its ext4 /data
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh makeen_box   # the Raspberry Pi 4 card: zig-out/image/makeen_box/sd.img, judged under raspi4b
-```
+```sh
+zig build -j2 && zig build test -j2 && zig build court -j2 && zig build cross -j2
 
-To flash the card (from any Linux, the device being the whole card):
+zig-out/bin/stzos check|plan machines/<name>.machine
+zig-out/bin/stzos learn [n] [--all|--words|--run|--check]
+zig-out/bin/stzos fleet machines/salle_makeen.fleet
 
-```
-dd if=zig-out/image/makeen_box/sd.img of=/dev/sdX bs=4M conv=fsync
+bash experiment/judge_guarantees.sh            # the four standing promises
+bash experiment/os2_image.sh qemu_hello        # image, kernel, QEMU, judge
+bash experiment/os6_names.sh                   # two machines, one wire
+bash experiment/os7_fleet.sh                   # a device's key, a fleet's record
 ```
 
-The runtime the services run is stz's, cross-built for each image from
-`D:\GitHub\stz` (the triple is derived from the machine's ARCH):
+`zig build cross` is not optional: `src/init.zig` is comptime-gated on Linux
+and Zig analyses only the taken branch, so a Windows build proves nothing
+about the init.
 
-```
-zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-x86_64-linux-musl
-zig build -Dtarget=aarch64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-aarch64-linux-musl
-```
+## How this repository works
 
-From `D:\GitHub\stz`, the language's own declaration judged by the
-family's meta-court:
+Every line of doctrine here was paid for by a mistake, and each is written up
+under its own tag in `experiment/PROTOCOL.md`, newest first. A few of them:
 
-```
-zig-out\bin\stzr.exe ..\stzos\experiment\judge_machine_stzu.luau
-```
+- **Fixtures are the judge.** Every refusal case carries the exact words its
+  refusal must contain.
+- **A generated artifact is judged by what consumes it**, never by a diff
+  against the same generator's earlier output — both sides can be wrong in
+  the same way and the court stays green.
+- **A pin is not a record of what happened; it is a claim that what happened
+  was right.** Never copy a transcript over its expectation without reading
+  the diff.
+- **A promise the machine announces and cannot keep is worse than one it
+  never made.** When the mechanism behind a declared guarantee fails, refuse
+  the act and say so.
+- **Evidence is what the machine said about *this* boot**, never what it
+  quoted about another.
 
-## Doctrine (inherited whole from the estate)
+Design documents live in `doc/` — `VISION.md` for what this is for,
+`ARCHITECTURE.md` for how it is put together, `PROVENANCE.md` for the rulings
+that shaped it, and `GROUND.md` for the solutions it is the floor of.
 
-- **Fixtures are the judge.** Expectations are never adapted to pass;
-  the court's first run convicted this implementation on one refusal's
-  wording and the implementation changed, not the fixture.
-- **Coverage is stated by the mechanism.** The init prints which pid it
-  is, which mounts the kernel refused and why, which policy restarted
-  what. A skipped gate is named.
-- **Closed grammars have no host escape.** A service is an argv, never
-  a shell line; the boot path ships no shell.
-- **Sovereignty is decided per dependency**, never claimed wholesale:
-  `doc/ARCHITECTURE.md` carries the table (kernel: vendored source
-  rebuilt by our toolchain; init: ours; package manager: none).
-- **The transcript is the fixture.** A machine that boots differently
-  prints differently; outputs are rendered from the run, never stored.
+## A note on names
 
-## Reading order
+This repository is `stzos` and its binary is `stzos`. The system is presented
+publicly as **Harobanda**, named for the bridge across the Niger River that
+joins the two banks of Niamey — because the machine likewise joins a
+solution's promises to the hardware that keeps them.
 
-`doc/VISION.md` (why an OS, and what one is in Softanza's terms) →
-`doc/ARCHITECTURE.md` (the pipeline, the profiles, the sovereignty
-table, the court) → `declarative/machine/GRAMMAR.md` (the language) →
-`experiment/PROTOCOL.md` (what was done, measured, and found) →
-`doc/PROVENANCE.md` (what was read, what stands in the way, the name).
+The final naming is an open ruling, recorded in `doc/PROVENANCE.md`. Until it
+is settled, `stzos` is what you type and Harobanda is what it is called. The
+site under `site/` uses the public name throughout.
+
+## Licence
+
+Not yet chosen. Until a licence file is added, no permission to use, copy or
+redistribute this work is granted — which is a gap, not an intention, given
+that rebuilding it yourself is the whole point.
