@@ -83,4 +83,4 @@ for y, left, right in [
     text(d, W - MR - 34, y + 39, fit(f_read, right, 950, "strip right"),
          f_read, MUTED, anchor="rm")
 
-print("wrote", save(img, "harobanda-diagram-8.jpg"))
+print("wrote", save(img, "harobanda-diagram-8.png"))

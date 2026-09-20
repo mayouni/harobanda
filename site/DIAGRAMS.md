@@ -68,10 +68,19 @@ What changes in the narrow drawing:
   words that it is a peer and not a parent.
 - **Nothing is dropped.** If a fact earned its place in the wide drawing it
   earns its place here, or it should not have been in the wide one either.
-- **PNG, not JPEG.** Flat colour and mostly text: a 64-colour palette is a
-  third of the size and has no ringing around the glyphs, which matters most
-  in the variant whose whole job is to be legible at 16px, often on a
-  connection paying by the kilobyte. Ten narrow files come to about 500KB.
+- **PNG, not JPEG** -- which is now true of every diagram this repository
+  draws, wide and narrow. Flat colour and mostly text: JPEG has nothing to
+  gain on that and two things to lose, ringing around every glyph edge and
+  the bytes it spends encoding the noise it just made. A 64-colour palette
+  holds every tone used here. The seven wide diagrams fell from 1150KB to
+  348KB, 70% smaller and sharper; the ten narrow ones come to about 500KB.
+
+  **Diagrams 1, 2 and 3 stay JPEG.** They were drawn by hand and are not
+  re-renderable from source, so converting them means quantizing an image
+  that already carries JPEG artifacts. Tried and looked at: at 64 colours
+  the fill inside the HAROBANDA box goes mottled and the strokes pick up a
+  red fringe, for a 23% saving. Not a trade worth making on someone else's
+  artwork.
 
 Swapped in CSS (`.wide-only` / `.narrow-only`), **not** with `<picture>`: a
 `<picture>` chooses once at load and never re-evaluates, so a reader who
@@ -92,13 +101,13 @@ is the fallback and needs no change.
 | 1 | `harobanda-diagram-1.jpg` | why | opens the page, 10% | **live** |
 | 2 | `harobanda-diagram-2.jpg` | ai | frames the stack section, 22% | **live** |
 | 3 | `harobanda-diagram-3.jpg` | ai | pays off the example, 78% | **live** |
-| 4 | `harobanda-diagram-4.jpg` | machine | *not a new kernel*, 15% | **live** |
-| 5 | `harobanda-diagram-5.jpg` | machine | *survives the cut*, 48% | **live** |
-| 6 | `harobanda-diagram-6.jpg` | build | opens the page, 11% | **live** |
-| 7 | `harobanda-diagram-7.jpg` | why | *difference one*, 46% | **live** |
-| 8 | `harobanda-diagram-8.jpg` | enterprise | before the three cards, 35% | **live** |
-| 9 | `harobanda-diagram-9.jpg` | index | *what just happened*, 31% | **live** (1376 × 500) |
-| 10 | `harobanda-diagram-10.jpg` | field | before the two cases, 40% | **live** |
+| 4 | `harobanda-diagram-4.png` | machine | *not a new kernel*, 15% | **live** |
+| 5 | `harobanda-diagram-5.png` | machine | *survives the cut*, 48% | **live** |
+| 6 | `harobanda-diagram-6.png` | build | opens the page, 11% | **live** |
+| 7 | `harobanda-diagram-7.png` | why | *difference one*, 46% | **live** |
+| 8 | `harobanda-diagram-8.png` | enterprise | before the three cards, 35% | **live** |
+| 9 | `harobanda-diagram-9.png` | index | *what just happened*, 31% | **live** (1376 × 500) |
+| 10 | `harobanda-diagram-10.png` | field | before the two cases, 40% | **live** |
 
 **The register is complete: ten diagrams, seven pages, no page without one,
 and every page's first diagram inside its first third.** What remains is to

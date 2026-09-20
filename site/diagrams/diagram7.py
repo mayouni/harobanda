@@ -111,4 +111,4 @@ for i, p in enumerate(PROMISES):
     text(d, RX + 28, B2Y + 86 + i*36, p, f_read, NEW_TEXT)
 text(d, RX + 28, B2Y + 242, fit(f_read, "nothing more.", INNER, "R2 note"), f_read, NEW_SUB)
 
-print("wrote", save(img, "harobanda-diagram-7.jpg"))
+print("wrote", save(img, "harobanda-diagram-7.png"))

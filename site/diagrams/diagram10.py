@@ -98,4 +98,4 @@ text(d, LX, 656, fit(f_read, "its box is the first target", CW, "L status"), f_r
 chip(d, RX, 572, 339, 48, "engagement won", f_readm, MUTED)
 text(d, RX, 656, fit(f_read, "now entering development", CW, "R status"), f_read, MUTED)
 
-print("wrote", save(img, "harobanda-diagram-10.jpg"))
+print("wrote", save(img, "harobanda-diagram-10.png"))

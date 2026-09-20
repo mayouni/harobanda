@@ -74,4 +74,4 @@ centre_ls(d, W/2, ARC_Y + 52, "the boot is judged against the file", f_read, MUT
 centre_ls(d, W/2, ARC_Y + 92, "a change is a new file, judged again",
            mono(READ, "Medium"), INK, 1.2)
 
-print("wrote", save(img, "harobanda-diagram-9.jpg"))
+print("wrote", save(img, "harobanda-diagram-9.png"))

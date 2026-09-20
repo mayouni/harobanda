@@ -81,4 +81,4 @@ text(d, W - MR - 36, KY + KH/2,
      fit(f_read, "the same kernel, the same drivers", 700, "kernel sub"),
      f_read, MUTED, anchor="rm")
 
-print("wrote", save(img, "harobanda-diagram-4.jpg"))
+print("wrote", save(img, "harobanda-diagram-4.png"))

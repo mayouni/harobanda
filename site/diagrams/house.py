@@ -84,10 +84,18 @@ def canvas(seed, h=H, w=W):
     return img, ImageDraw.Draw(img)
 
 
-def save(img, name, quality=93):
+def save(img, name):
+    """PNG on a 64-colour palette, not JPEG.
+
+    A diagram is flat colour and text. JPEG has nothing to gain on it and two
+    things to lose: it rings around every glyph edge, and it spends bytes
+    encoding the noise it just made. Rendered straight from the clean art a
+    64-colour palette holds every tone used here -- the palette is about a
+    dozen colours plus the anti-aliased blends between them.
+    """
     p = OUT / name
-    img.resize((img.width // S, img.height // S), Image.LANCZOS).save(
-        p, "JPEG", quality=quality, subsampling=0)
+    small = img.resize((img.width // S, img.height // S), Image.LANCZOS)
+    small.convert("P", palette=Image.ADAPTIVE, colors=64).save(p, optimize=True)
     return p
 
 

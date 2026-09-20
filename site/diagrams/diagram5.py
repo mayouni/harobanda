@@ -96,4 +96,4 @@ for y, label, chip_fill, fill, line, ink, sub_ink, main, sub in OUT:
     text(d, tx, y + BH/2 - 20, fit(f_title, main, avail, "outcome"), f_title, ink)
     text(d, tx, y + BH/2 + 22, fit(f_read, sub, avail, "outcome sub"), f_read, sub_ink)
 
-print("wrote", save(img, "harobanda-diagram-5.jpg"))
+print("wrote", save(img, "harobanda-diagram-5.png"))
