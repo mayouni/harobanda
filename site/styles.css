@@ -100,7 +100,12 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
   display:flex;flex-wrap:wrap;gap:4px clamp(20px,3vw,34px);}
 .path a{font-size:18px;line-height:1.5;color:var(--muted);text-decoration:none;
   white-space:nowrap;}
-.path a.here{color:var(--river);}
+.path a.here{color:var(--river);font-weight:700;}
+/* The author asked for bold on the current step. StzZui's
+   the-path-shows-every-depth says 'mark the current position by colour
+   alone'; this is an amendment to that rule, made knowingly, not an
+   oversight. Hover stays unstyled, which is the part of the rule that
+   guards against claiming 'you are here' about a place you are not. */
 
 /* ---------- pages ---------- */
 .pagehead{padding-top:clamp(40px,6vw,74px);padding-bottom:clamp(28px,4vw,46px);border-bottom:1px solid var(--line);}

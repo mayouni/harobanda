@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>No jungle — Harobanda</title>
+<meta name="description" content="No account, no store, no package manager, and nothing on the machine selling you anything or rotting.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html" aria-label="Harobanda — home">
+      <img class="brandmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html" class="active">Why</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="ai.html">AI &amp; agents</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="field.html">In the field</a>
+    </nav>
+    <a class="ghlink" href="https://github.com/mayouni/stzos" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </div>
+</header>
+
+  <nav class="path" aria-label="Section">
+    <div class="path-in">
+      <a href="why.html">The case</a>
+      <a href="gap.html">The gap</a>
+      <a href="derived.html">Solution first</a>
+      <a href="nojungle.html" class="here" aria-current="page">No jungle</a>
+      <a href="sovereign.html">Sovereignty</a>
+    </div>
+  </nav>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">No jungle</p>
+    <h1>Nothing on the machine is selling you anything — or rotting.</h1>
+  </section>
+<section class="wrap block">
+    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="lead">There is no account, no store, no telemetry, no per-seat licence, and no vendor living inside the system. And there is no package manager — so no dependency hell, and no plugin jungle to keep alive. What the machine runs is a closed list shipped in its image; nothing is installed at run time, nothing is discovered, and a change is a whole new image.</p>
+      <p>This also means the machine <em>cannot rot.</em> On an ordinary system — free or paid — packages update, break each other, and the machine you deployed is not the machine running a year later. A declared machine is the same machine on its thousandth boot as on its first, because nothing on it changes after the image is built.</p>
+    </div>
+    <div class="panel ex prose" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="eyebrow lat" style="margin-bottom:10px">An example</p>
+      <p style="font-size:18px;line-height:1.6;">A shop's tablet running a payment app, a messenger, a video app and a browser is not a tool for the job — it is a distraction from it, and an open door for whatever the vendor wants installed next. Half the staff's day goes to keeping it working. A declared machine runs one thing: the job. There is no drawer to fill, no notification to dismiss, and nothing on it that anyone profits from.</p>
+    </div>
+    <p class="eyebrow" style="margin-bottom:14px;">What it refuses — and why that is the point</p>
+    <div class="refuses" style="margin-bottom:clamp(24px,3vw,32px)">
+      <div><b>shell</b><span>No hidden command line to slip in through. There is nothing on the machine to type into.</span></div>
+      <div><b>package manager</b><span>Nothing installed after the image is built — so no dependency hell, ever.</span></div>
+      <div><b>store &amp; plugins</b><span>No catalogue, no marketplace, no plugin jungle to grow and rot. One job, shipped whole.</span></div>
+      <div><b>drift</b><span>No settings that quietly change over months. The machine is its file; a change is a new file.</span></div>
+    </div>
+    <p class="pull prose">The jungle is not held back by a policy someone can relax later. <b>It is refused by the grammar itself</b> — there is no sentence in the language that even asks for a shell, a store or an installer.</p>
+  </section></main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    <p>Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

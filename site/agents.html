@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The agent floor — Harobanda</title>
+<meta name="description" content="An AI agent runs inside the same declared envelope as everything else: only what it was granted, never past its budget, and every act recorded.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html" aria-label="Harobanda — home">
+      <img class="brandmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="ai.html" class="active">AI &amp; agents</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="field.html">In the field</a>
+    </nav>
+    <a class="ghlink" href="https://github.com/mayouni/stzos" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </div>
+</header>
+
+  <nav class="path" aria-label="Section">
+    <div class="path-in">
+      <a href="ai.html">The full stack</a>
+      <a href="agents.html" class="here" aria-current="page">The agent floor</a>
+      <a href="assistant.html">An assistant</a>
+    </div>
+  </nav>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">The agent floor</p>
+    <h1>The floor an AI agent cannot escape — or abuse.</h1>
+  </section>
+<section class="wrap block">
+    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="lead">An AI agent is a program like any other, and here it runs inside the same declared envelope as everything else. That single fact is what makes a genuinely secure, sovereign agent possible — not a guardrail bolted on after the model, but the design of the floor beneath it.</p>
+      <p>Give an agent real power inside its world, and remove every way for it to reach beyond that world. The machine does exactly that, by construction:</p>
+    </div>
+    <div class="trio" style="margin-bottom:clamp(26px,3.5vw,40px)">
+      <div class="card"><h4>Only what it was granted</h4><p>An agent has exactly the capabilities its declaration lists — a network only if declared, storage only where mounted, and nothing else. There is no shell to break out to, because there is no shell.</p></div>
+      <div class="card"><h4>Never past its budget</h4><p>Memory and processor time are held by the kernel, per program, in its own group. A runaway agent is stopped inside its own envelope; the rest of the machine never feels it.</p></div>
+      <div class="card"><h4>The data cannot leave</h4><p>Declare a box with no route out, and “the model runs here, the data stays here” becomes a fact the court enforces — the sovereign answer for AI on sensitive data.</p></div>
+      <div class="card"><h4>It proposes; the floor disposes</h4><p>Because the machine is a declared grammar, an agent can draft a change to it. The court judges the draft, a person ratifies it, the box tries it once and rolls back if wrong.</p></div>
+      <div class="card"><h4>Every act is recorded</h4><p>The machine keeps a signed, tamper-evident record of what it did. An agent's actions are auditable afterwards by anyone holding the public key — evidence, not logs.</p></div>
+      <div class="card"><h4>It rehearses first</h4><p>Risky effects are tried on a virtual twin that cannot touch the real machine; only a plan leaves the sandbox. Rehearse, then commit through the trial.</p></div>
+    </div>
+
+    <p class="eyebrow" style="margin-bottom:14px;">An agent proposes a change — and the floor judges it before anything happens</p>
+    <div class="term" aria-label="An agent drafting a change to the machine, judged by the court" style="margin-bottom:clamp(26px,3vw,36px)">
+      <div class="term-bar"><i></i><i></i><i></i><b>an agent, inside the envelope</b></div>
+<pre><span class="d"># 1 · the agent drafts a new service</span>
+<span class="kw">DEFINE SERVICE</span> alerts <span class="kw">AS</span> (
+  RUN [<span class="c">"/app/alerts"</span>], NEEDS [network]
+) <span class="kw">RATIONALE</span> <span class="c">"watch, and warn"</span>
+
+<span class="d"># 2 · the court judges the draft — and refuses it</span>
+alerts needs network, which nothing grants <span class="r">→ refused</span>
+
+<span class="d"># 3 · the agent revises; a person ratifies the file</span>
++ <span class="kw">DEFINE CAPABILITY</span> network ...  <span class="d">(a human approves)</span>
+
+<span class="d"># 4 · the box tries it once, then decides for itself</span>
+<span class="d">boot:</span> slot B <span class="d">--</span> a trial
+<span class="d">boot: judge --</span> <span class="k">matches</span>
+<span class="d">boot:</span> slot B <span class="d">--</span> <span class="k">committed</span></pre>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    <p>Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

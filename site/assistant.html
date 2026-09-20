@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A governed assistant — Harobanda</title>
+<meta name="description" content="An assistant that answers from your own documents, with the model on the box, no route out, and every exchange recorded.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html" aria-label="Harobanda — home">
+      <img class="brandmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="ai.html" class="active">AI &amp; agents</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="field.html">In the field</a>
+    </nav>
+    <a class="ghlink" href="https://github.com/mayouni/stzos" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </div>
+</header>
+
+  <nav class="path" aria-label="Section">
+    <div class="path-in">
+      <a href="ai.html">The full stack</a>
+      <a href="agents.html">The agent floor</a>
+      <a href="assistant.html" class="here" aria-current="page">An assistant</a>
+    </div>
+  </nav>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">An assistant</p>
+    <h1>A governed knowledge assistant, declared.</h1>
+  </section>
+
+  <section class="wrap block">
+    <div class="prose" style="margin-bottom:clamp(22px,3vw,30px)">
+      <p>Say you want an assistant that answers questions from your own documents — the thing everyone now builds against a cloud model. With <b>Softanza AI</b> it is a few declarations: a knowledge base, a model, and a chat service. What Harobanda adds is the governance the cloud version cannot: the model and the index run on the box; the machine declares <em>no route out</em>, so the documents and the questions never leave; the assistant runs in its own envelope under a memory and CPU ceiling; and every exchange is recorded. The same assistant that would hand your data to a vendor becomes one you can place in a clinic or a ministry.</p>
+    </div>
+    <div class="stack-gap" style="margin-bottom:clamp(22px,3vw,30px)">
+      <div class="term" aria-label="Declaring the knowledge assistant as a governed service">
+        <div class="term-bar"><i></i><i></i><i></i><b>the assistant — a declared, governed service</b></div>
+<pre><span class="kw">DEFINE MACHINE</span> hub <span class="kw">AS</span> ( ... )
+  <span class="d">-- NETWORK lan, EGRESS none  → no route to the outside</span>
+
+<span class="kw">DEFINE SERVICE</span> assistant <span class="kw">AS</span> (
+  RUN [<span class="c">"/app/assistant"</span>],
+  <span class="d">-- read docs and run the model; no network at all</span>
+  NEEDS [filesystem, inference],
+  MEMORY 2048, CPU 200,           <span class="d">-- a ceiling the kernel holds</span>
+  READY <span class="c">"/run/assistant.ready"</span>
+) <span class="kw">RATIONALE</span>
+  <span class="d">"answers from the org's own knowledge;</span>
+  <span class="d"> nothing leaves the box"</span></pre>
+      </div>
+      <div class="figure">
+        <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-3.jpg" alt="A knowledge assistant governed by Harobanda: the assistant, the on-device knowledge base and model run inside Harobanda's envelope, which has no route to the internet, holds a budget, and records every exchange" width="1376" height="768">
+        <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-3-narrow.png" alt="A knowledge assistant governed by Harobanda: the assistant, the on-device knowledge base and model run inside Harobanda's envelope, which has no route to the internet, holds a budget, and records every exchange" width="640" height="1034">
+      </div>
+    </div>
+    <p class="pull prose">An agent that cannot reach what it was not granted, cannot exceed what it was budgeted, cannot leak what must stay, and can change the machine only through a judged, reversible, recorded proposal — <b>is an agent you can actually deploy.</b></p>
+  </section></main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    <p>Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

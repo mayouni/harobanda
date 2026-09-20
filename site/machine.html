@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The machine — Harobanda</title>
-<meta name="description" content="Not a new kernel — a new idea of an operating system on proven Linux LTS. Four promises kept before the hardware is bought, and a system learnable in an evening.">
+<meta name="description" content="Not a new kernel: the same Linux LTS underneath, and everything the industry treats as inevitable above it replaced by one idea.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -34,18 +34,18 @@
   <nav class="path" aria-label="Section">
     <div class="path-in">
       <a href="machine.html" class="here" aria-current="page">What it is</a>
+      <a href="words.html">The words</a>
+      <a href="promises.html">Four promises</a>
       <a href="running.html">Running it</a>
     </div>
   </nav>
 
 <main id="main">
-  <section class="wrap pagehead">
+<section class="wrap pagehead">
     <p class="eyebrow">What it is</p>
     <h1>Not a new kernel. A new idea of an operating system.</h1>
     <p class="lead">Built on the Linux you already trust, a declared machine keeps four promises before any hardware is bought, judges its own boot, and is learnable in an evening. Here is how it works, and who it serves.</p>
-  </section>
-
-  <section class="wrap block">
+  </section><section class="wrap block">
     <div class="sec-head prose">
       <p class="eyebrow">Not a new kernel</p>
       <h2>We didn't reinvent the wheel. We rethought the vehicle.</h2>
@@ -60,79 +60,7 @@
       <p>So we deconstructed the dogma and rebuilt the operating system from first principles — the same method the wider Softanza project applies to every layer — keeping the one part that is genuinely hard and genuinely proven, and replacing the part that was only ever habit with a single idea: <b>declare it, judge it, govern it.</b></p>
       <p class="muted">For an IT team that is the reassuring part: no exotic kernel to certify, no unproven drivers, no new hardware-compatibility matrix. The substrate is the Linux you already trust; the discipline above it is what is new.</p>
     </div>
-  </section>
-
-  <section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">The words</p>
-      <h2>Eight terms, before they start doing work.</h2>
-    </div>
-    <div class="prose" style="margin-bottom:clamp(24px,3vw,34px)">
-      <p class="lead">This page and the next few use a small vocabulary, and it is worth ten seconds now rather than a guess later. The machine defines these itself — <code style="font-family:var(--mono);font-size:.9em;color:var(--laterite)">harb learn --words</code> prints the list and a few more.</p>
-    </div>
-    <div class="words">
-      <div><b>a machine</b><span>One computer, written down: what it is, what it mounts, what it runs. One <code>.machine</code> file, and nothing more — it is text until something builds it.</span></div>
-      <div><b>a declaration</b><span>A block in that file. Its <code>RATIONALE</code> is not a comment: the grammar requires it, so every part of a machine has to say why it is there.</span></div>
-      <div><b>a world</b><span>One running program the machine declared, once it is alive. Called a world because it gets its own little universe — its own view of the network, the storage and the process table.</span></div>
-      <div><b>the envelope</b><span>What the kernel lets a world see and do. Derived from what that world declared it needs, never granted by a separate permission file someone can edit later.</span></div>
-      <div><b>the court</b><span>The judge of the grammar. Cases that must be accepted, and more that must be refused — each carrying the exact words its refusal has to contain.</span></div>
-      <div><b>a pin</b><span>A stored copy of everything a boot should print. Boot again and the two are compared, so a change shows up as a difference instead of a shrug.</span></div>
-      <div><b>the transcript</b><span>Everything one boot actually printed, from the first line the machine speaks to the halt. The pin is what it should have said; the transcript is what it did.</span></div>
-      <div><b>a fleet</b><span>A set of machines judged together. Some mistakes are only visible across a set: two boxes that each call themselves the server of one network are each faultless alone.</span></div>
-    </div>
-  </section>
-
-  <section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">On the ground · what it changes</p>
-      <h2>Four promises, kept before the hardware is bought.</h2>
-    </div>
-    <div class="prose" style="margin-bottom:clamp(24px,3vw,34px)">
-      <p class="lead">Whatever the solution — a shop counter, a clinic, a bank branch, a border post — four promises decide whether the work survives a bad day. On an ordinary OS each is a hope. Here each is a line the machine declares and the court checks before any device is switched on.</p>
-    </div>
-    <div class="grounds">
-      <div class="ground-row">
-        <div class="p"><span class="en">Always reachable</span><span class="lc">a fixed address</span></div>
-        <div class="prob"><b>The problem.</b> A fridge trips the breaker; the router reboots; it hands the server a new address; the phones and tablets can no longer find it, and a morning's work is stranded.</div>
-        <div class="fix"><b>The machine</b> declares its own address and brings it up before any program runs. It is the same after every power cut, because it was never handed out by anyone.</div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">A stable name</span><span class="lc">it serves its own names</span></div>
-        <div class="prob"><b>The problem.</b> The printer comes back on a different number after every outage, and someone re-types it into three devices before service can start.</div>
-        <div class="fix"><b>The machine</b> is the network's name-giver: the printer is reached by name, on a number nobody must remember or re-enter. The register cannot be lost, because it is the declaration.</div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">A durable log</span><span class="lc">a record that survives</span></div>
-        <div class="prob"><b>The problem.</b> Sales, doses, or filings kept only in a browser or in memory vanish when the address changes or the power drops — and an auditor has nothing to read.</div>
-        <div class="fix"><b>The machine</b> mounts a durable store before any program speaks, and signs its own record so a later change to it cannot go unnoticed. The evidence is there, and it is tamper-evident.</div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Survives the cut</span><span class="lc">two slots, a watchdog</span></div>
-        <div class="prob"><b>The problem.</b> A breaker, a bad update at 2 a.m., or a technician who unplugs your socket to plug in theirs — and the box does not come back, or comes back broken.</div>
-        <div class="fix"><b>The machine</b> keeps two copies of itself and a hardware timer. A new version is tried once; if it does not recognise its own boot, the box restarts into the one that worked. No one drives out to fix it.</div>
-      </div>
-    </div>
-    <div class="figure" style="margin-bottom:clamp(28px,4vw,44px)">
-      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-5.png" alt="The trial over time: slot A running, a new image written to slot B, slot B booted as a trial with the watchdog armed, then two outcomes — the boot matches its declaration and commits, or it does not, the watchdog is never fed, and the board resets into slot A" width="1376" height="768">
-      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-5-narrow.png" alt="The trial over time: slot A running, a new image written to slot B, slot B booted as a trial with the watchdog armed, then two outcomes — the boot matches its declaration and commits, or it does not, the watchdog is never fed, and the board resets into slot A" width="640" height="1670">
-    </div>
-    <div class="trio" style="margin-top:clamp(24px,3vw,34px)">
-      <div class="panel">
-        <p class="eyebrow" style="margin-bottom:10px">For the programmer</p>
-        <p style="font-size:18px;line-height:1.6;color:var(--ink)">The machine is its own configuration and its own documentation: one text file with a reason on every line, so there is no hidden state to reverse-engineer and no wiki to keep in sync. Write in the language you know — Luau, Python, JavaScript — and the same logic runs wherever the machine places it.</p>
-      </div>
-      <div class="panel">
-        <p class="eyebrow" style="margin-bottom:10px">For the system administrator</p>
-        <p style="font-size:18px;line-height:1.6;color:var(--ink)">No shell to secure and no packages to patch — most of what you usually guard is simply not there. A fleet is a set of files: reproducible, versioned, diffable. Updates are trials that roll back by hardware, and each box tells you what it is and whether its record is whole. Less to defend, and nothing that drifts overnight.</p>
-      </div>
-      <div class="panel">
-        <p class="eyebrow" style="margin-bottom:10px">For the auditor</p>
-        <p style="font-size:18px;line-height:1.6;color:var(--ink)">Because there is no shell, there is no undocumented change to hunt for — none can exist. Each program runs as its own declared identity, so who-may-do-what is written into the floor. And administrator access shows up as the <em>absence</em> of a line, not a choice buried in a setting. The machine answers the auditor in its own words.</p>
-      </div>
-    </div>
-  </section>
-
-</main>
+  </section></main>
 
 <footer class="foot">
   <div class="wrap foot-in">

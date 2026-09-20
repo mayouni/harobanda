@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The full stack — Harobanda</title>
-<meta name="description" content="One method from ordinary hardware up to the intelligence layer: declare, judge, govern at every altitude.">
+<title>The words — Harobanda</title>
+<meta name="description" content="Eight terms this site uses, defined before they start doing work.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -21,9 +21,9 @@
     <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
     <nav class="nav" id="nav">
       <a href="why.html">Why</a>
-      <a href="machine.html">The machine</a>
+      <a href="machine.html" class="active">The machine</a>
       <a href="build.html">Build</a>
-      <a href="ai.html" class="active">AI &amp; agents</a>
+      <a href="ai.html">AI &amp; agents</a>
       <a href="enterprise.html">Enterprise</a>
       <a href="field.html">In the field</a>
     </nav>
@@ -33,31 +33,32 @@
 
   <nav class="path" aria-label="Section">
     <div class="path-in">
-      <a href="ai.html" class="here" aria-current="page">The full stack</a>
-      <a href="agents.html">The agent floor</a>
-      <a href="assistant.html">An assistant</a>
+      <a href="machine.html">What it is</a>
+      <a href="words.html" class="here" aria-current="page">The words</a>
+      <a href="promises.html">Four promises</a>
+      <a href="running.html">Running it</a>
     </div>
   </nav>
 
 <main id="main">
-<section class="wrap pagehead">
-    <p class="eyebrow">AI &amp; agents</p>
-    <h1>A foundation for governed applications — and the floor a sovereign agent needs.</h1>
-    <p class="lead">The computational foundation above the machine, the intelligence layer it reaches, and why an AI agent that runs here cannot escape or abuse the box it runs on.</p>
-  </section><section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">The full stack · one idea, at every altitude</p>
-      <h2>A foundation for governed applications — in any domain.</h2>
+  <section class="wrap pagehead">
+    <p class="eyebrow">The words</p>
+    <h1>Eight terms, before they start doing work.</h1>
+  </section>
+<section class="wrap block">
+    <div class="prose" style="margin-bottom:clamp(24px,3vw,34px)">
+      <p class="lead">This page and the next few use a small vocabulary, and it is worth ten seconds now rather than a guess later. The machine defines these itself — <code style="font-family:var(--mono);font-size:.9em;color:var(--laterite)">harb learn --words</code> prints the list and a few more.</p>
     </div>
-    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
-      <p class="lead">The idea does not stop at the floor. On top of the machine sits <b>Softanza</b>, a computational foundation for building enterprise-strength applications in any domain — and for building AI — the same way you build the machine: declared, judged, governed. An application described this way carries its data, its rules, its identities and its permissions as declared facts, so an enterprise or a regulator can read what it <em>is</em> and what it <em>does</em>, at every level.</p>
-      <p>It reaches to the <b>intelligence layer</b> — knowledge, models and agents as governed capabilities, on-device where the data must stay — so an AI product is sovereign the same way the machine is. Below, one such agent, and how Harobanda keeps it in bounds.</p>
+    <div class="words">
+      <div><b>a machine</b><span>One computer, written down: what it is, what it mounts, what it runs. One <code>.machine</code> file, and nothing more — it is text until something builds it.</span></div>
+      <div><b>a declaration</b><span>A block in that file. Its <code>RATIONALE</code> is not a comment: the grammar requires it, so every part of a machine has to say why it is there.</span></div>
+      <div><b>a world</b><span>One running program the machine declared, once it is alive. Called a world because it gets its own little universe — its own view of the network, the storage and the process table.</span></div>
+      <div><b>the envelope</b><span>What the kernel lets a world see and do. Derived from what that world declared it needs, never granted by a separate permission file someone can edit later.</span></div>
+      <div><b>the court</b><span>The judge of the grammar. Cases that must be accepted, and more that must be refused — each carrying the exact words its refusal has to contain.</span></div>
+      <div><b>a pin</b><span>A stored copy of everything a boot should print. Boot again and the two are compared, so a change shows up as a difference instead of a shrug.</span></div>
+      <div><b>the transcript</b><span>Everything one boot actually printed, from the first line the machine speaks to the halt. The pin is what it should have said; the transcript is what it did.</span></div>
+      <div><b>a fleet</b><span>A set of machines judged together. Some mistakes are only visible across a set: two boxes that each call themselves the server of one network are each faultless alone.</span></div>
     </div>
-    <div class="figure">
-      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-2.jpg" alt="One method from ordinary hardware up through Harobanda, the Haro family, Softanza and the intelligence layer to your governed applications and AI — declare, judge, govern at every altitude" width="1376" height="768">
-      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-2-narrow.png" alt="One method from ordinary hardware up through Harobanda, the Haro family, Softanza and the intelligence layer to your governed applications and AI — declare, judge, govern at every altitude" width="640" height="1318">
-    </div>
-    <p class="pull prose" style="margin-top:clamp(26px,3vw,36px)">One method, from the hardware to the intelligence layer: <b>declare, judge, govern.</b> Own the floor, and the whole stack above it can be sovereign too.</p>
   </section></main>
 
 <footer class="foot">
