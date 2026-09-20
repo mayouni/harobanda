@@ -21,7 +21,7 @@ carrying no diagram at all.
 
 | | |
 |---|---|
-| **size** | 1376 × 768 (16:9), JPEG |
+| **size** | 1376 × 768 (16:9), JPEG. A shorter canvas only when the page demands it — diagram 9 is 1376 × 500 because it sits above the front page's card row and must not tower over it. Set the `height` attribute in the slot to match, or the page reserves the wrong box |
 | **canvas** | warm cream `#f5efe1` — the diagram's own ground, *not* the page background `#e8e8e3`; the border comes from CSS |
 | **ink** | dark navy `#283347` for titles and primary labels |
 | **the machine** | blue-grey fill `#8a9ba5`–`#b4bfc1`, heavier dark stroke — Harobanda is always the emphasised box |
@@ -61,7 +61,7 @@ Two standing constraints, both from the site's own doctrine:
 | 6 | `harobanda-diagram-6.jpg` | build | opens the page, 11% | **live** |
 | 7 | `harobanda-diagram-7.jpg` | why | *difference one*, 46% | **live** |
 | 8 | `harobanda-diagram-8.jpg` | enterprise | before the three cards, 35% | **live** |
-| 9 | `harobanda-diagram-9.jpg` | index | *what just happened*, 31% | slot placed |
+| 9 | `harobanda-diagram-9.jpg` | index | *what just happened*, 31% | **live** (1376 × 500) |
 | 10 | `harobanda-diagram-10.jpg` | field | before the two cases, 40% | slot placed |
 
 Depths are measured in the browser at 1380 × 900, not estimated. They shift

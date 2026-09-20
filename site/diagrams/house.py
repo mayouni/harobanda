@@ -18,17 +18,24 @@ FONTS = pathlib.Path(__file__).resolve().parent / "fonts"
 OUT = pathlib.Path(__file__).resolve().parent.parent
 
 # ---- palette -------------------------------------------------------------
+# Every text colour here clears 4.5:1 against the background it is actually
+# drawn on -- measured, not assumed. The first cut failed on five of them,
+# and the hand-authored diagrams 1-3 are the reason to care: they set even
+# their sub-labels in near-black (#02040b) and take their hierarchy from
+# font and weight. Lightening text to demote it is the same mistake as
+# shrinking it.
 BG        = (245, 239, 225)   # the diagram's own ground, warmer than the page
 INK       = (40, 51, 71)
-MUTED     = (122, 118, 107)
+MUTED     = (100, 96, 86)    # 5.5:1 on the canvas; see the contrast note
 OLD_FILL  = (228, 223, 211)   # what an ordinary system carries
 OLD_LINE  = (203, 195, 180)
-OLD_TEXT  = (103, 103, 108)
+OLD_TEXT  = (92, 92, 96)
 NEW_FILL  = (180, 191, 193)   # the machine is always the emphasised box
 NEW_LINE  = (78, 97, 108)
 NEW_TEXT  = (32, 45, 58)
-NEW_SUB   = (66, 86, 98)
-ORANGE    = (240, 157, 123)   # used ONCE per diagram, on what matters most
+NEW_SUB   = (56, 74, 86)
+ORANGE    = (240, 157, 123)   # used ONCE per diagram, on what matters most.
+                              # A MARK, never text: 1.87:1 on the canvas.
 BRICK     = (169, 85, 42)     # refusal only: a crossed path, a NOT KEPT
 KERN_FILL = (231, 226, 214)
 KERN_LINE = (198, 191, 176)
@@ -63,16 +70,22 @@ def mono(sz, w="Regular"):
     return ImageFont.truetype(str(FONTS / ("IBMPlexMono-%s.woff" % w)), int(sz * S))
 
 
-def canvas(seed):
-    """A seeded canvas: the wobble is random, but the diagram is reproducible."""
+def canvas(seed, h=H):
+    """A seeded canvas: the wobble is random, but the diagram is reproducible.
+
+    `h` is the exception, not the habit. 16:9 is the family's shape; a
+    diagram takes a shorter one only when its own page says so -- the front
+    page's loop must not tower over the card row it introduces.
+    """
     random.seed(seed)
-    img = Image.new("RGB", (W * S, H * S), BG)
+    img = Image.new("RGB", (W * S, int(h) * S), BG)
     return img, ImageDraw.Draw(img)
 
 
 def save(img, name, quality=93):
     p = OUT / name
-    img.resize((W, H), Image.LANCZOS).save(p, "JPEG", quality=quality, subsampling=0)
+    img.resize((img.width // S, img.height // S), Image.LANCZOS).save(
+        p, "JPEG", quality=quality, subsampling=0)
     return p
 
 
@@ -137,8 +150,9 @@ def rule(d, x0, y0, x1, y1, fill=HAIR, lw=1.6):
 
 
 # ---- text ----------------------------------------------------------------
-# No small text to signal lesser importance: a secondary label is monospace
-# and grey, never smaller than it can be read at.
+# A secondary label is told apart by FONT and WEIGHT -- mono against sans,
+# regular against medium -- never by being set smaller or lighter. Every
+# colour above clears 4.5:1 on the ground it is drawn on.
 def ls_w(font, t, ls):
     return sum(font.getlength(c) for c in t) + ls*S*(len(t)-1) if t else 0
 

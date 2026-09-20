@@ -61,7 +61,7 @@ for i, (head, hot, bars, cap) in enumerate(STAGES):
     x = ML + i*(CW + CGAP)
     band(d, x, CY, CW, CH, 13, BG, ORANGE if hot else OLD_LINE,
          lw=3.0 if hot else 1.8, amp=0.8)
-    ls_text(d, (x+24)*S, (CY+38)*S, head, f_kick, ORANGE if hot else MUTED, 1.8)
+    ls_text(d, (x+24)*S, (CY+38)*S, head, f_kick, INK if hot else MUTED, 1.8)
     for j, (label, fill, line, ink, empty) in enumerate(bars):
         by = CY + 62 + j*68
         pts = rr_path((x+BAR_INSET)*S, by*S, (x+CW-BAR_INSET)*S, (by+BAR_H)*S, 9*S)
@@ -73,7 +73,7 @@ for i, (head, hot, bars, cap) in enumerate(STAGES):
         text(d, x + BAR_INSET + 16, by + BAR_H/2,
              fit(f_read, label, BAR_INNER, "slot bar"), f_read, ink)
     text(d, x, CY + CH + 40, fit(f_read, cap, CW, "stage cap"),
-         f_read, ORANGE if hot else MUTED)
+         f_read, INK if hot else MUTED)
     if i < 2:
         chevron(d, x + CW + CGAP/2, CY + CH/2, size=11)
 

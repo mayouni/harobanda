@@ -103,7 +103,7 @@ for i, p in enumerate(PROMISES):
     text(d, RX + 28, B1Y + 86 + i*36, fit(f_read, p, INNER, "promise"), f_read, INK)
 
 arrow_down(d, RX + 90, B1Y + B1H + 16, B2Y - 18, ORANGE, 3.0)  # the one accent
-ls_text(d, (RX + 130)*S, ((B1Y + B1H + B2Y) / 2 + 11)*S, "DERIVE", f_readm, ORANGE, 3.0)
+ls_text(d, (RX + 130)*S, ((B1Y + B1H + B2Y) / 2 + 11)*S, "DERIVE", f_readm, INK, 3.0)
 
 band(d, RX, B2Y, CW, B2H, 13, NEW_FILL, NEW_LINE, lw=2.6, amp=1.0)
 text(d, RX + 28, B2Y + 38, fit(f_read, "the machine", INNER, "R2 head"), f_head, NEW_TEXT)
