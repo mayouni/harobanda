@@ -9,3 +9,7 @@ vendor/zig/
 # python bytecode, from site/diagrams/
 __pycache__/
 *.pyc
+
+# editor and tool configuration, machine-specific: launch.json carries
+# an absolute path to this working copy, which is true on one machine
+.claude/
