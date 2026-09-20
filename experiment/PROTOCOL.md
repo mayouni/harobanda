@@ -83,17 +83,73 @@ named `harb`, provisionally" -- of a day on which it was not.
   register the ruling was issued under, not this repository, and the
   estate's memos cite those ids.
 
-## What it cost, and what it leaves open
+## The two the second pass also missed
 
-Nothing shipped wrong, because the second pass ran before the commit.
-What it cost is the belief the five green judges bought: every one of
-them was green over a repository whose tour told readers to `cd` into a
-directory that does not exist.
+Two survived even the corrective pass, and they are the interesting
+ones. In Zig source the path is written `D:\\GitHub\\harb`, so a rule
+matching ONE separator after `GitHub` walked straight past both -- and
+both are in the tour's header:
 
-Open: `learn --check` still does not read a lesson's `run` string. A
-lesson that names a path in `paths` is judged; the same path inside the
-command the reader is told to type is not. That is a narrower judge than
-the thing it guards, which is the third time in the log (THR-1, SEE-1).
+```
+  BEFORE YOU START -- Run everything from the repository root, ...
+  RUN  (from ...)
+```
+
+Every lesson prints the second. They were found by running the tour and
+reading it, which at that moment was the only judge that reached them:
+they are prose, not data, so no amount of checking a lesson's DECLARED
+paths could ever have seen them. Sixteen wrong paths in all, three
+passes, and the last two were the ones a reader meets first.
+
+## What it cost
+
+Nothing shipped wrong, because every pass ran before its commit. What it
+cost is the belief the five green judges bought: every one of them was
+green over a repository whose tour told readers to `cd` into a directory
+that does not exist.
+
+## Closing it
+
+The seam was closed in the same session, on the author's word. Two
+halves, because either alone leaves the hole open.
+
+**Derive.** The repository's directory name is one constant, `repo`, and
+every absolute path the tour prints is built from it -- the seventeen
+run strings through `RUN_WSL`, both header lines through `WIN`. Nineteen
+places that had to agree became one (HDW-1).
+
+**Judge.** Derivation cannot say whether the constant itself is right,
+and cannot stop the next literal somebody writes by hand, so `--check`
+gained two questions:
+
+- *What is this repository CALLED?* -- read from origin's URL in
+  `.git/config`, not from the folder this working copy happens to sit
+  in. The first draft asked the folder, which is the question NEXT TO
+  the one that decides (MNT-1): a reader's directory is named by their
+  clone, so a copy in `~/src/harobanda-fork` is not a broken tour. It
+  reported this very working copy, not yet renamed off `stzos`, as a
+  lie. The remote is the fact the tour's path is a claim about.
+- *Does anything the tour PRINTS name another directory?* -- `list` and
+  `all` are rendered into a buffer and every occurrence of `GitHub` in
+  the result must be followed by this repository's name. That reaches
+  the headers, because it reads what a reader reads rather than what a
+  lesson declares. Its first draft required a separator AFTER the name
+  and so refused every path that ENDS at the repository root, which is
+  what both header lines print: a component ends at a separator or at
+  anything that is not a filename character, not at a separator alone.
+
+Probed before it was believed, three mutations in fresh builds:
+
+| mutation | exit | what it said |
+|---|---|---|
+| `repo` set to the COMMAND's name | 1 | `the tour sends readers to D:\GitHub\harb, and this repository is called harobanda` |
+| a header line written out by hand | 1 | `the tour prints GitHub\harb, so that a, which is not this repository` |
+| a run string written out by hand | 1 | `the tour prints GitHub/stzos/experiment/os7_fleet., which is not this repository` |
+
+Each fired ONE finding, which is the part worth reading: the first is
+invisible to the scan and the other two are invisible to the remote
+judge. Derivation keeps the paths consistent with each other; only the
+remote can say whether that shared name is right. A clean tree exits 0.
 
 ## The doctrine
 
@@ -103,6 +159,13 @@ place, the thing -- before replacing any of them, and expect a different
 new name for each. Shape is not meaning: `/stzos`, `stzos.slot` and
 `stzos` sorted cleanly by shape and still put two of the three meanings
 in the wrong place.
+
+**A judge that reads the DECLARATION does not judge what is PRINTED**
+(NAME-1): a lesson declares the paths it names and `--check` walked all
+of them, while the path inside the command it tells a reader to TYPE,
+and the two header lines every lesson prints, were judged by nothing.
+Render what the reader reads and judge that. The fourth guard in this
+log narrower than the thing it guarded (THR-1, SEE-1, LRN-2).
 
 **A rename does not touch a dated record; it amends beside it**
 (NAME-1): STZ-OS-RULING-01 chose `stzos` on 2026-09-12, and that

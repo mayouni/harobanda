@@ -80,8 +80,15 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   meaning -- `/stzos`, `stzos.slot` and `stzos` sorted cleanly by shape
   and still put two meanings in the wrong place, leaving 94 paths to a
   directory that does not exist. Build, test, both courts and `learn
-  --check` were all green over it; `--check` reads a lesson's declared
-  `paths`, never the `run` string it tells a reader to type.
+  --check` were all green over it, because `--check` read a lesson's
+  declared `paths` and never the `run` string it tells a reader to type,
+  nor the two header lines every lesson prints. **A judge that reads the
+  DECLARATION does not judge what is PRINTED** (NAME-1): closed by
+  deriving every path in `src/learn.zig` from one `repo` constant, and
+  by `--check` asking what origin's URL says this repository is CALLED
+  (not what the folder happens to be named -- MNT-1) and scanning the
+  RENDERED tour for any `GitHub/` that is not it. Probed with three
+  mutations in fresh builds, one finding each.
   **A rename does not touch a dated record, it amends beside it**
   (NAME-1): STZ-OS-RULING-01 chose `stzos` on 2026-09-12 and the rename
   rewrote it, leaving "`stz` is the distribution, the suffix says which

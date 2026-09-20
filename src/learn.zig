@@ -86,6 +86,17 @@ pub const Lesson = struct {
 pub const exe = "zig-out\\bin\\harb.exe";
 const EXE = exe;
 
+/// WHERE A READER STANDS. The repository's own directory name, which is
+/// NOT the command's: `harb` is what you type, Harobanda is the system,
+/// `harobanda` is the repository (STZ-OS-RULING-02). Every absolute path
+/// this tour prints is built from it, because a name that has to agree
+/// in nineteen places is a name that will disagree in one (HDW-1) -- and
+/// on 2026-09-20 it disagreed in fourteen at once (NAME-1).
+pub const repo = "harobanda";
+const WIN = "D:\\GitHub\\" ++ repo;
+/// the one way this tour tells a reader to run something inside WSL
+const RUN_WSL = "wsl -d Ubuntu -- bash /mnt/d/GitHub/" ++ repo ++ "/experiment/";
+
 pub const words = [_][2][]const u8{
     .{ "a machine", "One computer, written down: what it is, what it mounts, what it runs. A `.machine` file under `machines\\`. Nothing more -- it is text until something builds it." },
     .{ "a declaration", "A block in that file: `DEFINE SERVICE mine AS ( ... ) RATIONALE \"...\"`. The RATIONALE is not a comment; the grammar requires it, so every part of a machine says why it is there." },
@@ -215,7 +226,7 @@ pub const lessons = [_]Lesson{
         .act = "II. THE BOOT",
         .title = "The machine boots, and narrates every step as it takes it",
         .question = "What does a declared machine actually DO when it starts?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
+        .run = RUN_WSL ++ "os2_image.sh qemu_hello",
         .look = &.{
             "boot: harb init -- machine qemu_hello (hosted / x86_64 / qemu_pc) -- pid 1",
             "boot: mount proc at /proc -- done",
@@ -234,7 +245,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  CONSOLE \"/dev/ttyS3\"",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
+            .then = RUN_WSL ++ "os2_image.sh qemu_hello",
             .expect = &.{
                 "The boot goes SILENT. QEMU shows the kernel's own lines and then nothing,",
                 "because PID 1 is narrating to a serial port that is not the one the",
@@ -269,7 +280,7 @@ pub const lessons = [_]Lesson{
                 "  NEEDS [process]",
                 ") RATIONALE \"A world the expectation was written before\"",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
+            .then = RUN_WSL ++ "os2_image.sh qemu_hello",
             .expect = &.{
                 "It still boots. Then it judges itself and says so:",
                 "",
@@ -298,7 +309,7 @@ pub const lessons = [_]Lesson{
         .act = "II. THE BOOT",
         .title = "A pin is not a record of what happened -- it is a claim that it was right",
         .question = "The boot judged itself. Who judges the judge?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
+        .run = RUN_WSL ++ "os2_image.sh qemu_hello",
         .look = &.{
             "JUDGED: the boot transcript matches machines/qemu_hello.expected line for line (35 lines)",
             "",
@@ -314,7 +325,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "boot: console /dev/ttyS9",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
+            .then = RUN_WSL ++ "os2_image.sh qemu_hello",
             .expect = &.{
                 "JUDGED: FAIL -- the transcript differs from machines/qemu_hello.expected:",
                 "followed by a unified diff showing exactly your one-character edit.",
@@ -335,7 +346,7 @@ pub const lessons = [_]Lesson{
         .act = "III. WHAT A WORLD MAY DO",
         .title = "Six worlds, the same six questions, and only their declarations differ",
         .question = "A world says what it NEEDS. What happens to what it did not ask for?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_confine",
+        .run = RUN_WSL ++ "os2_image.sh qemu_confine",
         .look = &.{
             "Six worlds run the SAME command -- /harb confined eth0 /data /var/log --",
             "and each reports what it can actually reach. Line them up:",
@@ -367,7 +378,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  NEEDS [process, network]",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_confine",
+            .then = RUN_WSL ++ "os2_image.sh qemu_confine",
             .expect = &.{
                 "confined: eth0 -- present: this world shares the machine's network",
                 "",
@@ -471,7 +482,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  SEES [data, logs]",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_confine",
+            .then = RUN_WSL ++ "os2_image.sh qemu_confine",
             .expect = &.{
                 "confined: /var/log -- mounted here: this world can see the machine's storage",
                 "",
@@ -513,7 +524,7 @@ pub const lessons = [_]Lesson{
         .act = "III. WHAT A WORLD MAY DO",
         .title = "A budget the KERNEL holds, not the world",
         .question = "A world asks for more than it was granted. Who stops it, and how does it feel?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_budget",
+        .run = RUN_WSL ++ "os2_image.sh qemu_budget",
         .look = &.{
             "PID 1 announces every ceiling before any world starts:",
             "",
@@ -557,7 +568,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  TASKS 20,",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_budget",
+            .then = RUN_WSL ++ "os2_image.sh qemu_budget",
             .expect = &.{
                 "swarm: 12 tasks made, and the kernel refused none: this world was not sized",
                 "",
@@ -597,7 +608,7 @@ pub const lessons = [_]Lesson{
         .act = "III. WHAT A WORLD MAY DO",
         .title = "How far a granted network reaches",
         .question = "The box may speak. May it speak to ANYONE?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_egress",
+        .run = RUN_WSL ++ "os2_image.sh qemu_egress",
         .look = &.{
             "PID 1 states the perimeter before either witness runs:",
             "",
@@ -629,7 +640,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  EGRESS [\"0.0.0.0/0\"]",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_egress",
+            .then = RUN_WSL ++ "os2_image.sh qemu_egress",
             .expect = &.{
                 "boot: egress lan -- 0.0.0.0/0: a DEFAULT route, so this machine knows a",
                 "way anywhere",
@@ -678,7 +689,7 @@ pub const lessons = [_]Lesson{
         .act = "IV. WHO A DEVICE IS",
         .title = "A device's name is its KEY, and the key survives the power",
         .question = "Two boxes run the same image. What makes one of them THIS box?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_identity",
+        .run = RUN_WSL ++ "os2_image.sh qemu_identity",
         .look = &.{
             "One disk, booted TWICE in one transcript. The second boot's lines are",
             "prefixed `again:` so you can tell them apart:",
@@ -836,7 +847,7 @@ pub const lessons = [_]Lesson{
         .act = "IV. WHO A DEVICE IS",
         .title = "A record verified by something that never held the secret",
         .question = "Only the device can check its own signature. Is that evidence, or just a claim?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os7_fleet.sh",
+        .run = RUN_WSL ++ "os7_fleet.sh",
         .look = &.{
             "The script prints one arc in seven labelled sections. Read them in order.",
             "",
@@ -951,7 +962,7 @@ pub const lessons = [_]Lesson{
         .act = "V. THE NETWORK",
         .title = "The box is the network's own server of names",
         .question = "The kitchen printer comes back on a different number after every power cut. Why should it?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os6_names.sh",
+        .run = RUN_WSL ++ "os6_names.sh",
         .look = &.{
             "TWO machines boot at the same time on one QEMU wire, and then a THIRD",
             "run of the same till image with a different hardware address. Sixty-eight",
@@ -1175,7 +1186,7 @@ pub const lessons = [_]Lesson{
         .act = "VI. THE FLAGSHIP",
         .title = "The Makeen box: four boots, three cards, and a verdict it refused to commit",
         .question = "A box in a restaurant takes an update at two in the morning and it is wrong. Then what?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh makeen_box",
+        .run = RUN_WSL ++ "os2_image.sh makeen_box",
         .look = &.{
             "129 lines, four boots, and they are NOT four boots of one card. Check the",
             "fingerprints and the labels:",
@@ -1264,7 +1275,7 @@ pub const lessons = [_]Lesson{
         .act = "VI. THE FLAGSHIP",
         .title = "The four standing promises, judged by name",
         .question = "What does this floor actually promise a merchant, and is it keeping it today?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/judge_guarantees.sh",
+        .run = RUN_WSL ++ "judge_guarantees.sh",
         .look = &.{
             "Four promises, judged by name, TWICE -- because two different texts keep",
             "them today and neither keeps them all.",
@@ -1335,7 +1346,7 @@ pub fn list(w: *std.Io.Writer) !void {
     try w.print("\n  harb learn -- a guided tour of a declared machine, in {d} lessons.\n", .{lessons.len});
     try rule(w);
     try w.print("  BEFORE YOU START\n", .{});
-    try w.print("    Run everything from the repository root, D:\\GitHub\\harobanda, so that a\n", .{});
+    try w.print("    Run everything from the repository root, " ++ WIN ++ ", so that a\n", .{});
     try w.print("    path like machines\\qemu_hello.machine means what the lesson thinks.\n", .{});
     try w.print("    That stays true even with this binary on your PATH: the lessons spell\n", .{});
     try w.print("    it {s}, and if you can type just `harb`\n", .{EXE});
@@ -1503,7 +1514,7 @@ pub fn one(w: *std.Io.Writer, n: usize) !void {
         try wrapped(w, "    ", l.run[1 .. l.run.len - 1]);
         try w.print("\n", .{});
     } else {
-        try w.print("\n  RUN  (from D:\\GitHub\\harobanda)\n    {s}\n\n", .{l.run});
+        try w.print("\n  RUN  (from " ++ WIN ++ ")\n    {s}\n\n", .{l.run});
     }
     try w.print("  LOOK FOR\n", .{});
     try block(w, "    ", l.look);
@@ -1576,6 +1587,31 @@ fn pinHaystack(alloc: std.mem.Allocator) ![]u8 {
     return hay.toOwnedSlice(alloc);
 }
 
+/// What this repository is CALLED, from origin's URL. Not what the
+/// folder on this machine happens to be named, which is the question
+/// next to it (MNT-1): a reader's directory is named by their clone, so
+/// the fact the tour's path is a claim ABOUT is the repository's name.
+/// Null when there is no remote to ask -- absence is not evidence, and
+/// a tarball with no `.git` is still a repository somebody can read.
+fn repoName(alloc: std.mem.Allocator) ?[]const u8 {
+    const cfg = std.fs.cwd().readFileAlloc(alloc, ".git/config", 1 << 20) catch return null;
+    const at = std.mem.indexOf(u8, cfg, "[remote \"origin\"]") orelse return null;
+    var it = std.mem.splitScalar(u8, cfg[at..], '\n');
+    _ = it.next();
+    while (it.next()) |raw| {
+        const line = std.mem.trim(u8, raw, " \t\r");
+        if (line.len > 0 and line[0] == '[') return null;
+        if (!std.mem.startsWith(u8, line, "url")) continue;
+        const eq = std.mem.indexOfScalar(u8, line, '=') orelse continue;
+        var url = std.mem.trim(u8, line[eq + 1 ..], " \t\r");
+        if (std.mem.endsWith(u8, url, ".git")) url = url[0 .. url.len - 4];
+        const cut = std.mem.lastIndexOfAny(u8, url, "/:") orelse return null;
+        if (cut + 1 >= url.len) return null;
+        return url[cut + 1 ..];
+    }
+    return null;
+}
+
 pub fn check(w: *std.Io.Writer) !usize {
     var missing: usize = 0;
     var buf: [256]u8 = undefined;
@@ -1638,8 +1674,62 @@ pub fn check(w: *std.Io.Writer) !usize {
             j = k - 1;
         }
     }
+    // WHERE A READER IS TOLD TO STAND (NAME-1).
+    //
+    // Deriving every path from `repo` keeps the nineteen from drifting
+    // apart; it cannot say whether `repo` itself is right, and it cannot
+    // stop the next literal somebody writes by hand. Two judges for the
+    // two gaps.
+    //
+    // Both were open on 2026-09-20, when a rename gave fourteen of these
+    // paths the COMMAND's new name instead of the REPOSITORY's. Build,
+    // test, both courts and this very check were green over
+    // `D:\GitHub\harb`, a directory that does not exist -- because a
+    // lesson declares the `paths` it names, and the command it tells a
+    // reader to TYPE is not one of them. Two of the fourteen were worse
+    // still: they are in the tour's header, which is prose, so no amount
+    // of checking the DATA would ever have reached them.
+    if (repoName(alloc)) |name| {
+        if (!std.ascii.eqlIgnoreCase(name, repo)) {
+            missing += 1;
+            try w.print("  the tour sends readers to {s}, and this repository is called {s}\n", .{ WIN, name });
+        }
+    }
+
+    // the whole tour as a reader sees it, headers and all
+    {
+        var aw = std.Io.Writer.Allocating.init(alloc);
+        const tw = &aw.writer;
+        try list(tw);
+        try all(tw);
+        const seen = aw.written();
+        var at: usize = 0;
+        while (std.mem.indexOfPos(u8, seen, at, "GitHub")) |k| {
+            at = k + "GitHub".len;
+            const rest = seen[at..];
+            // the component ENDS after the name: at a separator, or at
+            // anything that is not a filename character. Requiring a
+            // separator refuses every path that stops at the repository
+            // root, which is what both header lines print.
+            var named = false;
+            if (rest.len >= 1 + repo.len and (rest[0] == '/' or rest[0] == '\\') and
+                std.mem.eql(u8, rest[1 .. 1 + repo.len], repo))
+            {
+                const tail = rest[1 + repo.len ..];
+                named = tail.len == 0 or
+                    !(std.ascii.isAlphanumeric(tail[0]) or tail[0] == '-' or tail[0] == '_');
+            }
+            if (!named) {
+                missing += 1;
+                var end: usize = @min(rest.len, 28);
+                if (std.mem.indexOfScalar(u8, rest[0..end], '\n')) |nl| end = nl;
+                try w.print("  the tour prints GitHub{s}, which is not this repository\n", .{rest[0..end]});
+            }
+        }
+    }
+
     if (missing == 0) {
-        try w.print("learn -- {d} lessons: every path they name is present, and every line they quote is a line a machine said\n", .{lessons.len});
+        try w.print("learn -- {d} lessons: every path they name is present, every path they print is this repository's, and every line they quote is a line a machine said\n", .{lessons.len});
     } else {
         try w.print("learn -- {d} claim(s) a lesson makes do not hold\n", .{missing});
     }
