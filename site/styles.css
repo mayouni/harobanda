@@ -74,7 +74,7 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
     align-items:stretch;gap:0;background:var(--surface);border-bottom:1px solid var(--line);
     padding:2px var(--gutter) 12px;box-shadow:0 22px 44px -30px rgba(0,0,0,.45);}
   .nav:not(.open){display:none;}
-  .nav a{padding:13px 2px;border-bottom:1px solid var(--line);font-size:15.5px;color:var(--ink);}
+  .nav a{padding:14px 2px;border-bottom:1px solid var(--line);font-size:17px;color:var(--ink);}
   .nav a.active{color:var(--river);}
   .nav a.active::after{left:2px;right:auto;width:30px;bottom:8px;}
 }
@@ -112,6 +112,10 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .hero + .block{padding-top:clamp(8px,2vw,22px);}
 .hero-grid{display:grid;grid-template-columns:1fr 1.02fr;gap:clamp(28px,4.5vw,54px);align-items:start;}
 @media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:32px;}}
+/* A grid item defaults to min-width:auto, so one long line in a terminal
+   widens its whole track and pushes the page sideways -- even though the
+   terminal itself scrolls. Measured at 375px: index 412, machine 628. */
+.hero-grid>*,.grid2>*,.stack-gap>*{min-width:0;}
 .hero h1{font-size:clamp(40px,5.6vw,72px);font-weight:500;letter-spacing:-.025em;line-height:1;}
 .hero h1 .l1{white-space:nowrap;}
 .hero h1 em{font-style:italic;color:var(--river);font-weight:400;}
@@ -213,6 +217,17 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .ground-row .fix b{color:var(--river);font-weight:600;}
 
 .diagram-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line-strong);}
+.figure{margin:0 0 clamp(28px,4vw,44px);}
+/* A diagram is drawn to be read at 952px. Squeezed into a phone's 335 it puts
+   its 32px type at 8px on screen, which is no diagram at all -- so on a narrow
+   screen it keeps a readable width and the reader scrolls it sideways. */
+@media(max-width:760px){
+  .figure-in{overflow-x:auto;-webkit-overflow-scrolling:touch;
+    margin-inline:calc(var(--gutter) * -1);padding-inline:var(--gutter);}
+  .figure-in .diagram-img{width:660px;max-width:none;}
+  .figure::after{content:"\2194  scroll the diagram to read it";display:block;
+    font-family:var(--mono);font-size:16px;color:var(--muted);margin-top:11px;}
+}
 
 .steps{display:flex;flex-direction:column;gap:2px;counter-reset:s;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--line);}
 .step{background:var(--surface);padding:16px 20px 16px 58px;position:relative;}

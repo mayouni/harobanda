@@ -42,7 +42,9 @@
       <p class="eyebrow">Not a new kernel</p>
       <h2>We didn't reinvent the wheel. We rethought the vehicle.</h2>
     </div>
-    <img class="diagram-img" style="margin-bottom:clamp(28px,4vw,44px)" src="harobanda-diagram-4.jpg" alt="Two stacks side by side: an ordinary distribution crowded with a shell, a package manager, a service manager, mutable configuration, a login and a store; Harobanda with only the declaration and the court; and beneath both, one shared band, the same Linux LTS kernel" width="1376" height="768">
+    <div class="figure" style="margin-bottom:clamp(28px,4vw,44px)">
+      <div class="figure-in"><img class="diagram-img" src="harobanda-diagram-4.jpg" alt="Two stacks side by side: an ordinary distribution crowded with a shell, a package manager, a service manager, mutable configuration, a login and a store; Harobanda with only the declaration and the court; and beneath both, one shared band, the same Linux LTS kernel" width="1376" height="768"></div>
+    </div>
     <div class="prose stack-gap">
       <p class="lead">Underneath, Harobanda runs the same <b>Linux LTS</b> kernel as Ubuntu, Red Hat and nearly every distribution in production today — the same proven code, the same drivers, the same hardware support, the same decades of hardening. The kernel is not where the dogma lives, and it is not what we set out to replace.</p>
       <p>What we rethought is everything the industry treats as inevitable <em>above</em> the kernel: that an operating system must carry a shell, a package manager, a service manager, mutable configuration, a login, an account, a store. None of that is the kernel's doing. It is convention — and convention is exactly where the ecosystem, and its costs, took hold.</p>
@@ -81,7 +83,9 @@
         <div class="fix"><b>The machine</b> keeps two copies of itself and a hardware timer. A new version is tried once; if it does not recognise its own boot, the box restarts into the one that worked. No one drives out to fix it.</div>
       </div>
     </div>
-    <img class="diagram-img" style="margin-bottom:clamp(28px,4vw,44px)" src="harobanda-diagram-5.jpg" alt="The trial over time: slot A running, a new image written to slot B, slot B booted as a trial with the watchdog armed, then two outcomes — the boot matches its declaration and commits, or it does not, the watchdog is never fed, and the board resets into slot A" width="1376" height="768">
+    <div class="figure" style="margin-bottom:clamp(28px,4vw,44px)">
+      <div class="figure-in"><img class="diagram-img" src="harobanda-diagram-5.jpg" alt="The trial over time: slot A running, a new image written to slot B, slot B booted as a trial with the watchdog armed, then two outcomes — the boot matches its declaration and commits, or it does not, the watchdog is never fed, and the board resets into slot A" width="1376" height="768"></div>
+    </div>
     <div class="trio" style="margin-top:clamp(24px,3vw,34px)">
       <div class="panel">
         <p class="eyebrow" style="margin-bottom:10px">For the programmer</p>
