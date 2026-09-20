@@ -250,9 +250,6 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 /* A figure that opens a section needs no space above it. One that FOLLOWS
    something does -- without this the promises table sat on the diagram. */
 * + .figure{margin-top:clamp(30px,4.2vw,48px);}
-/* A diagram is drawn to be read at 952px. Squeezed into a phone's 335 it puts
-   its 32px type at 8px on screen, which is no diagram at all -- so on a narrow
-   screen it keeps a readable width and the reader scrolls it sideways. */
 /* An image FITS. It never scrolls sideways and never widens the page --
    at any width, on any page. A reader who has to drag a picture to read
    it is a reader who does not read it. */
