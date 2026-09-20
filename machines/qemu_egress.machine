@@ -36,13 +36,13 @@ DEFINE NETWORK lan AS (
 ) RATIONALE "The programme's own range, reached through the gateway, and nowhere else: no default route is installed, so the box knows no way to anywhere it was not told about"
 
 DEFINE SERVICE allowed AS (
-  RUN ["/stzos", "reach", "10.9.0.1"],
+  RUN ["/harb", "reach", "10.9.0.1"],
   RESTART never,
   NEEDS [process, network]
 ) RATIONALE "A declared destination: the kernel should know a way there"
 
 DEFINE SERVICE denied AS (
-  RUN ["/stzos", "reach", "8.8.8.8"],
+  RUN ["/harb", "reach", "8.8.8.8"],
   RESTART never,
   AFTER [allowed],
   NEEDS [process, network]

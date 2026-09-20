@@ -3,7 +3,7 @@
 
     dtb_ops.py <in.dts> <out.dts> [op ...]
 
-Ops (derived by `stzos image` into image.env, never typed here):
+Ops (derived by `harb image` into image.env, never typed here):
     disable:<node>          status = "disabled" on the first node of that name
     okay:<node>             status = "okay"
     drop:<node>:<property>  remove a property from that node

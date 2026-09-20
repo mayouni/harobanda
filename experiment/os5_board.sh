@@ -22,13 +22,13 @@ cd "$(dirname "$0")/.." || exit 1
 NAME=makeen_box
 IMG=zig-out/image/$NAME
 M=machines/$NAME.machine
-STZOS=${STZOS:-}
-if [ -z "$STZOS" ]; then
-  for c in ./zig-out/bin/stzos.exe ./zig-out/bin/stzos ./zig-out/cross/x86_64-linux-musl/stzos; do
-    [ -x "$c" ] && { STZOS=$c; break; }
+HARB=${HARB:-}
+if [ -z "$HARB" ]; then
+  for c in ./zig-out/bin/harb.exe ./zig-out/bin/harb ./zig-out/cross/x86_64-linux-musl/harb; do
+    [ -x "$c" ] && { HARB=$c; break; }
   done
 fi
-[ -n "$STZOS" ] || { echo "os5_board: no stzos binary (zig build)"; exit 1; }
+[ -n "$HARB" ] || { echo "os5_board: no harb binary (zig build)"; exit 1; }
 
 act=${1:-card}
 
@@ -38,7 +38,7 @@ card)
   echo "=== the card, and what is on it ==="
   if [ ! -f "$IMG/sd.img" ]; then
     echo "no card image at $IMG/sd.img -- build it first:"
-    echo "  wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh $NAME"
+    echo "  wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh $NAME"
     exit 1
   fi
   echo "machine:  $M"
@@ -64,7 +64,7 @@ card)
     [ -f "$f" ] || continue
     line=$(cat "$f")
     echo "  $(basename "$f"): $line"
-    for instrument in "stzos.watchdog=off" "stzos.expect=" "--halt-on-verdict" "--hold"; do
+    for instrument in "harb.watchdog=off" "harb.expect=" "--halt-on-verdict" "--hold"; do
       case "$line" in *"$instrument"*) echo "    REFUSED: it carries $instrument, which is the emulator's"; bad=1 ;; esac
     done
   done
@@ -137,10 +137,10 @@ judge|rehearse)
   echo
   echo "--- 2. the COURT's verdict (the same judge, run from the host)"
   # shellcheck disable=SC2086
-  "$STZOS" judge "$M" "$file" $lens | sed 's/^/    /'
+  "$HARB" judge "$M" "$file" $lens | sed 's/^/    /'
   echo
   echo "--- 3. the four standing promises"
-  "$STZOS" guarantees "$M" "$file" | sed 's/^/    /'
+  "$HARB" guarantees "$M" "$file" | sed 's/^/    /'
   echo
   if [ "$act" = judge ]; then
     echo "--- 4. what a board is expected to say that the emulator could not"

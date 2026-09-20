@@ -1,4 +1,4 @@
-// project.zig -- `stzos project <file.machine> --out <dir>`: the EDGE
+// project.zig -- `harb project <file.machine> --out <dir>`: the EDGE
 // profile's projection. A hosted machine is imaged and booted here; an
 // edge machine is not, and never will be. Its substrate is MicroRing's
 // (MicroZig, littlefs, the cooperative loop as the scheduler, the tiers),
@@ -27,7 +27,7 @@ pub const Options = struct {
 pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Writer) !u8 {
     const m = p.machine;
     if (m.profile != .edge) {
-        try out.print("project: refused -- this verb projects the EDGE profile onto MicroRing's substrate; a {s} machine is imaged here (stzos image)\n", .{@tagName(m.profile)});
+        try out.print("project: refused -- this verb projects the EDGE profile onto MicroRing's substrate; a {s} machine is imaged here (harb image)\n", .{@tagName(m.profile)});
         return 2;
     }
     if (m.pins.len == 0) {
@@ -45,7 +45,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     // language's") opened a string literal. Found by running the
     // projection through its consumer, which is the only judge that could
     // have found it -- a diff against our own output cannot (PRJ-2).
-    try w.print("# device.ring -- DERIVED by stzos project from the declared machine\n", .{});
+    try w.print("# device.ring -- DERIVED by harb project from the declared machine\n", .{});
     try w.print("# {s}. Do not edit: edit the machine and project it again.\n#\n", .{m.name});
     try w.print("# {s}\n#\n", .{m.rationale});
     try w.print("# What crossed over from the declaration: the board and every PIN.\n", .{});

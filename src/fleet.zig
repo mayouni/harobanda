@@ -35,7 +35,7 @@
 //! key is made on the device, on its first boot, from its own randomness,
 //! and a declaration written beforehand cannot know it. So `KEY` is
 //! optional and a member without one is not refused -- it is REPORTED, by
-//! `stzos fleet`, as a member whose record nobody can verify yet. The
+//! `harb fleet`, as a member whose record nobody can verify yet. The
 //! court refuses what is wrong; the roll says what is incomplete.
 //!
 //! The enrolled key implies the fingerprint the device prints on its own

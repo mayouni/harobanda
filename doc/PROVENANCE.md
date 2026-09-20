@@ -27,7 +27,7 @@
 
 | where | ruling | this repository's stance |
 |---|---|---|
-| `ringpp/docs/DESIGN_BUILD.md:226` | bare-metal DROPPED from Ring++'s brief | kept: the edge profile is MicroRing's, `stzos init` refuses it by name |
+| `ringpp/docs/DESIGN_BUILD.md:226` | bare-metal DROPPED from Ring++'s brief | kept: the edge profile is MicroRing's, `harb init` refuses it by name |
 | `microring/docs/vision.md` §3 | "Not an RTOS" | kept: the loop is the scheduler; the edge kernel, if ever, follows ZinOS Edge's cooperative design |
 | `restolean/livrable/makeen/B9-LE-MATCH.md` | enslave commodity Android; MakeenOS a posture, no custom box | partly reversed: the hosted profile declares the box; whether a box ships is the author's ruling, not this repository's |
 
@@ -36,9 +36,29 @@ the memo). This repository builds the mechanism either way.
 
 ## The name
 
+**Harobanda** is the system. **`harb`** is what you type. **`harobanda`**
+is the repository, its GitHub name and its directory. Ruled by the author
+on 2026-09-20 — STZ-OS-RULING-02 below — replacing the provisional
+`stzos` recorded underneath.
+
+Harobanda is the bridge across the Niger at Niamey, which joins the two
+banks of the city; the machine joins a solution's promises to the
+hardware that keeps them. The one-meaning-per-word discipline now has to
+hold across three words rather than one, because a rename is where it is
+most easily lost: a sentence about the SYSTEM says Harobanda, a sentence
+about what a reader TYPES says `harb`, and a path says `harobanda`. They
+are not interchangeable, and `experiment/PROTOCOL.md` under NAME-1 says
+what it cost to learn that.
+
+The `STZ-OS-` prefix on the ruling ids does NOT change. It names the
+register the ruling was issued under — the estate's — not this
+repository, and the estate's memos cite those ids by name.
+
+### As first chosen, 2026-09-12 — superseded, kept as the record
+
 `stzos` — chosen 2026-09-12 by the session on the author's instruction
 to choose, under the estate's registers: `stz` is the distribution, the
-suffix says which floor. It is PROVISIONAL: the author said the
+suffix says which floor. It was PROVISIONAL: the author said the
 landscape's final shape, structure and naming are decided at a later
 critical point. Names already in the estate for adjacent things, so the
 ruling can be one-meaning-per-word:
@@ -52,6 +72,32 @@ ruling can be one-meaning-per-word:
 - **Device** — the L2 language (ex-MicroRing's seam); PIN here is its
   first seat, and the two must converge or one must yield.
 
+## The ruling of 2026-09-20
+
+**STZ-OS-RULING-02 — Harobanda, and `harb` as the command.** The author
+ruled the landscape point that STZ-OS-RULING-01 deferred: *"you must
+rename everything harobanda instead of stzos, including the repo name,
+and use harb effectively as a command."*
+
+What each name now covers, and what settled it:
+
+| the name | what it names | judged by |
+|---|---|---|
+| **Harobanda** | the system, in every sentence a reader reads | the docs and `site/` |
+| **`harb`** | the binary, the command, the in-image `/harb`, the kernel cmdline namespace `harb.slot`/`harb.expect`/`harb.watchdog` | `zig build court`, `harb learn --check`, the boot transcripts |
+| **`harobanda`** | the repository, its GitHub name, its directory | every absolute path in the tour and the scripts |
+
+Two things this ruling does NOT do. It does not rewrite the record of
+STZ-OS-RULING-01, which chose `stzos` and is kept above as what was
+ruled on the day. And it does not touch the `STZ-OS-` ruling ids, which
+name the issuing register.
+
+The machines' `.expected` files were re-pinned by this rename: every one
+of them carries the machine's own words, and the machine now says
+`harb`. A pin is a claim that what happened was right (SYS-1), so the
+claim was settled by booting `qemu_hello` and reading the diff, not by
+the rename script's say-so.
+
 ## The rulings of 2026-09-12 (taken on the author's behalf, at his word)
 
 The author delegated the three waiting rows to the session
@@ -59,7 +105,10 @@ The author delegated the three waiting rows to the session
 
 **STZ-OS-RULING-01 — the name.** `stzos` stands, for the repository and
 the binary, until the landscape ruling; it names THE FLOOR, one word
-for one thing. The adjacent names resolve so:
+for one thing. *Amended 2026-09-20 by STZ-OS-RULING-02: the landscape
+ruling came, and the name is Harobanda. The sentence above is kept as
+what was ruled on the day, not as what is true now.* The adjacent names
+resolve so:
 - **ZinOS** is retired as a name; its two profiles live on as the edge
   and touch profiles of a `.machine`, and zin's documents are their
   donors. Zin's product story keeps "the device is the job" — that is
@@ -108,7 +157,7 @@ table and one BOARD word in the machine file; the declaration otherwise
 stands.
 
 **STZ-OS-REGISTER-01 — registration with Central.** A mailbox
-(`softanza/mailbox/stzos.md`) opened in the estate's format; the
+(`softanza/mailbox/harb.md`) opened in the estate's format; the
 CLAUDE-BLOCK re-stamp (`central.ps1 -Install`) is Central's own act at
 its next fold, not this session's.
 

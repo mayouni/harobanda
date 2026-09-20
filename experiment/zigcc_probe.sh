@@ -4,8 +4,8 @@
 # can be named in one line. Output: zig-out/wsl/zigcc_probe.txt
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p zig-out/wsl
-export ZIGCC_REAL=$HOME/stzos-zig/zig-x86_64-linux-0.15.2/zig
-W=$HOME/stzos-zig/bin/zigcc
+export ZIGCC_REAL=$HOME/harb-zig/zig-x86_64-linux-0.15.2/zig
+W=$HOME/harb-zig/bin/zigcc
 T=$(mktemp -d)
 printf 'int f(void){return 1;}\n' > "$T/t.c"
 {
@@ -18,8 +18,8 @@ printf 'int f(void){return 1;}\n' > "$T/t.c"
   echo "== -E -o out.i (preprocess) =="
   rm -f "$T/d.i"; "$W" -E -o "$T/d.i" "$T/t.c"; echo "rc $?; exists: $([ -f "$T/d.i" ] && echo yes || echo no)"
   echo "== where does -c come from? the kernel's c_flags for a .s target =="
-  grep -n 'cmd_cc_s_c' "$HOME/stzos-kernel/zigcc-x86_64/linux-6.12.109/scripts/Makefile.build" | head -3
-  grep -rn 'KBUILD_CPPFLAGS.*-c\b\|^CC_FLAGS.*-c\b' "$HOME/stzos-kernel/zigcc-x86_64/linux-6.12.109/Makefile" | head -3
+  grep -n 'cmd_cc_s_c' "$HOME/harb-kernel/zigcc-x86_64/linux-6.12.109/scripts/Makefile.build" | head -3
+  grep -rn 'KBUILD_CPPFLAGS.*-c\b\|^CC_FLAGS.*-c\b' "$HOME/harb-kernel/zigcc-x86_64/linux-6.12.109/Makefile" | head -3
 } > zig-out/wsl/zigcc_probe.txt 2>&1
 rm -rf "$T"
 cat zig-out/wsl/zigcc_probe.txt

@@ -6,7 +6,7 @@
 // was committed on "every service is ready" and nothing else -- and the
 // Makeen box's emulated trial committed with its network refused NODEV.
 //
-// This module closes the loop. `stzos image` DERIVES the init lines a
+// This module closes the loop. `harb image` DERIVES the init lines a
 // faithful boot prints -- from the plan and a LENS: the board's, or the
 // emulator's, which lacks what the board has and says so per line -- and
 // the image carries them as /etc/expected. PID 1 records what it says, and
@@ -35,7 +35,7 @@ const machine = @import("machine.zig");
 const confine = @import("confine.zig");
 const plan = @import("plan.zig");
 
-pub const fmt_banner = "boot: stzos init -- machine {s} ({s} / {s} / {s}) -- pid {d}{s}\n";
+pub const fmt_banner = "boot: harb init -- machine {s} ({s} / {s} / {s}) -- pid {d}{s}\n";
 pub const fmt_console = "boot: console {s}\n";
 pub const fmt_slots = "boot: slots on {s} -- A and B\n";
 pub const fmt_mount_done = "boot: mount {s} at {s} -- done\n";
@@ -493,7 +493,7 @@ const box_src =
     \\DEFINE MOUNT data AS ( AT "/data", FS ext4, DEVICE "/dev/mmcblk0p2" ) RATIONALE "disk"
     \\DEFINE NETWORK lan AS ( INTERFACE "eth0", ADDRESS "192.168.10.1/24", GATEWAY "192.168.10.254", DNS ["1.1.1.1"] ) RATIONALE "static"
     \\DEFINE USER world AS ( UID 1000 ) RATIONALE "an identity"
-    \\DEFINE SERVICE once AS ( RUN ["/stzos", "id"], RESTART never, NEEDS [network], USER world ) RATIONALE "a one-shot"
+    \\DEFINE SERVICE once AS ( RUN ["/harb", "id"], RESTART never, NEEDS [network], USER world ) RATIONALE "a one-shot"
     \\DEFINE SERVICE serve AS ( RUN ["/stzr", "/app/serve.luau"], RESTART always, AFTER [once], NEEDS [network], READY "/run/serve.ready", HEALTH 3 ) RATIONALE "a daemon"
     \\
 ;
@@ -515,7 +515,7 @@ test "the board's expectation is derived from the declaration, line for line" {
     const p = try boxPlan(arena);
     const text = try derive(arena, p, .{});
     try std.testing.expectEqualStrings(
-        \\boot: stzos init -- machine box (hosted / aarch64 / rpi4) -- pid 1
+        \\boot: harb init -- machine box (hosted / aarch64 / rpi4) -- pid 1
         \\boot: console /dev/ttyS1
         \\boot: slots on /dev/mmcblk0p1 -- A and B
         \\boot: mount proc at /proc -- done
@@ -529,7 +529,7 @@ test "the board's expectation is derived from the declaration, line for line" {
         \\boot: health -- serve every 3s; a world that stops refreshing stops the watchdog
         \\boot: confine -- once has no sight of the other worlds and no way to start one and no sight of /data, serve has no sight of the other worlds and no way to start one and no sight of /data; what a world did not declare, the kernel does not give it
         \\boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
-        \\boot: start once -- pid N -- /stzos id -- as world (1000:1000)
+        \\boot: start once -- pid N -- /harb id -- as world (1000:1000)
         \\boot: once (pid N) exited 0
         \\boot: start serve -- pid N -- /stzr /app/serve.luau
         \\boot: serve -- ready (/run/serve.ready)
@@ -558,7 +558,7 @@ test "a boot that said the expected lines matches, whatever pids the kernel gave
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     const expected =
-        \\boot: stzos init -- machine m (hosted / x86_64 / qemu_pc) -- pid 1
+        \\boot: harb init -- machine m (hosted / x86_64 / qemu_pc) -- pid 1
         \\boot: start a -- pid N -- /a
         \\boot: a -- ready (/run/a)
         \\boot: start b -- pid N -- /b
@@ -566,7 +566,7 @@ test "a boot that said the expected lines matches, whatever pids the kernel gave
         \\
     ;
     const said =
-        \\boot: stzos init -- machine m (hosted / x86_64 / qemu_pc) -- pid 1
+        \\boot: harb init -- machine m (hosted / x86_64 / qemu_pc) -- pid 1
         \\boot: start a -- pid 17 -- /a
         \\boot: start b -- pid 18 -- /b
         \\boot: b -- ready (/run/b)
@@ -599,8 +599,8 @@ test "a dhcp lease matches by prefix; pid 1 is never normalised away" {
     try std.testing.expect(same("boot: network lan -- eth0 up *", "boot: network lan -- eth0 up 10.0.2.15/24, gateway 10.0.2.2 (dhcp), dns [10.0.2.3]"));
     try std.testing.expect(!same("boot: network lan -- eth0 up *", "boot: network lan -- eth0: no such interface (NODEV)"));
     try std.testing.expect(same("boot: start a -- pid N -- /a", "boot: start a -- pid 4711 -- /a"));
-    try std.testing.expect(!same("boot: stzos init -- pid 1", "boot: stzos init -- pid 2"));
-    try std.testing.expect(same("boot: stzos init -- pid 1", "boot: stzos init -- pid 1"));
+    try std.testing.expect(!same("boot: harb init -- pid 1", "boot: harb init -- pid 2"));
+    try std.testing.expect(same("boot: harb init -- pid 1", "boot: harb init -- pid 1"));
     var buf: [64]u8 = undefined;
     try std.testing.expectEqualStrings("a (pid N) and pid 1 and pid N.", normalisePids("a (pid 12) and pid 1 and pid 100.", &buf));
 }

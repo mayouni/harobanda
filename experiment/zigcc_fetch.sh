@@ -1,7 +1,7 @@
 #!/bin/bash
 # zigcc_fetch.sh -- fetch the Linux Zig toolchain ONCE, by digest, into
 # vendor/zig/ (gitignored, like the kernel tarball), and extract it inside
-# WSL where the kernel is built. The Windows Zig cross-compiles stzos for
+# WSL where the kernel is built. The Windows Zig cross-compiles harb for
 # Linux, but driving `make` needs a native Linux compiler, and this is the
 # one whose C front end the kernel will be built with (ZIGCC-1).
 # Output: zig-out/wsl/zigcc_fetch.txt
@@ -11,7 +11,7 @@ mkdir -p zig-out/wsl vendor/zig
 VER=0.15.2
 NAME=zig-x86_64-linux-$VER.tar.xz
 SUM=02aa270f183da276e5b5920b1dac44a63f1a49e55050ebde3aecc9eb82f93239
-DEST=$HOME/stzos-zig
+DEST=$HOME/harb-zig
 {
   echo "pin: $NAME sha256 $SUM"
   cd "$(dirname "$0")/../vendor/zig" || exit 1

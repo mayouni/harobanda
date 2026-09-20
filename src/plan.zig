@@ -1,6 +1,6 @@
 // plan.zig -- the boot plan, derived from a judged machine declaration.
 // Pure: no allocation beyond the arena, no syscall. The plan is what
-// `stzos plan` prints, what the court judges (service order, granted
+// `harb plan` prints, what the court judges (service order, granted
 // set), and what init.zig executes step by step. A plan is legible
 // before it is run -- stzlib's stzUpdatePlan law (rehearse, narrate,
 // then commit) carried down to the boot of a machine.

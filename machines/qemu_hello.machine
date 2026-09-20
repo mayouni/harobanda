@@ -1,7 +1,7 @@
 -- qemu_hello.machine -- the first machine to BOOT: a hosted x86_64 box
 -- whose image (a vendored Linux 6.12 LTS over tinyconfig, an initramfs of
 -- two binaries and one Luau file, this file at /etc/machine) boots in
--- QEMU with stzos as PID 1. Two services: the machine prints its own plan
+-- QEMU with harb as PID 1. Two services: the machine prints its own plan
 -- from inside itself, then stzr runs a Luau world that says hello. The
 -- serial transcript is the fixture (experiment/os2_image.sh).
 
@@ -26,7 +26,7 @@ DEFINE MOUNT tmp AS (
 ) RATIONALE "Somewhere writable that vanishes with the machine"
 
 DEFINE SERVICE self AS (
-  RUN ["/stzos", "plan", "/etc/machine"],
+  RUN ["/harb", "plan", "/etc/machine"],
   RESTART never,
   NEEDS [process, filesystem]
 ) RATIONALE "The machine narrates its own plan from inside itself: the declaration rode in the image"
@@ -37,7 +37,7 @@ DEFINE USER world AS (
 ) RATIONALE "The world runs as an identity, not as the machine: the smallest machine still says who is who"
 
 DEFINE SERVICE whoami AS (
-  RUN ["/stzos", "id"],
+  RUN ["/harb", "id"],
   RESTART never,
   USER world,
   AFTER [self],

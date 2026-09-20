@@ -6,16 +6,16 @@
 #   bash experiment/judge_project.sh [machine-name]
 cd "$(dirname "$0")/.." || exit 1
 NAME=${1:-cold_room_sensor}
-STZOS=${STZOS:-}
-if [ -z "$STZOS" ]; then
-  for c in ./zig-out/bin/stzos.exe ./zig-out/bin/stzos ./zig-out/cross/x86_64-linux-musl/stzos; do
-    [ -x "$c" ] && { STZOS=$c; break; }
+HARB=${HARB:-}
+if [ -z "$HARB" ]; then
+  for c in ./zig-out/bin/harb.exe ./zig-out/bin/harb ./zig-out/cross/x86_64-linux-musl/harb; do
+    [ -x "$c" ] && { HARB=$c; break; }
   done
 fi
-[ -n "$STZOS" ] || { echo "judge_project: no stzos binary (zig build)"; exit 1; }
+[ -n "$HARB" ] || { echo "judge_project: no harb binary (zig build)"; exit 1; }
 OUT=zig-out/project/$NAME
 rm -rf "$OUT"
-"$STZOS" project "machines/$NAME.machine" --out "$OUT" || exit 1
+"$HARB" project "machines/$NAME.machine" --out "$OUT" || exit 1
 EXP=machines/$NAME.device.ring.expected
 if [ ! -f "$EXP" ]; then
   echo "JUDGED: no expectation pinned for $NAME yet -- $EXP is missing; this projection is at $OUT/device.ring"

@@ -6,7 +6,7 @@
 # today, and neither can keep them all:
 #
 #   the board's EXPECTATION (zig-out/image/<name>/expected, derived by
-#   `stzos image` through the board's lens) -- the floor's three: the
+#   `harb image` through the board's lens) -- the floor's three: the
 #   wire up, the address declared, the partition mounted, all before any
 #   world starts. It carries no slot decision, because an expectation
 #   stops where the verdict begins.
@@ -23,13 +23,13 @@
 #   bash experiment/judge_guarantees.sh [machine-name]
 cd "$(dirname "$0")/.." || exit 1
 NAME=${1:-makeen_box}
-STZOS=${STZOS:-}
-if [ -z "$STZOS" ]; then
-  for c in ./zig-out/bin/stzos.exe ./zig-out/bin/stzos ./zig-out/cross/x86_64-linux-musl/stzos; do
-    [ -x "$c" ] && { STZOS=$c; break; }
+HARB=${HARB:-}
+if [ -z "$HARB" ]; then
+  for c in ./zig-out/bin/harb.exe ./zig-out/bin/harb ./zig-out/cross/x86_64-linux-musl/harb; do
+    [ -x "$c" ] && { HARB=$c; break; }
   done
 fi
-[ -n "$STZOS" ] || { echo "judge_guarantees: no stzos binary (zig build)"; exit 1; }
+[ -n "$HARB" ] || { echo "judge_guarantees: no harb binary (zig build)"; exit 1; }
 M=machines/$NAME.machine
 [ -f "$M" ] || { echo "judge_guarantees: no such machine: $M"; exit 1; }
 
@@ -40,7 +40,7 @@ REPORT=$OUT/$NAME.txt
 
 EXPECTED=zig-out/image/$NAME/expected
 if [ -f "$EXPECTED" ]; then
-  "$STZOS" guarantees "$M" "$EXPECTED" >> "$REPORT"
+  "$HARB" guarantees "$M" "$EXPECTED" >> "$REPORT"
   echo >> "$REPORT"
 else
   echo "the board's expectation is not built ($EXPECTED); run experiment/os2_image.sh $NAME first" >> "$REPORT"
@@ -49,7 +49,7 @@ fi
 
 TRANSCRIPT=machines/$NAME.expected
 if [ -f "$TRANSCRIPT" ]; then
-  "$STZOS" guarantees "$M" "$TRANSCRIPT" >> "$REPORT"
+  "$HARB" guarantees "$M" "$TRANSCRIPT" >> "$REPORT"
 else
   echo "no transcript pinned for $NAME yet ($TRANSCRIPT)" >> "$REPORT"
 fi

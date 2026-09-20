@@ -6,7 +6,7 @@
 #
 #   wsl -d Ubuntu -- bash .../experiment/zigcc_kernel.sh [machine-name]
 #
-# A SEPARATE tree per arch under $HOME/stzos-kernel/zigcc-<arch>/, so the
+# A SEPARATE tree per arch under $HOME/harb-kernel/zigcc-<arch>/, so the
 # gcc-built trees the three courts use stay intact and fast. The kernel
 # detects clang from CC and configures itself accordingly, so tinyconfig,
 # the merge and olddefconfig are all re-run under it. GNU binutils still
@@ -19,8 +19,8 @@ NAME=${1:-qemu_hello}
 OUT=zig-out/image/$NAME
 LOG=zig-out/wsl/zigcc_$NAME.txt
 mkdir -p zig-out/wsl
-ZIG=$HOME/stzos-zig/zig-x86_64-linux-0.15.2/zig
-WRAP=$HOME/stzos-zig/bin
+ZIG=$HOME/harb-zig/zig-x86_64-linux-0.15.2/zig
+WRAP=$HOME/harb-zig/bin
 {
   [ -x "$ZIG" ] || { echo "no zig at $ZIG -- run experiment/zigcc_fetch.sh first"; exit 1; }
   [ -f "$OUT/image.env" ] || { echo "no $OUT/image.env -- run os2_image.sh $NAME first"; exit 1; }
@@ -33,22 +33,22 @@ WRAP=$HOME/stzos-zig/bin
   export ZIGCC_REAL="$ZIG"
   printf '#!/bin/sh\nexec %s ar "$@"\n' "$ZIG" > "$WRAP/zigar"; chmod +x "$WRAP/zigar"
   "$WRAP/zigcc" --version | head -1
-  PIN=$(cat vendor/linux/PIN.txt); TARBALL=${PIN%% *}; K=$HOME/stzos-kernel/zigcc-$ARCH; SRC=$K/${TARBALL%.tar.xz}
+  PIN=$(cat vendor/linux/PIN.txt); TARBALL=${PIN%% *}; K=$HOME/harb-kernel/zigcc-$ARCH; SRC=$K/${TARBALL%.tar.xz}
   mkdir -p "$K"
   if [ ! -d "$SRC" ]; then echo "extracting into $K"; tar -xJf "vendor/linux/$TARBALL" -C "$K" || exit 1; fi
-  cp "$OUT/kernel.fragment" "$SRC/stzos.fragment"
+  cp "$OUT/kernel.fragment" "$SRC/harb.fragment"
   (
     cd "$SRC" || exit 1
     export ARCH CROSS_COMPILE
     M="make CC=$WRAP/zigcc HOSTCC=gcc"
     echo "=== tinyconfig ==="; $M -s tinyconfig 2>&1 | tail -5 || exit 1
     echo "=== merge + olddefconfig ==="
-    scripts/kconfig/merge_config.sh -m .config stzos.fragment > /dev/null || exit 1
+    scripts/kconfig/merge_config.sh -m .config harb.fragment > /dev/null || exit 1
     $M -s olddefconfig 2>&1 | tail -5 || exit 1
     echo "clang detected by kconfig: $(grep -c '^CONFIG_CC_IS_CLANG=y' .config) (1 = yes)"
     echo "version: $(grep '^CONFIG_CC_VERSION_TEXT' .config)"
     echo "config: $(grep -c '=y' .config) options on"
-    grep -E '^CONFIG_[A-Z0-9_]+=y' stzos.fragment | while read -r want; do
+    grep -E '^CONFIG_[A-Z0-9_]+=y' harb.fragment | while read -r want; do
       grep -q "^$want\$" .config || echo "  $want DROPPED by olddefconfig"
     done
     echo "=== build ==="

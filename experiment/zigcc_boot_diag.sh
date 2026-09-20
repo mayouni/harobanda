@@ -10,7 +10,7 @@ OUT=zig-out/image/qemu_hello
   echo "== earlyprintk, 30 s =="
   ( cd "$OUT" && timeout --foreground 30 qemu-system-x86_64 -M pc -cpu max -m 256M -nographic -no-reboot \
       -kernel bzImage -initrd initramfs.cpio \
-      -append "console=ttyS0 earlyprintk=serial,ttyS0,115200 loglevel=8 rdinit=/stzos -- init /etc/machine" < /dev/null 2>&1 | head -40 )
+      -append "console=ttyS0 earlyprintk=serial,ttyS0,115200 loglevel=8 rdinit=/harb -- init /etc/machine" < /dev/null 2>&1 | head -40 )
   echo "qemu exit $?"
 } > zig-out/wsl/zigcc_boot_diag.txt 2>&1
 cat zig-out/wsl/zigcc_boot_diag.txt

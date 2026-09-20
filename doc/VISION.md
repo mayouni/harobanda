@@ -40,13 +40,13 @@ VIRTUAL TWIN — `stzSystemProfile`, `stzSystemScope`, `stzVirtualSystem`,
 `stzSystemActor`, the `.stzsystem` and `.stzplatform` files — and stated
 its law: rehearse, plan, commit; "there is no wire to cut, because no
 wire was ever laid." The twin was written so that an agent could not
-hurt the machine it runs on. stzos is the same envelope one floor down:
+hurt the machine it runs on. Harobanda is the same envelope one floor down:
 the twin's declaration becomes the machine's declaration, the update
 plan becomes the boot plan, and the commit becomes PID 1.
 
 ## The rule of three lines, applied
 
-- **CAPABILITY — open, in stzos**: the machine language, the court, the
+- **CAPABILITY — open, in Harobanda**: the machine language, the court, the
   planner, the init, the image builder. Mechanisms with conformance, no
   delivery opinion.
 - **PROJECTION — open, stzp**: a declared machine projected to a
@@ -62,7 +62,7 @@ plan becomes the boot plan, and the commit becomes PID 1.
 ## Three profiles, one language
 
 **Hosted** — a vendored Linux kernel rebuilt by our toolchain, a static
-musl userland of exactly two binaries (stzos as PID 1, stzr as the
+musl userland of exactly two binaries (harb as PID 1, stzr as the
 runtime), the declared services, nothing else: no shell, no package
 manager, no init scripts, no service manager. This is the Omarchy
 lesson taken to its end: Omarchy owns the experience of an operating
@@ -124,7 +124,7 @@ before any board — is this repository's court.
 - No configuration drift: the machine is its file; a change is a new
   image through refine's gate, applied atomically (A/B), rolled back by
   watchdog.
-- No monorepo: stzos stays a thin repository consuming stz; products
+- No monorepo: Harobanda stays a thin repository consuming stz; products
   (the Studio's device lens, the fleet agents) stay out of it.
 
 ## The ladder below

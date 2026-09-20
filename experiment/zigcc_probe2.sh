@@ -3,9 +3,9 @@
 # that produces nothing, run by hand, to name the flag responsible.
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p zig-out/wsl
-export ZIGCC_REAL=$HOME/stzos-zig/zig-x86_64-linux-0.15.2/zig
-W=$HOME/stzos-zig/bin/zigcc
-SRC=$HOME/stzos-kernel/zigcc-x86_64/linux-6.12.109
+export ZIGCC_REAL=$HOME/harb-zig/zig-x86_64-linux-0.15.2/zig
+W=$HOME/harb-zig/bin/zigcc
+SRC=$HOME/harb-kernel/zigcc-x86_64/linux-6.12.109
 {
   cd "$SRC" || exit 1
   rm -f scripts/mod/devicetable-offsets.s

@@ -1,4 +1,4 @@
-# device.ring -- DERIVED by stzos project from the declared machine
+# device.ring -- DERIVED by harb project from the declared machine
 # cold_room_sensor. Do not edit: edit the machine and project it again.
 #
 # A thermistor, a log, a radio: the binary is the device

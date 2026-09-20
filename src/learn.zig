@@ -1,4 +1,4 @@
-//! `stzos learn` -- the guided tour of what this machine does and why
+//! `harb learn` -- the guided tour of what this machine does and why
 //! (LRN-1, redesigned after its first reader).
 //!
 //! ## What the first reader taught it
@@ -25,7 +25,7 @@
 //!
 //! So the curriculum is a table beside the verbs it teaches, every
 //! lesson declares the paths it names, and `zig build court` runs
-//! `stzos learn --check` over them.
+//! `harb learn --check` over them.
 
 const std = @import("std");
 /// the floor's own deny list, so a lesson that counts it cannot drift
@@ -79,11 +79,11 @@ pub const Lesson = struct {
 };
 
 /// How a reader types this binary's name from the repository root. The
-/// lessons print it verbatim rather than saying "stzos", because the
+/// lessons print it verbatim rather than saying "harb", because the
 /// first reader of this tour ran one command from `zig-out\bin` and the
 /// next from the root, and had to work out on their own why a relative
 /// machine path stopped resolving.
-pub const exe = "zig-out\\bin\\stzos.exe";
+pub const exe = "zig-out\\bin\\harb.exe";
 const EXE = exe;
 
 pub const words = [_][2][]const u8{
@@ -95,7 +95,7 @@ pub const words = [_][2][]const u8{
     .{ "the court", "The judge of the grammar. A file of cases -- some that must be ACCEPTED, more that must be REFUSED, each with the exact words its refusal has to contain. `zig build court` runs them all." },
     .{ "a pin", "A stored copy of everything a boot should print. Boot again and the court diffs the two, so any change shows up as a diff instead of a shrug." },
     .{ "the transcript", "Everything one boot actually printed, from the first line of PID 1 to the halt." },
-    .{ "PID 1", "The first process the kernel starts, which on this machine is `stzos` itself. It mounts, it starts the worlds, it reaps them, and it narrates every step." },
+    .{ "PID 1", "The first process the kernel starts, which on this machine is `harb` itself. It mounts, it starts the worlds, it reaps them, and it narrates every step." },
     .{ "a fleet", "A set of machines judged TOGETHER, in a `.fleet` file. Some mistakes are only visible across a set -- two boxes that each call themselves the server of one network are each faultless alone." },
     .{ "a seat", "One unit of work in this project's history, tagged like `NS-1` or `SEE-1`. Every doctrine line names the seat that paid for it, and `experiment/PROTOCOL.md` tells each story in full." },
 };
@@ -130,7 +130,7 @@ pub const lessons = [_]Lesson{
                 "has no shell ('sh')",
                 "",
                 "Note what it did NOT complain about. Your service left out RESTART and",
-                "NEEDS, and both are optional -- swap \"sh\" for \"/stzos\" and the same three",
+                "NEEDS, and both are optional -- swap \"sh\" for \"/harb\" and the same three",
                 "lines are accepted as a fourth service. The ONLY thing wrong was the shell.",
             },
             .undo = "git checkout -- machines/qemu_hello.machine",
@@ -215,11 +215,11 @@ pub const lessons = [_]Lesson{
         .act = "II. THE BOOT",
         .title = "The machine boots, and narrates every step as it takes it",
         .question = "What does a declared machine actually DO when it starts?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
         .look = &.{
-            "boot: stzos init -- machine qemu_hello (hosted / x86_64 / qemu_pc) -- pid 1",
+            "boot: harb init -- machine qemu_hello (hosted / x86_64 / qemu_pc) -- pid 1",
             "boot: mount proc at /proc -- done",
-            "hello from a declared machine -- stzr on stzos, a Luau world under PID 1",
+            "hello from a declared machine -- stzr on Harobanda, a Luau world under PID 1",
             "",
             "A Linux kernel was configured and built, an image packed, QEMU booted, three",
             "worlds run and the box halted. Every line of it came from the one text file",
@@ -234,7 +234,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  CONSOLE \"/dev/ttyS3\"",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello",
+            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
             .expect = &.{
                 "The boot goes SILENT. QEMU shows the kernel's own lines and then nothing,",
                 "because PID 1 is narrating to a serial port that is not the one the",
@@ -265,11 +265,11 @@ pub const lessons = [_]Lesson{
             .where = "at the very END of the file",
             .paste = &.{
                 "DEFINE SERVICE extra AS (",
-                "  RUN [\"/stzos\", \"version\"],",
+                "  RUN [\"/harb\", \"version\"],",
                 "  NEEDS [process]",
                 ") RATIONALE \"A world the expectation was written before\"",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello",
+            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
             .expect = &.{
                 "It still boots. Then it judges itself and says so:",
                 "",
@@ -298,7 +298,7 @@ pub const lessons = [_]Lesson{
         .act = "II. THE BOOT",
         .title = "A pin is not a record of what happened -- it is a claim that it was right",
         .question = "The boot judged itself. Who judges the judge?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
         .look = &.{
             "JUDGED: the boot transcript matches machines/qemu_hello.expected line for line (35 lines)",
             "",
@@ -314,7 +314,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "boot: console /dev/ttyS9",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello",
+            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello",
             .expect = &.{
                 "JUDGED: FAIL -- the transcript differs from machines/qemu_hello.expected:",
                 "followed by a unified diff showing exactly your one-character edit.",
@@ -335,9 +335,9 @@ pub const lessons = [_]Lesson{
         .act = "III. WHAT A WORLD MAY DO",
         .title = "Six worlds, the same six questions, and only their declarations differ",
         .question = "A world says what it NEEDS. What happens to what it did not ask for?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_confine",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_confine",
         .look = &.{
-            "Six worlds run the SAME command -- /stzos confined eth0 /data /var/log --",
+            "Six worlds run the SAME command -- /harb confined eth0 /data /var/log --",
             "and each reports what it can actually reach. Line them up:",
             "",
             "  world    what it declared              eth0      /data     fork",
@@ -367,7 +367,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  NEEDS [process, network]",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_confine",
+            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_confine",
             .expect = &.{
                 "confined: eth0 -- present: this world shares the machine's network",
                 "",
@@ -471,7 +471,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  SEES [data, logs]",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_confine",
+            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_confine",
             .expect = &.{
                 "confined: /var/log -- mounted here: this world can see the machine's storage",
                 "",
@@ -513,7 +513,7 @@ pub const lessons = [_]Lesson{
         .act = "III. WHAT A WORLD MAY DO",
         .title = "A budget the KERNEL holds, not the world",
         .question = "A world asks for more than it was granted. Who stops it, and how does it feel?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_budget",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_budget",
         .look = &.{
             "PID 1 announces every ceiling before any world starts:",
             "",
@@ -557,7 +557,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  TASKS 20,",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_budget",
+            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_budget",
             .expect = &.{
                 "swarm: 12 tasks made, and the kernel refused none: this world was not sized",
                 "",
@@ -597,7 +597,7 @@ pub const lessons = [_]Lesson{
         .act = "III. WHAT A WORLD MAY DO",
         .title = "How far a granted network reaches",
         .question = "The box may speak. May it speak to ANYONE?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_egress",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_egress",
         .look = &.{
             "PID 1 states the perimeter before either witness runs:",
             "",
@@ -629,7 +629,7 @@ pub const lessons = [_]Lesson{
             .paste = &.{
                 "  EGRESS [\"0.0.0.0/0\"]",
             },
-            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_egress",
+            .then = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_egress",
             .expect = &.{
                 "boot: egress lan -- 0.0.0.0/0: a DEFAULT route, so this machine knows a",
                 "way anywhere",
@@ -678,7 +678,7 @@ pub const lessons = [_]Lesson{
         .act = "IV. WHO A DEVICE IS",
         .title = "A device's name is its KEY, and the key survives the power",
         .question = "Two boxes run the same image. What makes one of them THIS box?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_identity",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_identity",
         .look = &.{
             "One disk, booted TWICE in one transcript. The second boot's lines are",
             "prefixed `again:` so you can tell them apart:",
@@ -836,7 +836,7 @@ pub const lessons = [_]Lesson{
         .act = "IV. WHO A DEVICE IS",
         .title = "A record verified by something that never held the secret",
         .question = "Only the device can check its own signature. Is that evidence, or just a claim?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os7_fleet.sh",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os7_fleet.sh",
         .look = &.{
             "The script prints one arc in seven labelled sections. Read them in order.",
             "",
@@ -951,7 +951,7 @@ pub const lessons = [_]Lesson{
         .act = "V. THE NETWORK",
         .title = "The box is the network's own server of names",
         .question = "The kitchen printer comes back on a different number after every power cut. Why should it?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os6_names.sh",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os6_names.sh",
         .look = &.{
             "TWO machines boot at the same time on one QEMU wire, and then a THIRD",
             "run of the same till image with a different hardware address. Sixty-eight",
@@ -1080,8 +1080,8 @@ pub const lessons = [_]Lesson{
             "             not enrolled",
             "",
             "Three commands in this tour judge three different things, and it is worth",
-            "being clear which is which. `stzos check` judges ONE machine. A boot judges",
-            "what that machine DID. `stzos fleet` judges a SET, and nothing else can.",
+            "being clear which is which. `harb check` judges ONE machine. A boot judges",
+            "what that machine DID. `harb fleet` judges a SET, and nothing else can.",
             "",
             "Read what the roll derived rather than read. Nobody wrote `served by",
             "boitier` anywhere -- it worked that out from which member's machine declares",
@@ -1175,7 +1175,7 @@ pub const lessons = [_]Lesson{
         .act = "VI. THE FLAGSHIP",
         .title = "The Makeen box: four boots, three cards, and a verdict it refused to commit",
         .question = "A box in a restaurant takes an update at two in the morning and it is wrong. Then what?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh makeen_box",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh makeen_box",
         .look = &.{
             "129 lines, four boots, and they are NOT four boots of one card. Check the",
             "fingerprints and the labels:",
@@ -1264,12 +1264,12 @@ pub const lessons = [_]Lesson{
         .act = "VI. THE FLAGSHIP",
         .title = "The four standing promises, judged by name",
         .question = "What does this floor actually promise a merchant, and is it keeping it today?",
-        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/judge_guarantees.sh",
+        .run = "wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/judge_guarantees.sh",
         .look = &.{
             "Four promises, judged by name, TWICE -- because two different texts keep",
             "them today and neither keeps them all.",
             "",
-            "First against the board's EXPECTATION, which `stzos image` derived before",
+            "First against the board's EXPECTATION, which `harb image` derived before",
             "anything booted:",
             "",
             "    always reachable   KEPT -- boot: network lan -- eth0 up 192.168.10.1/24",
@@ -1332,13 +1332,13 @@ fn block(w: *std.Io.Writer, pad: []const u8, lines: []const []const u8) !void {
 }
 
 pub fn list(w: *std.Io.Writer) !void {
-    try w.print("\n  stzos learn -- a guided tour of a declared machine, in {d} lessons.\n", .{lessons.len});
+    try w.print("\n  harb learn -- a guided tour of a declared machine, in {d} lessons.\n", .{lessons.len});
     try rule(w);
     try w.print("  BEFORE YOU START\n", .{});
-    try w.print("    Run everything from the repository root, D:\\GitHub\\stzos, so that a\n", .{});
+    try w.print("    Run everything from the repository root, D:\\GitHub\\harb, so that a\n", .{});
     try w.print("    path like machines\\qemu_hello.machine means what the lesson thinks.\n", .{});
     try w.print("    That stays true even with this binary on your PATH: the lessons spell\n", .{});
-    try w.print("    it {s}, and if you can type just `stzos`\n", .{EXE});
+    try w.print("    it {s}, and if you can type just `harb`\n", .{EXE});
     try w.print("    then do -- but still from the root, because the MACHINE paths are\n", .{});
     try w.print("    relative and the command name no longer tells you where to stand.\n", .{});
     try w.print("    New to the words? {s} learn --words\n\n", .{EXE});
@@ -1503,7 +1503,7 @@ pub fn one(w: *std.Io.Writer, n: usize) !void {
         try wrapped(w, "    ", l.run[1 .. l.run.len - 1]);
         try w.print("\n", .{});
     } else {
-        try w.print("\n  RUN  (from D:\\GitHub\\stzos)\n    {s}\n\n", .{l.run});
+        try w.print("\n  RUN  (from D:\\GitHub\\harb)\n    {s}\n\n", .{l.run});
     }
     try w.print("  LOOK FOR\n", .{});
     try block(w, "    ", l.look);

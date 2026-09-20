@@ -3,13 +3,13 @@
 -- by stz's own meta-court. Run from D:\GitHub\stz (the stzr runner resolves
 -- `@stz/` and readfile against its working directory):
 --
---   zig-out\bin\stzr.exe ..\stzos\experiment\judge_machine_stzu.luau
+--   zig-out\bin\stzr.exe ..\harb\experiment\judge_machine_stzu.luau
 --
 -- Nothing is forked: the judge is stz's face/stz/Stzu.luau as it stands.
 
 local Stzu = require("@stz/Stzu")
 
-local src = readfile("../stzos/declarative/machine/machine.stzu")
+local src = readfile("../harb/declarative/machine/machine.stzu")
 local ok, L = pcall(Stzu.declare, src)
 if not ok then
     print("machine.stzu -- REFUSED by stz's meta-court: " .. tostring(L))

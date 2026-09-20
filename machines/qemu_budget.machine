@@ -31,7 +31,7 @@ DEFINE SERVICE modest AS (
 ) RATIONALE "A world that holds a little and ends: the kernel never has to intervene, and the transcript says nothing about it -- which is what a held ceiling looks like"
 
 DEFINE SERVICE swarm AS (
-  RUN ["/stzos", "swarm", "12"],
+  RUN ["/harb", "swarm", "12"],
   RESTART never,
   TASKS 6,
   AFTER [modest],

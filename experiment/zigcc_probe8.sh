@@ -1,6 +1,6 @@
 #!/bin/bash
 # what the kernel's own Makefile says REALMODE_CFLAGS is
-S=$HOME/stzos-kernel/zigcc-x86_64/linux-6.12.109
+S=$HOME/harb-kernel/zigcc-x86_64/linux-6.12.109
 cd "$(dirname "$0")/.." || exit 1
 {
   echo "== REALMODE_CFLAGS in arch/x86/Makefile =="

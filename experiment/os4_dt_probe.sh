@@ -2,7 +2,7 @@
 # os4_dt_probe.sh -- the BCM2711 device-tree nodes QEMU's raspi4b does not
 # model (the AON L2 interrupt controller faulted the first boot), and the
 # in-tree dtc that can disable them for the emulator court.
-S=$HOME/stzos-kernel/arm64/linux-6.12.109
+S=$HOME/harb-kernel/arm64/linux-6.12.109
 D=$S/arch/arm/boot/dts/broadcom   # the bcm2711 dtsi files live under arm/, included by the arm64 dts
 {
   echo "== 7ef00100 in bcm2711.dtsi =="; grep -n -B2 -A8 '7ef00100' "$D/bcm2711.dtsi" | head -30

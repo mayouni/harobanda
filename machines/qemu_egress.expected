@@ -1,4 +1,4 @@
-boot: stzos init -- machine qemu_egress (hosted / x86_64 / qemu_pc) -- pid 1
+boot: harb init -- machine qemu_egress (hosted / x86_64 / qemu_pc) -- pid 1
 boot: console /dev/ttyS0
 boot: mount proc at /proc -- done
 boot: mount sysfs at /sys -- done
@@ -8,10 +8,10 @@ boot: grant network (effectful)
 boot: network lan -- eth0 up 10.0.2.15/24
 boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
 boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
-boot: start allowed -- pid N -- /stzos reach 10.9.0.1
+boot: start allowed -- pid N -- /harb reach 10.9.0.1
 reach 10.9.0.1 -- a route exists: this machine knows a way there
 boot: allowed (pid N) exited 0
-boot: start denied -- pid N -- /stzos reach 8.8.8.8
+boot: start denied -- pid N -- /harb reach 8.8.8.8
 reach 8.8.8.8 -- no route: this machine knows no way there
 boot: denied (pid N) exited 0
 boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)

@@ -1,4 +1,4 @@
-boot: stzos init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
+boot: harb init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
 boot: console /dev/ttyS1
 boot: slots on /dev/mmcblk0p1 -- A and B
 boot: mount proc at /proc -- done
@@ -36,7 +36,7 @@ card: os_prefix=slots/B/
 card: [tryboot]
 card: os_prefix=slots/A/
 steady: the same card, booted again:
-steady: boot: stzos init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
+steady: boot: harb init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
 steady: boot: console /dev/ttyS1
 steady: boot: slots on /dev/mmcblk0p1 -- A and B
 steady: boot: mount proc at /proc -- done

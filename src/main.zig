@@ -1,15 +1,15 @@
-// stzos -- one static binary, every role. On the host it is the CLI
+// harb -- one static binary, every role. On the host it is the CLI
 // (check, plan, court); on a hosted machine the same binary is PID 1
 // (init). Cross-compiling it for the machine is one flag (`zig build
 // cross`), and the image carries nothing else on its boot path: no
 // shell, no service manager, no package manager -- the declared machine
 // IS the system.
 //
-//   stzos check  <file.machine>                 judge a declaration
-//   stzos plan   <file.machine>                 print the boot plan
-//   stzos court  [declarative/machine/fixtures.json]
-//   stzos init   <file.machine> [--rehearse] [--turns N]
-//   stzos version
+//   harb check  <file.machine>                 judge a declaration
+//   harb plan   <file.machine>                 print the boot plan
+//   harb court  [declarative/machine/fixtures.json]
+//   harb init   <file.machine> [--rehearse] [--turns N]
+//   harb version
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -36,28 +36,28 @@ const default_fleet_fixtures = "declarative/fleet/fixtures.json";
 
 fn usage(out: *std.Io.Writer) !void {
     try out.print(
-        \\stzos {s} -- the declared machine ({s}-{s})
-        \\  stzos check  <file.machine>
-        \\  stzos plan   <file.machine>
-        \\  stzos court  [fixtures.json]        (default: {s})
-        \\  stzos init   <file.machine> [--rehearse] [--turns N] [--hold] [--halt-on-verdict]
-        \\  stzos update <dir> [--boot <mountpoint>] [--no-reboot]   (write the other slot, try it once)
-        \\  stzos image  <file.machine> --root <staging dir> --out <image dir>
-        \\  stzos project <file.machine> --out <dir>     (an edge machine, onto MicroRing's substrate)
-        \\  stzos guarantees <file.machine> <text>       (the hosted profile's four promises, judged)
-        \\  stzos judge  <file.machine> <transcript> [--lens emulator]   (a captured boot, against what the machine expects)
-        \\  stzos net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
-        \\  stzos id                                     (uid and gid, from inside a machine)
-        \\  stzos reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
-        \\  stzos confined [iface] [path...]             (what can this WORLD see and do? from inside one)
-        \\  stzos swarm  [n]                             (ask for n tasks and say where the kernel stopped; from inside a world)
-        \\  stzos ask    <name>                          (what does a name mean on this network? from inside a device on it)
-        \\  stzos attest [file.machine]                  (sign with this device's key and verify it, from inside it)
-        \\  stzos journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
-        \\  stzos fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
-        \\  stzos court  --fleet [declarative/fleet/fixtures.json]
-        \\  stzos learn  [n] [--all] [--words] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
-        \\  stzos version
+        \\harb {s} -- the declared machine ({s}-{s})
+        \\  harb check  <file.machine>
+        \\  harb plan   <file.machine>
+        \\  harb court  [fixtures.json]        (default: {s})
+        \\  harb init   <file.machine> [--rehearse] [--turns N] [--hold] [--halt-on-verdict]
+        \\  harb update <dir> [--boot <mountpoint>] [--no-reboot]   (write the other slot, try it once)
+        \\  harb image  <file.machine> --root <staging dir> --out <image dir>
+        \\  harb project <file.machine> --out <dir>     (an edge machine, onto MicroRing's substrate)
+        \\  harb guarantees <file.machine> <text>       (the hosted profile's four promises, judged)
+        \\  harb judge  <file.machine> <transcript> [--lens emulator]   (a captured boot, against what the machine expects)
+        \\  harb net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
+        \\  harb id                                     (uid and gid, from inside a machine)
+        \\  harb reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
+        \\  harb confined [iface] [path...]             (what can this WORLD see and do? from inside one)
+        \\  harb swarm  [n]                             (ask for n tasks and say where the kernel stopped; from inside a world)
+        \\  harb ask    <name>                          (what does a name mean on this network? from inside a device on it)
+        \\  harb attest [file.machine]                  (sign with this device's key and verify it, from inside it)
+        \\  harb journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
+        \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
+        \\  harb court  --fleet [declarative/fleet/fixtures.json]
+        \\  harb learn  [n] [--all] [--words] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
+        \\  harb version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
 }
@@ -73,7 +73,7 @@ fn firstPath(args: []const []const u8) ?[]const u8 {
 
 fn load(arena: std.mem.Allocator, path: []const u8, out: *std.Io.Writer) !?machine.Machine {
     const src = std.fs.cwd().readFileAlloc(arena, path, 1 << 20) catch |e| {
-        try out.print("stzos: cannot read {s}: {s}\n", .{ path, @errorName(e) });
+        try out.print("harb: cannot read {s}: {s}\n", .{ path, @errorName(e) });
         return null;
     };
     var refusal = machine.Refusal{};
@@ -147,7 +147,7 @@ pub fn main() !u8 {
             return 0;
         };
         if (which == 0 or which > learn.lessons.len) {
-            try out.print("stzos: there are {d} lessons\n", .{learn.lessons.len});
+            try out.print("harb: there are {d} lessons\n", .{learn.lessons.len});
             return 1;
         }
         try learn.one(out, which);
@@ -180,7 +180,7 @@ pub fn main() !u8 {
         return 0;
     }
     if (std.mem.eql(u8, verb, "version")) {
-        try out.print("stzos {s}\n", .{version});
+        try out.print("harb {s}\n", .{version});
         return 0;
     }
     if (std.mem.eql(u8, verb, "id")) {
@@ -332,24 +332,24 @@ pub fn main() !u8 {
     if (std.mem.eql(u8, verb, "fleet")) {
         // The fleet court on one file, and the act the fleet exists for.
         //
-        // `stzos fleet <file>` judges the set and prints the roll: who is
+        // `harb fleet <file>` judges the set and prints the roll: who is
         // in it, what each one is, and -- the part that matters -- which
         // members nobody can yet speak for, because no key has been
         // enrolled. A refusal here is a fact about the SET; every machine
         // in it may be faultless alone (FLT-1).
         //
-        // `stzos fleet <file> verify <member> <record>` attributes a
+        // `harb fleet <file> verify <member> <record>` attributes a
         // signed boot record to a member using only the public key the
         // fleet holds. No secret takes part, so anyone holding the fleet
         // file can perform it: another box on the wire, the court here,
         // an auditor years from now.
         if (args.len < 3) {
-            try out.print("stzos: fleet takes a fleet file\n", .{});
+            try out.print("harb: fleet takes a fleet file\n", .{});
             return 1;
         }
         const path = args[2];
         const src = std.fs.cwd().readFileAlloc(arena, path, 1 << 20) catch |e| {
-            try out.print("stzos: cannot read {s}: {s}\n", .{ path, @errorName(e) });
+            try out.print("harb: cannot read {s}: {s}\n", .{ path, @errorName(e) });
             return 1;
         };
         const dir = std.fs.path.dirname(path) orelse "";
@@ -369,7 +369,7 @@ pub fn main() !u8 {
             // was a constant in a shell script, which is the one place a
             // fact about a deployment must never live.
             if (args.len < 5) {
-                try out.print("stzos: fleet hardware takes a member\n", .{});
+                try out.print("harb: fleet hardware takes a member\n", .{});
                 return 1;
             }
             const m = f.member(args[4]) orelse {
@@ -385,12 +385,12 @@ pub fn main() !u8 {
         }
         if (args.len >= 4 and std.mem.eql(u8, args[3], "verify")) {
             if (args.len < 6) {
-                try out.print("stzos: fleet verify takes a member and a record file\n", .{});
+                try out.print("harb: fleet verify takes a member and a record file\n", .{});
                 return 1;
             }
             const who = args[4];
             const record = std.fs.cwd().readFileAlloc(arena, args[5], 1 << 20) catch |e| {
-                try out.print("stzos: cannot read {s}: {s}\n", .{ args[5], @errorName(e) });
+                try out.print("harb: cannot read {s}: {s}\n", .{ args[5], @errorName(e) });
                 return 1;
             };
             switch (fleet.attribute(f, who, record)) {
@@ -476,7 +476,7 @@ pub fn main() !u8 {
             return 2;
         }
         if (args.len < 3) {
-            try out.print("stzos: ask takes a name (imprimante.makeen)\n", .{});
+            try out.print("harb: ask takes a name (imprimante.makeen)\n", .{});
             return 1;
         }
         const want = args[2];
@@ -595,8 +595,8 @@ pub fn main() !u8 {
         return 0;
     }
     if (std.mem.eql(u8, verb, "confined")) {
-        // The witness of the NS-1 seat, as `stzos id` is the USER seat's
-        // and `stzos reach` is the EGRESS seat's: it asks, FROM INSIDE A
+        // The witness of the NS-1 seat, as `harb id` is the USER seat's
+        // and `harb reach` is the EGRESS seat's: it asks, FROM INSIDE A
         // WORLD, what that world can actually do -- and both questions
         // have a negative that only a confined world can give.
         //
@@ -717,7 +717,7 @@ pub fn main() !u8 {
         return 0;
     }
     if (std.mem.eql(u8, verb, "reach")) {
-        // The witness of the EGRESS seat, as `stzos id` is the USER
+        // The witness of the EGRESS seat, as `harb id` is the USER
         // seat's: it asks the KERNEL whether this machine knows a way to
         // an address, and says what it answered. A UDP connect() is the
         // whole question -- it performs the route lookup and sends
@@ -728,7 +728,7 @@ pub fn main() !u8 {
             return 2;
         }
         if (args.len < 3) {
-            try out.print("stzos: reach takes an address (a.b.c.d)\n", .{});
+            try out.print("harb: reach takes an address (a.b.c.d)\n", .{});
             return 1;
         }
         const ip = machine.parseIpv4(args[2]) orelse {
@@ -778,7 +778,7 @@ pub fn main() !u8 {
     }
     if (std.mem.eql(u8, verb, "judge")) {
         if (args.len < 4) {
-            try out.print("stzos: judge needs <file.machine> and a captured transcript\n", .{});
+            try out.print("harb: judge needs <file.machine> and a captured transcript\n", .{});
             return 1;
         }
         var lens = expect.Lens{};
@@ -787,7 +787,7 @@ pub fn main() !u8 {
         }
         const m = (try load(arena, args[2], out)) orelse return 1;
         const text = std.fs.cwd().readFileAlloc(arena, args[3], 1 << 20) catch |e| {
-            try out.print("stzos: cannot read {s}: {s}\n", .{ args[3], @errorName(e) });
+            try out.print("harb: cannot read {s}: {s}\n", .{ args[3], @errorName(e) });
             return 1;
         };
         const p = try plan.derive(arena, &m);
@@ -795,12 +795,12 @@ pub fn main() !u8 {
     }
     if (std.mem.eql(u8, verb, "guarantees")) {
         if (args.len < 4) {
-            try out.print("stzos: guarantees needs <file.machine> and the text to judge (a transcript, or the expectation an image carries)\n", .{});
+            try out.print("harb: guarantees needs <file.machine> and the text to judge (a transcript, or the expectation an image carries)\n", .{});
             return 1;
         }
         const m = (try load(arena, args[2], out)) orelse return 1;
         const text = std.fs.cwd().readFileAlloc(arena, args[3], 1 << 20) catch |e| {
-            try out.print("stzos: cannot read {s}: {s}\n", .{ args[3], @errorName(e) });
+            try out.print("harb: cannot read {s}: {s}\n", .{ args[3], @errorName(e) });
             return 1;
         };
         return guarantee.judge(arena, &m, text, args[3], out);
@@ -829,12 +829,12 @@ pub fn main() !u8 {
                 if (std.mem.eql(u8, args[j], "--out")) {
                     out_dir = args[j + 1];
                 } else {
-                    try out.print("stzos: unknown option '{s}'\n", .{args[j]});
+                    try out.print("harb: unknown option '{s}'\n", .{args[j]});
                     return 1;
                 }
             }
             if (out_dir == null) {
-                try out.print("stzos: project needs --out <dir>\n", .{});
+                try out.print("harb: project needs --out <dir>\n", .{});
                 return 1;
             }
             return project.write(arena, p, .{ .out_dir = out_dir.? }, out);
@@ -849,12 +849,12 @@ pub fn main() !u8 {
                 } else if (std.mem.eql(u8, args[j], "--out")) {
                     out_dir = args[j + 1];
                 } else {
-                    try out.print("stzos: unknown option '{s}'\n", .{args[j]});
+                    try out.print("harb: unknown option '{s}'\n", .{args[j]});
                     return 1;
                 }
             }
             if (root == null or out_dir == null) {
-                try out.print("stzos: image needs --root <staging dir> and --out <image dir>\n", .{});
+                try out.print("harb: image needs --root <staging dir> and --out <image dir>\n", .{});
                 return 1;
             }
             return image.write(arena, p, .{ .out_dir = out_dir.?, .root = root.?, .machine_path = args[2] }, out);
@@ -871,11 +871,11 @@ pub fn main() !u8 {
             } else if (std.mem.eql(u8, args[i], "--turns") and i + 1 < args.len) {
                 i += 1;
                 opts.turns = std.fmt.parseInt(usize, args[i], 10) catch {
-                    try out.print("stzos: --turns takes a number\n", .{});
+                    try out.print("harb: --turns takes a number\n", .{});
                     return 1;
                 };
             } else {
-                try out.print("stzos: unknown option '{s}'\n", .{args[i]});
+                try out.print("harb: unknown option '{s}'\n", .{args[i]});
                 return 1;
             }
         }

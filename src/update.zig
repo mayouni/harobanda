@@ -1,4 +1,4 @@
-// update.zig -- `stzos update <dir>`: write a new image into the slot that
+// update.zig -- `harb update <dir>`: write a new image into the slot that
 // is NOT committed, then ask the firmware to try it once. The file half:
 // the boot partition (SLOTS of the machine at /etc/machine, or --boot
 // <dir> to rehearse on any directory) is read for the committed slot, the
@@ -18,7 +18,7 @@ const files = [_][]const u8{ "kernel8.img", "initramfs.cpio", "bcm2711-rpi-4-b.d
 
 pub fn run(gpa: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writer) !u8 {
     if (args.len < 1) {
-        try out.print("update: usage -- stzos update <dir> [--boot <mountpoint>] [--no-reboot]\n", .{});
+        try out.print("update: usage -- harb update <dir> [--boot <mountpoint>] [--no-reboot]\n", .{});
         return 1;
     }
     const src = args[0];

@@ -24,7 +24,7 @@
 --   ledger   SEES [data]  there      mounted    NOT there  permitted
 --   caisse   SEES [logs]  there      NOT there  mounted    permitted
 --
--- The first answer is the sharp one. `stzos reach` asks whether the
+-- The first answer is the sharp one. `harb reach` asks whether the
 -- machine knows a WAY to an address, which is the EGRESS seat's
 -- question; this asks whether the interface EXISTS from where the world
 -- stands. In an empty network namespace it does not, and "no such
@@ -75,34 +75,34 @@ DEFINE NETWORK lan AS (
 ) RATIONALE "An interface that really exists on this machine, so that a world which cannot see it is being kept from something real"
 
 DEFINE SERVICE sealed AS (
-  RUN ["/stzos", "confined", "eth0", "/data", "/var/log"],
+  RUN ["/harb", "confined", "eth0", "/data", "/var/log"],
   RESTART never,
   NEEDS [process, filesystem]
 ) RATIONALE "It never declared the network, so it runs in an empty network namespace of its own: eth0 is not absent-from-permission, it is absent"
 
 DEFINE SERVICE still AS (
-  RUN ["/stzos", "confined", "eth0", "/data", "/var/log"],
+  RUN ["/harb", "confined", "eth0", "/data", "/var/log"],
   RESTART never,
   AFTER [sealed],
   NEEDS [network, filesystem]
 ) RATIONALE "It never declared process creation, so the kernel refuses its fork with EPERM -- and it can still see the network it did declare, which is what makes the two refusals independent"
 
 DEFINE SERVICE open AS (
-  RUN ["/stzos", "confined", "eth0", "/data", "/var/log"],
+  RUN ["/harb", "confined", "eth0", "/data", "/var/log"],
   RESTART never,
   AFTER [still],
   NEEDS [process, network, filesystem]
 ) RATIONALE "It declared everything, so it is held to nothing: the control that shows the other answers come from their declarations and not from the witness"
 
 DEFINE SERVICE blind AS (
-  RUN ["/stzos", "confined", "eth0", "/data", "/var/log"],
+  RUN ["/harb", "confined", "eth0", "/data", "/var/log"],
   RESTART never,
   AFTER [open],
   NEEDS [process]
 ) RATIONALE "It asked for nothing but the right to run, so it gets nothing but that: no network to speak on and no sight of the machine's storage. It is the world a sovereignty brief wants for anything that handles data it must not be able to send anywhere"
 
 DEFINE SERVICE ledger AS (
-  RUN ["/stzos", "confined", "eth0", "/data", "/var/log"],
+  RUN ["/harb", "confined", "eth0", "/data", "/var/log"],
   RESTART never,
   AFTER [blind],
   NEEDS [process, network, filesystem],
@@ -110,7 +110,7 @@ DEFINE SERVICE ledger AS (
 ) RATIONALE "The world that keeps the records: it declared the filesystem and then narrowed that grant to the one mount it keeps them on, so the machine's other storage is not in its tree at all. This is the shape a business world wants -- the till's own data, and no sight of the logs it has no business reading"
 
 DEFINE SERVICE caisse AS (
-  RUN ["/stzos", "confined", "eth0", "/data", "/var/log"],
+  RUN ["/harb", "confined", "eth0", "/data", "/var/log"],
   RESTART never,
   AFTER [ledger],
   NEEDS [process, network, filesystem],

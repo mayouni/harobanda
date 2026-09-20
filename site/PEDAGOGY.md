@@ -78,7 +78,7 @@ checked against what it claimed. This is the record of what changed after it.
 
 - **Finding 6 — the vocabulary. Done.** Eight terms on `machine.html` at 29%,
   before they start doing work. The definitions are the machine's own, from
-  `src/learn.zig`, carried across rather than quoted: the source says `stzos`,
+  `src/learn.zig`, carried across rather than quoted: the source says `harb`,
   `zig build court` and `machines\`, and the site says `harb`. Printing them
   verbatim would have put a second name for the same thing on the site, and
   editing them while still calling them quotations would have broken LRN-2. So

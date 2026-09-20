@@ -1,13 +1,13 @@
 #!/bin/bash
 # os2_image.sh -- the imperative half of the image, on a Linux host (WSL
-# Ubuntu here). Stages the root, lets `stzos image` DERIVE the artifacts,
+# Ubuntu here). Stages the root, lets `harb image` DERIVE the artifacts,
 # builds the vendored kernel (and the board's device tree) over tinyconfig
 # + the derived fragment for the derived ARCH, packs the initramfs with the
 # kernel's own gen_init_cpio, makes the declared disks or the SD card,
 # boots QEMU with the serial console captured, and judges the transcript
 # against machines/<name>.expected.
 #
-#   wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh [machine-name]
+#   wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh [machine-name]
 #
 # One kernel tree per ARCH under $HOME (WSL-native: building on the Windows
 # mount is an order of magnitude slower). The tarball and its pin stay in
@@ -18,24 +18,24 @@ NAME=${1:-qemu_hello}
 M=machines/$NAME.machine
 OUT=zig-out/image/$NAME
 LOG=zig-out/wsl/image_$NAME.txt
-K=$HOME/stzos-kernel
-HOST_STZOS=zig-out/cross/x86_64-linux-musl/stzos
+K=$HOME/harb-kernel
+HOST_HARB=zig-out/cross/x86_64-linux-musl/harb
 mkdir -p "$OUT" zig-out/wsl
 {
   echo "=== derive (target) ==="
   mkdir -p "$OUT/empty"
-  "$HOST_STZOS" image "$M" --root "$OUT/empty" --out "$OUT" > /dev/null 2>&1 || true
-  if [ ! -f "$OUT/image.env" ]; then "$HOST_STZOS" image "$M" --root "$OUT/empty" --out "$OUT"; echo "derive refused before staging"; exit 1; fi
+  "$HOST_HARB" image "$M" --root "$OUT/empty" --out "$OUT" > /dev/null 2>&1 || true
+  if [ ! -f "$OUT/image.env" ]; then "$HOST_HARB" image "$M" --root "$OUT/empty" --out "$OUT"; echo "derive refused before staging"; exit 1; fi
   . "$OUT/image.env"
   DTB=${DTB:-}; SD=${SD:-no}
   echo "arch $ARCH, board $BOARD, triple $TRIPLE, cross '${CROSS_COMPILE}', kernel $KERNEL_ARTIFACT, dtb '${DTB}', sd $SD"
   echo "=== stage ==="
   ROOT=$OUT/root; rm -rf "$ROOT"; mkdir -p "$ROOT/app"
-  cp "zig-out/cross/$TRIPLE/stzos" "$ROOT/stzos" || { echo "no stzos for $TRIPLE (zig build cross)"; exit 1; }
+  cp "zig-out/cross/$TRIPLE/harb" "$ROOT/harb" || { echo "no harb for $TRIPLE (zig build cross)"; exit 1; }
   if [ -f "zig-out/stz-$TRIPLE/bin/stzr" ]; then cp "zig-out/stz-$TRIPLE/bin/stzr" "$ROOT/stzr"; echo "stzr staged ($TRIPLE)"; else echo "stzr NOT staged (no build of stz under zig-out/stz-$TRIPLE)"; fi
   cp app/*.luau "$ROOT/app/" 2>/dev/null && echo "app staged"
   echo "=== derive ==="
-  "$HOST_STZOS" image "$M" --root "$ROOT" --out "$OUT" || { echo "derive refused"; exit 1; }
+  "$HOST_HARB" image "$M" --root "$ROOT" --out "$OUT" || { echo "derive refused"; exit 1; }
   for f in image.env initramfs.list kernel.fragment disk.list sd.list config.txt cmdline.txt boot.cmd expected expected.emulator; do [ -f "$OUT/$f" ] && { echo "--- $f"; cat "$OUT/$f"; }; done
   # the boot, EXPECTED, rides in the image and is judged by PID 1 itself
   # (JDG-1). A board the court emulates carries a second text through the
@@ -46,17 +46,17 @@ mkdir -p "$OUT" zig-out/wsl
     diff "$OUT/expected" "$OUT/expected.emulator" | grep '^[<>]' | sed 's/^</  the board: /; s/^>/  the emulator: /'
   fi
   echo "=== kernel ==="
-  # STZOS_CC=zigcc builds the kernel with OUR compiler (ZIGCC-1) in its own
+  # HARB_CC=zigcc builds the kernel with OUR compiler (ZIGCC-1) in its own
   # tree, so the two toolchains never share objects and either can be asked
   # for the same image; the default stays the host's gcc.
   CCARGS=""; KSUB=$ARCH
-  if [ "${STZOS_CC:-gcc}" = zigcc ]; then
-    ZIGBIN=$HOME/stzos-zig/zig-x86_64-linux-0.15.2/zig
-    [ -x "$ZIGBIN" ] || { echo "STZOS_CC=zigcc but no zig -- run experiment/zigcc_fetch.sh"; exit 1; }
-    mkdir -p "$HOME/stzos-zig/bin"; cp experiment/zigcc_wrapper.sh "$HOME/stzos-zig/bin/zigcc"; chmod +x "$HOME/stzos-zig/bin/zigcc"
+  if [ "${HARB_CC:-gcc}" = zigcc ]; then
+    ZIGBIN=$HOME/harb-zig/zig-x86_64-linux-0.15.2/zig
+    [ -x "$ZIGBIN" ] || { echo "HARB_CC=zigcc but no zig -- run experiment/zigcc_fetch.sh"; exit 1; }
+    mkdir -p "$HOME/harb-zig/bin"; cp experiment/zigcc_wrapper.sh "$HOME/harb-zig/bin/zigcc"; chmod +x "$HOME/harb-zig/bin/zigcc"
     export ZIGCC_REAL="$ZIGBIN"
-    CCARGS="CC=$HOME/stzos-zig/bin/zigcc HOSTCC=gcc"; KSUB=zigcc-$ARCH
-    echo "compiler: $("$HOME/stzos-zig/bin/zigcc" --version | head -1) (zig $("$ZIGBIN" version))"
+    CCARGS="CC=$HOME/harb-zig/bin/zigcc HOSTCC=gcc"; KSUB=zigcc-$ARCH
+    echo "compiler: $("$HOME/harb-zig/bin/zigcc" --version | head -1) (zig $("$ZIGBIN" version))"
   else
     echo "compiler: $(${CROSS_COMPILE}gcc --version | head -1)"
   fi
@@ -94,18 +94,18 @@ mkdir -p "$OUT" zig-out/wsl
     echo "kernel cache: MISS $KSUB-$FRAG -- first build of this configuration"
   fi
   mkdir -p "$B"
-  cp "$OUT/kernel.fragment" "$B/stzos.fragment"
+  cp "$OUT/kernel.fragment" "$B/harb.fragment"
   (
     cd "$SRC" || exit 1
     export ARCH CROSS_COMPILE
     # shellcheck disable=SC2086 -- CCARGS is empty or two plain assignments
     make -s $CCARGS O="$B" tinyconfig || exit 1
-    scripts/kconfig/merge_config.sh -O "$B" -m "$B/.config" "$B/stzos.fragment" > /dev/null || exit 1
+    scripts/kconfig/merge_config.sh -O "$B" -m "$B/.config" "$B/harb.fragment" > /dev/null || exit 1
     make -s $CCARGS O="$B" olddefconfig || exit 1
     echo "config: $(grep -c '=y' "$B/.config") options on"
     # every option the fragment asked for must survive olddefconfig; one that
     # did not is a dependency the fragment forgot, and it is named here
-    grep -E '^CONFIG_[A-Z0-9_]+=y' "$B/stzos.fragment" | while read -r want; do
+    grep -E '^CONFIG_[A-Z0-9_]+=y' "$B/harb.fragment" | while read -r want; do
       grep -q "^$want\$" "$B/.config" && echo "  $want" || echo "  $want DROPPED by olddefconfig -- a dependency is missing from the fragment"
     done
     time make -j2 $CCARGS O="$B" "$(basename "$KERNEL_ARTIFACT")" 2>&1 | tail -3
@@ -190,13 +190,13 @@ mkdir -p "$OUT" zig-out/wsl
     cp "$OUT/sd.img" "$OUT/sd.pristine.img"   # the card as flashed, before any boot wrote to it
   fi
   ls -la "$OUT" | grep -v '^total' | grep -v ' root$\| empty$\| firmware$'
-  # STZOS_NO_BOOT: derive and build the image and stop there. The
+  # HARB_NO_BOOT: derive and build the image and stop there. The
   # PAIR of machines that meet on a wire (NAM-1) is booted by
   # experiment/os6_names.sh, which needs both images built and
   # neither booted on its own -- a box with nobody to serve would
   # sit at its timeout, and a device with no server would be right
   # to say nobody answered.
-  if [ -n "${STZOS_NO_BOOT:-}" ]; then echo "=== boot skipped (STZOS_NO_BOOT): the image is built and judged elsewhere ==="; echo "exit 0"; exit 0; fi
+  if [ -n "${HARB_NO_BOOT:-}" ]; then echo "=== boot skipped (HARB_NO_BOOT): the image is built and judged elsewhere ==="; echo "exit 0"; exit 0; fi
   echo "=== boot ==="
   # stdin from /dev/null and --foreground: run from a real terminal, QEMU
   # -nographic tries to put the tty into raw mode; under `timeout` it sits
@@ -211,7 +211,8 @@ mkdir -p "$OUT" zig-out/wsl
     # machine needs no extra boot here -- its steady boot is already this.
     ( cd "$OUT" && timeout --foreground 120 bash boot.cmd < /dev/null > transcript_again.txt 2>&1; echo "qemu exit $?" >> transcript_again.txt )
     echo "again: the same machine, booted again on the same disk:" >> "$OUT/transcript.txt"
-    sed -e 's/$//' "$OUT/transcript_again.txt" | sed -n '/^.*boot: stzos init/,$p' | sed -e 's/^.*boot: stzos init/boot: stzos init/' | grep -v '^qemu exit' | sed 's/^/again: /' >> "$OUT/transcript.txt"
+    sed -e 's/
+$//' "$OUT/transcript_again.txt" | sed -n '/^.*boot: harb init/,$p' | sed -e 's/^.*boot: harb init/boot: harb init/' | grep -v '^qemu exit' | sed 's/^/again: /' >> "$OUT/transcript.txt"
   fi
   if [ "$SD" = yes ] && [ -f "$OUT/boot_hold.cmd" ]; then
     # the second witness of an A/B machine: the card's config.txt after the
@@ -225,7 +226,7 @@ mkdir -p "$OUT" zig-out/wsl
     # never boots the same card twice can say nothing about what persists.
     ( cd "$OUT" && timeout --foreground 120 bash boot.cmd < /dev/null > transcript_steady.txt 2>&1; echo "qemu exit $?" >> transcript_steady.txt )
     echo "steady: the same card, booted again:" >> "$OUT/transcript.txt"
-    sed -e 's/\r$//' "$OUT/transcript_steady.txt" | sed -n '/^.*boot: stzos init/,$p' | sed -e 's/^.*boot: stzos init/boot: stzos init/' | grep -v '^qemu exit' | sed 's/^/steady: /' >> "$OUT/transcript.txt"
+    sed -e 's/\r$//' "$OUT/transcript_steady.txt" | sed -n '/^.*boot: harb init/,$p' | sed -e 's/^.*boot: harb init/boot: harb init/' | grep -v '^qemu exit' | sed 's/^/steady: /' >> "$OUT/transcript.txt"
 
     # the rollback instrument, on a PRISTINE copy of the card (the first boot
     # committed B on sd.img; a hold on that card would be steady, not a
@@ -279,7 +280,7 @@ mkdir -p "$OUT" zig-out/wsl
   # witness's first run read the "af" of "after" as a fingerprint and
   # wrote a normalised token into the middle of a word (FLT-1).
   sed -e 's/\r$//' "$OUT/transcript.txt" \
-    | sed -n '/^.*boot: stzos init/,$p' | sed -e '1s/^.*boot: stzos init/boot: stzos init/' \
+    | sed -n '/^.*boot: harb init/,$p' | sed -e '1s/^.*boot: harb init/boot: harb init/' \
     | sed -E 's/pid ([2-9]|[1-9][0-9]+)\b/pid N/g' \
     | sed -e 's/hash=[0-9a-f]\{64\}/hash=H/g' -e 's/sig=[0-9a-f]\{128\}/sig=S/g' \
     | sed -e 's/ed25519 \([0-9a-f]\{64\}\)/ed25519 @@K@\1@@K@/g' -e 's/fingerprint \([0-9a-f]\{16\}\)/fingerprint @@K@\1@@K@/g' \

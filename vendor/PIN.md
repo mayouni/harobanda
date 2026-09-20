@@ -17,7 +17,7 @@ that verdict and is not done.
 | sha256 | `5484e552a334e15019f4aeba89e5b58f04651cf2f4e24e04de9f152f1c38e3fa` |
 | source of the digest | `https://cdn.kernel.org/pub/linux/kernel/v6.x/sha256sums.asc`, fetched 2026-09-12 |
 | licence | GPL-2.0 (the kernel's own `COPYING`); the image ships the kernel unmodified, built from this source |
-| config | `tinyconfig` + the fragment `stzos image` derives per machine (`kernel.fragment`); no modules |
+| config | `tinyconfig` + the fragment `harb image` derives per machine (`kernel.fragment`); no modules |
 | compiler | gcc from WSL Ubuntu for the first boot; `make CC="zig cc"` is the stated destination and untested |
 
 Changing the pin means changing this file, `os2_kernel_fetch.sh`'s
@@ -36,7 +36,7 @@ ZIGCC-1); nothing in the shipped images depends on it.
 | tarball | `zig-x86_64-linux-0.15.2.tar.xz` |
 | sha256 | `02aa270f183da276e5b5920b1dac44a63f1a49e55050ebde3aecc9eb82f93239` |
 | source of the digest | ziglang.org's own `download/index.json`, fetched 2026-09-12 |
-| version | 0.15.2, the same the Windows toolchain builds stzos with; its C front end reports clang 20.1.2 |
+| version | 0.15.2, the same the Windows toolchain builds `harb` with; its C front end reports clang 20.1.2 |
 
 ## What is NOT pinned: availability
 

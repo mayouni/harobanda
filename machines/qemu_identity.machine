@@ -39,13 +39,13 @@ DEFINE MOUNT data AS (
 ) RATIONALE "Where the key lives: a partition that survives the power, and therefore an identity that does"
 
 DEFINE SERVICE attest AS (
-  RUN ["/stzos", "attest"],
+  RUN ["/harb", "attest"],
   RESTART never,
   NEEDS [process, filesystem]
 ) RATIONALE "The witness: it signs with the device's own key, verifies the signature, and then shows a tampered message being refused"
 
 DEFINE SERVICE record AS (
-  RUN ["/stzos", "journal"],
+  RUN ["/harb", "journal"],
   RESTART never,
   AFTER [attest],
   NEEDS [process, filesystem]

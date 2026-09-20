@@ -20,7 +20,7 @@
 #        - the same record offered as ANOTHER device's must be refused
 #        - a member with no key enrolled must be REPORTED, never guessed
 #
-#   wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os7_fleet.sh
+#   wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os7_fleet.sh
 #
 # Log: zig-out/wsl/fleet.txt; the judged text: machines/fleet.expected
 set -u
@@ -28,7 +28,7 @@ cd "$(dirname "$0")/.." || exit 1
 NAME=fleet_temoin
 T=zig-out/image/$NAME/transcript.txt
 W=zig-out/fleet
-S=zig-out/cross/x86_64-linux-musl/stzos
+S=zig-out/cross/x86_64-linux-musl/harb
 BODY=zig-out/wsl/fleet.body
 LOG=zig-out/wsl/fleet.txt
 mkdir -p zig-out/wsl

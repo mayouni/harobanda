@@ -4,8 +4,8 @@
 # source compile on it? One file, all output kept.
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p zig-out/wsl
-Z=$HOME/stzos-zig/zig-x86_64-linux-0.15.2/zig
-SRC=$HOME/stzos-kernel/zigcc-x86_64/linux-6.12.109
+Z=$HOME/harb-zig/zig-x86_64-linux-0.15.2/zig
+SRC=$HOME/harb-kernel/zigcc-x86_64/linux-6.12.109
 OUTF=zig-out/wsl/zigcc_probe6.txt
 BASE="-nostdinc -I./arch/x86/include -I./arch/x86/include/generated -I./include -I./arch/x86/include/uapi -I./arch/x86/include/generated/uapi -I./include/uapi -I./include/generated/uapi -include ./include/linux/compiler-version.h -include ./include/linux/kconfig.h -include ./include/linux/compiler_types.h -D__KERNEL__ -std=gnu11 -m64 -mno-red-zone -mcmodel=kernel -Os -fno-stack-protector -Wno-unused-command-line-argument -fno-PIE"
 (

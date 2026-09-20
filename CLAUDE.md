@@ -1,4 +1,4 @@
-# stzos — Claude operating notes
+# harobanda — Claude operating notes
 
 ## What this repository is
 
@@ -42,7 +42,7 @@ silently (ZinOS, Zos, MakeenOS and Device all exist in the estate —
   `zin/doc/design/ZINOS_EDGE_DESIGN.md`) — the Edge and Touch profiles
   are theirs, kept; the hosted profile is this repository's addition.
 - **microring** — the edge substrate (MicroZig, littlefs, the tiers);
-  `stzos init` refuses the edge profile by name and says whose it is.
+  `harb init` refuses the edge profile by name and says whose it is.
 - **restolean** (`livrable/makeen/`) — the customer pull: the Makeen
   box is `machines/makeen_box.machine`.
 - **ringpp** — Ring++ dropped bare metal from its brief on purpose
@@ -53,16 +53,16 @@ silently (ZinOS, Zos, MakeenOS and Device all exist in the estate —
 
 ```
 zig build -j2 && zig build test -j2 && zig build court -j2 && zig build cross -j2
-zig-out\bin\stzos.exe check|plan machines\<name>.machine
+zig-out\bin\harb.exe check|plan machines\<name>.machine
 bash experiment/judge_guarantees.sh [name]   # the four standing promises, judged twice and pinned (GRT-1)
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/wsl_boot.sh    # then read zig-out/wsl/*.txt
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os2_image.sh qemu_hello   # image, kernel, QEMU boot, judge -> zig-out/wsl/image_qemu_hello.txt
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os6_names.sh              # TWO machines on one wire: a box that serves names, a till that asks -> zig-out/wsl/names.txt
-wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os7_fleet.sh              # a device publishes its key, a fleet enrols it, its record is verified by something that never held the secret -> zig-out/wsl/fleet.txt
-zig-out\bin\stzos.exe fleet machines\salle_makeen.fleet     # the roll: who is in the set, and who nobody can speak for yet
-zig-out\bin\stzos.exe learn                                 # the guided tour: 18 lessons, each with a command, the lines to look for, and a way to BREAK it
-zig-out\bin\stzos.exe learn 7                               # one lesson in full; `--all` for every one, `--words` for the vocabulary, `--run` where the command is this binary's
-cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\stzos\zig-out\stz-x86_64-linux-musl   # stzr for the image
+wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/wsl_boot.sh    # then read zig-out/wsl/*.txt
+wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello   # image, kernel, QEMU boot, judge -> zig-out/wsl/image_qemu_hello.txt
+wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os6_names.sh              # TWO machines on one wire: a box that serves names, a till that asks -> zig-out/wsl/names.txt
+wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os7_fleet.sh              # a device publishes its key, a fleet enrols it, its record is verified by something that never held the secret -> zig-out/wsl/fleet.txt
+zig-out\bin\harb.exe fleet machines\salle_makeen.fleet     # the roll: who is in the set, and who nobody can speak for yet
+zig-out\bin\harb.exe learn                                 # the guided tour: 18 lessons, each with a command, the lines to look for, and a way to BREAK it
+zig-out\bin\harb.exe learn 7                               # one lesson in full; `--all` for every one, `--words` for the vocabulary, `--run` where the command is this binary's
+cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\harobanda\zig-out\stz-x86_64-linux-musl   # stzr for the image
 ```
 
 `zig build cross` is not optional: `src/init.zig` is comptime-gated on
@@ -71,10 +71,26 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A rename is not a search-and-replace, because a name is not a
+  string** (NAME-1): `stzos` named the command you TYPE, the DIRECTORY
+  you clone into, and the SYSTEM itself, and one mapping gave all three
+  `harb`. Sort by WHAT THE WORD NAMES before replacing any of it and
+  expect a different new name for each: **Harobanda** the system,
+  **`harb`** the command, **`harobanda`** the repository. Shape is not
+  meaning -- `/stzos`, `stzos.slot` and `stzos` sorted cleanly by shape
+  and still put two meanings in the wrong place, leaving 94 paths to a
+  directory that does not exist. Build, test, both courts and `learn
+  --check` were all green over it; `--check` reads a lesson's declared
+  `paths`, never the `run` string it tells a reader to type.
+  **A rename does not touch a dated record, it amends beside it**
+  (NAME-1): STZ-OS-RULING-01 chose `stzos` on 2026-09-12 and the rename
+  rewrote it, leaving "`stz` is the distribution, the suffix says which
+  floor" standing over a name with neither. When a record's own
+  reasoning stops fitting its subject, the record was edited.
 - **A TUTORIAL is a claim about the system, so it is judged like one**
   (LRN-1): the guided tour lives in `src/learn.zig` beside the verbs it
   teaches, every lesson declares the paths it names, and `zig build
-  court` runs `stzos learn --check` over them. Anything that tells a
+  court` runs `harb learn --check` over them. Anything that tells a
   reader what they will see must fail loudly when that stops being true.
   Each lesson carries a BREAK IT step, because a guarantee only ever
   seen to succeed is a claim and not evidence. **A step that cannot name
@@ -134,7 +150,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   because a judge that always convicts is as useless as one that never
   does. `judge_guarantees.sh` was already right and is the shape.
   **A verdict must be RETURNED and RECEIVED; either alone is decoration**
-  (NAM-2): `os6_names.sh` captured `stzos fleet ... hardware` and tested
+  (NAM-2): `os6_names.sh` captured `harb fleet ... hardware` and tested
   whether the answer was EMPTY. A refused fleet prints its refusal on
   STDOUT and exits 1, so the guard passed, a whole sentence became a MAC,
   and the run failed two minutes later with a symptom. `if ! VAR=$(...)`.
@@ -279,7 +295,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   read the files. Quoting a multi-command `bash -c` through wsl.exe
   also breaks: put the commands in a `.sh` file with LF endings.
 - **Zig 0.15 `File.Writer` writes POSITIONALLY on a seekable stdout.**
-  Redirect `stzos ... > file` and the writer starts at offset 0,
+  Redirect `harb ... > file` and the writer starts at offset 0,
   overwriting whatever the shell wrote before. Found on the first WSL
   transcript (`experiment/PROTOCOL.md`, OS-1). The fix is the
   streaming writer; keep it.
@@ -325,7 +341,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 - **QEMU's raspi4b resets the board the moment `/dev/watchdog` is
   opened**: its power-management model has no countdown and reads the
   driver's "full reset on expiry" bit as "reset now". The emulator's
-  boot line carries `stzos.watchdog=off` (derived; never the card's
+  boot line carries `harb.watchdog=off` (derived; never the card's
   cmdline.txt) and PID 1 flushes before arming. A boot that ends
   silently right after the capability lines is this.
 - **mtools asks on stdin when a name clashes** (`mmd` on an existing
@@ -379,14 +395,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   Model B, a micro-SD card, a 3.3 V USB-serial adapter). One script
   carries it: `bash experiment/os5_board.sh card`, then `listen
   /dev/ttyUSB0 120`, then `judge <file>` -- three judges on one boot
-  (the board's own verdict, `stzos judge`, and the four promises).
+  (the board's own verdict, `harb judge`, and the four promises).
   `rehearse` runs the same judges against the emulator's pinned
   transcript with no hardware. The board should differ from the emulator
   on exactly the two lines the build prints as the emulator's lacks; the
   watchdog's real countdown and the tryboot flag (a vendored patch to
   `bcm2835_wdt.c`) are the two things only a board can show.
 - **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
-  attempt: behind `STZOS_CC=zigcc` the kernel builds with `make CC="zig
+  attempt: behind `HARB_CC=zigcc` the kernel builds with `make CC="zig
   cc"` and the image does NOT boot (it dies in the 16-bit setup code).
   gcc stays; the instrument and its six probes are kept.
 - **Open seams, none blocking.** A trusted CLOCK (the journal carries no
@@ -406,7 +422,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   digests are pinned).
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

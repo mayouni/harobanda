@@ -21,7 +21,7 @@ grammar's own `PINNING.md` requires of itself.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/fleet.zig`) | `zig build court` / `stzos court --fleet` | **22/22** — 4 accepts, 18 rejects |
+| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **22/22** — 4 accepts, 18 rejects |
 
 `zig build court` runs BOTH grammars: the machine fixtures first, the
 fleet fixtures after. One step, two courts, because a fleet is no better
@@ -58,7 +58,7 @@ appears in its own register (FR18). **22/22**, from 16/16.
 What it removed is worth more than what it added. The correspondence
 between the address `makeen_names` promises and the device that claims
 it lived in a `-device ...,mac=` flag in `experiment/os6_names.sh`.
-That script now reads both addresses through `stzos fleet <file>
+That script now reads both addresses through `harb fleet <file>
 hardware <member>`, and the proof is that **the 66-line names pin
 matched unchanged** on the first run afterwards: the declaration
 supplies exactly what the constants did, and now the court can check it.
@@ -68,7 +68,7 @@ supplies exactly what the constants did, and now the court can check it.
 Every reject is a case where **each machine is faultless alone**. That
 is the whole justification for a second file, and FR8 is the clearest:
 two boxes that each declare themselves the server of `makeen` both pass
-`stzos check`, and the network they make is broken. `src/fleet.zig`'s
+`harb check`, and the network they make is broken. `src/fleet.zig`'s
 third unit test states it by declaring both machines successfully and
 then refusing the fleet.
 

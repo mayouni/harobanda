@@ -48,13 +48,13 @@ DEFINE MOUNT data AS (
 ) RATIONALE "Where the key and the record live: a partition that survives the power"
 
 DEFINE SERVICE enrol AS (
-  RUN ["/stzos", "attest", "--export"],
+  RUN ["/harb", "attest", "--export"],
   RESTART never,
   NEEDS [process, filesystem]
 ) RATIONALE "The device publishing who it is: the public half, in the form a fleet file takes. Enrolment is somebody reading this line and writing it down, deliberately by hand -- a fleet that enrolled whatever key answered would attribute records to whatever device happened to be plugged in"
 
 DEFINE SERVICE publish AS (
-  RUN ["/stzos", "journal", "--export"],
+  RUN ["/harb", "journal", "--export"],
   RESTART never,
   AFTER [enrol],
   NEEDS [process, filesystem]

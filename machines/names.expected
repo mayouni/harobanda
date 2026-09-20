@@ -1,5 +1,5 @@
 box: the network's own server of names, before anyone has asked:
-box: boot: stzos init -- machine makeen_names (hosted / x86_64 / qemu_pc) -- pid 1
+box: boot: harb init -- machine makeen_names (hosted / x86_64 / qemu_pc) -- pid 1
 box: boot: console /dev/ttyS0
 box: boot: mount proc at /proc -- done
 box: boot: mount sysfs at /sys -- done
@@ -13,7 +13,7 @@ box: boot: names salle -- caisse.makeen is 192.168.10.40 for 52:54:00:12:34:61
 box: boot: judge -- the boot matches its expectation (/etc/expected, 11 lines)
 box: boot: every service has ended -- and this machine is still makeen: a server stops when the machine stops, not when the asking does
 till: the declared device, which knows nothing and asks:
-till: boot: stzos init -- machine caisse_makeen (hosted / x86_64 / qemu_pc) -- pid 1
+till: boot: harb init -- machine caisse_makeen (hosted / x86_64 / qemu_pc) -- pid 1
 till: boot: console /dev/ttyS0
 till: boot: mount proc at /proc -- done
 till: boot: mount sysfs at /sys -- done
@@ -22,16 +22,16 @@ till: boot: grant process (effectful)
 till: boot: grant network (effectful)
 till: boot: network salle -- eth0 up 192.168.10.40/24 (dhcp), dns [192.168.10.1], names on makeen (/etc/resolv.conf)
 till: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
-till: boot: start printer -- pid N -- /stzos ask imprimante.makeen
+till: boot: start printer -- pid N -- /harb ask imprimante.makeen
 till: ask imprimante.makeen -- 192.168.10.50 (from 192.168.10.1)
 till: boot: printer (pid N) exited 0
-till: boot: start short -- pid N -- /stzos ask imprimante
+till: boot: start short -- pid N -- /harb ask imprimante
 till: ask imprimante -- 192.168.10.50 (from 192.168.10.1)
 till: boot: short (pid N) exited 0
-till: boot: start box -- pid N -- /stzos ask makeen
+till: boot: start box -- pid N -- /harb ask makeen
 till: ask makeen -- 192.168.10.1 (from 192.168.10.1)
 till: boot: box (pid N) exited 0
-till: boot: start absent -- pid N -- /stzos ask fantome.makeen
+till: boot: start absent -- pid N -- /harb ask fantome.makeen
 till: ask fantome.makeen -- no such name on this network (from 192.168.10.1)
 till: boot: absent (pid N) exited 0
 till: boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
@@ -39,7 +39,7 @@ till: boot: every service has ended -- init has nothing left to keep alive
 till: boot: init halts the machine -- reboot(RESTART)
 till: reboot: Restarting system
 stranger: the same image, with a hardware address nobody declared:
-stranger: boot: stzos init -- machine caisse_makeen (hosted / x86_64 / qemu_pc) -- pid 1
+stranger: boot: harb init -- machine caisse_makeen (hosted / x86_64 / qemu_pc) -- pid 1
 stranger: boot: console /dev/ttyS0
 stranger: boot: mount proc at /proc -- done
 stranger: boot: mount sysfs at /sys -- done
@@ -48,16 +48,16 @@ stranger: boot: grant process (effectful)
 stranger: boot: grant network (effectful)
 stranger: boot: network salle -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
 stranger: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
-stranger: boot: start printer -- pid N -- /stzos ask imprimante.makeen
+stranger: boot: start printer -- pid N -- /harb ask imprimante.makeen
 stranger: ask imprimante.makeen -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
 stranger: boot: printer (pid N) exited 0
-stranger: boot: start short -- pid N -- /stzos ask imprimante
+stranger: boot: start short -- pid N -- /harb ask imprimante
 stranger: ask imprimante -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
 stranger: boot: short (pid N) exited 0
-stranger: boot: start box -- pid N -- /stzos ask makeen
+stranger: boot: start box -- pid N -- /harb ask makeen
 stranger: ask makeen -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
 stranger: boot: box (pid N) exited 0
-stranger: boot: start absent -- pid N -- /stzos ask fantome.makeen
+stranger: boot: start absent -- pid N -- /harb ask fantome.makeen
 stranger: ask fantome.makeen -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
 stranger: boot: absent (pid N) exited 0
 stranger: boot: judge -- the boot differs from its expectation (/etc/expected): 1 line(s) expected and not said, 1 said and not expected

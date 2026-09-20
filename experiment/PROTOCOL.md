@@ -1,6 +1,121 @@
+# NAME-1 — one word was doing three jobs, and the rename gave all three the same new one
+
+The author ruled the landscape point that STZ-OS-RULING-01 had deferred:
+*"you must rename everything harobanda instead of stzos, including the
+repo name, and use harb effectively as a command."* Two names, clearly
+given. The rename was written as one mapping anyway, and it was wrong in
+two directions at once.
+
+## How it surfaced
+
+481 hits across 93 files were sorted first -- which was the right
+instinct, and the sort was too shallow. It separated three forms by their
+SHAPE: the in-image path `/stzos`, the kernel cmdline namespace
+`stzos.slot|expect|watchdog`, and everything else. Ordered rules, most
+specific first, so `zig-out/bin/stzos` would not be mangled by the
+`/stzos` rule. 611 occurrences changed, "still containing the old name:
+none", and then:
+
+```
+zig build          ok, zig-out/bin/harb.exe
+zig build test     ok
+zig build court    107/107 -- 23 accepts, 84 rejects, 0 failures
+                    22/22 -- 4 accepts, 18 rejects, 0 failures
+harb learn --check  18 lessons: every path they name is present
+```
+
+Five judges green, including the two written specifically to catch a
+document that has stopped being true. The rename looked finished.
+
+It was not, because the sort had been by shape and the thing that
+mattered was by MEANING. `stzos` named three different things:
+
+| what the word named | what it must become | what the rename gave it |
+|---|---|---|
+| what the reader TYPES | `harb` | `harb` — right |
+| the DIRECTORY and the repository | `harobanda` | `harb` — wrong |
+| the SYSTEM itself | Harobanda | `harb` — wrong |
+
+**The directory.** 94 references now pointed at `D:\GitHub\harb` and
+`/mnt/d/GitHub/harb`, a folder that does not exist and never will: the
+author's ruling names the repository `harobanda`, and only the command
+`harb`. Eleven of the 94 are inside `src/learn.zig`, in the `run` line of
+a lesson -- the exact string the tour tells a reader to type. `learn
+--check` walked past every one of them, because a lesson declares the
+`paths` it names and its RUN command is not one of them. LRN-1 says a
+tutorial is a claim about the system and is judged like one; this is the
+part of that claim the judge still does not reach.
+
+**The system.** The worse one, because the court cannot have an opinion
+about it. `doc/PROVENANCE.md` carried the dated record of
+STZ-OS-RULING-01, and the rename rewrote the record rather than the
+world:
+
+```
+`harb` — chosen 2026-09-12 by the session on the author's instruction
+to choose, under the estate's registers: `stz` is the distribution, the
+suffix says which floor.
+```
+
+The sentence reasons about a name with an `stz` prefix and a suffix
+saying which floor. `harb` has neither. It was true of `stzos`, it was
+printed over `harb`, and it was now a sentence that had never been true
+of the thing it sat above. That is EGR-2 with the object changed: a
+sentence worded for one case and printed for a second is a lie in the
+second. `doc/narrations/` had taken the same edit -- "The repository was
+named `harb`, provisionally" -- of a day on which it was not.
+
+## What was done
+
+- The directory rule, which the sort had missed entirely: `GitHub/harb`
+  -> `GitHub/harobanda`, 94 of them, plus 20 `github.com/mayouni/stzos`
+  under `site/` that the first pass had excluded by directory.
+- Prose that names the SYSTEM reads Harobanda -- `doc/VISION.md`,
+  `doc/GROUND.md`, the fleet grammar, the greeting the machine itself
+  prints (`stzr on Harobanda`, re-pinned in `machines/qemu_hello.expected`
+  and in the lesson that quotes it). Prose that names the binary or the
+  command keeps `harb`, which is most of `src/` and `build.zig`.
+- The records RESTORED to `stzos` and amended beside, never rewritten:
+  STZ-OS-RULING-01 and the narration's sentence about the day. The new
+  ruling is STZ-OS-RULING-02, which states the three names in a table and
+  says in as many words what it does not do.
+- The `STZ-OS-` prefix on the ruling ids is left alone. It names the
+  register the ruling was issued under, not this repository, and the
+  estate's memos cite those ids.
+
+## What it cost, and what it leaves open
+
+Nothing shipped wrong, because the second pass ran before the commit.
+What it cost is the belief the five green judges bought: every one of
+them was green over a repository whose tour told readers to `cd` into a
+directory that does not exist.
+
+Open: `learn --check` still does not read a lesson's `run` string. A
+lesson that names a path in `paths` is judged; the same path inside the
+command the reader is told to type is not. That is a narrower judge than
+the thing it guards, which is the third time in the log (THR-1, SEE-1).
+
+## The doctrine
+
+**A rename is not a search-and-replace, because a name is not a string**
+(NAME-1): sort the occurrences by WHAT THE WORD NAMES -- the command, the
+place, the thing -- before replacing any of them, and expect a different
+new name for each. Shape is not meaning: `/stzos`, `stzos.slot` and
+`stzos` sorted cleanly by shape and still put two of the three meanings
+in the wrong place.
+
+**A rename does not touch a dated record; it amends beside it**
+(NAME-1): STZ-OS-RULING-01 chose `stzos` on 2026-09-12, and that
+happened. Rewriting it made a document say something that was never
+true, and the reasoning it carried -- "`stz` is the distribution, the
+suffix says which floor" -- pointed straight at the lie. When a record's
+own reasoning stops fitting its subject, the record was edited.
+
+---
+
 # LRN-2 — the tour quoted the machine, and nothing checked the quotations
 
-`stzos learn --check` walked every path a lesson names from its first
+`harb learn --check` walked every path a lesson names from its first
 day, and `zig build court` has run it since. It never looked at the lines
 a lesson QUOTES, which is the larger claim of the two: a reader comparing
 their screen against a lesson is comparing it against those strings.
@@ -396,7 +511,7 @@ os6_names.sh   broken pin -> exit 1     clean pin -> exit 0
 ```
 
 Both callers of `os2_image.sh` were then run end to end. Neither breaks:
-`os6_names.sh` invokes it with `STZOS_NO_BOOT=1`, which exits 0
+`os6_names.sh` invokes it with `HARB_NO_BOOT=1`, which exits 0
 explicitly, and `os7_fleet.sh` checks for a file rather than a status.
 No script here uses `set -e`, which is why the defect could sit this long
 without anything visibly going wrong.
@@ -439,12 +554,12 @@ still exists, that the verb is still spelled that way, or that the line
 it tells you to look for is still printed.
 
 So the curriculum is a table in `src/learn.zig`, beside the verbs it
-teaches, and every lesson declares the paths it names. `stzos learn
+teaches, and every lesson declares the paths it names. `harb learn
 --check` walks them, and **`zig build court` runs that check** -- so a
 lesson pointing at a machine somebody renamed turns the court red in the
 commit that renamed it.
 
-Probed, as the doctrine requires: run `stzos learn --check` from outside
+Probed, as the doctrine requires: run `harb learn --check` from outside
 the repository and it names every missing path and exits 1; from inside,
 it exits 0. A judge that cannot convict is not judging.
 
@@ -483,15 +598,15 @@ in so a relative path resolves, and **how to put the file back**. They
 worked out the first four unaided; nobody told them the fifth, so their
 working tree was left dirty by a tutorial.
 
-Two of those were visible in their own screenshot. They ran `stzos learn
-1` from `zig-out\bin` and `stzos check machines\qemu_hello.machine` from
+Two of those were visible in their own screenshot. They ran `harb learn
+1` from `zig-out\bin` and `harb check machines\qemu_hello.machine` from
 the repository root, because nothing said which, and they had to notice
 the difference themselves. And their service declared no `RESTART` and
 no `NEEDS` -- so the refusal they got could have been about any of
 those, for all the lesson told them.
 
 That last one was worth answering properly rather than asserting. A
-probe: the same three lines with `RUN ["/stzos", "version"]` in place of
+probe: the same three lines with `RUN ["/harb", "version"]` in place of
 the shell, judged as a copy. **Accepted** -- `4 service(s) … judged, no
 refusal`. So `RESTART` and `NEEDS` are optional, everything they had
 written was legal, and the shell was the only thing wrong. That belongs
@@ -525,10 +640,10 @@ containing `git checkout -- `; a step with no file must carry a `note`
 saying why there is nothing to edit. **The undo requirement is the
 author's dirty working tree, written down so it cannot happen again.**
 
-Every command is now printed as `zig-out\bin\stzos.exe …`, not `stzos
-…`, and every lesson prints `RUN  (from D:\GitHub\stzos)`. A tour whose
+Every command is now printed as `zig-out\bin\harb.exe …`, not `harb
+…`, and every lesson prints `RUN  (from D:\GitHub\harobanda)`. A tour whose
 first reader has to guess the working directory has not started
-teaching yet. `stzos learn --words` was added for the same reason: a
+teaching yet. `harb learn --words` was added for the same reason: a
 machine, a world, the envelope, the court, a pin, a transcript, PID 1, a
 fleet and a seat, in one paragraph each, because every one of them is
 estate jargon that reads like an English word.
@@ -553,7 +668,7 @@ have walked straight into.
   without running it.
 - **Lesson 15** claimed the reader had to boot two machines to see a
   stranger get nothing. They do not: changing a member's HARDWARE to an
-  undeclared address is refused by `stzos fleet` in about a second,
+  undeclared address is refused by `harb fleet` in about a second,
   *"boitier promises no address to 52:54:00:99:99:99 … and no pool
   exists to fall back on"*. The declaration IS the register, so a device
   that would go unanswered on the wire is caught in a text file months
@@ -647,7 +762,7 @@ returns after another has begun.
 
 ## What runs, and what does not
 
-`stzos learn <n> --run` spawns THIS binary with the lesson's own words,
+`harb learn <n> --run` spawns THIS binary with the lesson's own words,
 so what executes is exactly what the lesson printed rather than a
 paraphrase of it. It works for the four lessons whose command is a verb
 of this binary. The boots are WSL scripts and are never spawned from
@@ -687,7 +802,7 @@ kernel holds.
 
 ```
 DEFINE SERVICE swarm AS (
-  RUN ["/stzos", "swarm", "12"],
+  RUN ["/harb", "swarm", "12"],
   TASKS 6,
   NEEDS [process, filesystem]
 ) RATIONALE "..."
@@ -713,7 +828,7 @@ this floor will never enforce `threads` at the kernel.
 
 ```
 boot: budget -- modest 64 MiB and 50% of a core, swarm 6 tasks, greedy 32 MiB; the kernel holds the ceiling, not the world
-boot: start swarm -- pid N -- /stzos swarm 12
+boot: start swarm -- pid N -- /harb swarm 12
 swarm: 5 tasks made, and the kernel refused the next (AGAIN): this world is as many as the machine agreed to hold
 boot: swarm (pid N) exited 0
 ```
@@ -823,7 +938,7 @@ difference between them is which mount each one named, and neither can
 read the other's. That is the shape a business world wants: the till's
 own data, and no sight of what it has no business reading.
 
-The `stzos plan` output names the narrowing too (`-- sees [data]`), so
+The `harb plan` output names the narrowing too (`-- sees [data]`), so
 an auditor learns which world holds which storage without opening the
 machine file.
 
@@ -1298,7 +1413,7 @@ confined: eth0 -- present: this world shares the machine's network
 confined: fork -- refused by the kernel (EPERM): this world cannot start another process
 ```
 
-`stzos confined` asks a sharper question than `stzos reach`: not whether
+`harb confined` asks a sharper question than `harb reach`: not whether
 the machine knows a WAY to an address, but whether the interface EXISTS
 from where the world stands. "No such interface" is a different answer
 from "no route" in the way that matters -- there is nothing here to be
@@ -1391,14 +1506,14 @@ caisse -- caisse_makeen (caisse_makeen.machine, asks) -- 52:54:00:12:34:61, prom
 ```
 
 A `PEER` no member claims is deliberately NOT refused. The kitchen
-printer is a declared peer of the box and will never be an stzos
+printer is a declared peer of the box and will never be a Harobanda
 machine; the fleet checks the members it has and says nothing about the
 rest of the wire.
 
 ## The proof is a pin that did not move
 
 `experiment/os6_names.sh` now reads both addresses from the declaration
-through `stzos fleet <file> hardware <member>`. The 66-line names
+through `harb fleet <file> hardware <member>`. The 66-line names
 transcript **matched unchanged** on the first run afterwards: the
 declaration supplies exactly what the constants did, and now a court can
 check it. A seat whose whole result is that nothing visible changed is
@@ -1488,7 +1603,7 @@ erased.
 
 ## Two defects, one of them old
 
-`stzos attest --export` failed on the device with `cannot read
+`harb attest --export` failed on the device with `cannot read
 --export: FileNotFound`: the verb took the first argument as its file
 path and a flag is not a path. Fixed by picking the first argument that
 is not a flag.
@@ -1691,7 +1806,7 @@ position and its reason; a signature from another device is refused.
 of one boot proves nothing about a chain (46 lines):
 
 ```
-boot: start record -- pid N -- /stzos journal
+boot: start record -- pid N -- /harb journal
 journal /data/boot.journal -- no record yet: this is the first boot, and its entry is written after the verdict
 boot: judge -- the boot matches its expectation (/etc/expected, 13 lines)
 boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict matched)
@@ -1713,7 +1828,7 @@ line an auditor wants and the line a vendor's box would never keep.
 
 ## The defect the repeated boots exposed
 
-The final normaliser stripped everything before `boot: stzos init` on
+The final normaliser stripped everything before `boot: harb init` on
 EVERY line that matched, not only the first -- so the banner of a later
 section (`steady:`, `again:`) lost its prefix, and several boots' first
 lines read identically in one file. It went unnoticed while no machine
@@ -1765,7 +1880,7 @@ an edge device's key is MicroRing's, and its custody is the hardware's.
 
 ## The witness
 
-`stzos attest`, as `stzos id` is the USER seat's and `stzos reach` is
+`harb attest`, as `harb id` is the USER seat's and `harb reach` is
 EGRESS's. It signs with the device's key, verifies the signature against
 the public half, and then **flips one bit in the message and shows the
 same signature refused**. That second half is what makes the first half
@@ -1888,9 +2003,9 @@ TRUSTED to refrain.
 ```
 boot: network lan -- eth0 up 10.0.2.15/24
 boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
-boot: start allowed -- pid N -- /stzos reach 10.9.0.1
+boot: start allowed -- pid N -- /harb reach 10.9.0.1
 reach 10.9.0.1 -- a route exists: this machine knows a way there
-boot: start denied -- pid N -- /stzos reach 8.8.8.8
+boot: start denied -- pid N -- /harb reach 8.8.8.8
 reach 8.8.8.8 -- no route: this machine knows no way there
 ```
 
@@ -1898,7 +2013,7 @@ Note the network line: no `gateway` clause, because with a declared
 reach no default route was installed -- the line says what happened,
 and the egress line says the reach.
 
-`stzos reach <a.b.c.d>` is the witness, as `stzos id` was the USER
+`harb reach <a.b.c.d>` is the witness, as `harb id` was the USER
 seat's: it asks the KERNEL and says what it answered. A UDP `connect()`
 is the whole question -- it performs the route lookup and sends nothing
 -- so a machine with no way to an address learns that **without a single
@@ -1908,7 +2023,7 @@ perimeter forbids.
 ## What the cross build caught, again
 
 The host build was green and `zig build cross` was not: two errors in
-code only Linux compiles -- a Network literal in the by-hand `stzos net`
+code only Linux compiles -- a Network literal in the by-hand `harb net`
 verb missing the new field, and a double pointer where the new line is
 printed. The rule in `CLAUDE.md` earned itself again: a Windows build
 proves nothing about the init.
@@ -1952,11 +2067,11 @@ watchdog turned off, the lens chosen, the boot halted at the verdict —
 and a card that carried one would be a box that behaves like a court,
 which is the one thing a box on a counter must never do. The script
 reads `cmdline.A.txt` and `cmdline.B.txt` and refuses to go on if it
-finds `stzos.watchdog=off`, `stzos.expect=`, `--halt-on-verdict` or
+finds `harb.watchdog=off`, `harb.expect=`, `--halt-on-verdict` or
 `--hold`. Today they are clean:
 
 ```
-  cmdline.A.txt: console=ttyS1,115200 quiet loglevel=3 stzos.slot=A rdinit=/stzos -- init /etc/machine
+  cmdline.A.txt: console=ttyS1,115200 quiet loglevel=3 harb.slot=A rdinit=/harb -- init /etc/machine
   clean: the card boots the box, not the court
 ```
 
@@ -1975,7 +2090,7 @@ adapter exists inside it at all.
    machine judging its own boot against the `/etc/expected` it carries
    (JDG-1);
 2. **the court's verdict**, the same judge run from the host over the
-   captured text — `stzos judge <machine> <transcript>`, new here. Two
+   captured text — `harb judge <machine> <transcript>`, new here. Two
    independent witnesses to one boot, which is the reason to keep both;
 3. **the four standing promises** (GRT-1), which on a board should for
    the first time be kept all four by ONE text.
@@ -1996,7 +2111,7 @@ today:
       every expected line was said
 ```
 
-## `stzos judge` — the host's own reading
+## `harb judge` — the host's own reading
 
 The machine judges its LEDGER as it boots; this judges the TEXT a serial
 cable carried away. A captured transcript is not a ledger: it carries
@@ -2034,7 +2149,7 @@ over whatever host is underneath, written by Amor in four words each --
 *toujours joignable, nom stable, journal local durable, traverse la
 coupure*.
 
-They are not one customer's, which is why `stzos guarantees` carries
+They are not one customer's, which is why `harb guarantees` carries
 them as the HOSTED PROFILE's four standing promises. A box behind a
 counter, an NGO's hub in Diffa, a bank's server and a school's machine
 make the same four or say they make none. `qemu_hello` says it makes
@@ -2042,7 +2157,7 @@ none, and that is a verdict too: **0 of 4 promised**.
 
 ## What the verb does
 
-`stzos guarantees <file.machine> <text>` reads the DECLARATION for what
+`harb guarantees <file.machine> <text>` reads the DECLARATION for what
 is promised and a TEXT for what is kept, and says one of three things
 per promise: not promised, KEPT (with the line that keeps it, quoted),
 NOT KEPT (with what was looked for and not found). Nothing restates the
@@ -2184,13 +2299,13 @@ Adding the budget changed the timing of the smallest machine, and its
 pinned transcript FLIPPED two lines:
 
 ```
--boot: start whoami -- pid N -- /stzos id -- as world (1000:1000)
+-boot: start whoami -- pid N -- /harb id -- as world (1000:1000)
  id: uid=1000 gid=1000
-+boot: start whoami -- pid N -- /stzos id -- as world (1000:1000)
++boot: start whoami -- pid N -- /harb id -- as world (1000:1000)
 ```
 
 PID 1 could only print a start line AFTER the fork, because the line
-carries the pid -- and `stzos id` is a static binary that prints one
+carries the pid -- and `harb id` is a static binary that prints one
 line and exits, so it beat its own start line to the console. The race
 had always been there; every earlier transcript had simply won it.
 
@@ -2277,14 +2392,14 @@ path's mtime, and a missing path is not a fresh one.
 ## The negative, demonstrated
 
 `machines/wsl_rehearsal.machine`'s `signals` service is
-`flock /tmp/stzos-signals.ready /bin/sleep 30`: it CREATES its path at
+`flock /tmp/harb-signals.ready /bin/sleep 30`: it CREATES its path at
 start and never touches it again. That is precisely the world HEALTH
 exists to catch, and it was already in the rehearsal for another reason.
 With `HEALTH 2` declared it is caught in seconds, with no kernel and no
 emulator:
 
 ```
-boot: signals -- stale: /tmp/stzos-signals.ready has not been refreshed for 2s (window 2s)
+boot: signals -- stale: /tmp/harb-signals.ready has not been refreshed for 2s (window 2s)
 boot: this machine declares no SLOTS and arms no watchdog; on a board a stale world is what resets it
 ```
 
@@ -2381,7 +2496,7 @@ signal can start it), or the court's instrument is still owed a verdict.
 ## The instrument: a served boot still has to close
 
 A real init keeps a served machine alive for years. A transcript that
-never closes is not a fixture, so `stzos init --halt-on-verdict` halts
+never closes is not a fixture, so `harb init --halt-on-verdict` halts
 the moment every service is ready AND the boot is judged. It is DERIVED
 from the declaration — any service that is not a one-shot — onto the
 EMULATOR's boot line only; the card's `cmdline.txt` never carries it,
@@ -2435,7 +2550,7 @@ transcript and the machine judged nothing.
 
 ## What closes it
 
-`stzos image` now DERIVES the init lines a faithful boot prints — from
+`harb image` now DERIVES the init lines a faithful boot prints — from
 the plan, through a LENS — and the initramfs carries them as
 `/etc/expected`. PID 1 records every judged line it says (a ledger:
 written first, then echoed to the console, so the two cannot disagree)
@@ -2468,8 +2583,8 @@ The emulator lacks what the board has — no GENET, and a watchdog it
 resets on — so one expectation cannot be true of both. The image
 derives two: `/etc/expected` (the board's) and `/etc/expected.emulator`
 (the emulator's), from one plan and a `Lens` with one field per lack.
-The emulator's boot line says `stzos.expect=emulator`, beside the
-`stzos.watchdog=off` it already said; the card's `cmdline.txt` never
+The emulator's boot line says `harb.expect=emulator`, beside the
+`harb.watchdog=off` it already said; the card's `cmdline.txt` never
 does. **The diff of the two texts IS the list of the emulator's lacks**,
 printed at build time:
 
@@ -2611,7 +2726,7 @@ an L2 member of the alphabet, and until that exists the every/on
 handlers are the author's own Ring code beside the generated file.
 
 MicroRing's standing refusals are untouched: not an RTOS, not a new
-language, the firmware and the tiers are its own. `stzos project`
+language, the firmware and the tiers are its own. `harb project`
 writes text and hands it over.
 
 ## What was built
@@ -2627,14 +2742,14 @@ writes text and hands it over.
   substrate") was written before MicroRing had been read and is
   corrected here. `thumbv8m` joins the architectures, because the
   RP2350 is a Cortex-M33 and the fixture should not lie about it.
-- **`stzos project <file.machine> --out <dir>`** (`src/project.zig`):
+- **`harb project <file.machine> --out <dir>`** (`src/project.zig`):
   the `device.ring`, and a printed account of what did NOT cross over —
   the flash MOUNT (the substrate mounts it), the capabilities (the
   machine's envelope, which MicroRing has no gate for), each service's
   behaviour (the Device language's). The generated file carries the
   same account in its own comments, so it is legible where it lands.
-- **Both refusals**: `stzos project` refuses a hosted machine, and
-  `stzos image` refuses an edge one, each naming the other verb.
+- **Both refusals**: `harb project` refuses a hosted machine, and
+  `harb image` refuses an edge one, each naming the other verb.
 
 ## What was measured
 
@@ -2692,14 +2807,14 @@ files.
   no privilege left to change the group with — and execs. A failure
   between fork and exec exits 126 or 127 rather than returning into
   init's loop with a second init in it.
-- **`stzos id`**, the witness: a machine has no coreutils, so the one
+- **`harb id`**, the witness: a machine has no coreutils, so the one
   binary answers `uid=N gid=N` from inside it.
 
 ## What was measured
 
 `machines/qemu_hello.machine` declares `USER world` and a service that
-runs `stzos id` as it. The boot says both halves: `start whoami -- pid
-N -- /stzos id -- as world (1000:1000)` from PID 1, and `id: uid=1000
+runs `harb id` as it. The boot says both halves: `start whoami -- pid
+N -- /harb id -- as world (1000:1000)` from PID 1, and `id: uid=1000
 gid=1000` from the service. Pinned at **32 lines**, up from 28, in the
 same commit as the seat. The other two machines and the rehearsal are
 unchanged and judged identical.
@@ -2725,11 +2840,11 @@ defects worth reporting upstream.
 
 ## What was decided
 
-A Linux zig is needed: the Windows one cross-compiles stzos but cannot
+A Linux zig is needed: the Windows one cross-compiles harb but cannot
 drive `make` inside WSL. It is fetched ONCE and **pinned by digest**
 (`experiment/zigcc_fetch.sh`, `vendor/zig/PIN.txt`, sha256 from
 ziglang.org's own index), exactly as the kernel tarball and the board
-firmware are. The experiment lives behind `STZOS_CC=zigcc` on
+firmware are. The experiment lives behind `HARB_CC=zigcc` on
 `os2_image.sh`, in its OWN kernel tree per architecture, so the two
 toolchains never share an object and the default stays gcc.
 
@@ -2789,7 +2904,7 @@ would be the kind of claim this repository exists to refuse.
 
 What is kept: the instrument, whole — `zigcc_fetch.sh` (pinned),
 `zigcc_wrapper.sh` (every concession stated in its own comments),
-`zigcc_kernel.sh`, the six probes, and `STZOS_CC=zigcc` in the image
+`zigcc_kernel.sh`, the six probes, and `HARB_CC=zigcc` in the image
 pipeline. A later zig, or an `LLVM=1`-shaped attempt with lld and the
 LLVM binutils, starts where this stopped rather than from nothing.
 
@@ -2863,7 +2978,7 @@ say when that is true closes it without touching the commit rule.
 ## What was measured
 
 - The rehearsal and the namespace PID 1: `signals -- ready
-  (/tmp/stzos-signals.ready)` followed by `start after_signals`, and
+  (/tmp/harb-signals.ready)` followed by `start after_signals`, and
   at the end `after_mute has not started -- what it comes AFTER has
   not signalled ready`. Both sides print.
 - The three images unchanged and judged identical: 28, 22, 49 lines.
@@ -2898,12 +3013,12 @@ second: A/B slots with watchdog rollback).
   `SLOTS "/dev/mmcblk0p1"`.
 - **The card's layout** (`src/image.zig`): `slots/A/` and `slots/B/`
   each hold `kernel8.img`, the dtb, `initramfs.cpio` and a
-  `cmdline.txt` carrying `stzos.slot=A|B`; `config.txt` names the
+  `cmdline.txt` carrying `harb.slot=A|B`; `config.txt` names the
   committed slot in `os_prefix` and, under the firmware's own
   `[tryboot]` filter, the other. The same image fills both slots at
   first.
 - **PID 1's slot logic** (`src/init.zig`): after the mounts it reads
-  which slot booted (`stzos.slot=` on `/proc/cmdline`), mounts the
+  which slot booted (`harb.slot=` on `/proc/cmdline`), mounts the
   boot partition, reads which slot is committed, and says whether this
   boot is steady or a trial. It arms the hardware watchdog by opening
   `/dev/watchdog`, feeds it from a polled reaper loop (a quarter
@@ -2917,7 +3032,7 @@ second: A/B slots with watchdog rollback).
   rollback instrument: never commit; with a watchdog armed, stop
   feeding it and let the hardware answer; without one, restart as any
   uncommitted trial ends.
-- **`stzos update <dir>`** (`src/update.zig`): the file half — read the
+- **`harb update <dir>`** (`src/update.zig`): the file half — read the
   committed slot from `config.txt`, refuse unless every file of the
   new image is present, write the OTHER slot, sync — and the reboot
   half, a restart with the argument `0 tryboot`. `--boot <dir>`
@@ -2937,7 +3052,7 @@ second: A/B slots with watchdog rollback).
   read back says `os_prefix=slots/B/` first. The held trial on the
   pristine copy: the same trial, `held, not committed`, a restart,
   and that card still says `os_prefix=slots/A/`. Pinned, 49 lines.
-- `stzos update` on a fake boot partition: slot B written (four
+- `harb update` on a fake boot partition: slot B written (four
   files), `config.txt` untouched; with `cmdline.txt` removed, refused
   whole.
 
@@ -2948,7 +3063,7 @@ second: A/B slots with watchdog rollback).
    driver's "full reset on expiry" bit as "reset now"; the first trial
    boot vanished after the capability lines with its buffered output,
    and the card was unchanged. The emulator's boot line now carries
-   `stzos.watchdog=off` (never the card's `cmdline.txt`), PID 1 states
+   `harb.watchdog=off` (never the card's `cmdline.txt`), PID 1 states
    that a trial cannot roll back by hardware there, and everything said
    before arming is flushed first, so a board that resets on arming can
    never take the transcript with it.
@@ -3008,7 +3123,7 @@ the NETWORK kind first), while the hardware for OS-5 is on its way.
   here: DISCOVER, OFFER, REQUEST, ACK on a broadcast UDP socket bound to
   the interface, three tries of three seconds, the lease's address,
   mask, router and DNS applied. Every result is one transcript line.
-- **`stzos net`** by hand does the same: `<iface> <cidr> [gateway]` or
+- **`harb net`** by hand does the same: `<iface> <cidr> [gateway]` or
   `<iface> dhcp`.
 - **The emulator's oracle**: when a machine declares a NETWORK, the
   image gives `qemu_pc` and `qemu_virt` a virtio NIC on QEMU's
@@ -3070,10 +3185,10 @@ go for OS-4"). The board ruling is in `doc/PROVENANCE.md`
   the court convicted the implementation once on R35 (the ARCH check
   ran before the profile check; reordered, the fixture kept).
   `machine.stzu` carries the seat; the plan and the init print the board.
-- **`stzos net <iface> <a.b.c.d>/<n>`** (`src/net.zig`): a role of the one
+- **`harb net <iface> <a.b.c.d>/<n>`** (`src/net.zig`): a role of the one
   binary — four ioctls on a datagram socket, every result stated, no
   DHCP, no gateway, no DNS. The box's `network_up` service is now a
-  program that exists: `RUN ["/stzos", "net", "eth0", "192.168.10.1/24"]`.
+  program that exists: `RUN ["/harb", "net", "eth0", "192.168.10.1/24"]`.
 - **The rpi4 target** (`src/image.zig`): the arm64 kernel with the
   BCM2711 platform, the mini-UART and PL011, the mailbox and firmware
   driver, the watchdog (which is also how the board restarts), SDHCI
@@ -3107,7 +3222,7 @@ go for OS-4"). The board ruling is in `doc/PROVENANCE.md`
 - Boot under `raspi4b` (QEMU 10.2 TCG): `Machine model: Raspberry Pi 4
   Model B`; PID 1; `proc` `sysfs` `devtmpfs` done; **`mmcblk0: p1 p2`,
   `ext4 at /data -- done`** on the card's second partition by its
-  declared name; `gpio` refused as declared; `network_up` ran `stzos
+  declared name; `gpio` refused as declared; `network_up` ran `harb
   net eth0` and got **`no such interface (NODEV)`** — QEMU disables
   GENET itself, the emulator has no Ethernet — so `kds` and `poste`
   **never started** by the readiness rule, named; `reboot(RESTART)`
@@ -3148,7 +3263,7 @@ go for OS-4"). The board ruling is in `doc/PROVENANCE.md`
   (Ethernet, the AON block) and nowhere else, or that is a finding.
 - The Wi-Fi firmware blob (not taken); DHCP, gateway, DNS (the NETWORK
   kind); A/B slots with watchdog rollback (the watchdog driver is in);
-  `make CC="zig cc"`; the judge into `stzos judge`.
+  `make CC="zig cc"`; the judge into `harb judge`.
 
 ---
 
@@ -3157,11 +3272,11 @@ go for OS-4"). The board ruling is in `doc/PROVENANCE.md`
 Ordered by the author on 2026-09-12 ("take decision on my behalf on the
 waiting rows, and then go for OS-3, the aarch64 image for the Makeen
 box"). The three rulings are in `doc/PROVENANCE.md` ("The rulings of
-2026-09-12"); the mailbox is `softanza/mailbox/stzos.md`.
+2026-09-12"); the mailbox is `softanza/mailbox/harb.md`.
 
 ## What was built
 
-- **`stzos image` for aarch64**: one `Target` table per architecture
+- **`harb image` for aarch64**: one `Target` table per architecture
   (kernel ARCH and cross prefix, the kernel artifact, the QEMU machine,
   the console, the serial and block kconfig, the virtio transport —
   virtio-mmio on `virt`, virtio-pci on `pc`). The derivation now emits
@@ -3238,7 +3353,7 @@ box"). The three rulings are in `doc/PROVENANCE.md` ("The rulings of
 - The NETWORK kind (`network_up` in A2 names a program that does not
   exist); the USER seat.
 - `make CC="zig cc"` for both kernels; a tarball mirror in the estate.
-- The judge into `stzos judge`; one virtio disk per image today.
+- The judge into `harb judge`; one virtio disk per image today.
 
 ---
 
@@ -3249,9 +3364,9 @@ and go for OS-2"), the same day as OS-1.
 
 ## What was built
 
-- **`stzos image`** (`src/image.zig`): from a judged plan, three texts
+- **`harb image`** (`src/image.zig`): from a judged plan, three texts
   and no toolchain — `initramfs.list` in the kernel's own gen_init_cpio
-  format (device nodes for PID 1, the mount points, `/stzos`, every
+  format (device nodes for PID 1, the mount points, `/harb`, every
   program and file the services name taken from a staging root and
   REFUSED if absent, the declaration itself at `/etc/machine`),
   `kernel.fragment` (the kconfig the profile and the declared mounts
@@ -3280,7 +3395,7 @@ and go for OS-2"), the same day as OS-1.
 
 - Kernel: 496 options on, bzImage 1,217,536 bytes, **78 s wall** at two
   jobs (2m08 user) on WSL Ubuntu, gcc 15.2.
-- Image: initramfs 4,232,704 bytes — stzos 3.4 MB unstripped, stzr
+- Image: initramfs 4,232,704 bytes — harb 3.4 MB unstripped, stzr
   776 KB, hello.luau, the machine file.
 - Boot (QEMU 10.2, TCG, 256 MB): PID 1, `proc` `sysfs` `devtmpfs`
   `tmpfs` all mounted (`done` × 4 — the namespace refusals of OS-1 were
@@ -3315,7 +3430,7 @@ and go for OS-2"), the same day as OS-1.
 - aarch64 image and real hardware (the Makeen box); block devices and
   persistent mounts (virtio-blk first); A/B slots; the bootloader.
 - `make CC="zig cc"` for the kernel; a tarball mirror in the estate.
-- The judge lives in a shell script today; folding it into `stzos
+- The judge lives in a shell script today; folding it into `harb
   judge <name>` (portable, like the court) is queued.
 
 ---

@@ -20,7 +20,7 @@
 -- No member carries a KEY yet, and the court does not refuse that: a
 -- device's key is made on the device, on its first boot, from its own
 -- randomness, and a declaration written beforehand cannot know it.
--- `stzos fleet` reports who is unenrolled rather than pretending
+-- `harb fleet` reports who is unenrolled rather than pretending
 -- otherwise. `machines/fleet_temoin.machine` and
 -- `experiment/os7_fleet.sh` show the whole arc on a real device: a key
 -- made, published, enrolled, and a record verified by somebody who does

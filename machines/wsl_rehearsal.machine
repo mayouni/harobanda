@@ -36,9 +36,9 @@ DEFINE SERVICE steady AS (
 ) RATIONALE "Sleeps a second and is always restarted"
 
 DEFINE SERVICE signals AS (
-  RUN ["/usr/bin/flock", "/tmp/stzos-signals.ready", "/bin/sleep", "30"],
+  RUN ["/usr/bin/flock", "/tmp/harb-signals.ready", "/bin/sleep", "30"],
   RESTART always,
-  READY "/tmp/stzos-signals.ready",
+  READY "/tmp/harb-signals.ready",
   HEALTH 2,
   NEEDS [process]
 ) RATIONALE "A daemon stand-in that creates its signal and stays alive, as a real world does"
@@ -53,7 +53,7 @@ DEFINE SERVICE after_signals AS (
 DEFINE SERVICE mute AS (
   RUN ["/bin/sleep", "30"],
   RESTART always,
-  READY "/tmp/stzos-mute.ready",
+  READY "/tmp/harb-mute.ready",
   NEEDS [process]
 ) RATIONALE "A daemon stand-in that runs and never signals: the negative sibling"
 

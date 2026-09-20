@@ -5,7 +5,7 @@
 # zig-out/wsl/os4_probe.txt
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p zig-out/wsl
-SRC=$HOME/stzos-kernel/arm64/linux-6.12.109
+SRC=$HOME/harb-kernel/arm64/linux-6.12.109
 {
   echo "== qemu machines (raspi) =="; qemu-system-aarch64 -M help | grep -i raspi
   echo "== raspi4b properties =="; qemu-system-aarch64 -M raspi4b,help 2>&1 | head -20

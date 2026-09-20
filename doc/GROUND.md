@@ -90,7 +90,7 @@ any board is bought:
 | who is who on the box | `USER`: a service runs as a declared identity or as the machine; uid 0 cannot be declared (USR-1) | the plan, PID 1 and the service itself answer the same number |
 | what the box may touch | `CAPABILITY`, nine names on four kinds, verbatim from stzlib's System Foundation | the plan; the runtime refuses what the machine did not grant |
 | commodity hardware, never designed by us | `BOARD rpi4`: one word; a later board changes one word and one table entry | QEMU boots the same board before the card is flashed |
-| a change is a trial before it is a commitment | `stzos update` writes the other slot and asks for one trial; the machine judges its own boot against the expectation derived from this file | the card, twice, and now three times |
+| a change is a trial before it is a commitment | `harb update` writes the other slot and asks for one trial; the machine judges its own boot against the expectation derived from this file | the card, twice, and now three times |
 
 What is refused is as important as what is declared, because the
 forest grows through exactly these doors: no shell on the boot path and
@@ -231,7 +231,7 @@ serving. They are still stand-ins for what the kitchen and counter
 worlds will do; the Commons server is not yet a declared service of the
 machine; RestoPay is untouched;
 the board is on order (STZ-OS-HARDWARE-01). The guarantee sheet IS a
-verdict since GRT-1: `stzos guarantees` states each of the four by name
+verdict since GRT-1: `harb guarantees` states each of the four by name
 against the box's own evidence, and the pair of reports says exactly
 which the emulator cannot keep.
 
@@ -315,7 +315,7 @@ declares the platform an organisation is deployed on, while `.machine`
 declares the machine itself, one language per altitude; stzr running
 the constellation's worlds.
 
-**Today.** Sonibank's production system does not run on stzos, and the
+**Today.** Sonibank's production system does not run on Harobanda, and the
 delivered edition is Python. The paragraph above is where the floor
 goes when the constellation is built, and the ROP book's data-led pilot
 is the empirical test still ahead of the discipline itself.
@@ -410,7 +410,7 @@ table of that cooperation, each seam marked real or queued.
 | **RingServ** | the shape of the box's server role: declared services, embedded SQLite, sync with local-first pages, one static binary | the declared machine it runs on, with its network and partition brought up before it speaks | by design: the server projection under stzp (03-PRODUCTS); no server world is declared as a machine service yet |
 | **RingScript** | the phones' faces: the Ring VM resident in the page, local-first, the remote control | the stable address the pages find | by design: the touch profile is design only |
 | **Zin** | the constitution over the fleet; the Zos pillar declaring the platform an organisation is deployed on; the regulatory pillar; fleet agents (health, rollout, HACCP evidence) as the commercial layer | machine files as the facts its articles judge; transcripts as evidence | queued: one language per altitude is ruled; the fleet-of-machines court is not built |
-| **Refine** | the gate a change must pass; the audit chain; the refinement as the unit of change | the A/B trial as the gate's rollback; the new image as the refinement's artifact | by design: "a migration is a governed refinement, never a shell script"; no gate is wired to `stzos update` |
+| **Refine** | the gate a change must pass; the audit chain; the refinement as the unit of change | the A/B trial as the gate's rollback; the new image as the refinement's artifact | by design: "a migration is a governed refinement, never a shell script"; no gate is wired to `harb update` |
 | **Bangalo** | the practice court: how the floor was built, one session, one human, incident-cited laws | its own doctrine lines, each paid for here (CLAUDE.md) | real: this repository is a bungalow |
 | **Zing / stzp, Softanza Studio** | the projections and the visual lens over the same text | the machine as one more declared world the Studio can show | by design: the device lens is commercial and stays out of this repository |
 | **stzn** | the narrator: every court speaks through it | the transcript, the verdict and the plan as pages | queued: transcripts are text today, not narrations |
@@ -428,7 +428,7 @@ None of these is ordered. They are what this analysis makes visible;
 the author orders.
 
 1. ~~**The guarantee sheet becomes a fixture.**~~ **Built (GRT-1,
-   2026-09-13):** `stzos guarantees` judges the four by name against a
+   2026-09-13):** `harb guarantees` judges the four by name against a
    machine's own evidence, quoting the line that keeps each, and
    `experiment/judge_guarantees.sh` pins both reports. Today the board's
    derived expectation keeps three (the fourth needs a slot decision,
@@ -463,7 +463,7 @@ the author orders.
 
 ## 7. Honest boundaries
 
-- No customer runs stzos. Three declared machines boot in emulators;
+- No customer runs Harobanda. Three declared machines boot in emulators;
   one sensor projects onto MicroRing; no board has been flashed; the
   Makeen box's worlds serve but stand in for the real ones; the touch
   profile is a design.

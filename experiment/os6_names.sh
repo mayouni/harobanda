@@ -1,5 +1,5 @@
 #!/bin/bash
-# os6_names.sh -- the first time two stzos machines meet on a wire (NAM-1).
+# os6_names.sh -- the first time two Harobanda machines meet on a wire (NAM-1).
 #
 # One box that is the network's own server of addresses and names, one
 # till that declares nothing and asks. They are booted TOGETHER, in two
@@ -18,7 +18,7 @@
 #             It gets nothing at all, and says so in the words the DHCP
 #             client has always used: no server answered on this network.
 #
-#   wsl -d Ubuntu -- bash /mnt/d/GitHub/stzos/experiment/os6_names.sh
+#   wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os6_names.sh
 #
 # Log: zig-out/wsl/names.txt; the judged text: machines/names.expected
 set -u
@@ -28,9 +28,9 @@ TILL=caisse_makeen
 OB=zig-out/image/$BOX
 OT=zig-out/image/$TILL
 LOG=zig-out/wsl/names.txt
-PORT=${STZOS_NAMES_PORT:-14567}
+PORT=${HARB_NAMES_PORT:-14567}
 FLEET=machines/salle_makeen.fleet
-S=zig-out/cross/x86_64-linux-musl/stzos
+S=zig-out/cross/x86_64-linux-musl/harb
 # Read from the DECLARATION, never from a constant here (HDW-1). These
 # two addresses used to be literals in this file, which made this script
 # the only place in the estate where a fact about a deployment lived
@@ -79,7 +79,7 @@ await_server() { # $1 = transcript, $2 = seconds
 {
   echo "=== images (built, not booted) ==="
   for m in $BOX $TILL; do
-    STZOS_NO_BOOT=1 bash experiment/os2_image.sh "$m" > /dev/null 2>&1
+    HARB_NO_BOOT=1 bash experiment/os2_image.sh "$m" > /dev/null 2>&1
     if [ -f "zig-out/image/$m/boot.cmd" ]; then
       echo "$m: image built ($(grep -c . "zig-out/image/$m/expected") expected lines)"
     else
@@ -110,13 +110,13 @@ await_server() { # $1 = transcript, $2 = seconds
   round stranger "$STRANGER_MAC" "$((PORT+1))"
 
   # Assemble one text from three boots. Each section is cut at ITS OWN
-  # first `boot: stzos init` and the firmware noise before it dropped --
+  # first `boot: harb init` and the firmware noise before it dropped --
   # on the first line only, or a later section's banner loses which boot
   # it belonged to (the JRN-1 defect).
   section() { # $1 = file, $2 = prefix
     sed -e 's/\r$//' "$1" \
-      | sed -n '/^.*boot: stzos init/,$p' \
-      | sed -e '1s/^.*boot: stzos init/boot: stzos init/' \
+      | sed -n '/^.*boot: harb init/,$p' \
+      | sed -e '1s/^.*boot: harb init/boot: harb init/' \
       | sed -E 's/pid ([2-9]|[1-9][0-9]+)\b/pid N/g' \
       | sed -e '/^qemu exit$/d; /^qemu exit [0-9]*$/d; /^exit [0-9]*$/d' \
       | sed -e '/terminating on signal/d' \

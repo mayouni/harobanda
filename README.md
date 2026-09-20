@@ -65,10 +65,10 @@ with QEMU. No SDK, no account, nothing to install into your system.
 
 ```sh
 zig build -j2                                  # builds the one binary
-zig-out/bin/stzos check machines/qemu_hello.machine
-zig-out/bin/stzos plan  machines/qemu_hello.machine
-zig-out/bin/stzos learn                        # 18 lessons, guided
-zig-out/bin/stzos learn --words                # the vocabulary
+zig-out/bin/harb check machines/qemu_hello.machine
+zig-out/bin/harb plan  machines/qemu_hello.machine
+zig-out/bin/harb learn                        # 18 lessons, guided
+zig-out/bin/harb learn --words                # the vocabulary
 ```
 
 Then break something. Add a clause the grammar does not accept, or ask for a
@@ -104,7 +104,7 @@ Honesty is part of the design, so these are the plain limits.
 
 | profile | substrate | init | state |
 |---|---|---|---|
-| **hosted** | vendored Linux kernel, static musl userland, this binary as PID 1 | `stzos init` | **boots** on x86_64 and aarch64 under QEMU, and as a Raspberry Pi 4 image under `raspi4b`; transcripts judged |
+| **hosted** | vendored Linux kernel, static musl userland, this binary as PID 1 | `harb init` | **boots** on x86_64 and aarch64 under QEMU, and as a Raspberry Pi 4 image under `raspi4b`; transcripts judged |
 | **edge** | no kernel — the binary is the device (MicroRing's substrate) | a cooperative loop | declarable and judged; not yet bootable |
 | **touch** | the device's own kernel and init | the launcher is the pack | declarable and judged; unbuilt |
 
@@ -123,7 +123,7 @@ Honesty is part of the design, so these are the plain limits.
 | a fleet — facts about a SET, judged together | `src/fleet.zig` | `machines/fleet.expected`, `experiment/os7_fleet.sh` |
 | A/B slots — an update is a trial, not a commitment | `src/init.zig`, `src/update.zig` | the card read back after a trial and after a held one |
 | the edge projection | `src/project.zig` | `experiment/judge_project.sh` |
-| the guided tour, judged like any other claim | `src/learn.zig` | `stzos learn --check`, in `zig build court` |
+| the guided tour, judged like any other claim | `src/learn.zig` | `harb learn --check`, in `zig build court` |
 | the reference machines | `machines/` | each boots and is judged against its `.expected` |
 | the vendored kernel, pinned by digest | `vendor/PIN.md` | sha256 from kernel.org's own sums |
 
@@ -132,9 +132,9 @@ Honesty is part of the design, so these are the plain limits.
 ```sh
 zig build -j2 && zig build test -j2 && zig build court -j2 && zig build cross -j2
 
-zig-out/bin/stzos check|plan machines/<name>.machine
-zig-out/bin/stzos learn [n] [--all|--words|--run|--check]
-zig-out/bin/stzos fleet machines/salle_makeen.fleet
+zig-out/bin/harb check|plan machines/<name>.machine
+zig-out/bin/harb learn [n] [--all|--words|--run|--check]
+zig-out/bin/harb fleet machines/salle_makeen.fleet
 
 bash experiment/judge_guarantees.sh            # the four standing promises
 bash experiment/os2_image.sh qemu_hello        # image, kernel, QEMU, judge
@@ -171,14 +171,20 @@ that shaped it, and `GROUND.md` for the solutions it is the floor of.
 
 ## A note on names
 
-This repository is `stzos` and its binary is `stzos`. The system is presented
-publicly as **Harobanda**, named for the bridge across the Niger River that
-joins the two banks of Niamey — because the machine likewise joins a
-solution's promises to the hardware that keeps them.
+Three names, one thing, and they are not interchangeable:
 
-The final naming is an open ruling, recorded in `doc/PROVENANCE.md`. Until it
-is settled, `stzos` is what you type and Harobanda is what it is called. The
-site under `site/` uses the public name throughout.
+| **Harobanda** | the system — what it is called, in every sentence |
+|---|---|
+| **`harb`** | the binary and the command — what you type |
+| **`harobanda`** | the repository, and the directory you clone it into |
+
+It is named for the bridge across the Niger River that joins the two banks of
+Niamey, because the machine likewise joins a solution's promises to the
+hardware that keeps them.
+
+It was called `stzos` until 2026-09-20, which is the name the git history
+carries. The ruling that changed it is STZ-OS-RULING-02 in
+`doc/PROVENANCE.md`, beside the one it supersedes.
 
 ## Licence
 

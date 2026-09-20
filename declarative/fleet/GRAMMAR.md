@@ -42,7 +42,7 @@ A `KEY` is absent until the device exists. It cannot be otherwise: the
 key is made on the device, on its first boot, from its own randomness
 (IDN-1), and a declaration written beforehand cannot know it.
 
-So a member without a key is **not refused** — it is REPORTED. `stzos
+So a member without a key is **not refused** — it is REPORTED. `harb
 fleet` names every member that keeps a signed record and has no key, in
 those words: *nobody can verify what it signs*. The court refuses what
 is wrong; the roll says what is incomplete.
@@ -72,7 +72,7 @@ whose whole argument is that such facts must be.
 With `HARDWARE` on the member the court holds the promise and the
 machine against each other (FR16, FR17, FR18), the roll says which
 promise each member answers to, and the script reads the address from
-the declaration through `stzos fleet <file> hardware <member>` instead
+the declaration through `harb fleet <file> hardware <member>` instead
 of carrying a constant.
 
 ```
@@ -80,7 +80,7 @@ caisse -- caisse_makeen (caisse_makeen.machine, asks) -- 52:54:00:12:34:61, prom
 ```
 
 A `PEER` that no member claims is NOT refused: the kitchen printer is a
-declared peer of the box and will never be an stzos machine. The fleet
+declared peer of the box and will never be a Harobanda machine. The fleet
 checks the members it has, and says nothing about the rest of the wire.
 
 ## What the fleet refuses (the checks no single machine can fail)
@@ -114,8 +114,8 @@ device could verify it — attribution nobody else can test, which is a
 claim and not evidence.
 
 ```
-stzos fleet <file.fleet>                              judge the set, print the roll
-stzos fleet <file.fleet> verify <member> <record>     attribute a signed record
+harb fleet <file.fleet>                              judge the set, print the roll
+harb fleet <file.fleet> verify <member> <record>     attribute a signed record
 ```
 
 `verify` uses **only** the member's public key. No secret takes part, so
@@ -148,5 +148,5 @@ reported rather than guessed at.
 
 `declarative/fleet/fixtures.json`, pinned by sha256 in `PINNING.md`
 beside it, judged by `zig build court` (which runs both grammars) or
-`stzos court --fleet`. Every reject carries the fragment its refusal
+`harb court --fleet`. Every reject carries the fragment its refusal
 must contain, so a runtime refusing for the WRONG reason fails.

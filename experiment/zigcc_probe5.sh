@@ -5,8 +5,8 @@
 # change its mind, and does the kernel's percpu asm then compile?
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p zig-out/wsl
-Z=$HOME/stzos-zig/zig-x86_64-linux-0.15.2/zig
-SRC=$HOME/stzos-kernel/zigcc-x86_64/linux-6.12.109
+Z=$HOME/harb-zig/zig-x86_64-linux-0.15.2/zig
+SRC=$HOME/harb-kernel/zigcc-x86_64/linux-6.12.109
 {
   cd "$SRC" || exit 1
   printf 'int f(void){return 1;}\n' > /tmp/t.c

@@ -1,4 +1,4 @@
-// guarantee.zig -- `stzos guarantees <file.machine> <text>`: the hosted
+// guarantee.zig -- `harb guarantees <file.machine> <text>`: the hosted
 // profile's four standing promises, judged by name (GRT-1).
 //
 // Their provenance is a restaurant, not a specification. RestoLean's

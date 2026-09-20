@@ -268,7 +268,7 @@ machine it perceives through logs written for people.
   the court judges     machine (line 41): alerts needs network, which no declaration grants
   the agent revises    DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "..."
   a person ratifies    the new .machine file
-  the image is derived stzos image; /etc/expected gains two lines
+  the image is derived harb image; /etc/expected gains two lines
   the box tries it     boot: slot B -- a trial (committed is A)
   the box judges       boot: judge -- the boot matches its expectation (/etc/expected, 18 lines)
   the box commits      boot: slot B -- committed: every service is ready and the boot matches its expectation
@@ -345,7 +345,7 @@ Device([
 ])
 ```
 
-That file was written by `stzos project` from
+That file was written by `harb project` from
 `machines/cold_room_sensor.machine`, and MicroRing ran it unchanged.
 The HACCP evidence a restaurant needs would run from that probe to
 the box's journal without leaving declared ground.
@@ -389,7 +389,7 @@ ends at the machine's own verdict on its boot.
 a `.machine` file and one changed digest. Its cascade shows two new
 lines in `/etc/expected`. Its rollback is the other slot.
 
-**Status.** By design; no gate is wired to `stzos update`.
+**Status.** By design; no gate is wired to `harb update`.
 
 ## 12. The projections, the narrator, the practice, the twin
 

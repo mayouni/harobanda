@@ -1,13 +1,13 @@
 const std = @import("std");
 
-// stzos -- the declared machine. One static binary, every role: the CLI on
+// harb -- the declared machine. One static binary, every role: the CLI on
 // the host, PID 1 on the machine. Zero dependencies, zero network: the
 // Zig standard library is the whole toolchain.
 //
-//   zig build                      -> zig-out/bin/stzos (host)
+//   zig build                      -> zig-out/bin/harb (host)
 //   zig build test                 -> the unit tests (the mechanism and its negatives)
 //   zig build court                -> the fixture court (declarative/machine/fixtures.json)
-//   zig build cross                -> zig-out/cross/<triple>/stzos for the machine targets
+//   zig build cross                -> zig-out/cross/<triple>/harb for the machine targets
 //
 // `cross` exists because init.zig is comptime-gated on Linux and Zig
 // analyses only the taken side of a comptime branch: a Windows build
@@ -18,7 +18,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{
-        .name = "stzos",
+        .name = "harb",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
@@ -30,7 +30,7 @@ pub fn build(b: *std.Build) void {
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| run_cmd.addArgs(args);
-    b.step("run", "Run stzos with the given arguments").dependOn(&run_cmd.step);
+    b.step("run", "Run harb with the given arguments").dependOn(&run_cmd.step);
 
     const tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -66,13 +66,13 @@ pub fn build(b: *std.Build) void {
     court_step.dependOn(&learn_cmd.step);
 
     // the machine targets: static, musl, one flag each
-    const cross = b.step("cross", "Build stzos for the hosted-profile machine targets (static musl)");
+    const cross = b.step("cross", "Build harb for the hosted-profile machine targets (static musl)");
     const triples = [_][]const u8{ "x86_64-linux-musl", "aarch64-linux-musl" };
     for (triples) |triple| {
         const q = std.Target.Query.parse(.{ .arch_os_abi = triple }) catch unreachable;
         const t = b.resolveTargetQuery(q);
         const cexe = b.addExecutable(.{
-            .name = "stzos",
+            .name = "harb",
             .root_module = b.createModule(.{
                 .root_source_file = b.path("src/main.zig"),
                 .target = t,

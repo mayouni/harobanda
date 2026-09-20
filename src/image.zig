@@ -8,7 +8,7 @@
 //   initramfs.list   the kernel's own gen_init_cpio description of the
 //                    root filesystem: the mount points, the device nodes
 //                    PID 1 needs, /etc/machine (the declaration itself),
-//                    /stzos, and every program and file the services name
+//                    /harb, and every program and file the services name
 //                    -- each taken from a STAGING ROOT and refused if absent
 //   kernel.fragment  the kconfig options the profile, the board and the
 //                    declared mounts require, merged over tinyconfig
@@ -78,7 +78,7 @@ const Target = struct {
 fn target(board: machine.Board) ?Target {
     return switch (board) {
         // the edge boards have no image here: their substrate is
-        // MicroRing's and `stzos project` hands them over (PRJ-1)
+        // MicroRing's and `harb project` hands them over (PRJ-1)
         .sim, .pico2, .pico2w, .esp32c6 => null,
         .qemu_pc => .{
             .kernel_arch = "x86_64",
@@ -200,7 +200,7 @@ fn staged(arena: std.mem.Allocator, root: []const u8, path: []const u8) !?[]cons
 pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Writer) !u8 {
     const m = p.machine;
     if (m.profile != .hosted) {
-        try out.print("image: refused -- only the hosted profile has an image here; a machine of PROFILE {s} is projected by its own substrate (stzos project)\n", .{@tagName(m.profile)});
+        try out.print("image: refused -- only the hosted profile has an image here; a machine of PROFILE {s} is projected by its own substrate (harb project)\n", .{@tagName(m.profile)});
         return 2;
     }
     if (m.arch != .x86_64 and m.arch != .aarch64) {
@@ -208,7 +208,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         return 2;
     }
     const t = target(m.board) orelse {
-        try out.print("image: refused -- {s} is an edge board; an edge machine is projected onto MicroRing's substrate, not imaged here (stzos project)\n", .{@tagName(m.board)});
+        try out.print("image: refused -- {s} is an edge board; an edge machine is projected onto MicroRing's substrate, not imaged here (harb project)\n", .{@tagName(m.board)});
         return 2;
     };
 
@@ -218,7 +218,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     {
         var env: std.ArrayList(u8) = .{};
         const w = env.writer(arena);
-        try w.print("# image.env -- derived by stzos image; sourced by experiment/os2_image.sh\n", .{});
+        try w.print("# image.env -- derived by harb image; sourced by experiment/os2_image.sh\n", .{});
         try w.print("ARCH={s}\nCROSS_COMPILE={s}\nKERNEL_ARTIFACT={s}\nKERNEL_IMAGE={s}\nTRIPLE={s}-linux-musl\nBOARD={s}\n", .{ t.kernel_arch, t.cross, t.artifact, t.image_name, @tagName(m.arch), @tagName(m.board) });
         if (t.dtb) |d| try w.print("DTB={s}\n", .{d});
         try w.print("SD={s}\n", .{if (t.sd) "yes" else "no"});
@@ -246,12 +246,12 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         if (std.fs.path.dirnamePosix(r)) |d| if (d.len > 1) try addDir(arena, &dirs, d);
     };
 
-    // /stzos: this binary, cross-built, staged at the root
-    const stzos_src = (try staged(arena, opts.root, "/stzos")) orelse {
-        try out.print("image: refused -- /stzos is not staged under {s} (zig build cross, then copy the Linux binary there)\n", .{opts.root});
+    // /harb: this binary, cross-built, staged at the root
+    const harb_src = (try staged(arena, opts.root, "/harb")) orelse {
+        try out.print("image: refused -- /harb is not staged under {s} (zig build cross, then copy the Linux binary there)\n", .{opts.root});
         return 2;
     };
-    try files.append(arena, .{ .path = "/stzos", .source = stzos_src });
+    try files.append(arena, .{ .path = "/harb", .source = harb_src });
 
     // the services: the program must be staged; other absolute words are packed if staged
     for (m.services) |svc| {
@@ -300,7 +300,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     // and judged by PID 1 itself once every service is ready; a trial is
     // committed only on a match (JDG-1). A board the court emulates gets a
     // second text through the emulator's lens -- what it lacks, named per
-    // line -- selected by stzos.expect=emulator on the emulator's boot line
+    // line -- selected by harb.expect=emulator on the emulator's boot line
     // and never on the card's. The diff of the two texts IS the list of
     // the emulator's lacks, and os2_image.sh prints it at build time.
     {
@@ -330,7 +330,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     {
         var list: std.ArrayList(u8) = .{};
         const w = list.writer(arena);
-        try w.print("# initramfs.list -- derived by stzos image from {s}; gen_init_cpio format\n", .{opts.machine_path});
+        try w.print("# initramfs.list -- derived by harb image from {s}; gen_init_cpio format\n", .{opts.machine_path});
         try w.print("dir /dev 0755 0 0\n", .{});
         try w.print("nod /dev/console 0600 0 0 c 5 1\n", .{});
         try w.print("nod /dev/null 0666 0 0 c 1 3\n", .{});
@@ -349,7 +349,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     {
         var frag: std.ArrayList(u8) = .{};
         const w = frag.writer(arena);
-        try w.print("# kernel.fragment -- derived by stzos image from {s} for {s} ({s}); merged over tinyconfig\n", .{ opts.machine_path, t.kernel_arch, @tagName(m.board) });
+        try w.print("# kernel.fragment -- derived by harb image from {s} for {s} ({s}); merged over tinyconfig\n", .{ opts.machine_path, t.kernel_arch, @tagName(m.board) });
         const base = [_][]const u8{
             "CONFIG_64BIT=y",       "CONFIG_PRINTK=y",    "CONFIG_TTY=y",        "CONFIG_BLK_DEV_INITRD=y",
             "CONFIG_BINFMT_ELF=y",  "CONFIG_PROC_FS=y",   "CONFIG_SYSFS=y",      "CONFIG_DEVTMPFS=y",
@@ -466,7 +466,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     {
         var disks: std.ArrayList(u8) = .{};
         const w = disks.writer(arena);
-        try w.print("# disk.list -- derived by stzos image: id device fs size_mb image\n", .{});
+        try w.print("# disk.list -- derived by harb image: id device fs size_mb image\n", .{});
         if (block) |b| if (t.blk_device != null) try w.print("d0 {s} {s} {d} disk0.img\n", .{ b.device.?, @tagName(b.fs), opts.disk_mb });
         try writeOut(opts.out_dir, "disk.list", disks.items);
     }
@@ -475,7 +475,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     if (t.sd) {
         var sd: std.ArrayList(u8) = .{};
         const w = sd.writer(arena);
-        try w.print("# sd.list -- derived by stzos image: the card's partitions (part id fs size_mb label) and the boot partition's files (boot name source)\n", .{});
+        try w.print("# sd.list -- derived by harb image: the card's partitions (part id fs size_mb label) and the boot partition's files (boot name source)\n", .{});
         try w.print("part p1 fat32 64 boot\n", .{});
         if (block) |b| {
             try w.print("part p2 {s} {d} {s}\n", .{ @tagName(b.fs), opts.disk_mb, b.name });
@@ -490,7 +490,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             // on a boot requested with the tryboot flag, so the trial slot's
             // prefix applies once, and a reset falls back to the committed one.
             const config = try std.fmt.allocPrint(arena,
-                \\# config.txt -- derived by stzos image for {s} ({s}); read by the board's firmware
+                \\# config.txt -- derived by harb image for {s} ({s}); read by the board's firmware
                 \\arm_64bit=1
                 \\kernel=kernel8.img
                 \\initramfs initramfs.cpio followkernel
@@ -502,7 +502,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             , .{ m.name, @tagName(m.board) });
             try writeOut(opts.out_dir, "config.txt", config);
             for ([_][]const u8{ "A", "B" }) |slot| {
-                const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 stzos.slot={s} rdinit=/stzos -- init /etc/machine\n", .{ t.console_board, slot });
+                const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 harb.slot={s} rdinit=/harb -- init /etc/machine\n", .{ t.console_board, slot });
                 try writeOut(opts.out_dir, try std.fmt.allocPrint(arena, "cmdline.{s}.txt", .{slot}), cmdline);
                 try w.print("boot slots/{s}/cmdline.txt cmdline.{s}.txt\n", .{ slot, slot });
                 try w.print("boot slots/{s}/kernel8.img {s}\n", .{ slot, t.image_name });
@@ -510,10 +510,10 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
                 try w.print("boot slots/{s}/initramfs.cpio initramfs.cpio\n", .{slot});
             }
         } else {
-            const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 rdinit=/stzos -- init /etc/machine\n", .{t.console_board});
+            const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 rdinit=/harb -- init /etc/machine\n", .{t.console_board});
             try writeOut(opts.out_dir, "cmdline.txt", cmdline);
             const config = try std.fmt.allocPrint(arena,
-                \\# config.txt -- derived by stzos image for {s} ({s}); read by the board's firmware
+                \\# config.txt -- derived by harb image for {s} ({s}); read by the board's firmware
                 \\arm_64bit=1
                 \\kernel=kernel8.img
                 \\initramfs initramfs.cpio followkernel
@@ -556,9 +556,9 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         // moment it is armed (no countdown in its model), so the emulator's
         // line says so and PID 1 states the consequence. The card's own
         // cmdline.txt never carries it.
-        const slot_arg: []const u8 = if (m.slots != null) " stzos.slot=B stzos.watchdog=off" else "";
+        const slot_arg: []const u8 = if (m.slots != null) " harb.slot=B harb.watchdog=off" else "";
         // ... and judged through the emulator's lens, when it has one
-        const lens_arg: []const u8 = if (t.qemu_lens != null) " stzos.expect=emulator" else "";
+        const lens_arg: []const u8 = if (t.qemu_lens != null) " harb.expect=emulator" else "";
         // ... and ENDED, when the machine's worlds serve: a daemon never
         // exits, so a real init never halts and the transcript never
         // closes. Derived from the declaration -- any service that is not
@@ -570,7 +570,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             if (svc.restart != .never) serves = true;
         }
         const init_args = try std.fmt.allocPrint(arena, "-- init /etc/machine{s}", .{if (serves) " --halt-on-verdict" else ""});
-        try w.print(" -append \"console={s} quiet loglevel=3{s}{s} rdinit=/stzos {s}\"\n", .{ t.console_qemu, slot_arg, lens_arg, init_args });
+        try w.print(" -append \"console={s} quiet loglevel=3{s}{s} rdinit=/harb {s}\"\n", .{ t.console_qemu, slot_arg, lens_arg, init_args });
         try writeOut(opts.out_dir, "boot.cmd", cmd.items);
         if (m.slots != null) {
             // the rollback instrument: the same trial, held -- never committed,
@@ -583,7 +583,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             // expectation, which the emulator cannot meet. PID 1 must name
             // the lines and hold the trial; the card must still boot A.
             if (t.qemu_lens != null) {
-                const unmet = try std.mem.replaceOwned(u8, arena, cmd.items, " stzos.expect=emulator", "");
+                const unmet = try std.mem.replaceOwned(u8, arena, cmd.items, " harb.expect=emulator", "");
                 try writeOut(opts.out_dir, "boot_unmet.cmd", unmet);
             }
         }

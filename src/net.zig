@@ -1,5 +1,5 @@
-// net.zig -- `stzos net <iface> <a.b.c.d>/<prefix> [gateway]` and
-// `stzos net <iface> dhcp`: the same act PID 1 performs for a declared
+// net.zig -- `harb net <iface> <a.b.c.d>/<prefix> [gateway]` and
+// `harb net <iface> dhcp`: the same act PID 1 performs for a declared
 // NETWORK (src/netcfg.zig), reachable by hand from the one binary. Every
 // result stated. The parsing lives in machine.zig so the court judges it.
 
@@ -14,7 +14,7 @@ pub fn run(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
         return 2;
     }
     if (args.len < 2) {
-        try out.print("net: usage -- stzos net <iface> <a.b.c.d>/<prefix> [gateway] | stzos net <iface> dhcp\n", .{});
+        try out.print("net: usage -- harb net <iface> <a.b.c.d>/<prefix> [gateway] | harb net <iface> dhcp\n", .{});
         return 1;
     }
     var n = machine.Network{

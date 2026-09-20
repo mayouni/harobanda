@@ -20,45 +20,45 @@ is ready, and an A/B trial commits only on a match (JDG-1).
 
 ## 2. One binary, every role
 
-`stzos` is one static executable (Zig, no libc on Linux via musl static,
+`harb` is one static executable (Zig, no libc on Linux via musl static,
 ~3.4 MB unstripped). On the host it is the CLI — `check`, `plan`,
 `court`, later `image`. On a hosted machine the same file is PID 1 —
-`stzos init <file.machine>`, passed by the kernel command line
-(`rdinit=/stzos` with the machine file as its argument -- the root IS the initramfs). Cross-compiling
+`harb init <file.machine>`, passed by the kernel command line
+(`rdinit=/harb` with the machine file as its argument -- the root IS the initramfs). Cross-compiling
 it for the machine is one flag (`zig build cross`), Ring++'s P8 kept: no
 C toolchain is required of anyone.
 
 The multi-call shape is deliberate: the image's boot path holds exactly
-two binaries, stzos and stzr, and the declared services. There is no
+two binaries, `harb` and `stzr`, and the declared services. There is no
 third program on the path for a declaration to reach.
 
 ## 3. The hosted image (OS-2 — built and booted 2026-09-12)
 
 | part | source | verdict |
 |---|---|---|
-| kernel | Linux LTS, vendored as source and pinned by digest; config minimal per machine (no modules: the declared FS, NIC, console only). Built by the host's **gcc**. `make CC="zig cc"` was attempted on 2026-09-12 (ZIGCC-1) and is behind `STZOS_CC=zigcc`: after four named concessions the tree builds, and the image does not boot — it dies in the 16-bit setup code | **keep vendored**, rebuilt from source by a compiler we do not yet own; the instrument for owning it is kept |
-| init | `stzos init` | **own** |
+| kernel | Linux LTS, vendored as source and pinned by digest; config minimal per machine (no modules: the declared FS, NIC, console only). Built by the host's **gcc**. `make CC="zig cc"` was attempted on 2026-09-12 (ZIGCC-1) and is behind `HARB_CC=zigcc`: after four named concessions the tree builds, and the image does not boot — it dies in the 16-bit setup code | **keep vendored**, rebuilt from source by a compiler we do not yet own; the instrument for owning it is kept |
+| init | `harb init` | **own** |
 | runtime | `stzr` (stz's static binary) | **own** |
 | userland | none: no shell, no coreutils, no busybox | **none** |
-| filesystem | initramfs (cpio) holding `/stzos`, `/stzr`, `/app/*.luau`, `/etc/machine`; declared mounts for persistent data | **own** (the builder writes it) |
+| filesystem | initramfs (cpio) holding `/harb`, `/stzr`, `/app/*.luau`, `/etc/machine`; declared mounts for persistent data | **own** (the builder writes it) |
 | network | the NETWORK kind: PID 1 brings each declared interface up before any service — static (four ioctls and the route) or dhcp (a client in `src/netcfg.zig`); judged against QEMU's user-mode DHCP server. `EGRESS` says how far a granted network REACHES: the routing table is written from the declaration, and with a declared reach there is no default route at all (EGR-1) | **own** |
-| updates | two slots on the boot partition (`SLOTS`), `config.txt` naming the committed one and the firmware's `[tryboot]` naming the other; PID 1 commits a trial only once every service is ready AND its own boot matches the expectation the image carries (JDG-1), under the hardware watchdog; a boot that differs names the lines and holds itself; `stzos update` writes the other slot and asks for one trial (the tryboot flag waits on a driver patch, AB-1) | **own**, governed by refine |
+| updates | two slots on the boot partition (`SLOTS`), `config.txt` naming the committed one and the firmware's `[tryboot]` naming the other; PID 1 commits a trial only once every service is ready AND its own boot matches the expectation the image carries (JDG-1), under the hardware watchdog; a boot that differs names the lines and holds itself; `harb update` writes the other slot and asks for one trial (the tryboot flag waits on a driver patch, AB-1) | **own**, governed by refine |
 | the machine's own record | `JOURNAL`, one line per boot: `seq`, `prev`, the machine, the digest of the declaration that ran, the verdict, the entry's hash and the device's signature over its exact bytes. Plain text, append-only, never rewritten; no timestamp, because the board has no clock of its own and the sequence is the order (JRN-1) | **own** |
 | the floor's own refusals | Not derived from `NEEDS` at all: twenty-five calls that would let a world change the machine it was declared to run on -- mount, the module and kexec calls, reboot, the clock setters, the host name, unshare and setns, ptrace, swap, bpf, syslog, acct, mknod -- refused with EPERM to EVERY world on every machine, including one that declared everything. The filter is installed last, after PID 1 has used those calls to build the envelope (SYS-1) | **own** |
 | the envelope at the kernel | Derived from `NEEDS` and declared nowhere: a world that did not ask for `network` runs in its own empty network namespace, one that did not ask for `process` is refused `fork` and `clone`-without-`CLONE_THREAD` by a seccomp filter installed before its exec, one that did not ask for `filesystem` runs in a mount namespace with every declared MOUNT detached, and one that did not ask for `process` is pid 1 of a table of its own with `/proc` remounted inside it, reached through a stand-in process that carries the world's exit or signal back unchanged -- the tree made `MS_PRIVATE` first, or the umounts would take the machine's storage from PID 1 too. A world whose envelope the kernel cannot build is NOT STARTED (NS-1, MNT-1) | **own** |
 | a member's device | `HARDWARE` on a MEMBER: which physical unit it is, beside the enrolled key, because both are facts a DEPLOYMENT learns and neither is a fact a design states. It lets the court hold the server's promise against the machine that will claim it -- the correspondence that used to live in a shell-script constant (HDW-1) | **own** |
 | the fleet | `FLEET` and `MEMBER` in a second file of the same language: the checks no single machine can fail (two servers on one link, two claims on one address, somebody asking where nobody serves) and the enrolled PUBLIC key that lets any holder of the file verify any member's signed record. Enrolment is manual and a member without a key is reported, never guessed (FLT-1) | **own** |
 | the network's names | `DOMAIN` on a NETWORK and the `PEER` kind: the machine is its link's own server of addresses and names. No pool and no range — the declaration IS the register, so it cannot be lost at a reboot; the lease is infinite because the address was declared, not timed. No router option and no referral: the box does not forward and does not speak for the rest of the world (NAM-1) | **own** |
-| the expected boot | `/etc/expected`, derived by `stzos image` from the plan: the init lines a faithful boot prints, pids as `N`, a dhcp lease as `*`; for a board the court emulates, `/etc/expected.emulator` through the emulator's lens, and the diff of the two is the emulator's lacks, printed at build time | **own**, derived |
-| emulator | QEMU (`-kernel bzImage -initrd initramfs.cpio -append "rdinit=/stzos ..." -nographic`) | **borrow** for the court; not shipped |
+| the expected boot | `/etc/expected`, derived by `harb image` from the plan: the init lines a faithful boot prints, pids as `N`, a dhcp lease as `*`; for a board the court emulates, `/etc/expected.emulator` through the emulator's lens, and the diff of the two is the emulator's lacks, printed at build time | **own**, derived |
+| emulator | QEMU (`-kernel bzImage -initrd initramfs.cpio -append "rdinit=/harb ..." -nographic`) | **borrow** for the court; not shipped |
 | bootloader | the board's: the Raspberry Pi 4's own firmware (`start4.elf`, `fixup4.dat` — a vendor blob pinned by sha256 in `vendor/rpi-firmware/PIN.txt`, fetched, never committed) reads `config.txt` and loads `kernel8.img` + the initramfs; on x86 the emulator loads the kernel itself | **borrow**, stated per board in the target table |
 | device tree | mainline's `bcm2711-rpi-4-b.dtb`, plus the derived mmc aliases (`DTB_OPS`) for the card and the derived emulator ops (`QEMU_DTB_OPS`) for the court; `experiment/dtb_ops.py` applies, every op printed | **keep vendored**, two derived variants |
 | Wi-Fi | not taken: a second vendor blob; the box speaks Ethernet (GENET, mainline) | **none** |
 
-`stzos image <file.machine> --root <staging> --out <dir>` judges the
+`harb image <file.machine> --root <staging> --out <dir>` judges the
 file and DERIVES three texts, touching no toolchain: `initramfs.list`
 (the kernel's own gen_init_cpio description — device nodes, mount
-points, `/stzos`, every program and file the services name, each taken
+points, `/harb`, every program and file the services name, each taken
 from the staging root and refused if absent, and the declaration itself
 at `/etc/machine`), `kernel.fragment` (the kconfig options the profile
 and the declared mounts require), and `boot.cmd` (the QEMU line). The
@@ -70,7 +70,7 @@ serial console captured, and the judge — the transcript normalised
 
 **First boot, measured (2026-09-12, WSL Ubuntu, QEMU 10.2 TCG):**
 Linux 6.12.109 at 496 options → a 1.2 MB bzImage in 78 s wall at two
-jobs; a 4.2 MB initramfs of two binaries (stzos 3.4 MB unstripped, stzr
+jobs; a 4.2 MB initramfs of two binaries (harb 3.4 MB unstripped, stzr
 776 KB), one Luau file and the machine file; the boot ran PID 1 through
 four mounts, two services and a clean `reboot(RESTART)`, QEMU exiting 0
 under `-no-reboot`. The transcript matches the pinned expectation line
@@ -103,7 +103,7 @@ lacks, and the only place the two are allowed to differ.
 
 ## 4. The edge profile (declared here, projected onto MicroRing)
 
-**`stzos project <file.machine> --out <dir>` (PRJ-1, 2026-09-12).** A
+**`harb project <file.machine> --out <dir>` (PRJ-1, 2026-09-12).** A
 MicroRing project is a folder with a `device.ring` in it, whose
 `Device([...])` declaration carries a board and the pins — exactly the
 half a `.machine` file declares. The verb writes that file and nothing
@@ -125,7 +125,7 @@ for a comment character.
 The `.machine` file declares the sensor; the rest of the projection is
 MicroRing's:
 MicroZig HAL, littlefs on SPI flash, the cooperative loop as the
-scheduler, comptime board selection, A/B slots. `stzos init` refuses
+scheduler, comptime board selection, A/B slots. `harb init` refuses
 the edge profile by name and says whose it is. The edge kernel of
 ZinOS Edge's design (scheduler, page+arena allocator, HAL, littlefs,
 optional lwIP) is the ONLY kernel this estate would ever write, because
@@ -159,10 +159,10 @@ judged so that one file describes the fleet, phone included.
 | what a world may see and do | `machines/qemu_confine.machine`: four worlds, four questions, and the only difference between them is what their own NEEDS say -- one cannot see the interface at all, one is refused its fork with EPERM, one is held to nothing, and one that asked for nothing but the right to run has neither a network nor the machine's storage, and one that never asked for `process` is alone in a process table of its own. `makeen_box` runs both its worlds that way across four card boots (NS-1, MNT-1, PID-1) | matches, 39 lines |
 | attribution across machines | `machines/fleet_temoin.machine` publishes its public key and its record; `experiment/os7_fleet.sh` enrols the key by hand and verifies the record with no secret taking part, then lets three negatives decide it -- one word changed, the record offered as another device's, and a member nobody enrolled (FLT-1) | matches, 26 lines |
 | the network's names | `machines/makeen_names.machine` serving and `machines/caisse_makeen.machine` asking, booted TOGETHER on one QEMU socket netdev by `experiment/os6_names.sh` — the first time two of these machines met on a wire. The till learns its address, the domain and the resolver from the link, then asks for the printer by name; a third round boots the same image with a hardware address nobody declared and it gets nothing (NAM-1) | matches, 66 lines |
-| the device's name | `machines/qemu_identity.machine`: an Ed25519 key made on first boot and kept on a declared partition; `stzos attest` signs, verifies, and shows a tampered message refused. `makeen_box.expected` boots the same card twice, so the key is CREATED once and LOADED after -- and a pristine card makes its own (IDN-1) | 18 lines; 117 across four card boots |
+| the device's name | `machines/qemu_identity.machine`: an Ed25519 key made on first boot and kept on a declared partition; `harb attest` signs, verifies, and shows a tampered message refused. `makeen_box.expected` boots the same card twice, so the key is CREATED once and LOADED after -- and a pristine card makes its own (IDN-1) | 18 lines; 117 across four card boots |
 | the perimeter | `machines/qemu_egress.machine` on `qemu_pc`: `EGRESS ["10.9.0.0/16"]` writes one route and no default route, and two witnesses ask the kernel -- a way to the declared range, no way to the open internet, and no packet sent to find out (EGR-1) | matches, 19 lines |
-| the board, prepared | `experiment/os5_board.sh` -- the card's digests, the check that its cmdline carries no instrument of the court, the wiring, the capture, and three judges on one boot (the board's own verdict, `stzos judge` from the host, the four promises); `rehearse` proves the pipeline with no hardware (OS-5-PREP) | rehearsed; OS-5 waits on a board |
-| the four promises | `stzos guarantees` judges the hosted profile's four standing promises by name against a machine's own evidence, quoting the line that keeps each; `experiment/judge_guarantees.sh` does it twice for the box and pins both reports (GRT-1) | 39 lines; 3 of 4 on the board's expectation, 1 of 4 on the emulator's transcript |
+| the board, prepared | `experiment/os5_board.sh` -- the card's digests, the check that its cmdline carries no instrument of the court, the wiring, the capture, and three judges on one boot (the board's own verdict, `harb judge` from the host, the four promises); `rehearse` proves the pipeline with no hardware (OS-5-PREP) | rehearsed; OS-5 waits on a board |
+| the four promises | `harb guarantees` judges the hosted profile's four standing promises by name against a machine's own evidence, quoting the line that keeps each; `experiment/judge_guarantees.sh` does it twice for the box and pins both reports (GRT-1) | 39 lines; 3 of 4 on the board's expectation, 1 of 4 on the emulator's transcript |
 | budgets | `machines/qemu_budget.machine` on `qemu_pc`: two worlds, one inside its ceiling and one over it. `modest` holds 8 MiB of its 64 and ends; `greedy` asks for far more than its 32 and is killed by signal 9 five times inside its own group, its neighbour untouched, the box carrying on to a clean halt (BDG-1) | matches, 35 lines |
 | health | `makeen_box.expected` and `makeen_qemu.expected` carry the standing rule (`health -- kds every 5s, poste every 5s`) and a commit line that says the window was held; the NEGATIVE is the WSL rehearsal's `signals`, a `flock` that creates its path once and never refreshes it, caught in seconds (HLT-1) | 84 and 26 lines; the rehearsal |
 | the served machine | `makeen_qemu.expected` and `makeen_box.expected`: each world is a daemon with a declared READY path, PID 1 starts what comes after only once the signal appears, and the boot ends on `--halt-on-verdict` (derived onto the emulator's line, never the card's). A daemon never exits, so the loop polls rather than blocking on `wait4` (SRV-1) | 25 and 81 lines |

@@ -1,4 +1,4 @@
-boot: stzos init -- machine qemu_budget (hosted / x86_64 / qemu_pc) -- pid 1
+boot: harb init -- machine qemu_budget (hosted / x86_64 / qemu_pc) -- pid 1
 boot: console /dev/ttyS0
 boot: mount proc at /proc -- done
 boot: mount sysfs at /sys -- done
@@ -12,7 +12,7 @@ boot: start modest -- pid N -- /stzr /app/modest.luau
 modest: this world was granted 64 MiB and half a core
 modest: 8 MiB held, well inside the ceiling -- the kernel never had to intervene
 boot: modest (pid N) exited 0
-boot: start swarm -- pid N -- /stzos swarm 12
+boot: start swarm -- pid N -- /harb swarm 12
 swarm: 5 tasks made, and the kernel refused the next (AGAIN): this world is as many as the machine agreed to hold
 boot: swarm (pid N) exited 0
 boot: start greedy -- pid N -- /stzr /app/greedy.luau

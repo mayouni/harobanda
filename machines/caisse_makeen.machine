@@ -37,27 +37,27 @@ DEFINE NETWORK salle AS (
 ) RATIONALE "It asks the link. What comes back -- the address, the domain, the resolver -- is the server's to give and this file's not to guess"
 
 DEFINE SERVICE printer AS (
-  RUN ["/stzos", "ask", "imprimante.makeen"],
+  RUN ["/harb", "ask", "imprimante.makeen"],
   RESTART never,
   NEEDS [process, network]
 ) RATIONALE "The scene: the till asking for the printer by name, and getting the number it never had to be told"
 
 DEFINE SERVICE short AS (
-  RUN ["/stzos", "ask", "imprimante"],
+  RUN ["/harb", "ask", "imprimante"],
   RESTART never,
   AFTER [printer],
   NEEDS [process, network]
 ) RATIONALE "The same question in the form a person types it: the search domain the lease carried makes the two one question"
 
 DEFINE SERVICE box AS (
-  RUN ["/stzos", "ask", "makeen"],
+  RUN ["/harb", "ask", "makeen"],
   RESTART never,
   AFTER [short],
   NEEDS [process, network]
 ) RATIONALE "The network's own name answers with the box: the link is not an abstraction, it has an address and that address is a machine"
 
 DEFINE SERVICE absent AS (
-  RUN ["/stzos", "ask", "fantome.makeen"],
+  RUN ["/harb", "ask", "fantome.makeen"],
   RESTART never,
   AFTER [box],
   NEEDS [process, network]

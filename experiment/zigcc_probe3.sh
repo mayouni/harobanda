@@ -4,8 +4,8 @@
 # kernel's own file, with everything else identical.
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p zig-out/wsl
-export ZIGCC_REAL=$HOME/stzos-zig/zig-x86_64-linux-0.15.2/zig
-SRC=$HOME/stzos-kernel/zigcc-x86_64/linux-6.12.109
+export ZIGCC_REAL=$HOME/harb-zig/zig-x86_64-linux-0.15.2/zig
+SRC=$HOME/harb-kernel/zigcc-x86_64/linux-6.12.109
 Z=$ZIGCC_REAL
 {
   cd "$SRC" || exit 1

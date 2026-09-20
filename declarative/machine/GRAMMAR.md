@@ -3,8 +3,8 @@
 A `.machine` file declares a machine whole: its profile, the
 capabilities it grants and refuses, its mounts, its pins, and the
 services it keeps alive. It declares; it does not compute. From a judged
-declaration the boot plan is DERIVED (`stzos plan`), and on a hosted
-machine the same binary executes that plan as PID 1 (`stzos init`).
+declaration the boot plan is DERIVED (`harb plan`), and on a hosted
+machine the same binary executes that plan as PID 1 (`harb init`).
 This document is the normative text; `fixtures.json` beside it is the
 judge (pin in `PINNING.md`); `machine.stzu` beside it is this language
 declared in stzu, judged by stz's meta-court.
@@ -91,15 +91,15 @@ machine can say who else is in its estate. They are the fleet grammar's,
 | `BOARD` | hosted: `qemu_pc` \| `qemu_virt` \| `rpi4`; edge: `sim` \| `pico2` \| `pico2w` \| `esp32c6` | optional; each profile has its own menu and its own emulator board, and a board of the other profile is refused by name (R35, R51). A touch machine's device is the phone and declares none. Defaults: hosted by ARCH (`x86_64` → `qemu_pc`, else `qemu_virt`), edge → `sim` (A15). A board of another architecture is refused (R33, R52); an unknown board is refused (R34) |
 | `IDENTITY` | string | optional, hosted only — the absolute path where this device's own key lives. PID 1 makes an Ed25519 pair there the first time the machine boots and loads it every time after. It must sit inside a declared PERSISTENT mount (R65), be absolute (R64), and the edge profile is refused it (R66): an edge device's key is MicroRing's, and its custody is the hardware's |
 | `JOURNAL` | string | optional, hosted only — where this machine keeps its OWN record: one line per boot, hash-chained and signed by the device's key. Needs an `IDENTITY` to sign with (R67), must be absolute (R69) and must live on a declared persistent mount (R68). It records what the machine was and what it judged of itself, never what a world did |
-| `SLOTS` | string, the boot partition's device (`"/dev/mmcblk0p1"`) | optional — the machine updates A/B: two slots on that partition, `config.txt` naming the committed one and, under `[tryboot]`, the other; PID 1 reads which slot it booted (`stzos.slot=` on the cmdline), arms the watchdog, and commits a trial only once every service has started. Needs a board whose firmware can try a slot (`rpi4`; R41); an absolute device path (R42) |
+| `SLOTS` | string, the boot partition's device (`"/dev/mmcblk0p1"`) | optional — the machine updates A/B: two slots on that partition, `config.txt` naming the committed one and, under `[tryboot]`, the other; PID 1 reads which slot it booted (`harb.slot=` on the cmdline), arms the watchdog, and commits a trial only once every service has started. Needs a board whose firmware can try a slot (`rpi4`; R41); an absolute device path (R42) |
 | `CONSOLE` | string | optional; defaults `/dev/console`, `uart0`, `logcat` by profile |
 
 The BOARD names what the machine is built for. An edge machine's board
 is MicroRing's vocabulary verbatim (`sim` is its simulator, `pico2` and
 `pico2w` its tier-2 flagship, `esp32c6` its tier 3), because an edge
 machine is PROJECTED onto that substrate and never imaged here:
-`stzos project` writes the `device.ring` a MicroRing project is, and
-refuses a hosted machine; `stzos image` refuses an edge one.
+`harb project` writes the `device.ring` a MicroRing project is, and
+refuses a hosted machine; `harb image` refuses an edge one.
 
 For a hosted machine the BOARD is what the image is built for: the
 emulator court's machines (`qemu_pc` on x86_64, `qemu_virt` on aarch64)
@@ -260,7 +260,7 @@ one would be lying to every device on the link. A name it does not
 serve is answered `NXDOMAIN`, never forwarded upstream — the box speaks
 for its own link and is silent about the rest of the world.
 
-`stzos ask <name>` is the witness, and `experiment/os6_names.sh` boots
+`harb ask <name>` is the witness, and `experiment/os6_names.sh` boots
 the pair that proves it: `machines/makeen_names.machine` serving,
 `machines/caisse_makeen.machine` asking, and the same image booted a
 second time with a hardware address nobody declared, getting nothing.
@@ -377,10 +377,10 @@ act — stzlib's rehearse-plan-commit law carried down to the boot.
   exists, so no machine forwards.
 - **Edge boot** — the edge profile is declarable and judged, not yet
   bootable: its substrate is MicroRing's (MicroZig, the flash
-  filesystem), and `stzos init` refuses it by name.
+  filesystem), and `harb init` refuses it by name.
 - **Touch** — declarable, judged; the AOSP profile is ZinOS Touch's
   design, unbuilt.
-- **The image** — `stzos image` (kernel + this binary + the declared
+- **The image** — `harb image` (kernel + this binary + the declared
   services into one bootable artifact) is the next act; see
   `doc/ARCHITECTURE.md`.
 

@@ -80,7 +80,8 @@ live beside: Ring++ had dropped bare metal on purpose, MicroRing was
 "not an RTOS", and RestoLean had ruled to enslave commodity Android
 rather than build a box.
 
-The repository was named `stzos`, provisionally, and the first thing
+The repository was named `stzos`, provisionally (renamed Harobanda on
+2026-09-20 -- STZ-OS-RULING-02), and the first thing
 written was not an init. It was a language: seven kinds of declaration
 for a machine, and forty fixtures that judged them before a single
 line of the boot existed. Then one static binary that is both the
@@ -344,11 +345,11 @@ illustrative; a restaurant where a platform was meant.
 
 | what | where |
 |---|---|
-| the day's acts, newest first | `stzos/experiment/PROTOCOL.md` |
-| the rulings taken on the author's behalf | `stzos/doc/PROVENANCE.md` |
-| what the machine is for | `stzos/doc/GROUND.md` |
-| what owning the floor gives each layer | `stzos/doc/DIVIDEND.md` |
+| the day's acts, newest first | `harobanda/experiment/PROTOCOL.md` |
+| the rulings taken on the author's behalf | `harobanda/doc/PROVENANCE.md` |
+| what the machine is for | `harobanda/doc/GROUND.md` |
+| what owning the floor gives each layer | `harobanda/doc/DIVIDEND.md` |
 | the OS chapter (draft) | `softanza/vision/07-SYSTEM.md` |
 | the diagram, validated and redrawn (draft) | `softanza/vision/08-NORTH-STAR.md` |
 | the memos of the two days | `softanza/memos/2026-09-12.md`, `2026-09-13.md` |
-| the machines, their transcripts pinned | `stzos/machines/*.machine`, `*.expected` |
+| the machines, their transcripts pinned | `harobanda/machines/*.machine`, `*.expected` |

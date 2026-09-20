@@ -34,7 +34,7 @@ writefile("/run/kds.ready", "kds\n")
 
 -- the daemon's rest: a real init keeps this world alive for the life of
 -- the machine; the court's own instrument ends the boot once the verdict
--- is in (stzos init --halt-on-verdict, on the emulator's line only)
+-- is in (harb init --halt-on-verdict, on the emulator's line only)
 -- ... and keeps saying it: the machine declares HEALTH 5, so PID 1
 -- feeds the board's watchdog only while this path stays fresh, and a
 -- trial commits only after one full window of it (HLT-1)

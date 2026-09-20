@@ -1,8 +1,8 @@
 -- cold_room_sensor.machine -- the edge profile's reference machine, and
 -- fixture A3 verbatim: the HACCP probe of RestoLean's cold room, the
 -- sensor the Makeen box listens to. It is declared here and PROJECTED
--- onto MicroRing's substrate (`stzos project`), never imaged and never
--- booted here: `stzos init` refuses the edge profile by name and says
+-- onto MicroRing's substrate (`harb project`), never imaged and never
+-- booted here: `harb init` refuses the edge profile by name and says
 -- whose it is. MicroRing owns the firmware, the tiers and the loop.
 
 DEFINE MACHINE cold_room_sensor AS (

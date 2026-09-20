@@ -71,7 +71,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `stzos court` | **107/107** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **107/107** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -105,13 +105,13 @@ meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
 ## The boot, judged by the machine itself (JDG-1)
 
 Every image carries `/etc/expected`: the init lines a faithful boot of
-the declared machine prints, DERIVED by `stzos image` from the plan.
+the declared machine prints, DERIVED by `harb image` from the plan.
 PID 1 records what it says and, when every service is ready, judges
 its own ledger against that text in its own words — `judge -- the boot
 matches its expectation (/etc/expected, 14 lines)` — and an A/B trial
 is committed only on a match. A board the court emulates carries a
 second text through the emulator's lens (`/etc/expected.emulator`,
-selected by `stzos.expect=emulator` on the emulator's boot line and
+selected by `harb.expect=emulator` on the emulator's boot line and
 never on the card's); the diff of the two is the list of the emulator's
 lacks, printed at build time. The three pinned transcripts carry the
 verdicts: **33, 26 and 84 lines, identical** (26 and 84 since HLT-1,
@@ -260,7 +260,7 @@ edge profile, where custody is the hardware's and the design is
 MicroRing's. **85/85**, from 81/81.
 
 `machines/qemu_identity.machine` is the seventh pinned transcript (18
-lines): the key is made, `stzos attest` signs with it, verifies it, and
+lines): the key is made, `harb attest` signs with it, verifies it, and
 then flips one bit in the message and shows the same signature refused --
 the half that makes the first half evidence rather than a claim.
 
@@ -300,7 +300,7 @@ reach 10.9.0.1 -- a route exists: this machine knows a way there
 reach 8.8.8.8 -- no route: this machine knows no way there
 ```
 
-`stzos reach <a.b.c.d>` is the witness, as `stzos id` is the USER
+`harb reach <a.b.c.d>` is the witness, as `harb id` is the USER
 seat's. A UDP `connect()` is the whole question: it performs the route
 lookup and sends nothing, so a machine with no way to an address learns
 that without a single packet leaving it.
@@ -310,7 +310,7 @@ that without a single packet leaving it.
 The hosted profile's four standing promises -- always reachable, a
 stable name, a durable log, survives the cut -- are RestoLean's sheet
 (Amor's *toujours joignable, nom stable, journal local durable,
-traverse la coupure*) made into a verdict. `stzos guarantees
+traverse la coupure*) made into a verdict. `harb guarantees
 <file.machine> <text>` reads the declaration for what is promised and a
 text for what is kept, quotes the line that keeps each, and names what
 was looked for when one is not. `experiment/judge_guarantees.sh` judges
@@ -369,7 +369,7 @@ and a world with no window owing nothing).
 ## The edge projection, judged as text (PRJ-1)
 
 `machines/cold_room_sensor.machine` (fixture A3 verbatim, `BOARD
-pico2`) → `stzos project` → a real MicroRing project: a folder with a
+pico2`) → `harb project` → a real MicroRing project: a folder with a
 `device.ring` whose `Device([...])` carries the board and both pins.
 Diffed against `machines/cold_room_sensor.device.ring.expected` by
 `experiment/judge_project.sh`: **20 lines, identical** — and then run
@@ -388,7 +388,7 @@ envelope), each service's behaviour (the Device language's).
 
 `machines/qemu_hello.machine` declares `USER world` and runs its
 witness service as it. The pinned transcript carries both halves: PID 1
-saying `start whoami -- pid N -- /stzos id -- as world (1000:1000)`,
+saying `start whoami -- pid N -- /harb id -- as world (1000:1000)`,
 and the service's own answer from inside the machine, `id: uid=1000
 gid=1000`. The image derives `/etc/passwd` and `/etc/group` from the
 declared identities and root, so a world that asks a name service gets
@@ -398,8 +398,8 @@ moved from 28 in the same commit as the seat.
 ## The slots, judged by the card itself (AB-1)
 
 `machines/makeen_box.machine` declares `SLOTS "/dev/mmcblk0p1"`. The
-court boots the card as a trial of slot B (`stzos.slot=B` on the
-emulator's line, `stzos.watchdog=off` because the emulator resets on
+court boots the card as a trial of slot B (`harb.slot=B` on the
+emulator's line, `harb.watchdog=off` because the emulator resets on
 arming) and the pinned transcript carries three witnesses: PID 1's own
 lines (`a trial (committed is A)` … `committed: every service is
 ready; config.txt now boots B`), the card's `config.txt` read back after the
@@ -470,7 +470,7 @@ the run):
   `proc` mounted, `sysfs` and `devtmpfs` refused by the kernel with
   `PERM`, the same reaper behaviour, `init would now halt the machine`.
 - since RDY-1, both sides of READY: `signals -- ready
-  (/tmp/stzos-signals.ready)` and then `start after_signals`, against
+  (/tmp/harb-signals.ready)` and then `start after_signals`, against
   `after_mute has not started -- what it comes AFTER has not signalled
   ready`. The script removes the signal paths before each run; a stale
   signal would make a daemon ready before it ever started.

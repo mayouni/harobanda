@@ -59,7 +59,7 @@ pub const Options = struct {
 // names the committed slot in its os_prefix and, under [tryboot], the
 // other; the firmware applies the [tryboot] section only on a boot asked
 // for with the tryboot flag, once. PID 1 learns which slot it booted from
-// the cmdline (stzos.slot=), reads which one is committed, arms the
+// the cmdline (harb.slot=), reads which one is committed, arms the
 // hardware watchdog, and -- on a trial -- commits by rewriting config.txt
 // only when every service is ready AND the boot matches the expectation
 // the image carries (JDG-1: the machine judges its own boot). A trial that
@@ -134,7 +134,7 @@ fn cmdlineValue(gpa: std.mem.Allocator, key: []const u8) ?[]u8 {
 }
 
 /// The machine judges its own boot: the ledger against /etc/expected -- or
-/// /etc/expected.<lens> when the boot line names one with stzos.expect=
+/// /etc/expected.<lens> when the boot line names one with harb.expect=
 /// (the emulator's court does; a card's cmdline.txt never does). The
 /// verdict is said on the console, in the machine's words, and returned.
 /// No expectation is no verdict: nothing to judge by is nothing to commit
@@ -142,7 +142,7 @@ fn cmdlineValue(gpa: std.mem.Allocator, key: []const u8) ?[]u8 {
 fn judgeBoot(gpa: std.mem.Allocator, led: *Ledger, out: *std.Io.Writer) !bool {
     var path_buf: [80]u8 = undefined;
     var path: []const u8 = "/etc/expected";
-    if (cmdlineValue(gpa, "stzos.expect=")) |lens| {
+    if (cmdlineValue(gpa, "harb.expect=")) |lens| {
         defer gpa.free(lens);
         path = std.fmt.bufPrint(&path_buf, "/etc/expected.{s}", .{lens}) catch path;
     }
@@ -180,13 +180,13 @@ fn judgeBoot(gpa: std.mem.Allocator, led: *Ledger, out: *std.Io.Writer) !bool {
 fn bootedSlot(gpa: std.mem.Allocator) ?u8 {
     const cmdline = std.fs.cwd().readFileAlloc(gpa, "/proc/cmdline", 4096) catch return null;
     defer gpa.free(cmdline);
-    const i = std.mem.indexOf(u8, cmdline, "stzos.slot=") orelse return null;
-    const c = cmdline[i + "stzos.slot=".len ..];
+    const i = std.mem.indexOf(u8, cmdline, "harb.slot=") orelse return null;
+    const c = cmdline[i + "harb.slot=".len ..];
     if (c.len == 0) return null;
     return if (c[0] == 'A' or c[0] == 'B') c[0] else null;
 }
 
-/// `stzos.watchdog=off` on the cmdline: the emulator court's lens. QEMU's
+/// `harb.watchdog=off` on the cmdline: the emulator court's lens. QEMU's
 /// raspi4b resets the board the moment the watchdog is ARMED (its
 /// power-management model has no countdown and reads the driver's
 /// "full reset on expiry" as "reset now"), so the emulator's boot line
@@ -195,7 +195,7 @@ fn bootedSlot(gpa: std.mem.Allocator) ?u8 {
 fn watchdogOff(gpa: std.mem.Allocator) bool {
     const cmdline = std.fs.cwd().readFileAlloc(gpa, "/proc/cmdline", 4096) catch return false;
     defer gpa.free(cmdline);
-    return std.mem.indexOf(u8, cmdline, "stzos.watchdog=off") != null;
+    return std.mem.indexOf(u8, cmdline, "harb.watchdog=off") != null;
 }
 
 /// the committed slot: the first os_prefix=slots/X/ before [tryboot]
@@ -660,7 +660,7 @@ fn checkHealth(slots: []Slot, out: *std.Io.Writer) !bool {
 
 pub fn run(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Writer) !u8 {
     if (!is_linux) {
-        try out.print("boot: init is a Linux act; this binary was built for {s} -- use `stzos plan` here, or `zig build cross`\n", .{@tagName(builtin.os.tag)});
+        try out.print("boot: init is a Linux act; this binary was built for {s} -- use `harb plan` here, or `zig build cross`\n", .{@tagName(builtin.os.tag)});
         try out.flush();
         return 2;
     }
@@ -773,7 +773,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     if (ab) |*s| if (!opts.rehearse) {
         s.booted = bootedSlot(gpa);
         if (s.booted == null) {
-            try out.print("boot: slot -- no stzos.slot on the cmdline: a single boot, nothing to commit\n", .{});
+            try out.print("boot: slot -- no harb.slot on the cmdline: a single boot, nothing to commit\n", .{});
             s.done = true;
         } else {
             const devz = try gpa.dupeZ(u8, s.dev);
@@ -1208,7 +1208,7 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
 /// can put it in its cgroup and SAY that it started before the world
 /// says anything at all. Without that gate the transcript's order is a
 /// race between a fork and a print, and a fast world wins it often
-/// enough to make a pinned transcript flap: `stzos id` -- a static
+/// enough to make a pinned transcript flap: `harb id` -- a static
 /// binary that prints one line and exits -- overtook its own start line
 /// the first time budgets changed the timing (BDG-1). A gate costs one
 /// pipe and makes the order a fact.
