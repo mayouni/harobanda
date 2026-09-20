@@ -5,3 +5,7 @@ zig-cache/
 vendor/linux/
 vendor/rpi-firmware/
 vendor/zig/
+
+# python bytecode, from site/diagrams/
+__pycache__/
+*.pyc

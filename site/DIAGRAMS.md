@@ -49,7 +49,7 @@ Two standing constraints, both from the site's own doctrine:
 | 1 | `harobanda-diagram-1.jpg` | why | opens the page, 10% | **live** |
 | 2 | `harobanda-diagram-2.jpg` | ai | frames the stack section, 22% | **live** |
 | 3 | `harobanda-diagram-3.jpg` | ai | pays off the example, 78% | **live** |
-| 4 | `harobanda-diagram-4.jpg` | machine | *not a new kernel*, 15% | slot placed |
+| 4 | `harobanda-diagram-4.jpg` | machine | *not a new kernel*, 15% | **live** |
 | 5 | `harobanda-diagram-5.jpg` | machine | *survives the cut*, 48% | slot placed |
 | 6 | `harobanda-diagram-6.jpg` | build | opens the page, 11% | slot placed |
 | 7 | `harobanda-diagram-7.jpg` | why | *difference one*, 46% | slot placed |
@@ -301,10 +301,17 @@ that happen to share a floor.
 
 ## After an image lands
 
-1. Drop the `.jpg` into `site/` at 1376 × 768.
-2. Uncomment its `<img>` tag at the `DIAGRAM SLOT` marker.
-3. Update the **status** column of the register above.
-4. Check it: the page's first diagram should sit in the first third.
+Diagrams 1–3 were authored by hand outside this repository. From 4 on they
+are drawn by a script in `site/diagrams/`, so a change is an edit rather
+than a redraw — see `site/diagrams/README.md`.
+
+```
+python site/diagrams/diagram4.py          # writes site/harobanda-diagram-4.jpg
+python site/diagrams/activate_slot.py 4   # uncomments its slot, refuses if absent
+```
+
+Then set the row in the register above to **live**, in the same commit, and
+check it: the page's first diagram must sit in the first third.
 
 ```
 grep -rn "DIAGRAM SLOT" site/*.html
