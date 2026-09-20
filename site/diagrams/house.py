@@ -137,3 +137,17 @@ def centre_ls(d, cx, y, t, font, fill, ls):
 def text(d, x, y, t, font, fill, anchor="lm"):
     """Plain text at a LOGICAL position."""
     d.text((x*S, y*S), t, font=font, fill=fill, anchor=anchor)
+
+
+def chip(d, x, y, w, h, label, font, fill, ink=BG, ls=1.6):
+    """A pill carrying a verdict or a status. Logical units."""
+    d.polygon(rr_path(x*S, y*S, (x+w)*S, (y+h)*S, (h/2)*S), fill=fill)
+    cap = font.getbbox("H")[3] - font.getbbox("H")[1]
+    centre_ls(d, x + w/2, y + h/2 + (cap/2)/S, label, font, ink, ls)
+
+
+def chevron(d, x, y, size=9, fill=HAIR, lw=2.0):
+    """A small '>' marking the direction of time. Never a heavy arrowhead."""
+    w = int(lw*S)
+    d.line([((x-size/2)*S, (y-size)*S), ((x+size/2)*S, y*S)], fill=fill, width=w)
+    d.line([((x+size/2)*S, y*S), ((x-size/2)*S, (y+size)*S)], fill=fill, width=w)

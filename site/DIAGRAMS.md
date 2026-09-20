@@ -50,7 +50,7 @@ Two standing constraints, both from the site's own doctrine:
 | 2 | `harobanda-diagram-2.jpg` | ai | frames the stack section, 22% | **live** |
 | 3 | `harobanda-diagram-3.jpg` | ai | pays off the example, 78% | **live** |
 | 4 | `harobanda-diagram-4.jpg` | machine | *not a new kernel*, 15% | **live** |
-| 5 | `harobanda-diagram-5.jpg` | machine | *survives the cut*, 48% | slot placed |
+| 5 | `harobanda-diagram-5.jpg` | machine | *survives the cut*, 48% | **live** |
 | 6 | `harobanda-diagram-6.jpg` | build | opens the page, 11% | **live** |
 | 7 | `harobanda-diagram-7.jpg` | why | *difference one*, 46% | slot placed |
 | 8 | `harobanda-diagram-8.jpg` | enterprise | before the three cards, 35% | slot placed |
