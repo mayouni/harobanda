@@ -285,6 +285,15 @@ p code{color:var(--laterite);}
    .versus or .ground-row: those style one side as the problem and the other
    as the fix, and nothing in this section is a problem. Name and examples
    are told apart by font and colour at the same size, as everywhere else. */
+/* The vocabulary panel. Term in mono, because it is the machine's word;
+   definition in sans, because it is ours. Same size, as everywhere. */
+.words{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+@media(max-width:760px){.words{grid-template-columns:1fr;}}
+.words div{background:var(--surface);padding:15px 19px;}
+.words b{display:block;font-family:var(--mono);font-size:18px;color:var(--river);
+  font-weight:500;margin-bottom:3px;}
+.words span{font-size:18px;color:var(--muted);line-height:1.5;}
 .placing{display:flex;flex-direction:column;gap:1px;background:var(--line);
   border:1px solid var(--line);border-radius:12px;overflow:hidden;}
 .placing-row{background:var(--surface);display:grid;grid-template-columns:.92fr 1.4fr;

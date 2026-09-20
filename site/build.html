@@ -73,8 +73,12 @@
     <div class="prose" style="margin-bottom:clamp(26px,3.5vw,38px)">
       <p><b>What is “the program” in RUN?</b> Whatever you point it at. It can be a self-contained executable the machine launches directly — anything compiled to run on Linux — or a program written in a family language that the on-image runtime executes. To the machine both are the same: the one process to start, confined to what it declared and kept alive. So you bring existing binaries, or you write in the Haro family below.</p>
     </div>
-    <p class="eyebrow" style="margin-bottom:14px;">The floor, and the Haro family that runs on it</p>
-    <p class="prose" style="margin-bottom:16px;color:var(--muted);font-size:18px;line-height:1.6;">Harobanda is the floor. You can bring any self-contained program that honours the envelope — or use the <b style="color:var(--ink)">Haro family</b>, a coherent set of open tools already usable in real projects. It is also the answer to “what web server, what app server, what agentic server”: there is no stack to assemble.</p>
+    <div class="hilite" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="eyebrow">Bring what you already have</p>
+      <p>If it compiles to a self-contained Linux executable — <b>Go, Rust, C, Zig, anything static</b> — you declare it and it runs. Nothing about your program has to know it is on Harobanda, and nothing below is required to use any of this. <b>There is no ecosystem you have to join.</b></p>
+    </div>
+    <p class="eyebrow" style="margin-bottom:14px;">And a family you may use instead — none of it obligatory</p>
+    <p class="prose" style="margin-bottom:16px;color:var(--muted);font-size:18px;line-height:1.6;">If you would rather not assemble a stack, the <b style="color:var(--ink)">Haro family</b> is a coherent set of open tools already usable in real projects — and the answer to “what web server, what app server, what agentic server”. It is an option on top of the floor, never a condition of standing on it.</p>
     <div class="langs" style="margin-bottom:18px;">
       <span class="lbl">one engine, five language surfaces:</span>
       <span class="lang">Luau</span><span class="lang">Ring</span><span class="lang">Python</span><span class="lang">JavaScript</span><span class="lang">PHP</span>

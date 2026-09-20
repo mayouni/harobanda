@@ -57,6 +57,26 @@
 
   <section class="wrap block">
     <div class="sec-head prose">
+      <p class="eyebrow">The words</p>
+      <h2>Eight terms, before they start doing work.</h2>
+    </div>
+    <div class="prose" style="margin-bottom:clamp(24px,3vw,34px)">
+      <p class="lead">This page and the next few use a small vocabulary, and it is worth ten seconds now rather than a guess later. The machine defines these itself — <code style="font-family:var(--mono);font-size:.9em;color:var(--laterite)">harb learn --words</code> prints the list and a few more.</p>
+    </div>
+    <div class="words">
+      <div><b>a machine</b><span>One computer, written down: what it is, what it mounts, what it runs. One <code>.machine</code> file, and nothing more — it is text until something builds it.</span></div>
+      <div><b>a declaration</b><span>A block in that file. Its <code>RATIONALE</code> is not a comment: the grammar requires it, so every part of a machine has to say why it is there.</span></div>
+      <div><b>a world</b><span>One running program the machine declared, once it is alive. Called a world because it gets its own little universe — its own view of the network, the storage and the process table.</span></div>
+      <div><b>the envelope</b><span>What the kernel lets a world see and do. Derived from what that world declared it needs, never granted by a separate permission file someone can edit later.</span></div>
+      <div><b>the court</b><span>The judge of the grammar. Cases that must be accepted, and more that must be refused — each carrying the exact words its refusal has to contain.</span></div>
+      <div><b>a pin</b><span>A stored copy of everything a boot should print. Boot again and the two are compared, so a change shows up as a difference instead of a shrug.</span></div>
+      <div><b>the transcript</b><span>Everything one boot actually printed, from the first line the machine speaks to the halt. The pin is what it should have said; the transcript is what it did.</span></div>
+      <div><b>a fleet</b><span>A set of machines judged together. Some mistakes are only visible across a set: two boxes that each call themselves the server of one network are each faultless alone.</span></div>
+    </div>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
       <p class="eyebrow">On the ground · what it changes</p>
       <h2>Four promises, kept before the hardware is bought.</h2>
     </div>

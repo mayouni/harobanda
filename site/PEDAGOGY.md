@@ -76,9 +76,31 @@ checked against what it claimed. This is the record of what changed after it.
   third, so `DIAGRAMS.md`'s rule survived the restructure. The nav gained a
   seventh item and was measured: it fits from 901px, hamburger below.
 
-- **Still open.** 1 and 5 are blocked on the same missing artifact — where
-  `harb` is published from. 6 (the vocabulary panel) and 7 (the hardware gate,
-  the Haro family) need nothing and can go at any time.
+- **Finding 6 — the vocabulary. Done.** Eight terms on `machine.html` at 29%,
+  before they start doing work. The definitions are the machine's own, from
+  `src/learn.zig`, carried across rather than quoted: the source says `stzos`,
+  `zig build court` and `machines\`, and the site says `harb`. Printing them
+  verbatim would have put a second name for the same thing on the site, and
+  editing them while still calling them quotations would have broken LRN-2. So
+  the meaning is faithful, the wording is the site's, and the panel points at
+  `harb learn --words` as the authority.
+- **Finding 7 — the two ejections. Done.** The hardware gate on `index` became
+  an intensifier: the section is now headed *whether or not they build the
+  hardware*, and choosing the device is something that makes the fit tighter
+  rather than something the reader must do to qualify. On `build.html` the
+  reassurance now comes **before** the seven proper nouns instead of after
+  them — *bring what you already have*, anything that compiles to a
+  self-contained Linux executable, and there is no ecosystem you have to join.
+  The family is headed *none of it obligatory*.
+
+  One cost, recorded: `machine.html` went from 6.7 screens to 7.8 and is now
+  the longest page. That is finding 4 one page over. Not urgent at 7.8, but
+  the next thing that lands there should be weighed against a split.
+
+- **Still open: 1 and 5 only,** and they are the same missing artifact — where
+  `harb` is published from. Until there is somewhere to point at, the site
+  describes an action it never offers and asks to be trusted on the one claim
+  whose whole value is that trust is not required.
 
 ## The nine questions, in the order he asks them
 
@@ -208,8 +230,8 @@ static Linux binary — before naming any of it.
 3. ~~Move the origin and the honest limits forward (finding 3).~~ **Done.**
 4. Give `index` a plain definition and a stake before the code sample.
 5. ~~Split or reorder `why.html` (finding 4).~~ **Done** — it became `different.html`.
-6. Add the vocabulary panel (finding 6).
-7. Widen the hardware gate; make the Haro family optional (finding 7).
+6. ~~Add the vocabulary panel (finding 6).~~ **Done.**
+7. ~~Widen the hardware gate; make the Haro family optional (finding 7).~~ **Done.**
 
 ---
 
