@@ -26,7 +26,6 @@
       <a href="ai.html" class="active">AI &amp; agents</a>
       <a href="enterprise.html">Enterprise</a>
       <a href="field.html">In the field</a>
-      <span class="theme-wrap"><button class="theme" id="themeBtn" aria-label="Toggle colour theme">Theme</button></span>
     </nav>
   </div>
 </header>
@@ -47,8 +46,7 @@
       <p class="lead">The idea does not stop at the floor. On top of the machine sits <b>Softanza</b>, a computational foundation for building enterprise-strength applications in any domain — and for building AI — the same way you build the machine: declared, judged, governed. An application described this way carries its data, its rules, its identities and its permissions as declared facts, so an enterprise or a regulator can read what it <em>is</em> and what it <em>does</em>, at every level.</p>
       <p>It reaches to the <b>intelligence layer</b> — knowledge, models and agents as governed capabilities, on-device where the data must stay — so an AI product is sovereign the same way the machine is. Below, one such agent, and how Harobanda keeps it in bounds.</p>
     </div>
-    <img class="diagram-img light-only" src="harobanda-diagram-2.jpg" alt="One method from ordinary hardware up through Harobanda, the Haro family, Softanza and the intelligence layer to your governed applications and AI — declare, judge, govern at every altitude" width="1376" height="768">
-      <img class="diagram-img dark-only" src="harobanda-diagram-2-dark.jpg" alt="One method from ordinary hardware up through Harobanda, the Haro family, Softanza and the intelligence layer to your governed applications and AI — declare, judge, govern at every altitude" width="1376" height="768">
+    <img class="diagram-img" src="harobanda-diagram-2.jpg" alt="One method from ordinary hardware up through Harobanda, the Haro family, Softanza and the intelligence layer to your governed applications and AI — declare, judge, govern at every altitude" width="1376" height="768">
     <p class="pull prose" style="margin-top:clamp(26px,3vw,36px)">One method, from the hardware to the intelligence layer: <b>declare, judge, govern.</b> Own the floor, and the whole stack above it can be sovereign too.</p>
   </section>
 
@@ -109,37 +107,7 @@ alerts needs network, which nothing grants <span class="r">→ refused</span>
 ) <span class="kw">RATIONALE</span> <span class="d">"answers from the org's own knowledge;</span>
 <span class="d">             nothing leaves the box"</span></pre>
       </div>
-      <div class="diagram" aria-label="A knowledge assistant governed by Harobanda: the assistant, the on-device knowledge base and model run inside Harobanda's envelope, which has no route to the internet, holds a budget, and records every exchange">
-        <svg viewBox="0 0 900 300" role="img" style="font-family:var(--sans)">
-          <defs><marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" style="fill:var(--river)"/></marker></defs>
-          <text x="50" y="44" style="font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;fill:var(--river);font-weight:500">HAROBANDA — the governed envelope</text>
-          <rect x="36" y="54" width="612" height="198" rx="14" style="fill:var(--river-wash);stroke:var(--river)" stroke-width="1.7"/>
-          <rect x="70" y="118" width="150" height="54" rx="9" style="fill:var(--raise);stroke:var(--line-strong)"/>
-          <text x="145" y="141" text-anchor="middle" style="font-size:12px;font-weight:500;fill:var(--ink)">Knowledge base</text>
-          <text x="145" y="158" text-anchor="middle" style="font-family:var(--mono);font-size:9.5px;fill:var(--muted)">on device</text>
-          <rect x="270" y="110" width="180" height="66" rx="10" style="fill:var(--surface);stroke:var(--river)" stroke-width="1.5"/>
-          <text x="360" y="140" text-anchor="middle" style="font-size:14px;font-weight:600;fill:var(--ink)">Assistant</text>
-          <text x="360" y="158" text-anchor="middle" style="font-family:var(--mono);font-size:10px;fill:var(--river)">Softanza AI</text>
-          <rect x="500" y="118" width="128" height="54" rx="9" style="fill:var(--raise);stroke:var(--line-strong)"/>
-          <text x="564" y="141" text-anchor="middle" style="font-size:12px;font-weight:500;fill:var(--ink)">Model</text>
-          <text x="564" y="158" text-anchor="middle" style="font-family:var(--mono);font-size:9.5px;fill:var(--muted)">on device</text>
-          <line x1="270" y1="143" x2="224" y2="145" style="stroke:var(--river)" stroke-width="1.4" marker-start="url(#arr)" marker-end="url(#arr)"/>
-          <text x="247" y="136" text-anchor="middle" style="font-family:var(--mono);font-size:9px;fill:var(--muted)">retrieve</text>
-          <line x1="450" y1="143" x2="496" y2="145" style="stroke:var(--river)" stroke-width="1.4" marker-start="url(#arr)" marker-end="url(#arr)"/>
-          <text x="473" y="136" text-anchor="middle" style="font-family:var(--mono);font-size:9px;fill:var(--muted)">reason</text>
-          <text x="342" y="230" text-anchor="middle" style="font-family:var(--mono);font-size:10px;fill:var(--muted)">budgeted (memory · CPU)  ·  confined  ·  every exchange recorded</text>
-          <rect x="298" y="266" width="124" height="26" rx="13" style="fill:var(--surface);stroke:var(--line-strong)"/>
-          <text x="360" y="283" text-anchor="middle" style="font-family:var(--mono);font-size:10px;fill:var(--ink)">a person asks</text>
-          <line x1="360" y1="266" x2="360" y2="178" style="stroke:var(--river)" stroke-width="1.4" marker-start="url(#arr)" marker-end="url(#arr)"/>
-          <text x="372" y="224" style="font-family:var(--mono);font-size:9.5px;fill:var(--muted)">asks · answers</text>
-          <rect x="706" y="82" width="160" height="42" rx="9" style="fill:var(--surface);stroke:var(--line-strong)" stroke-dasharray="3 3"/>
-          <text x="786" y="100" text-anchor="middle" style="font-size:11px;fill:var(--muted)">the internet</text>
-          <text x="786" y="115" text-anchor="middle" style="font-family:var(--mono);font-size:9px;fill:var(--muted)">a cloud model, a vendor</text>
-          <line x1="648" y1="150" x2="706" y2="118" style="stroke:var(--laterite);stroke-width:1.4;stroke-dasharray:4 4"/>
-          <g style="stroke:var(--laterite);stroke-width:2"><line x1="670" y1="128" x2="682" y2="140"/><line x1="682" y1="128" x2="670" y2="140"/></g>
-          <text x="648" y="182" text-anchor="start" style="font-family:var(--mono);font-size:10px;fill:var(--laterite);font-weight:500">EGRESS none — no route out</text>
-        </svg>
-      </div>
+      <img class="diagram-img" src="harobanda-diagram-3.jpg" alt="A knowledge assistant governed by Harobanda: the assistant, the on-device knowledge base and model run inside Harobanda's envelope, which has no route to the internet, holds a budget, and records every exchange" width="1376" height="768">
     </div>
     <p class="pull prose">An agent that cannot reach what it was not granted, cannot exceed what it was budgeted, cannot leak what must stay, and can change the machine only through a judged, reversible, recorded proposal — <b>is an agent you can actually deploy.</b></p>
     <a class="nextcta" href="enterprise.html"><span class="t"><span class="lbl">Next</span><h3>Enterprise IT</h3></span><span class="arrow">→</span></a>
