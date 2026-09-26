@@ -39,7 +39,7 @@ again: attest: one bit flipped in the message, and the same signature is refused
 again: boot: attest (pid N) exited 0
 again: boot: start record -- pid N -- /harb journal
 again: journal /data/boot.journal -- 1 entry, every one chained to the one before it and signed by this device
-again: journal:   seq=1 prev=- machine=qemu_identity declaration=a48c59fbf8070f67 verdict=matched
+again: journal:   seq=1 prev=- machine=qemu_identity declaration=d114141a6be39d8c verdict=matched
 again: boot: record (pid N) exited 0
 again: boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)
 again: boot: journal -- /data/boot.journal: 1 entry verified, entry 2 appended and signed (verdict matched)

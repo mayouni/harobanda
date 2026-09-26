@@ -5,10 +5,21 @@
 `fixtures.json` sha256:
 
 ```
-4ed7adee6a389edbc6623bdf5b559fd4e87c5a1bcc0c9a9e40671116cbd828c1
+f26bdc087e85393f33058b3c7f907d8729e97e282db227bd91a00a3c8ac311ce
 ```
 
-(Before the TASKS seat of 2026-09-14 (THR-1):
+(Before the RETIREMENT seat of 2026-09-26 (RET-1): the file hashed to
+`4c6aef6163840094...`, 107/107 -- and that digest was NEVER PINNED. The
+rename of 2026-09-20 changed fixture A3 (`stzos project` became `harb
+project` inside the cold-room sensor's own comment) and left
+`4ed7adee6a389edbc6623bdf5b559fd4e87c5a1bcc0c9a9e40671116cbd828c1`
+here, the file as it stood before the rename, for six days and every
+green court between them. Nothing compared the two. The court does now,
+before it judges a single case (PIN-1), and its first verdict was on
+this. RET-1 added R85-R87: a FLEET, a MEMBER and a RETIREMENT each
+refused in a machine file, which the fleet grammar had claimed since
+FLT-1 and no fixture judged.
+Before the TASKS seat of 2026-09-14 (THR-1):
 `c6b02508f3650354c75149918876ffaa8659c8e0bcb7bb1316a677b1d6610d56`,
 104/104; the widening added A23, R83 and R84, and gave SERVICE its
 `TASKS`. Before the SEES seat of 2026-09-14 (SEE-1):
@@ -71,7 +82,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **107/107** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **110/110** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):

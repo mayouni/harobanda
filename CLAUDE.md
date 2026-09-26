@@ -71,6 +71,32 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A key a device no longer holds is trusted THROUGH one entry, and the
+  chain draws the line** (RET-1): a card that DIED needs its old records
+  checkable; a card that was STOLEN goes on signing with the same key. A
+  date would separate them and this floor has no trusted clock, so a
+  `RETIREMENT` names the hash of the last entry the fleet verified -- one
+  hash fixes every entry before it, and whatever the key signs after can
+  only EXTEND the chain, which is refused by position. A record that
+  never REACHES the head is refused too: a shorter record and a chain the
+  key's holder wrote since both verify, and cannot be told apart. The
+  head is printed by the verifier, and only after the chain verifies.
+  Proven on a real device: the saved first card, booted again, signed
+  entry 2 with the retired key and was refused at entry 2. **A
+  verification of nothing is not one** (RET-1, NS-1): an empty record
+  said "0 entries verified" and exited 0, so when the arc lost its record
+  every negative passed as an attribution.
+- **A pin nobody reads is a verdict nobody receives** (PIN-1): the rule
+  "re-pin in the commit that changes `fixtures.json`" was kept by people
+  remembering, and the rename forgot it -- fixture A3 changed, and the
+  pin named the old file for six days of green courts. The court now
+  hashes the fixtures before it judges a case and fails on a stale pin
+  even when every case passes. Likewise **a log is THIS run's on every
+  path, or absent**: `os7_fleet.sh` copied its log as its LAST act, so
+  every early `exit 1` left the previous run's green log beside a
+  command that said FAIL. And **a verdict a script discards is not
+  received** (NAM-2 again): the arc ran the device's own boot with `>
+  /dev/null` and never read its exit code.
 - **A rename is not a search-and-replace, because a name is not a
   string** (NAME-1): `stzos` named the command you TYPE, the DIRECTORY
   you clone into, and the SYSTEM itself, and one mapping gave all three
@@ -391,6 +417,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   --foreground`, streams its log to the terminal through `tee`, and
   `experiment/os2_tty_probe.sh` proves it under a pseudo-terminal (22 s).
   `experiment/wsl_cleanup.sh` ends what a closed terminal left behind.
+- **Python's `read_text()` is not a faithful read** (RET-1): it opens in
+  universal-newline mode and turns a lone CR into LF. The rename's
+  script read `sed -e 's/<CR>$//'` in `os2_image.sh` and wrote back a
+  sed command split over two lines; it failed silently inside a
+  pipeline, and every non-SD JOURNAL machine's second boot vanished from
+  its transcript for a week. Never put a literal control byte in a
+  script -- write `\r` -- and edit a file you have not checked for CR in
+  bytes (`read_bytes`), or open it with `newline=''`.
 - **Invoke WSL scripts from PowerShell, never from the Bash tool** —
   git-bash rewrites `/mnt/d/...` into `C:/Git/mnt/...`
   (`MSYS_NO_PATHCONV=1 wsl.exe ...` is the workaround if you must).
@@ -445,9 +479,9 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 - **Open seams, none blocking.** A trusted CLOCK (the journal carries no
   timestamp because the board has no clock, and a box with `EGRESS none`
   cannot ask the network -- where the trust comes from is the author's
-  ruling). REVOCATION in a fleet: a key a device USED to have, which is
-  what a card rebuilt after a failure needs if its old records are to
-  stay readable. Hardware DECLARED but never observed. Forwarding
+  ruling). ~~REVOCATION in a fleet~~ -- built as RETIREMENT (RET-1);
+  what remains is retiring the RECORDS a retired card signed. Hardware
+  DECLARED but never observed (in the OS-5 plan, step 4). Forwarding
   between two links. A bounded window for the TRIAL itself. The Commons
   as the first declared server world. Haro's runtime as the image's
   second binary. `makeen_box` gets its own `DOMAIN` at OS-5, when there
@@ -459,7 +493,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   digests are pinned).
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

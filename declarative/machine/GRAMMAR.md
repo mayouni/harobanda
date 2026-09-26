@@ -74,10 +74,15 @@ clause outside its kind's table is refused naming the allowed set
 
 ## The kinds
 
-`FLEET` and `MEMBER` are kinds of this same language and are refused in
-a machine file by name: a machine declares what ONE machine is, and no
-machine can say who else is in its estate. They are the fleet grammar's,
-`declarative/fleet/GRAMMAR.md` (FLT-1).
+`FLEET`, `MEMBER` and `RETIREMENT` are kinds of this same language and
+are refused in a machine file by name (R85-R87): a machine declares what
+ONE machine is, and no machine can say who else is in its estate, or
+which keys it has held. They are the fleet grammar's,
+`declarative/fleet/GRAMMAR.md` (FLT-1, RET-1). Which file a kind belongs
+in is one EXHAUSTIVE switch, `belongsToFleet`, asked by both parsers --
+never a condition that names the kinds, which is how a new one walks
+past it: with the old `.FLEET or .MEMBER`, a machine file carrying a
+RETIREMENT was not refused for a wrong reason, it was ACCEPTED.
 
 
 ### DEFINE MACHINE — exactly one, and first (R9, R10)

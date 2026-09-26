@@ -1,7 +1,7 @@
 === the device: two boots, a key made once and a record it can publish ===
 device: enrol fleet_temoin ed25519 KEY1 -- KEY for this machine's MEMBER in a fleet
 device: enrol fleet_temoin ed25519 KEY1 -- KEY for this machine's MEMBER in a fleet
-device: record seq=1 prev=- machine=fleet_temoin declaration=3766180a75088e11 verdict=matched hash=H sig=S
+device: record seq=1 prev=- machine=fleet_temoin declaration=fc1de2e0d6efb6e5 verdict=matched hash=H sig=S
 carried: 1 entry off the machine, as the exact bytes that were signed
 === the roll before enrolment ===
 roll: fleet atelier -- 1 member, no shared link declared -- judged, no refusal
@@ -12,6 +12,7 @@ roll: fleet atelier -- 1 member, no shared link declared -- judged, no refusal
 roll:   temoin -- fleet_temoin (fleet_temoin.machine) -- enrolled, fingerprint FP1
 === the act: a record verified by somebody who does not hold the secret ===
 verify: fleet atelier -- temoin: 1 entry verified against the enrolled key (fingerprint FP1), and no secret took part
+verify: fleet atelier -- temoin: its head is entry 1, hash=H -- the entry a RETIREMENT of this key would be trusted THROUGH
 === negative 1: one word changed, and it is the verdict ===
 tampered: fleet atelier -- temoin: entry 1 is not this device's: the entry's own bytes do not hash to the hash it carries: it was altered after it was written
 tampered: fleet atelier -- 0 entries verified before it
@@ -20,6 +21,22 @@ foreign: fleet atelier -- temoin: entry 1 is not this device's: this device's ke
 foreign: fleet atelier -- 0 entries verified before it
 === negative 3: a member nobody has enrolled ===
 unenrolled: fleet atelier -- temoin has no KEY in this fleet: nobody can speak for its records until its own fingerprint is enrolled
+=== the card is rebuilt: a new disk, so a new key ===
+rebuilt: enrol fleet_temoin ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+=== the roll after the rebuild ===
+roll: fleet atelier -- 1 member, no shared link declared -- judged, no refusal
+roll:   temoin -- fleet_temoin (fleet_temoin.machine) -- enrolled, fingerprint FP2
+roll:     retired carte_1 -- a key temoin held before, fingerprint FP1, trusted through hash=H
+=== the old card's record, heard through its head ===
+retired: fleet atelier -- temoin: 1 entry verified against a key it no longer holds (retired as carte_1, fingerprint FP1), ending at the entry the fleet trusts that key through, and no secret took part
+=== the rebuilt card's record, heard in full ===
+rebuilt: fleet atelier -- temoin: 1 entry verified against the enrolled key (fingerprint FP2), and no secret took part
+rebuilt: fleet atelier -- temoin: its head is entry 1, hash=H -- the entry a RETIREMENT of this key would be trusted THROUGH
+=== negative 4: the OLD card, booted again -- the stolen card ===
+carried: 2 entries off the old card, signed with the key the fleet retired
+stolen: fleet atelier -- temoin: entry 2 is not this device's under the key retired as carte_1: it comes after the entry the fleet trusts this retired key through, and nothing after that entry is the key's to vouch for
+stolen: fleet atelier -- 1 entry from there on verifies under the retired key all the same: whoever still holds it signed after it was retired
+stolen: fleet atelier -- 1 entry verified before it
 === the estate's own fleet, judged ===
 salle: fleet salle_makeen -- 2 members on salle, served by boitier -- judged, no refusal
 salle:   boitier -- makeen_names (makeen_names.machine, 192.168.10.1/24, serves makeen) -- 52:54:00:12:34:01 -- not enrolled

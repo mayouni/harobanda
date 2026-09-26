@@ -53,6 +53,32 @@
         "members": 2,
         "link": "salle"
       }
+    },
+    {
+      "id": "FA5",
+      "name": "a card rebuilt: the member holds its new key, and the old one is retired through the last entry the fleet vouched for",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (\n  MEMBER caisse,\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\"\n) RATIONALE \"the first card failed; its last export was carried off before it did\"\n",
+      "files": {
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 1,
+        "retirements": 1,
+        "link": null
+      }
+    },
+    {
+      "id": "FA6",
+      "name": "between two cards: the old key retired, the new one not yet made -- legal, and reported, never guessed",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (\n  MEMBER caisse,\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\"\n) RATIONALE \"the card failed this morning; the new one has not booted yet\"\n",
+      "files": {
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 1,
+        "retirements": 1,
+        "link": null
+      }
     }
   ],
   "rejects": [
@@ -225,6 +251,80 @@
         "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
       },
       "refusal": "cannot be its own peer"
+    },
+    {
+      "id": "FR19",
+      "name": "a key is retired FROM a device",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (\n  MEMBER personne,\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "no MEMBER personne is declared"
+    },
+    {
+      "id": "FR20",
+      "name": "a retired key is a key, not a word for one",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (\n  MEMBER caisse,\n  KEY \"the first card\",\n  THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "'the first card' is not one"
+    },
+    {
+      "id": "FR21",
+      "name": "the head is the hash exactly as the journal wrote it, or it is never reached",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (\n  MEMBER caisse,\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  THROUGH \"8268CDCD77E480573BEF62425E35AF5CF938D837F3467C514FD2DB198D43767A\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "THROUGH is the hash of the last entry"
+    },
+    {
+      "id": "FR22",
+      "name": "a retired key with no head vouches for whatever its holder signs next",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (\n  MEMBER caisse,\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "names no THROUGH"
+    },
+    {
+      "id": "FR23",
+      "name": "a key is the device's or it is retired, never both",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (\n  MEMBER caisse,\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "caisse still holds this key"
+    },
+    {
+      "id": "FR24",
+      "name": "a retirement is not a way around one key, one place",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER box AS (\n  DECLARATION \"box.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (\n  MEMBER caisse,\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "box.machine": "DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "is already box's key: a key that appears twice"
+    },
+    {
+      "id": "FR25",
+      "name": "a key is retired once, from one device",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (\n  MEMBER caisse,\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\"\n) RATIONALE \"x\"\nDEFINE RETIREMENT carte_2 AS (\n  MEMBER caisse,\n  KEY \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\n  THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "is already retired as carte_1"
+    },
+    {
+      "id": "FR26",
+      "name": "one key is one key however it is spelled: FR5 compared the text",
+      "source": "DEFINE FLEET atelier AS () RATIONALE \"a till whose card was rebuilt\"\nDEFINE MEMBER box AS (\n  DECLARATION \"box.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER caisse AS (\n  DECLARATION \"till.machine\",\n  KEY \"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "box.machine": "DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
+      },
+      "refusal": "is already box's key: two members cannot be the same device"
     }
   ]
 }

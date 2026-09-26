@@ -19,6 +19,14 @@
 #          somebody would want to change) must be caught, by position
 #        - the same record offered as ANOTHER device's must be refused
 #        - a member with no key enrolled must be REPORTED, never guessed
+#   5. THE CARD IS REBUILT (RET-1): a new disk, so a new key. The old key
+#      is RETIRED through the head the verifier printed for the old
+#      card's record, and both records are heard -- the old one through
+#      its head, the new one in full.
+#   6. THE OLD CARD, BOOTED AGAIN -- the stolen card. Nothing is faked:
+#      the saved disk goes back in, the device boots, and it goes on
+#      signing with the key the fleet retired. Every entry past the head
+#      must be refused, by position, however well it chains.
 #
 #   wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os7_fleet.sh
 #
@@ -32,11 +40,22 @@ S=zig-out/cross/x86_64-linux-musl/harb
 BODY=zig-out/wsl/fleet.body
 LOG=zig-out/wsl/fleet.txt
 mkdir -p zig-out/wsl
+# THE LOG IS THIS RUN'S, ON EVERY PATH (RET-1). The log was copied from the
+# body as the script's last act, and every `exit 1` inside the block left
+# before it -- so a run that stopped because the device's boot differed
+# exited 1 while fleet.txt, the file every reader is told to read, still
+# said the PREVIOUS run matched and exited 0. A verdict that reaches the
+# exit code and not the log convicts only whoever reads exit codes. The
+# trap writes the log however the script ends; removing it first means a
+# run killed outright leaves no log rather than an old green one.
+rm -f "$LOG"
+trap 'cp "$BODY" "$LOG" 2>/dev/null' EXIT
 
 {
   echo "=== the device: two boots, a key made once and a record it can publish ==="
-  bash experiment/os2_image.sh $NAME > /dev/null 2>&1
-  if [ ! -f "$T" ]; then echo "no transcript -- see zig-out/wsl/image_$NAME.txt"; exit 1; fi
+  if ! bash experiment/os2_image.sh $NAME > /dev/null 2>&1; then
+    echo "the device's boot differs from machines/$NAME.expected -- see zig-out/wsl/image_$NAME.txt"; exit 1
+  fi
   grep -E '^(again: )?(enrol|record) ' "$T" | sed 's/^again: //' | sed 's/^/device: /'
 
   KEY=$(grep -oE 'enrol '"$NAME"' ed25519 [0-9a-f]+' "$T" | tail -1 | awk '{print $4}')
@@ -84,6 +103,56 @@ EOF
 
   echo "=== negative 3: a member nobody has enrolled ==="
   "$S" fleet "$W/before.fleet" verify temoin "$W/$NAME.journal" | sed 's/^/unenrolled: /'
+
+  # ---- RET-1: the card is rebuilt, and the old one is booted again ------
+  # The first card is the disk the two boots above wrote. Keep it: it is
+  # the card that will be stolen.
+  IMGDIR=zig-out/image/$NAME
+  cp "$IMGDIR/disk0.img" "$W/card1.img"
+  # The head the fleet will trust the old key THROUGH, read from the
+  # verifier -- which prints it only once the record has verified. The
+  # verdict is RECEIVED before its content is used (NAM-2).
+  if ! V=$("$S" fleet "$W/after.fleet" verify temoin "$W/$NAME.journal"); then
+    echo "the old card's record did not verify, so it has no head to trust"; exit 1
+  fi
+  HEAD=$(printf '%s\n' "$V" | grep -oE 'hash=[0-9a-f]{64}' | head -1 | cut -d= -f2)
+  if [ ${#HEAD} != 64 ]; then echo "the verifier printed no head"; exit 1; fi
+
+  echo "=== the card is rebuilt: a new disk, so a new key ==="
+  if ! bash experiment/os2_image.sh $NAME > /dev/null 2>&1; then
+    echo "the rebuilt card's boot differs from machines/$NAME.expected -- see zig-out/wsl/image_$NAME.txt"; exit 1
+  fi
+  KEY2=$(grep -oE 'enrol '"$NAME"' ed25519 [0-9a-f]+' "$T" | tail -1 | awk '{print $4}')
+  if [ -z "$KEY2" ] || [ "$KEY2" = "$KEY" ]; then echo "the rebuilt card made no key of its own"; exit 1; fi
+  grep -E '^(again: )?enrol ' "$T" | tail -1 | sed 's/^again: //' | sed 's/^/rebuilt: /'
+  grep -E '^(again: )?record seq=' "$T" | sed 's/^again: //; s/^record //' > "$W/card2.journal"
+
+  cat > "$W/rebuilt.fleet" <<EOF
+DEFINE FLEET atelier AS () RATIONALE "the same fleet, after the device's card was rebuilt"
+DEFINE MEMBER temoin AS (
+  DECLARATION "$NAME.machine",
+  KEY "$KEY2"
+) RATIONALE "enrolled again, from the line the rebuilt card printed"
+DEFINE RETIREMENT carte_1 AS (
+  MEMBER temoin,
+  KEY "$KEY",
+  THROUGH "$HEAD"
+) RATIONALE "the first card was replaced; its last export verified, and this is that export's head"
+EOF
+  echo "=== the roll after the rebuild ==="
+  "$S" fleet "$W/rebuilt.fleet" | sed 's/^/roll: /'
+  echo "=== the old card's record, heard through its head ==="
+  "$S" fleet "$W/rebuilt.fleet" verify temoin "$W/$NAME.journal" | sed 's/^/retired: /'
+  echo "=== the rebuilt card's record, heard in full ==="
+  "$S" fleet "$W/rebuilt.fleet" verify temoin "$W/card2.journal" | sed 's/^/rebuilt: /'
+
+  echo "=== negative 4: the OLD card, booted again -- the stolen card ==="
+  cp "$W/card1.img" "$IMGDIR/disk0.img"
+  ( cd "$IMGDIR" && timeout --foreground 120 bash boot.cmd < /dev/null > transcript_stolen.txt 2>&1 )
+  sed 's/\r$//' "$IMGDIR/transcript_stolen.txt" | grep -E '^record seq=' | sed 's/^record //' > "$W/stolen.journal"
+  N=$(grep -c . "$W/stolen.journal")
+  echo "carried: $N entr$([ "$N" = 1 ] && echo y || echo ies) off the old card, signed with the key the fleet retired"
+  "$S" fleet "$W/rebuilt.fleet" verify temoin "$W/stolen.journal" | sed 's/^/stolen: /'
 
   echo "=== the estate's own fleet, judged ==="
   "$S" fleet machines/salle_makeen.fleet | sed 's/^/salle: /'
@@ -144,5 +213,4 @@ sed -e 's/\r$//' -e 's/hash=[0-9a-f]*/hash=H/g' -e 's/sig=[0-9a-f]*/sig=S/g' \
 # the guided tour's lesson 6 and then grepped for (LRN-1).
 VERDICT=${PIPESTATUS[0]}
 
-cp "$BODY" "$LOG"
 exit "$VERDICT"

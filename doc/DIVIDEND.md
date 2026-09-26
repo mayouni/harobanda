@@ -447,9 +447,12 @@ diagram. This is where the floor pays each band of it:
    declared partition. ~~What remains is the fleet's half.~~ **Also
    built (FLT-1)**: a `FLEET` records each member's PUBLIC key, so a
    box verifies ANOTHER device's signed record holding no secret at
-   all. What remains is revocation -- a key a device USED to have, which
-   is what a box rebuilt on a new card needs if its old records are to
-   stay readable.
+   all. ~~What remains is revocation.~~ **Also built (RET-1)** as
+   `RETIREMENT`: a key a device USED to have, trusted THROUGH the last
+   entry the fleet verified and not one further -- so a box rebuilt on a
+   new card keeps its old records checkable, and a card that was stolen
+   rather than broken cannot add to them. No clock is needed: the chain
+   draws the line.
 6. ~~The box as the network's server of addresses and names.~~
    **Built (NAM-1)** as `DOMAIN` on a NETWORK and the `PEER` kind, and
    proved by two machines booted together on one wire: the till learns

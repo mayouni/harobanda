@@ -161,6 +161,101 @@ pub fn verify(text: []const u8, public: Ed25519.PublicKey) Check {
     return c;
 }
 
+/// How many entries a record carries. A record of none is not a record
+/// of anything, and an attribution of it is not an attribution: the
+/// verifier refuses it rather than saying "0 entries verified" and
+/// exiting 0, which is what it did until the real-device arc lost its
+/// record and all three of its negatives passed as verified (RET-1).
+pub fn entryCount(text: []const u8) usize {
+    var n: usize = 0;
+    var it = std.mem.splitScalar(u8, text, '\n');
+    while (it.next()) |raw| {
+        if (std.mem.trimRight(u8, raw, "\r").len > 0) n += 1;
+    }
+    return n;
+}
+
+/// Whether this key signed the FIRST entry. A chain has one signer, so
+/// its first entry says whose chain it is -- which is how a fleet picks,
+/// among the keys a member has held, the one to hear a record under
+/// (RET-1). Only the signature is asked about: whether the entry was
+/// altered, or chains, is `verify`'s to say once the key is known.
+pub fn firstSignedBy(text: []const u8, public: Ed25519.PublicKey) bool {
+    var it = std.mem.splitScalar(u8, text, '\n');
+    while (it.next()) |raw| {
+        const line = std.mem.trimRight(u8, raw, "\r");
+        if (line.len == 0) continue;
+        const cut = std.mem.indexOf(u8, line, " hash=") orelse return false;
+        const sig_field = field(line, "sig") orelse return false;
+        if (sig_field.len != 128) return false;
+        var sig_bytes: [64]u8 = undefined;
+        _ = std.fmt.hexToBytes(&sig_bytes, sig_field[0..128]) catch return false;
+        Ed25519.Signature.fromBytes(sig_bytes).verify(line[0..cut], public) catch return false;
+        return true;
+    }
+    return false;
+}
+
+/// A chain heard under a key the device no longer holds, trusted exactly
+/// as far as the fleet trusts that key: THROUGH the entry whose hash is
+/// the retirement's head, and not one entry further (RET-1).
+pub const Through = struct {
+    /// the chain as `verify` sees it, CUT at the head: anything after the
+    /// head is broken at head + 1, however well it chains
+    check: Check,
+    /// where the head sits in the record, if the record reaches it
+    head_at: ?usize,
+    /// entries past the head that the retired key really did sign --
+    /// evidence that whoever still holds it went on signing
+    signed_after: usize,
+
+    /// the record IS the chain the fleet vouched for: entire, and ending
+    /// exactly at its head
+    pub fn kept(self: Through) bool {
+        return self.check.broken_at == null and self.head_at != null;
+    }
+};
+
+/// Clock-free by construction. An entry's hash covers its `prev`, so one
+/// hash fixes every entry before it: whoever still holds a retired key can
+/// go on signing, but only by EXTENDING the chain, and an extension is
+/// exactly what this refuses. No date is needed to say "after" -- the
+/// sequence is the order, the same answer this file already gives to
+/// having no clock.
+///
+/// A record that never REACHES the head is not trusted either, even when
+/// every entry in it verifies. A shorter chain the device really wrote,
+/// and a different chain the key's holder wrote since, both verify under
+/// the key; only reaching the head tells them apart.
+pub fn verifyThrough(text: []const u8, public: Ed25519.PublicKey, head: []const u8) Through {
+    var c = verify(text, public);
+    var head_at: ?usize = null;
+    var entries: usize = 0;
+    var it = std.mem.splitScalar(u8, text, '\n');
+    while (it.next()) |raw| {
+        const line = std.mem.trimRight(u8, raw, "\r");
+        if (line.len == 0) continue;
+        entries += 1;
+        // only a VERIFIED entry's hash can be the head: an unverified one
+        // carries whatever hash its author liked
+        if (head_at == null and entries <= c.verified) {
+            if (field(line, "hash")) |h| {
+                if (std.mem.eql(u8, h, head)) head_at = entries;
+            }
+        }
+    }
+    var after: usize = 0;
+    if (head_at) |p| {
+        if (entries > p) {
+            after = c.verified - p;
+            c.verified = p;
+            c.broken_at = p + 1;
+            c.reason = "it comes after the entry the fleet trusts this retired key through, and nothing after that entry is the key's to vouch for";
+        }
+    }
+    return .{ .check = c, .head_at = head_at, .signed_after = after };
+}
+
 /// Write one entry, chained to whatever is already there. The caller has
 /// verified first: a chain that does not verify is never extended, because
 /// an entry appended after a broken one would launder the break.

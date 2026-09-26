@@ -541,7 +541,23 @@ pub const Clause = struct {
     value: Value,
 };
 
-pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER };
+pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER, RETIREMENT };
+
+/// Which file a kind belongs in -- one language, two files (FLT-1).
+///
+/// Exhaustive ON PURPOSE. This was a condition that named the fleet's
+/// kinds (`.FLEET or .MEMBER`), and a condition that enumerates the old
+/// members of a set is how a new member walks past it: the first TASKS
+/// world sat outside the cgroup its own ceiling was written on for exactly
+/// that reason (THR-1). RETIREMENT added to the enum without this would
+/// have been accepted in a machine file. A kind added after it does not
+/// compile until somebody says which file carries it.
+pub fn belongsToFleet(kind: Kind) bool {
+    return switch (kind) {
+        .MACHINE, .SERVICE, .CAPABILITY, .MOUNT, .PIN, .NETWORK, .USER, .PEER => false,
+        .FLEET, .MEMBER, .RETIREMENT => true,
+    };
+}
 
 pub const Decl = struct {
     kind: Kind,
@@ -563,6 +579,7 @@ fn allowedClauses(kind: Kind) []const []const u8 {
         .PEER => &.{ "NETWORK", "HARDWARE", "ADDRESS" },
         .FLEET => &.{"LINK"},
         .MEMBER => &.{ "DECLARATION", "KEY", "HARDWARE" },
+        .RETIREMENT => &.{ "MEMBER", "KEY", "THROUGH" },
     };
 }
 
@@ -626,7 +643,7 @@ pub fn parseDecl(ctx: *Ctx) Error!Decl {
     const kind_tok = ctx.next();
     const kind = if (kind_tok.tag == .keyword) std.meta.stringToEnum(Kind, kind_tok.text) else null;
     if (kind == null) {
-        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the kinds are closed (MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER)", .{kind_tok.text});
+        return ctx.refuse(kind_tok.line, "Unknown kind '{s}': the kinds are closed ({s})", .{ kind_tok.text, try enumNames(ctx.arena, Kind) });
     }
     const name = try ctx.expect(.ident, "a lower_snake name");
     const as_tok = ctx.next();
@@ -727,9 +744,11 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
     if (decls.items.len == 0) return ctx.refuse(1, "A machine file declares exactly one MACHINE; this file declares nothing", .{});
 
     // one language, two files. A machine file says what ONE machine is;
-    // FLEET and MEMBER say which machines are one estate, which is a fact
-    // about no single machine and belongs in a fleet file (FLT-1).
-    for (decls.items) |d| if (d.kind == .FLEET or d.kind == .MEMBER) {
+    // FLEET, MEMBER and RETIREMENT say which machines are one estate and
+    // which keys it has held -- facts about no single machine, which
+    // belong in a fleet file (FLT-1, RET-1). Asked of `belongsToFleet`,
+    // never of a list written here, so a new kind cannot walk past it.
+    for (decls.items) |d| if (belongsToFleet(d.kind)) {
         return ctx.refuse(d.line, "{s} belongs to a fleet file, not a machine file: a machine declares what one machine IS, and no machine can say who else is in its estate", .{@tagName(d.kind)});
     };
 

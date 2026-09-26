@@ -922,6 +922,24 @@
       "name": "the number counts tasks, and nothing else is being counted",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE vast AS (\n  RUN [\"/w\"],\n  RESTART never,\n  NEEDS [process],\n  TASKS 100000\n) RATIONALE \"x\"\n",
       "refusal": "counts tasks"
+    },
+    {
+      "id": "R85",
+      "name": "a FLEET belongs to a fleet file: no machine says who else is in its estate",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE FLEET atelier AS () RATIONALE \"x\"\n",
+      "refusal": "FLEET belongs to a fleet file"
+    },
+    {
+      "id": "R86",
+      "name": "a MEMBER belongs to a fleet file",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MEMBER caisse AS (DECLARATION \"till.machine\") RATIONALE \"x\"\n",
+      "refusal": "MEMBER belongs to a fleet file"
+    },
+    {
+      "id": "R87",
+      "name": "a RETIREMENT belongs to a fleet file: which keys a device has held is a fact about a set",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (MEMBER caisse, KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\") RATIONALE \"x\"\n",
+      "refusal": "RETIREMENT belongs to a fleet file"
     }
   ]
 }

@@ -98,6 +98,21 @@ of them carries the machine's own words, and the machine now says
 claim was settled by booting `qemu_hello` and reading the diff, not by
 the rename script's say-so.
 
+*Amended 2026-09-26 (RET-1): that sentence was true of ONE pin and read
+as true of fourteen. `qemu_hello` keeps no journal, so its boot never
+ran the line the rename had corrupted and never printed a declaration
+digest. When the fleet arc was next run, four things surfaced that the
+rename had left: three pins naming the pre-rename machine files
+(`fleet.expected`, `fleet_temoin.expected`, `qemu_identity.expected` --
+the digest of a file whose `RUN ["/stzos", ...]` became `RUN ["/harb",
+...]`), one byte lost from `experiment/os2_image.sh`, and the machine
+grammar's own `PINNING.md`, which named the file as it stood before the
+rename. All five were settled by booting and reading each diff, and are
+recorded under RET-1 and PIN-1 in `experiment/PROTOCOL.md`. The pins the
+rename touched that no boot has settled since -- `qemu_budget`,
+`qemu_confine`, `qemu_egress`, `names`, `makeen_box`, `makeen_qemu` --
+carry no digest and changed only in text; they are claims until booted.*
+
 ## The rulings of 2026-09-12 (taken on the author's behalf, at his word)
 
 The author delegated the three waiting rows to the session

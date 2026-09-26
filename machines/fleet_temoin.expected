@@ -40,9 +40,9 @@ again: attest: signed 20 bytes with this device's key and verified them against 
 again: attest: one bit flipped in the message, and the same signature is refused
 again: boot: enrol (pid N) exited 0
 again: boot: start publish -- pid N -- /harb journal --export
-again: record seq=1 prev=- machine=fleet_temoin declaration=3766180a75088e11 verdict=matched hash=H sig=S
+again: record seq=1 prev=- machine=fleet_temoin declaration=fc1de2e0d6efb6e5 verdict=matched hash=H sig=S
 again: journal /data/boot.journal -- 1 entry, every one chained to the one before it and signed by this device
-again: journal:   seq=1 prev=- machine=fleet_temoin declaration=3766180a75088e11 verdict=matched
+again: journal:   seq=1 prev=- machine=fleet_temoin declaration=fc1de2e0d6efb6e5 verdict=matched
 again: boot: publish (pid N) exited 0
 again: boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)
 again: boot: journal -- /data/boot.journal: 1 entry verified, entry 2 appended and signed (verdict matched)

@@ -5,10 +5,14 @@
 `fixtures.json` sha256:
 
 ```
-bb1f8349ec64fc458b5a4c6a80dbd30a8ab400cf853640080ae134c4730e4c3b
+9c5e200f0167bdbb61cf0894580fe919f56b13398ceac0c45535b75576c3ac6b
 ```
 
-(Before the HARDWARE clause of 2026-09-14 (HDW-1):
+(Before the RETIREMENT seat of 2026-09-26 (RET-1):
+`bb1f8349ec64fc458b5a4c6a80dbd30a8ab400cf853640080ae134c4730e4c3b`,
+22/22; the widening added FA5-FA6 and FR19-FR26, gave the fleet its
+third kind, and made FR5 compare keys rather than their spelling.
+Before the HARDWARE clause of 2026-09-14 (HDW-1):
 `caafed59342bc87c75efe291696eb4c493ff7a6a1af72048fa1aadb9454c0dee`,
 16/16; the widening added FA4 and FR14-FR18, and gave MEMBER its
 `HARDWARE`.)
@@ -21,7 +25,7 @@ grammar's own `PINNING.md` requires of itself.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **22/22** — 4 accepts, 18 rejects |
+| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **32/32** — 6 accepts, 26 rejects |
 
 `zig build court` runs BOTH grammars: the machine fixtures first, the
 fleet fixtures after. One step, two courts, because a fleet is no better
@@ -62,6 +66,36 @@ That script now reads both addresses through `harb fleet <file>
 hardware <member>`, and the proof is that **the 66-line names pin
 matched unchanged** on the first run afterwards: the declaration
 supplies exactly what the constants did, and now the court can check it.
+
+## The court judges this pin (PIN-1)
+
+A pin is a claim that these verdicts are about ONE file, and until
+2026-09-26 nothing received it: the rule "re-pin in the same commit that
+changes `fixtures.json`" was kept by people remembering, and the rename
+of 2026-09-20 forgot it for the machine grammar. The court now hashes the
+fixtures before it judges a case and refuses to call the result
+conforming when the pin names another file -- the verdict reaches the
+exit code (VDCT-1), so `zig build court` fails on a stale pin even when
+every case passes.
+
+## Retirement: a key a member USED to have (RET-1)
+
+`RETIREMENT` names a member, a key it held, and the one entry that key is
+trusted THROUGH. Eight refusals hold it (FR19-FR26):
+
+- a retirement of nobody (FR19), a key that is not a key (FR20), a head
+  that is not the hash exactly as the journal writes it (FR21 -- a head
+  differing only in case would never be reached, and the refusal would
+  come at verify time, years later, for the wrong reason);
+- **a retirement with no head at all (FR22)** -- the refusal that is the
+  whole design: a retired key with no entry it is trusted through
+  vouches for whatever its holder signs next;
+- a key both held and retired (FR23), retired while it is another
+  member's (FR24), or retired twice (FR25);
+- and FR26, which is FR5 corrected: one key, one place, compared as a
+  KEY. FR5 compared the text, so `aa..` and `AA..` -- one key -- passed
+  as two, and a retirement check built on the same comparison would
+  have inherited the hole.
 
 ## The checks these fixtures exist for
 

@@ -116,6 +116,34 @@ pub const Member = struct {
     rationale: []const u8,
 };
 
+/// A key a member USED to have (RET-1): what a device rebuilt on a new
+/// card needs if the records its old card signed are to stay checkable.
+///
+/// It is trusted THROUGH one entry and not one further. The need that
+/// queued the seat was a card that DIED; the danger is a card that was
+/// STOLEN, which goes on signing with the same key. A date would draw the
+/// line, and this floor has no trusted clock, so the chain draws it: the
+/// entry named here fixes every entry before it, and whatever the key
+/// signs afterwards can only extend the chain -- which is refused.
+///
+/// A declaration of its own rather than a clause on the member, because
+/// every declaration must say WHY it is there, and why a key was retired
+/// -- a card that failed, a card that went missing -- is the one fact an
+/// auditor reading this file years later will need.
+pub const Retirement = struct {
+    name: []const u8,
+    line: usize,
+    /// the member this key belonged to
+    member: []const u8,
+    key: Ed25519.PublicKey,
+    key_text: []const u8,
+    fingerprint: [16]u8,
+    /// the hash of the last entry the fleet trusts this key for, exactly
+    /// as `harb fleet ... verify` printed it once that record verified
+    through: []const u8,
+    rationale: []const u8,
+};
+
 pub const Fleet = struct {
     name: []const u8,
     line: usize,
@@ -126,6 +154,8 @@ pub const Fleet = struct {
     /// identity checks apply.
     link: ?[]const u8,
     members: []const Member,
+    /// the keys members USED to have, each trusted through one entry
+    retirements: []const Retirement,
     rationale: []const u8,
 
     pub fn member(self: Fleet, name: []const u8) ?Member {
@@ -154,6 +184,26 @@ fn hexKey(text: []const u8) ?Ed25519.PublicKey {
     return Ed25519.PublicKey.fromBytes(raw) catch null;
 }
 
+/// One key, however it is spelled. Hex is case-blind and a text
+/// comparison is not, so `aa..` and `AA..` read as two keys to a check
+/// that compared the TEXT -- and FR5, one key one place, did exactly that.
+fn sameKey(a: Ed25519.PublicKey, b: Ed25519.PublicKey) bool {
+    return std.mem.eql(u8, &a.toBytes(), &b.toBytes());
+}
+
+/// A head is compared byte for byte against the hash the journal WROTE,
+/// which is lowercase, so the court holds it to exactly that spelling:
+/// a head that differs only in case would never be reached, and the
+/// refusal would come at verify time, years later, for the wrong reason.
+fn isHead(t: []const u8) bool {
+    if (t.len != 64) return false;
+    for (t) |ch| switch (ch) {
+        '0'...'9', 'a'...'f' => {},
+        else => return false,
+    };
+    return true;
+}
+
 /// the network of this name on this machine, or null
 fn linkOf(m: machine.Machine, link: []const u8) ?machine.Network {
     for (m.networks) |n| if (std.mem.eql(u8, n.name, link)) return n;
@@ -170,9 +220,8 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
 
     // the mirror of the machine file's own rule: one language, and a file
     // is judged by which kinds it may carry
-    for (decls.items) |d| switch (d.kind) {
-        .FLEET, .MEMBER => {},
-        else => return ctx.refuse(d.line, "{s} belongs to a machine file, not a fleet file: a fleet says which machines are one estate, never what any one of them is", .{@tagName(d.kind)}),
+    for (decls.items) |d| if (!machine.belongsToFleet(d.kind)) {
+        return ctx.refuse(d.line, "{s} belongs to a machine file, not a fleet file: a fleet says which machines are one estate, never what any one of them is", .{@tagName(d.kind)});
     };
 
     var fleets: usize = 0;
@@ -233,7 +282,7 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
             if (std.mem.eql(u8, e.machine.name, m.name)) {
                 return ctx.refuse(d.line, "{s} and {s} both declare the machine {s}: a signed record names its machine, and two of them would be one name", .{ d.name, e.name, m.name });
             }
-            if (key_text != null and e.key_text != null and std.mem.eql(u8, key_text.?, e.key_text.?)) {
+            if (key != null and e.key != null and sameKey(key.?, e.key.?)) {
                 return ctx.refuse(d.line, "this key is already {s}'s key: two members cannot be the same device, and a key that appears twice attributes one device's records to two", .{e.name});
             }
             if (hardware != null and e.hardware != null and std.mem.eql(u8, &hardware.?, &e.hardware.?)) {
@@ -255,11 +304,57 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         });
     };
 
+    // ---- the keys a member USED to have (RET-1) ------------------------
+    var retirements: std.ArrayList(Retirement) = .{};
+    for (decls.items) |d| if (d.kind == .RETIREMENT) {
+        const mc = try machine.required(&ctx, d, "MEMBER");
+        const who = try machine.wantIdent(&ctx, mc);
+        var owner: ?Member = null;
+        for (members.items) |m| if (std.mem.eql(u8, m.name, who)) {
+            owner = m;
+        };
+        const o = owner orelse return ctx.refuse(mc.line, "RETIREMENT {s} retires a key of {s}, and no MEMBER {s} is declared: a key is retired FROM a device", .{ d.name, who, who });
+
+        const kc = try machine.required(&ctx, d, "KEY");
+        const kt = try machine.wantString(&ctx, kc);
+        const key = hexKey(kt) orelse return ctx.refuse(kc.line, "KEY is an ed25519 public key -- 64 hex characters, the half a device may publish -- and '{s}' is not one", .{kt});
+
+        // THROUGH is the whole of the safety, so its absence is refused in
+        // words that say why, not as one more missing clause
+        const tc = machine.find(d, "THROUGH") orelse return ctx.refuse(d.line, "RETIREMENT {s} names no THROUGH: a retired key with no entry it is trusted through vouches for whatever its holder signs next, and a card that was stolen rather than broken goes on signing", .{d.name});
+        const through = try machine.wantString(&ctx, tc);
+        if (!isHead(through)) return ctx.refuse(tc.line, "THROUGH is the hash of the last entry the fleet trusts this key for -- 64 lowercase hex, exactly as `harb fleet ... verify` prints it once that record has verified -- and '{s}' is not one", .{through});
+
+        if (o.key) |cur| if (sameKey(cur, key)) {
+            return ctx.refuse(kc.line, "{s} still holds this key: a key is the device's or it is retired, never both", .{o.name});
+        };
+        // one key, one place in the fleet, held or retired: FR5's rule,
+        // which a retirement must not become a way around
+        for (members.items) |m| if (m.key) |mk| if (sameKey(mk, key)) {
+            return ctx.refuse(kc.line, "this key is already {s}'s key: a key that appears twice attributes one device's records to two", .{m.name});
+        };
+        for (retirements.items) |r| if (sameKey(r.key, key)) {
+            return ctx.refuse(kc.line, "this key is already retired as {s}: a key is retired once, from one device", .{r.name});
+        };
+
+        try retirements.append(arena, .{
+            .name = d.name,
+            .line = d.line,
+            .member = o.name,
+            .key = key,
+            .key_text = kt,
+            .fingerprint = journal.fingerprintOf(key.toBytes()),
+            .through = through,
+            .rationale = d.rationale,
+        });
+    };
+
     const f = Fleet{
         .name = fd.name,
         .line = fd.line,
         .link = link,
         .members = try members.toOwnedSlice(arena),
+        .retirements = try retirements.toOwnedSlice(arena),
         .rationale = fd.rationale,
     };
 
@@ -372,25 +467,71 @@ pub fn promisedTo(f: Fleet, m: Member) ?machine.Peer {
     return null;
 }
 
+/// A record heard under a key its member no longer holds.
+pub const Retired = struct {
+    retirement: Retirement,
+    through: journal.Through,
+};
+
 pub const Attribution = union(enum) {
     /// the record is this member's, entire and in order
     verified: journal.Check,
     /// the record does not verify, and the check says where and why
     broken: journal.Check,
+    /// the record is a chain this member signed with a key it has since
+    /// retired: entire, and ending exactly at the entry the fleet trusts
+    /// that key through
+    retired_verified: Retired,
+    /// signed with a retired key, and not the chain the fleet vouched for:
+    /// it goes past the head, never reaches it, or breaks on the way
+    retired_broken: Retired,
+    /// the member holds no key today, and none it has held signed this
+    unsigned,
+    /// the record carries no entry at all: there is nothing to attribute
+    empty,
     /// the member exists and nobody has enrolled its key
     not_enrolled,
     no_such_member,
 };
 
 /// Verify a member's signed boot record using ONLY what the fleet holds:
-/// the member's public key. No private key takes part, so this is an act
-/// any holder of the fleet file can perform -- another box on the wire,
-/// the court on a laptop, an auditor years later.
+/// the member's public keys, the one it holds and the ones it has retired.
+/// No private key takes part, so this is an act any holder of the fleet
+/// file can perform -- another box on the wire, the court on a laptop, an
+/// auditor years later.
 pub fn attribute(f: Fleet, member_name: []const u8, record: []const u8) Attribution {
     const m = f.member(member_name) orelse return .no_such_member;
-    const key = m.key orelse return .not_enrolled;
-    const check = journal.verify(record, key);
-    return if (check.broken_at == null) .{ .verified = check } else .{ .broken = check };
+    // NS-1's rule at the verifier: a claim that would be EMPTY is not made
+    if (journal.entryCount(record) == 0) return .empty;
+
+    // The key it holds first: it is the device's word today, and a record
+    // it signed is heard exactly as it was before retirements existed.
+    if (m.key) |key| {
+        if (journal.firstSignedBy(record, key)) {
+            const check = journal.verify(record, key);
+            return if (check.broken_at == null) .{ .verified = check } else .{ .broken = check };
+        }
+    }
+    // Then every key it USED to have. A chain has one signer, so its first
+    // entry says whose chain it is, and that one retirement decides.
+    for (f.retirements) |r| {
+        if (!std.mem.eql(u8, r.member, m.name)) continue;
+        if (!journal.firstSignedBy(record, r.key)) continue;
+        const t = journal.verifyThrough(record, r.key, r.through);
+        const heard = Retired{ .retirement = r, .through = t };
+        return if (t.kept()) .{ .retired_verified = heard } else .{ .retired_broken = heard };
+    }
+    // No key it has held signed the first entry. Heard under the key it
+    // holds, so the refusal reads exactly as it always did -- an altered
+    // first entry is named as altered, a foreign one as unsigned.
+    if (m.key) |key| {
+        const check = journal.verify(record, key);
+        return if (check.broken_at == null) .{ .verified = check } else .{ .broken = check };
+    }
+    for (f.retirements) |r| {
+        if (std.mem.eql(u8, r.member, m.name)) return .unsigned;
+    }
+    return .not_enrolled;
 }
 
 // ---- judged beside the code -------------------------------------------
@@ -578,4 +719,215 @@ test "the fleet refuses what no single machine can be wrong about" {
     // together they are a network with two servers
     try testing.expectError(error.Refused, declare(arena, src, t.resolver(), &refusal));
     try testing.expect(std.mem.indexOf(u8, refusal.message, "already serves salle") != null);
+}
+
+// ---- retirement (RET-1) ---------------------------------------------------
+
+/// `n` boots of the till, signed by `pair`, each chained to the one before
+fn chainOf(arena: Allocator, pair: Ed25519.KeyPair, n: usize, verdict: journal.Verdict) ![]const u8 {
+    return extend(arena, "", pair, n, verdict);
+}
+
+/// `n` more entries on `text`, signed by `pair` -- which is what a card
+/// does when it boots, and what a stolen card goes on doing
+fn extend(arena: Allocator, text: []const u8, pair: Ed25519.KeyPair, n: usize, verdict: journal.Verdict) ![]const u8 {
+    var record: std.ArrayList(u8) = .{};
+    try record.appendSlice(arena, text);
+    var digest: [16]u8 = undefined;
+    @memcpy(&digest, "a48c59fbf8070f67");
+    var i: usize = 0;
+    while (i < n) : (i += 1) {
+        const check = journal.verify(record.items, pair.public_key);
+        const line = try journal.entry(arena, pair, check, "till", digest, verdict);
+        try record.appendSlice(arena, line);
+    }
+    return record.items;
+}
+
+fn keyHex(pair: Ed25519.KeyPair) [64]u8 {
+    var out: [64]u8 = undefined;
+    _ = std.fmt.bufPrint(&out, "{x}", .{pair.public_key.toBytes()}) catch unreachable;
+    return out;
+}
+
+fn pairOf(fill: u8) !Ed25519.KeyPair {
+    var seed: [Ed25519.KeyPair.seed_length]u8 = undefined;
+    @memset(&seed, fill);
+    return Ed25519.KeyPair.generateDeterministic(seed);
+}
+
+/// a till whose first card signed `old`'s chain and was retired through
+/// `head`, and whose second card holds `new`
+fn rebuilt(arena: Allocator, old: Ed25519.KeyPair, new: ?Ed25519.KeyPair, head: []const u8) !Fleet {
+    const old_hex = keyHex(old);
+    const src = if (new) |n| blk: {
+        const new_hex = keyHex(n);
+        break :blk try std.fmt.allocPrint(arena,
+            \\DEFINE FLEET f AS () RATIONALE "x"
+            \\DEFINE MEMBER till AS (DECLARATION "till.machine", KEY "{s}") RATIONALE "x"
+            \\DEFINE RETIREMENT carte_1 AS (MEMBER till, KEY "{s}", THROUGH "{s}") RATIONALE "the first card failed"
+            \\
+        , .{ new_hex, old_hex, head });
+    } else try std.fmt.allocPrint(arena,
+        \\DEFINE FLEET f AS () RATIONALE "x"
+        \\DEFINE MEMBER till AS (DECLARATION "till.machine") RATIONALE "x"
+        \\DEFINE RETIREMENT carte_1 AS (MEMBER till, KEY "{s}", THROUGH "{s}") RATIONALE "the first card failed"
+        \\
+    , .{ old_hex, head });
+    const t = T{ .files = &.{.{ "till.machine", till_src }} };
+    var refusal = Refusal{};
+    return declare(arena, src, t.resolver(), &refusal);
+}
+
+test "a card rebuilt: the old card's chain is heard through its head, the new card's in full" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    const old = try pairOf(0x42);
+    const new = try pairOf(0x43);
+    const old_chain = try chainOf(arena, old, 3, .matched);
+    const head = journal.verify(old_chain, old.public_key).last_hash;
+    const new_chain = try chainOf(arena, new, 2, .matched);
+
+    const f = try rebuilt(arena, old, new, &head);
+    try testing.expectEqual(@as(usize, 1), f.retirements.len);
+
+    switch (attribute(f, "till", old_chain)) {
+        .retired_verified => |r| {
+            try testing.expectEqual(@as(usize, 3), r.through.check.verified);
+            try testing.expectEqual(@as(?usize, 3), r.through.head_at);
+            try testing.expectEqualStrings("carte_1", r.retirement.name);
+        },
+        else => return error.RetiredChainNotHeard,
+    }
+    switch (attribute(f, "till", new_chain)) {
+        .verified => |c| try testing.expectEqual(@as(usize, 2), c.verified),
+        else => return error.NewChainNotHeard,
+    }
+}
+
+test "a stolen card goes on signing, and the first entry past its head is refused by position" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    const old = try pairOf(0x42);
+    const new = try pairOf(0x43);
+    const old_chain = try chainOf(arena, old, 3, .matched);
+    const head = journal.verify(old_chain, old.public_key).last_hash;
+    const f = try rebuilt(arena, old, new, &head);
+
+    // two more boots of the OLD card, after the fleet retired it. They
+    // chain perfectly and the key really did sign them: nothing in the
+    // record itself is wrong, which is why only the head can refuse them.
+    const stolen = try extend(arena, old_chain, old, 2, .matched);
+    try testing.expectEqual(@as(?usize, null), journal.verify(stolen, old.public_key).broken_at);
+
+    switch (attribute(f, "till", stolen)) {
+        .retired_broken => |r| {
+            // named by POSITION: entry 4 is the first past the head
+            try testing.expectEqual(@as(?usize, 4), r.through.check.broken_at);
+            try testing.expectEqual(@as(usize, 3), r.through.check.verified);
+            // and the evidence that the key's holder went on signing
+            try testing.expectEqual(@as(usize, 2), r.through.signed_after);
+        },
+        else => return error.StolenCardHeard,
+    }
+}
+
+test "a record that never reaches the head is not trusted, even when every entry in it verifies" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    const old = try pairOf(0x42);
+    const old_chain = try chainOf(arena, old, 3, .matched);
+    const head = journal.verify(old_chain, old.public_key).last_hash;
+    const f = try rebuilt(arena, old, null, &head);
+
+    // the device's own first two entries, really written by it...
+    const shorter = try chainOf(arena, old, 2, .matched);
+    // ...and a different three-entry chain the key's holder wrote since,
+    // saying the boots it recorded did NOT match. Both verify under the
+    // key; neither reaches the head; they cannot be told apart, so both
+    // are refused.
+    const rewritten = try chainOf(arena, old, 3, .differed);
+    try testing.expectEqual(@as(?usize, null), journal.verify(rewritten, old.public_key).broken_at);
+
+    for ([_][]const u8{ shorter, rewritten }) |rec| {
+        switch (attribute(f, "till", rec)) {
+            .retired_broken => |r| {
+                try testing.expectEqual(@as(?usize, null), r.through.head_at);
+                try testing.expectEqual(@as(?usize, null), r.through.check.broken_at);
+                try testing.expect(!r.through.kept());
+            },
+            else => return error.HeadlessChainTrusted,
+        }
+    }
+}
+
+test "a record no key of the member ever signed is refused, whatever keys it has held" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    const old = try pairOf(0x42);
+    const new = try pairOf(0x43);
+    const stranger = try pairOf(0x99);
+    const old_chain = try chainOf(arena, old, 3, .matched);
+    const head = journal.verify(old_chain, old.public_key).last_hash;
+    const foreign = try chainOf(arena, stranger, 2, .matched);
+
+    // holding a key today: the refusal reads as it did before RET-1
+    const f = try rebuilt(arena, old, new, &head);
+    switch (attribute(f, "till", foreign)) {
+        .broken => |c| try testing.expectEqual(@as(?usize, 1), c.broken_at),
+        else => return error.ForeignAccepted,
+    }
+    // holding none, between the old card and the new one
+    const g = try rebuilt(arena, old, null, &head);
+    try testing.expectEqual(Attribution.unsigned, attribute(g, "till", foreign));
+}
+
+test "a record of nothing is not attributed to anybody" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    const old = try pairOf(0x42);
+    const new = try pairOf(0x43);
+    const old_chain = try chainOf(arena, old, 3, .matched);
+    const head = journal.verify(old_chain, old.public_key).last_hash;
+    const f = try rebuilt(arena, old, new, &head);
+
+    // an export that failed, a file truncated to nothing, blank lines:
+    // every one of them used to come back "0 entries verified", exit 0
+    for ([_][]const u8{ "", "\n", "\r\n\r\n" }) |nothing| {
+        try testing.expectEqual(Attribution.empty, attribute(f, "till", nothing));
+    }
+}
+
+test "one key is one key however it is spelled, held or retired" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const t = T{ .files = &.{ .{ "box.machine", box_src }, .{ "till.machine", till_src } } };
+    var refusal = Refusal{};
+
+    // FR5 compared the TEXT, so the same key in two cases passed it
+    const twice = "DEFINE FLEET salle_makeen AS (LINK salle) RATIONALE \"x\"\n" ++
+        "DEFINE MEMBER box AS (DECLARATION \"box.machine\", KEY \"" ++ ("aa" ** 32) ++ "\") RATIONALE \"x\"\n" ++
+        "DEFINE MEMBER till AS (DECLARATION \"till.machine\", KEY \"" ++ ("AA" ** 32) ++ "\") RATIONALE \"x\"\n";
+    try testing.expectError(error.Refused, declare(arena, twice, t.resolver(), &refusal));
+    try testing.expect(std.mem.indexOf(u8, refusal.message, "is already box's key") != null);
+
+    // and a retirement cannot be the way round it
+    refusal = Refusal{};
+    const held = "DEFINE FLEET salle_makeen AS (LINK salle) RATIONALE \"x\"\n" ++
+        "DEFINE MEMBER box AS (DECLARATION \"box.machine\", KEY \"" ++ ("aa" ** 32) ++ "\") RATIONALE \"x\"\n" ++
+        "DEFINE MEMBER till AS (DECLARATION \"till.machine\") RATIONALE \"x\"\n" ++
+        "DEFINE RETIREMENT old AS (MEMBER till, KEY \"" ++ ("AA" ** 32) ++ "\", THROUGH \"" ++ ("0" ** 64) ++ "\") RATIONALE \"x\"\n";
+    try testing.expectError(error.Refused, declare(arena, held, t.resolver(), &refusal));
+    try testing.expect(std.mem.indexOf(u8, refusal.message, "is already box's key") != null);
 }

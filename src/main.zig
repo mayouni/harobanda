@@ -399,11 +399,52 @@ pub fn main() !u8 {
                     try out.print("fleet {s} -- {s}: {d} entr{s} verified against the enrolled key (fingerprint {s}), and no secret took part\n", .{
                         f.name, who, c.verified, if (c.verified == 1) "y" else "ies", m.fingerprint.?[0..],
                     });
+                    // The head is printed HERE and nowhere else: only after
+                    // the chain has verified. A head copied out of a file
+                    // nobody checked is a head somebody else may have
+                    // chosen, and it is what a RETIREMENT would trust (RET-1).
+                    if (c.has_last) try out.print("fleet {s} -- {s}: its head is entry {d}, hash={s} -- the entry a RETIREMENT of this key would be trusted THROUGH\n", .{
+                        f.name, who, c.verified, c.last_hash[0..],
+                    });
                     return 0;
                 },
                 .broken => |c| {
                     try out.print("fleet {s} -- {s}: entry {d} is not this device's: {s}\n", .{ f.name, who, c.broken_at.?, c.reason });
                     try out.print("fleet {s} -- {d} entr{s} verified before it\n", .{ f.name, c.verified, if (c.verified == 1) "y" else "ies" });
+                    return 1;
+                },
+                .retired_verified => |r| {
+                    const c = r.through.check;
+                    try out.print("fleet {s} -- {s}: {d} entr{s} verified against a key it no longer holds (retired as {s}, fingerprint {s}), ending at the entry the fleet trusts that key through, and no secret took part\n", .{
+                        f.name, who, c.verified, if (c.verified == 1) "y" else "ies", r.retirement.name, r.retirement.fingerprint[0..],
+                    });
+                    return 0;
+                },
+                .retired_broken => |r| {
+                    const c = r.through.check;
+                    if (c.broken_at) |at| {
+                        try out.print("fleet {s} -- {s}: entry {d} is not this device's under the key retired as {s}: {s}\n", .{ f.name, who, at, r.retirement.name, c.reason });
+                        // the stolen card, in its own words: entries the
+                        // retired key REALLY signed, after it was retired
+                        if (r.through.signed_after > 0) try out.print("fleet {s} -- {d} entr{s} from there on verif{s} under the retired key all the same: whoever still holds it signed after it was retired\n", .{
+                            f.name, r.through.signed_after, if (r.through.signed_after == 1) "y" else "ies", if (r.through.signed_after == 1) "ies" else "y",
+                        });
+                        try out.print("fleet {s} -- {d} entr{s} verified before it\n", .{ f.name, c.verified, if (c.verified == 1) "y" else "ies" });
+                    } else {
+                        try out.print("fleet {s} -- {s}: every entry verifies under the key retired as {s}, and none is the entry the fleet trusts it through: a retired key vouches for one chain, the one that reaches its head, and a shorter record cannot be told from a chain its holder wrote since\n", .{ f.name, who, r.retirement.name });
+                    }
+                    return 1;
+                },
+                .empty => {
+                    try out.print("fleet {s} -- {s}: the record carries no entry, so there is nothing to attribute: a verification of nothing is not one\n", .{ f.name, who });
+                    return 1;
+                },
+                .unsigned => {
+                    var held: usize = 0;
+                    for (f.retirements) |r| {
+                        if (std.mem.eql(u8, r.member, who)) held += 1;
+                    }
+                    try out.print("fleet {s} -- {s} holds no key today, and none of the {d} key{s} it has held signed this record\n", .{ f.name, who, held, if (held == 1) "" else "s" });
                     return 1;
                 },
                 .not_enrolled => {
@@ -451,6 +492,12 @@ pub fn main() !u8 {
                 try out.print(" -- KEEPS A RECORD AND IS NOT ENROLLED: nobody can verify what it signs\n", .{});
             } else {
                 try out.print(" -- not enrolled\n", .{});
+            }
+            // the keys it USED to have, each with the one entry it is
+            // trusted through (RET-1)
+            for (f.retirements) |r| {
+                if (!std.mem.eql(u8, r.member, m.name)) continue;
+                try out.print("    retired {s} -- a key {s} held before, fingerprint {s}, trusted through hash={s}\n", .{ r.name, m.name, r.fingerprint[0..], r.through });
             }
         }
         if (unenrolled > 0) {

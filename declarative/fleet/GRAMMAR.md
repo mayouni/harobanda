@@ -36,6 +36,14 @@ declares a `FLEET` is refused by name, and a fleet file that declares a
 | `KEY` | string | optional — the member's enrolled Ed25519 **public** key, 64 hex characters (FR6) |
 | `HARDWARE` | string | optional — which physical unit this member is, six pairs of hex (FR14). One device, one member (FR15) |
 
+### DEFINE RETIREMENT — a key a member USED to have (RET-1)
+
+| clause | value | obligation |
+|---|---|---|
+| `MEMBER` | ident | required — the member the key belonged to (FR19) |
+| `KEY` | string | required — the retired Ed25519 public key, 64 hex (FR20). One key, one place in a fleet, held or retired (FR23–FR26) |
+| `THROUGH` | string | required — the hash of the last entry the fleet trusts this key for: 64 lowercase hex, exactly as `harb fleet … verify` prints it once that record has verified (FR21). Its absence is refused in words that say why (FR22) |
+
 ## Enrolment is not prophecy
 
 A `KEY` is absent until the device exists. It cannot be otherwise: the
@@ -105,6 +113,14 @@ checks the members it has, and says nothing about the rest of the wire.
 | FR16 | a member that asks by dhcp on a served link whose hardware the server has in no `PEER`: it would never get an address, and there is no pool to fall back on |
 | FR17 | a member the server promises one address and which takes another itself |
 | FR18 | the link's own server declaring hardware that appears in its own register — a server does not ask itself for an address |
+| FR19 | a `RETIREMENT` of a member nobody declared — a key is retired FROM a device |
+| FR20 | a retired `KEY` that is not an ed25519 public key |
+| FR21 | a `THROUGH` that is not the hash exactly as the journal writes it — one differing only in case would never be reached, and the refusal would come at verify time, years later, for the wrong reason |
+| FR22 | **a `RETIREMENT` with no `THROUGH`** — a retired key with no entry it is trusted through vouches for whatever its holder signs next |
+| FR23 | a key a member still holds, retired — a key is the device's or it is retired, never both |
+| FR24 | a retired key that is another member's key — FR5's rule, which a retirement must not become a way around |
+| FR25 | a key retired twice |
+| FR26 | one key spelled two ways (`aa..`, `AA..`) on two members — FR5 corrected: it compared the TEXT, and hex is case-blind |
 
 ## Attribution: one machine verifying another's record
 
@@ -129,6 +145,59 @@ the field somebody would want to change) caught by position, the same
 record offered as another device's refused, and an unenrolled member
 reported rather than guessed at.
 
+## Retirement: trusted THROUGH one entry, and the chain draws the line (RET-1)
+
+A device's key is made on its card, and when the card is rebuilt the new
+card makes a new key. Every record the old card signed would stop being
+checkable -- for a till's records, the one promise the journal exists to
+keep. So a fleet records the keys a member USED to have.
+
+A retired key cannot simply stay trusted. The need that queued the seat
+was a card that DIED; the danger is a card that was STOLEN, which goes on
+signing with the same key. A date would separate what it signed before
+from what it signs after, and this floor has no trusted clock. The chain
+has no need of one: every entry's hash covers its `prev`, so ONE hash
+fixes every entry before it. A retirement names that hash -- the head of
+the last record the fleet verified -- and the key is trusted through
+that entry and not one further. Whoever holds the old card can go on
+signing, but only by EXTENDING the chain, and an extension is refused by
+position, however perfectly it chains.
+
+A record that never REACHES the head is refused as well, even when every
+entry in it verifies: a shorter record the device really wrote, and a
+different chain the key's holder wrote since, both verify under the key,
+and only reaching the head tells them apart. Present the record through
+its head.
+
+**Where the head comes from.** The verifier prints it, and only once the
+chain has verified:
+
+```
+fleet atelier -- temoin: its head is entry 1, hash=... -- the entry a RETIREMENT of this key would be trusted THROUGH
+```
+
+A head copied out of a file nobody checked is a head somebody else may
+have chosen.
+
+**Why a declaration of its own.** Every declaration says why it is there,
+and why a key was retired -- a card that failed, a card that went
+missing -- is the fact an auditor reading this file years later will
+need. The mechanism is the same for both; the RATIONALE is where they
+differ.
+
+**Why "retirement" and not "revocation".** Revocation promises the key is
+dead. What the fleet can say is exactly how far it is still trusted.
+
+`experiment/os7_fleet.sh` runs it on a real device: the card is rebuilt
+(a new disk, a new key), the old key is retired through the head the
+verifier printed, both records are heard -- and then the SAVED first card
+is booted again. It signs entry 2 with the retired key, and:
+
+```
+stolen: fleet atelier -- temoin: entry 2 is not this device's under the key retired as carte_1: it comes after the entry the fleet trusts this retired key through, ...
+stolen: fleet atelier -- 1 entry from there on verifies under the retired key all the same: whoever still holds it signed after it was retired
+```
+
 ## Named seams (stated, not hidden)
 
 - ~~A machine cannot say its own hardware address.~~ **Closed (HDW-1)**
@@ -138,9 +207,14 @@ reported rather than guessed at.
   refusing it a lease and not by the court.
 - **Forwarding between links** — a fleet declares one `LINK`. A machine
   that routes between two is an act nothing declares yet.
-- **Revocation** — a fleet records the key a device has. Nothing yet
-  records a key it USED to have, which is what a device rebuilt on a new
-  card needs if its old records are to stay readable.
+- ~~**Revocation** — nothing records a key a device USED to have.~~
+  **Closed (RET-1)** by `RETIREMENT`, trusted THROUGH one entry.
+  Still open beside it: a fleet cannot say a retired card's records are
+  wanted no longer -- retirement keeps them readable, and nothing yet
+  retires the RECORDS.
+- **Hardware declared, never observed** remains the first seam above;
+  the board is where it first matters, and OS-5's plan closes it before
+  the board's first boot.
 - **Enrolment by hand** is the design, not a gap. An automatic enrolment
   would have to trust the wire, and this floor does not.
 

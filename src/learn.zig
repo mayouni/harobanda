@@ -190,13 +190,16 @@ pub const lessons = [_]Lesson{
         .question = "If the language will not admit something, how do you know it refused for the RIGHT reason?",
         .run = "zig build court -j2",
         .look = &.{
-            "107/107 -- 23 accepts, 84 rejects, 0 failures      (the machine grammar)",
-            "22/22 -- 4 accepts, 18 rejects, 0 failures         (the fleet grammar)",
-            "learn -- 18 lessons, every path they name is present",
+            "ok   pin -- declarative/machine/fixtures.json is the file declarative/machine/PINNING.md names (sha256 ...)",
+            "110/110 -- 23 accepts, 87 rejects, 0 failures      (the machine grammar)",
+            "32/32 -- 6 accepts, 26 rejects, 0 failures         (the fleet grammar)",
+            "learn -- 18 lessons: every path they name is present, ...",
             "",
-            "Eighty-four of those cases are things the language REFUSES, and each one",
+            "Eighty-seven of those cases are things the language REFUSES, and each one",
             "carries the exact words its refusal must contain. So refusing for the wrong",
-            "reason fails as loudly as not refusing at all.",
+            "reason fails as loudly as not refusing at all. And the file of cases is",
+            "itself PINNED: its sha256 is written in PINNING.md beside it, and the court",
+            "will not call a file conforming that the pin does not name.",
         },
         .breakit = .{
             .proves = "that the court checks the REASON, not just that something was refused",
@@ -213,6 +216,12 @@ pub const lessons = [_]Lesson{
                 "",
                 "The case is still refused. The court fails anyway, because a refusal for",
                 "the wrong reason is a different machine wearing the right answer.",
+                "",
+                "And it fails a SECOND time, above the cases, on the pin:",
+                "FAIL pin -- declarative/machine/fixtures.json hashes to ..., and ... pins ...",
+                "You changed the file of cases, so it is no longer the file PINNING.md",
+                "names. A change to the cases is a change to what the court MEANS, and it",
+                "is pinned on purpose or it is not made.",
             },
             .undo = "git checkout -- declarative/machine/fixtures.json",
         },
@@ -783,7 +792,7 @@ pub const lessons = [_]Lesson{
             "  again: journal /data/boot.journal -- 1 entry, every one chained to the one",
             "  before it and signed by this device",
             "  again: journal:   seq=1 prev=- machine=qemu_identity",
-            "  declaration=a48c59fbf8070f67 verdict=matched",
+            "  declaration=d114141a6be39d8c verdict=matched",
             "  again: boot: journal -- /data/boot.journal: 1 entry verified, entry 2",
             "  appended and signed (verdict matched)",
             "",
@@ -1612,6 +1621,39 @@ fn repoName(alloc: std.mem.Allocator) ?[]const u8 {
     return null;
 }
 
+/// What `learn --check` says when every claim holds. Worded ONCE, because
+/// lesson 3 quotes it, and a sentence written in two places is quoted from
+/// whichever one somebody forgot to change -- which is what happened at
+/// LRN-2, when this line grew and the lesson went on quoting the old one.
+const summary_fmt = "learn -- {d} lessons: every path they name is present, every path they print is this repository's, and every line they quote is a line a machine or the court said";
+
+/// "110/110 -- 23 accepts, 87 rejects, 0 failures", at the start of a line
+const Scoreboard = struct { passed: usize, total: usize, accepts: usize, rejects: usize };
+
+fn scoreboardOf(line: []const u8) ?Scoreboard {
+    var it = std.mem.tokenizeAny(u8, line, " /,");
+    const passed = std.fmt.parseInt(usize, it.next() orelse return null, 10) catch return null;
+    const total = std.fmt.parseInt(usize, it.next() orelse return null, 10) catch return null;
+    if (!std.mem.eql(u8, it.next() orelse return null, "--")) return null;
+    const accepts = std.fmt.parseInt(usize, it.next() orelse return null, 10) catch return null;
+    if (!std.mem.eql(u8, it.next() orelse return null, "accepts")) return null;
+    const rejects = std.fmt.parseInt(usize, it.next() orelse return null, 10) catch return null;
+    if (!std.mem.eql(u8, it.next() orelse return null, "rejects")) return null;
+    return .{ .passed = passed, .total = total, .accepts = accepts, .rejects = rejects };
+}
+
+/// how many accepts and rejects a fixture file holds -- the numbers the
+/// court's scoreboard is made of
+fn fixtureCounts(alloc: std.mem.Allocator, path: []const u8) ?[2]usize {
+    const bytes = std.fs.cwd().readFileAlloc(alloc, path, 1 << 22) catch return null;
+    const v = std.json.parseFromSliceLeaky(std.json.Value, alloc, bytes, .{}) catch return null;
+    if (v != .object) return null;
+    const a = v.object.get("accepts") orelse return null;
+    const r = v.object.get("rejects") orelse return null;
+    if (a != .array or r != .array) return null;
+    return .{ a.array.items.len, r.array.items.len };
+}
+
 pub fn check(w: *std.Io.Writer) !usize {
     var missing: usize = 0;
     var buf: [256]u8 = undefined;
@@ -1728,8 +1770,48 @@ pub fn check(w: *std.Io.Writer) !usize {
         }
     }
 
+    // THE COURT'S OWN WORDS (RET-1). Lesson 3 quotes the scoreboard `zig
+    // build court` prints, and nothing checked those numbers: they are not
+    // a machine's words, so the quotation check above passes them by. The
+    // RETIREMENT seat moved them from 107 to 110 and from 22 to 32 and the
+    // lesson would have gone on promising the old ones -- as it had gone
+    // on quoting a `learn` line that stopped being true at LRN-2. A
+    // scoreboard is DERIVED from the fixture files, so it is checked by
+    // deriving it the same way.
+    {
+        const grammars = [_][]const u8{ "declarative/machine/fixtures.json", "declarative/fleet/fixtures.json" };
+        var counts: [grammars.len]?[2]usize = undefined;
+        for (grammars, 0..) |g, k| counts[k] = fixtureCounts(alloc, g);
+        const said = try std.fmt.allocPrint(alloc, summary_fmt, .{lessons.len});
+        for (lessons, 1..) |l, i| {
+            for (l.look) |line| {
+                const t = std.mem.trim(u8, line, " ");
+                if (scoreboardOf(t)) |sb| {
+                    var real = false;
+                    for (counts) |c| {
+                        const n = c orelse continue;
+                        if (sb.accepts == n[0] and sb.rejects == n[1] and sb.total == n[0] + n[1] and sb.passed == sb.total) real = true;
+                    }
+                    if (!real) {
+                        missing += 1;
+                        try w.print("  lesson {d} quotes a scoreboard no fixture file produces:\n    {s}\n", .{ i, t });
+                    }
+                } else if (std.mem.startsWith(u8, t, "learn -- ")) {
+                    // its own summary, quoted: what the quote keeps must be
+                    // what the summary says, up to a visible elision
+                    var q = t;
+                    if (std.mem.endsWith(u8, q, "...")) q = std.mem.trimRight(u8, q[0 .. q.len - 3], " ,");
+                    if (!std.mem.startsWith(u8, said, q)) {
+                        missing += 1;
+                        try w.print("  lesson {d} quotes this check's own summary as something it does not say:\n    {s}\n", .{ i, t });
+                    }
+                }
+            }
+        }
+    }
+
     if (missing == 0) {
-        try w.print("learn -- {d} lessons: every path they name is present, every path they print is this repository's, and every line they quote is a line a machine said\n", .{lessons.len});
+        try w.print(summary_fmt ++ "\n", .{lessons.len});
     } else {
         try w.print("learn -- {d} claim(s) a lesson makes do not hold\n", .{missing});
     }

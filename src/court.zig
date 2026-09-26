@@ -36,6 +36,59 @@ fn sameList(got: []const []const u8, want: std.json.Array) bool {
     return true;
 }
 
+/// THE PIN IS A CLAIM, SO THE COURT JUDGES IT (PIN-1).
+///
+/// PINNING.md beside the fixtures says which fixtures.json these verdicts
+/// are about, by sha256, and the rule since the grammar was born is to
+/// re-pin in the same commit that changes the file. Nothing checked it:
+/// a pin nobody reads is a verdict nobody receives. On 2026-09-20 a
+/// rename changed one fixture and not the pin, and six days of green
+/// courts were about a file the pin did not name.
+///
+/// The current pin is the first 64-hex run after "sha256:" -- the older
+/// digests below it are history, kept for the record and never compared.
+fn pinHolds(gpa: std.mem.Allocator, fixtures_path: []const u8, bytes: []const u8, out: *std.Io.Writer) !bool {
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(bytes, &digest, .{});
+    var got: [64]u8 = undefined;
+    _ = std.fmt.bufPrint(&got, "{x}", .{&digest}) catch unreachable;
+
+    const dir = std.fs.path.dirname(fixtures_path) orelse ".";
+    const pin_path = try std.fmt.allocPrint(gpa, "{s}/PINNING.md", .{dir});
+    defer gpa.free(pin_path);
+    const text = std.fs.cwd().readFileAlloc(gpa, pin_path, 1 << 20) catch {
+        try out.print("  FAIL pin -- {s} cannot be read: fixtures with no pin are verdicts about no particular file\n", .{pin_path});
+        return false;
+    };
+    defer gpa.free(text);
+
+    const at = std.mem.indexOf(u8, text, "sha256:") orelse {
+        try out.print("  FAIL pin -- {s} names no sha256\n", .{pin_path});
+        return false;
+    };
+    var i = at;
+    var streak: usize = 0;
+    while (i < text.len) : (i += 1) {
+        const hex = switch (text[i]) {
+            '0'...'9', 'a'...'f' => true,
+            else => false,
+        };
+        streak = if (hex) streak + 1 else 0;
+        if (streak == 64) break;
+    }
+    if (streak != 64) {
+        try out.print("  FAIL pin -- {s} says sha256: and gives no digest after it\n", .{pin_path});
+        return false;
+    }
+    const pinned = text[i + 1 - 64 .. i + 1];
+    if (!std.mem.eql(u8, pinned, &got)) {
+        try out.print("  FAIL pin -- {s} hashes to {s}, and {s} pins {s}: the fixtures changed and the pin did not, or the other way round -- re-pin in the commit that changes either\n", .{ fixtures_path, got[0..16], pin_path, pinned[0..16] });
+        return false;
+    }
+    try out.print("  ok   pin -- {s} is the file {s} names (sha256 {s})\n", .{ fixtures_path, pin_path, got[0..16] });
+    return true;
+}
+
 fn showList(out: *std.Io.Writer, l: []const []const u8) !void {
     try out.print("[", .{});
     for (l, 0..) |s, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", s });
@@ -53,6 +106,7 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
     const version = str(root.get("version")) orelse return error.BadFixtureFile;
     if (!std.mem.eql(u8, grammar, "machine")) return error.BadFixtureFile;
     try out.print("machine conformance -- grammar {s} v{s}, judged by {s}\n", .{ grammar, version, fixtures_path });
+    const pin_ok = try pinHolds(gpa, fixtures_path, bytes, out);
 
     var failures: usize = 0;
     var total: usize = 0;
@@ -161,7 +215,8 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
     }
 
     try out.print("{d}/{d} -- {d} accepts, {d} rejects, {d} failures\n", .{ total - failures, total, accepts.items.len, rejects.items.len, failures });
-    return failures;
+    if (!pin_ok) try out.print("and the pin does not hold: these verdicts are about a file the pin does not name\n", .{});
+    return failures + @intFromBool(!pin_ok);
 }
 
 // ---- the fleet court (FLT-1) -------------------------------------------
@@ -196,6 +251,7 @@ pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.
     const version = str(root.get("version")) orelse return error.BadFixtureFile;
     if (!std.mem.eql(u8, grammar, "fleet")) return error.BadFixtureFile;
     try out.print("fleet conformance -- grammar {s} v{s}, judged by {s}\n", .{ grammar, version, fixtures_path });
+    const pin_ok = try pinHolds(gpa, fixtures_path, bytes, out);
 
     var failures: usize = 0;
     var total: usize = 0;
@@ -223,6 +279,11 @@ pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.
         const expect = case.get("expect").?.object;
         if (int(expect.get("members"))) |w| if (@as(i64, @intCast(f.members.len)) != w) {
             why = try std.fmt.allocPrint(arena, "members: expected {d} got {d}", .{ w, f.members.len });
+        };
+        // a retirement the parser dropped would still leave the fleet
+        // accepted; an accept case that declares one says it was READ
+        if (int(expect.get("retirements"))) |w| if (@as(i64, @intCast(f.retirements.len)) != w) {
+            why = try std.fmt.allocPrint(arena, "retirements: expected {d} got {d}", .{ w, f.retirements.len });
         };
         if (expect.get("link")) |lv| switch (lv) {
             .string => |want| {
@@ -269,5 +330,6 @@ pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.
     }
 
     try out.print("{d}/{d} -- {d} accepts, {d} rejects, {d} failures\n", .{ total - failures, total, accepts.items.len, rejects.items.len, failures });
-    return failures;
+    if (!pin_ok) try out.print("and the pin does not hold: these verdicts are about a file the pin does not name\n", .{});
+    return failures + @intFromBool(!pin_ok);
 }

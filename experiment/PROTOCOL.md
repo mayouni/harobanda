@@ -1,3 +1,172 @@
+# RET-1 — a key a device used to have, trusted through one entry; and what the first real run found
+
+The author's word, 2026-09-26: plan the Raspberry task for later and
+advance on other fronts. OS-5 was parked with its order written into
+CLAUDE.md. Of the seams DIVIDEND §14 lists as unordered, revocation was
+taken: it is this repository's own ground (the fleet, the journal, the
+identity), it waits on no hardware and no ruling, and a customer pulls
+it -- when the Makeen box's card dies, the rebuilt card makes a new key,
+and every record the old card signed stops being checkable.
+
+## The design, and why it needs no clock
+
+A retired key cannot simply stay trusted. The need is a card that DIED;
+the danger is a card that was STOLEN, which goes on signing with the
+same key. A date would separate before from after, and this floor has no
+trusted clock (JRN-1 left the journal without timestamps on purpose).
+
+The chain needs none. Every entry's hash covers its `prev`, so ONE hash
+fixes every entry before it. `DEFINE RETIREMENT` names a member, the key
+it held, and the hash of the last entry the fleet verified -- `THROUGH`
+-- and the key is trusted through that entry and not one further.
+Whoever holds the old card can keep signing, but only by EXTENDING the
+chain, and `journal.verifyThrough` refuses an extension by position,
+however perfectly it chains. A record that never REACHES the head is
+refused too, even when every entry verifies: a shorter record the device
+wrote and a different chain the key's holder wrote since both verify,
+and nothing but the head tells them apart.
+
+A declaration of its own, not a clause on the member, because every
+declaration says why it is there, and why a key was retired -- a failed
+card, a missing one -- is what an auditor will need years later. And
+"retirement" rather than "revocation": revocation promises the key is
+dead; what the fleet can say is exactly how far it is still trusted.
+
+**The head is printed by the verifier, and only after the chain
+verifies.** Until now nothing printed it at all, so an operator would
+have copied it out of the raw file -- and a head copied from a file
+nobody checked is a head somebody else may have chosen.
+
+## Three things found while building it, each a guard narrower than its claim
+
+**The machine file refused the fleet's kinds by NAMING them**:
+`d.kind == .FLEET or d.kind == .MEMBER`. RETIREMENT added to the shared
+enum would have walked straight past -- and the probe showed how: a
+machine file carrying a RETIREMENT was not refused for a wrong reason, it
+was ACCEPTED. THR-1's trap exactly. It is now one exhaustive switch,
+`belongsToFleet`, which both parsers ask; a kind added after it does not
+compile until somebody says which file carries it. No machine fixture
+had ever judged the refusal the fleet grammar claimed; R85-R87 do now.
+
+**FR5 compared keys as TEXT.** "A key that appears twice attributes one
+device's records to two" -- and `aa..` beside `AA..`, one key, passed as
+two, because hex is case-blind and a string comparison is not. The
+retirement checks extend that exact rule, so they compare decoded bytes,
+and FR5 was corrected rather than built upon (FR26).
+
+**Lesson 3 quoted a court that no longer existed.** Its LOOK FOR promised
+`107/107` and `22/22`, and quoted the `learn` summary as it read before
+LRN-2 -- stale since LRN-2, and nothing noticed, because the quotation
+check only reads lines that look like a MACHINE speaking. `--check` now
+DERIVES the scoreboard from the fixture files the way the court does,
+and holds a quotation of its own summary to the summary, which is worded
+once (`summary_fmt`).
+
+## PIN-1 -- the court judges its pins, and its first verdict was mine
+
+`PINNING.md` has said "re-pin in the same commit that changes
+`fixtures.json`" since the grammar was born, and nothing checked it. The
+court now hashes each fixture file before judging a case and fails when
+the pin names another file, even with every case passing.
+
+Its first verdict, before a fixture had been touched:
+
+```
+FAIL pin -- declarative/machine/fixtures.json hashes to 4c6aef6163840094,
+  and declarative/machine/PINNING.md pins 4ed7adee6a389edb
+```
+
+The rename of 2026-09-20 (NAME-1) changed fixture A3 -- `stzos project`
+became `harb project` inside the cold-room sensor's own comment -- and
+never re-pinned. Six days of green courts were about a file the pin did
+not name.
+
+## What the real device found
+
+`os7_fleet.sh` gained the retirement arc, and its first run -- expected
+to differ from its pin by one added line -- carried **0 entries** off the
+device. The tampered record "verified". The foreign record "verified".
+Re-pinning that would have written "0 entries verified" into the pin as
+correct. Reading the diff instead (SYS-1) found five things:
+
+1. **A byte the rename ate.** `os2_image.sh` line 214 held `sed -e
+   's/<CR>$//'` with a LITERAL carriage return. The rename's script read
+   every file with Python's `read_text()`, which opens in universal-newline
+   mode and turns a lone CR into LF; it wrote back a sed command split
+   over two lines, which fails silently inside a pipeline. The second
+   boot of every non-SD machine that keeps a JOURNAL has been missing
+   from its transcript since 09-20. One CR across all 93 files the rename
+   touched (checked in bytes, against both commits); restored as the
+   escape `\r` its neighbours use, which no newline translation can eat.
+   `qemu_hello`, the one boot that "settled" the rename, keeps no journal
+   and never ran that line.
+2. **Three digests from before the rename** -- `fleet.expected`,
+   `fleet_temoin.expected`, `qemu_identity.expected` pinned
+   `declaration=` for machine files whose `RUN ["/stzos", ...]` became
+   `RUN ["/harb", ...]`. Each diff read, each cause confirmed at the
+   source, each settled by a boot and judged twice. Settling
+   `qemu_identity`'s then turned lesson 13 red: it QUOTED the same
+   pre-rename digest, and had passed only because the pin was wrong in
+   the same way -- both sides wrong together and the court green, PRJ-2's
+   shape inside the tour. The quote is kept literal and checked, not
+   elided: an elision is a quotation the check skips.
+3. **A verification of nothing.** `harb fleet verify` on a record with no
+   entries said "0 entries verified ... and no secret took part" and
+   exited 0. It now refuses: an attribution of nothing is not one (NS-1).
+4. **A verdict the arc discarded.** It ran the device's boot with `>
+   /dev/null` and never read its exit code, so a boot that differed from
+   its own pin went unremarked -- today it did, on the digest, and the
+   arc carried on. NAM-2 exactly; the verdict is received now.
+5. **A log that lied on the failure path.** The probe of (4) exited 1
+   while `zig-out/wsl/fleet.txt` -- the file every reader is told to
+   read -- said the arc matched and exited 0. The log was copied as the
+   script's last act, and every early `exit 1` left before it. A `trap`
+   writes it on every path now, and it is removed first, so a run killed
+   outright leaves no log rather than an old green one.
+
+Then the arc, on a real device:
+
+```
+rebuilt: enrol fleet_temoin ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+roll:     retired carte_1 -- a key temoin held before, fingerprint FP1, trusted through hash=H
+retired: ... 1 entry verified against a key it no longer holds (retired as carte_1, fingerprint FP1), ...
+stolen: ... entry 2 is not this device's under the key retired as carte_1: it comes after the entry ...
+stolen: ... 1 entry from there on verifies under the retired key all the same: whoever still holds it signed after it was retired
+```
+
+Nothing is simulated. The rebuilt card is a fresh disk that made its own
+key (`KEY2`, distinct by the normaliser's own count). The stolen card is
+the first card's saved disk, booted again: it signed entry 2 with the
+retired key, and was refused at entry 2. The three original negatives
+are word-for-word what they were, which is the proof, on the device, that
+rewriting attribution changed nothing it refused before. Pinned at 43
+lines, judged twice across fresh keys.
+
+## Probed before it was believed
+
+Nine mutations in fresh builds, each convicting for its own reason, then
+the clean tree acquitting with every source byte-identical: the old
+enumerating condition (R87 -- accepted), FR5 by text (FR26), a
+retirement with no head silently dropped (FR22), fixtures changed without
+the pin, the head no longer cutting the chain (the stolen-card test), a
+headless chain called kept, lesson 3's old scoreboard, lesson 3's old
+`learn` line -- and lesson 3's own BREAK IT, RUN before it was promised,
+which now fails twice, on the reason and on the pin. And the arc's new
+verdict both ways on the device: a broken device pin exits 1 with a log
+that says so; a clean one exits 0.
+
+## Still open
+
+- Retiring the RECORDS a retired card signed: retirement keeps them
+  readable, and nothing yet says they are wanted no longer.
+- The pins the rename touched that no boot has settled since:
+  `qemu_budget`, `qemu_confine`, `qemu_egress`, `names`, `makeen_box`,
+  `makeen_qemu` -- textual, no digest, claims until booted.
+- A lesson for retirement: the tour teaches the fleet (lesson 14) and not
+  yet what happens when a card is replaced.
+
+---
+
 # NAME-1 — one word was doing three jobs, and the rename gave all three the same new one
 
 The author ruled the landscape point that STZ-OS-RULING-01 had deferred:

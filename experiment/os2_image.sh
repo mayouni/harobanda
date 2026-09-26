@@ -211,8 +211,7 @@ mkdir -p "$OUT" zig-out/wsl
     # machine needs no extra boot here -- its steady boot is already this.
     ( cd "$OUT" && timeout --foreground 120 bash boot.cmd < /dev/null > transcript_again.txt 2>&1; echo "qemu exit $?" >> transcript_again.txt )
     echo "again: the same machine, booted again on the same disk:" >> "$OUT/transcript.txt"
-    sed -e 's/
-$//' "$OUT/transcript_again.txt" | sed -n '/^.*boot: harb init/,$p' | sed -e 's/^.*boot: harb init/boot: harb init/' | grep -v '^qemu exit' | sed 's/^/again: /' >> "$OUT/transcript.txt"
+    sed -e 's/\r$//' "$OUT/transcript_again.txt" | sed -n '/^.*boot: harb init/,$p' | sed -e 's/^.*boot: harb init/boot: harb init/' | grep -v '^qemu exit' | sed 's/^/again: /' >> "$OUT/transcript.txt"
   fi
   if [ "$SD" = yes ] && [ -f "$OUT/boot_hold.cmd" ]; then
     # the second witness of an A/B machine: the card's config.txt after the
