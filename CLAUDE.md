@@ -397,17 +397,47 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Next steps (author-ordered, one per session)
 
-- **OS-5 — the card meets the board.** PREPARED and rehearsed
-  (OS-5-PREP); it waits only on hardware (`STZ-OS-HARDWARE-01`: a Pi 4
-  Model B, a micro-SD card, a 3.3 V USB-serial adapter). One script
-  carries it: `bash experiment/os5_board.sh card`, then `listen
-  /dev/ttyUSB0 120`, then `judge <file>` -- three judges on one boot
-  (the board's own verdict, `harb judge`, and the four promises).
-  `rehearse` runs the same judges against the emulator's pinned
-  transcript with no hardware. The board should differ from the emulator
-  on exactly the two lines the build prints as the emulator's lacks; the
-  watchdog's real countdown and the tryboot flag (a vendored patch to
-  `bcm2835_wdt.c`) are the two things only a board can show.
+- **OS-5 — the card meets the board. PARKED** on the author's word
+  (2026-09-26: plan it for later, advance on other fronts) until the
+  hardware exists. PREPARED and rehearsed (OS-5-PREP): one script,
+  `experiment/os5_board.sh`, four acts (`card`, `listen <dev> [s]`,
+  `judge <file>`, `rehearse`) and three judges on one boot (the board's
+  own verdict, `harb judge`, the four promises). **When the hardware
+  arrives, take it in this order** -- steps 2 and 3 were found on
+  2026-09-26 and are why the order matters:
+  1. **The kit.** `STZ-OS-HARDWARE-01` names a Pi 4 Model B, a micro-SD
+     card and a 3.3 V USB-serial adapter (3.3 V, never 5 V: the Pi's
+     GPIO is 3.3 V). It does not name what a first boot also needs and a
+     desk may not have: the Pi 4's USB-C supply (5.1 V, 3 A) and a way
+     to write a micro-SD card from this PC.
+  2. **Rebuild the card before anything reads it.** The image in
+     `zig-out/image/makeen_box/` was built 2026-09-15, before the
+     rename, and its boot line says `stzos.slot=A rdinit=/stzos`.
+     Flashed as it is, the three judges SPLIT: the board judges itself
+     against the stale `/etc/expected` it carries and passes, `harb
+     judge` derives from today's source and fails, and the first real
+     boot is spent diagnosing a build date.
+  3. **Then make `card` refuse a stale card**, because step 2 is a
+     person remembering. Its clean-boot-line guard matches instruments
+     by their CURRENT spelling (`harb.watchdog=off`, `harb.expect=`), so
+     a card carrying `stzos.watchdog=off` passes it -- NAME-1 one layer
+     down. The question that decides is whether the card was built from
+     these sources: judge the card's own `expected` against a fresh
+     derive, and refuse on any difference.
+  4. **Close "hardware declared, never observed"** (the fleet grammar's
+     own named seam) before the first boot, so the board is judged on it
+     too. In the emulator QEMU is HANDED the member's declared MAC, so
+     declared and actual agree by construction; a board's NIC has its
+     address burned in. Build the witness that reads the address the
+     device actually has, and probe it on the x86 till by handing QEMU a
+     MAC the member does not declare -- it must refuse.
+  5. **Then the board**: `card`, flash (the author runs the command the
+     script prints -- it never writes to a device), `listen
+     /dev/ttyUSB0 120`, `judge <file>`. It should differ from the
+     emulator on exactly the two lines the build prints as the
+     emulator's lacks; the watchdog's real countdown and the tryboot
+     flag (a vendored patch to `bcm2835_wdt.c`) are the two things only
+     a board can show.
 - **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
   attempt: behind `HARB_CC=zigcc` the kernel builds with `make CC="zig
   cc"` and the image does NOT boot (it dies in the 16-bit setup code).
