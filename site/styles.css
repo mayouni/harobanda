@@ -127,6 +127,12 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .xcard.act{border-color:var(--river);background:var(--river-wash);}
 .xcard.act .k,.xcard.act .go{color:var(--river);}
 .xcard.act h3{color:var(--ink);}
+/* It is also where every way in ends, so it takes the whole last row --
+   as wide as the bridge beneath it -- instead of sitting alone in the
+   first column while the others stand empty. Its text keeps a reading
+   measure, because a row this wide is not a line anyone reads. */
+.xcard.act{grid-column:1 / -1;}
+.xcard.act p{max-width:66ch;}
 .xcard .k{font-family:var(--mono);font-size:13px;color:var(--river);letter-spacing:.08em;text-transform:uppercase;}
 .xcard h3{font-size:20px;color:var(--ink);margin-top:2px;}
 .xcard p{font-size:18px;color:var(--muted);line-height:1.5;}
