@@ -226,6 +226,9 @@ Four elbow connectors fanning out to four device silhouettes:
 Along the fan, the single orange accent on a callout reading **`one word
 changes: the board`**. Along the bottom, a mono strip listing what does not
 change: `harb check · harb plan · harb boot — the same command, every target`.
+*Corrected 2026-09-27: there is no `harb boot` verb, so the strip reads
+`harb check · harb plan`, which hold for every target, the edge sensor
+included.*
 
 **Must not.** Do not draw four files. Do not show a build pipeline, a CI
 system or a cloud — the claim is one binary on one laptop. Mark the touch
@@ -312,6 +315,8 @@ closure is the whole method.*
 drawn as heavily as the rest:
 
 `declare` → `judge — harb check` → `plan — harb plan` → `boot — harb boot` →
+*(corrected 2026-09-27: the boot beat reads `in QEMU` -- there is no
+`harb boot` verb)*
 `it judges its own boot` → back to `declare`.
 
 The closing arrow carries the orange accent and the label **`a change is a new
@@ -366,8 +371,11 @@ are drawn by a script in `site/diagrams/`, so a change is an edit rather
 than a redraw — see `site/diagrams/README.md`.
 
 ```
-python site/diagrams/diagram4.py          # writes site/harobanda-diagram-4.jpg
-python site/diagrams/activate_slot.py 4   # uncomments its slot, refuses if absent
+# writes site/harobanda-diagram-4.png
+python site/diagrams/diagram4.py
+
+# uncomments its slot, refuses if the image is absent
+python site/diagrams/activate_slot.py 4
 ```
 
 Then set the row in the register above to **live**, in the same commit, and

@@ -14,7 +14,7 @@ c.gap(8)
 c.box("declare", "one file", "plain")
 c.box("judge", "harb check", "plain")
 c.box("plan", "harb plan", "plain")
-c.box("boot", "harb boot", "plain")
+c.box("boot", "in QEMU", "plain")
 c.gap(10)
 c.box("and back to declare",
       "the boot is judged against the file, and a change is a new file, judged again",

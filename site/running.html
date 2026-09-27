@@ -50,12 +50,12 @@
   <section class="wrap block">
     <div class="stack-gap" style="gap:clamp(26px,3.4vw,40px)">
       <div class="stack-gap">
-        <p class="lead prose">The whole loop is the same five verbs the machine lives by, driven by one command: <code style="font-family:var(--mono);font-size:.85em;color:var(--laterite)">harb</code>. There is no configuration to discover and no hidden state to unravel. Every command tells you what it did and why.</p>
+        <p class="lead prose">The whole loop is the same five verbs the machine lives by, judged and planned by one binary, <code style="font-family:var(--mono);font-size:.85em;color:var(--laterite)">harb</code>, and booted by one script. There is no configuration to discover and no hidden state to unravel. Every command tells you what it did and why.</p>
         <div class="steps">
           <div class="step"><b>Declare it</b><p>Write a <code>.machine</code> file. Every line must say why it is there.</p></div>
           <div class="step"><b>Judge it — <code>harb check</code></b><p>The court accepts it, or refuses it in plain words: <code>needs the network, which nothing here grants.</code></p></div>
           <div class="step"><b>Plan it — <code>harb plan</code></b><p>See the order things will happen in, before any of it does. A mistake is caught here, not at 2 a.m.</p></div>
-          <div class="step"><b>Boot it — <code>harb boot</code></b><p>The whole machine boots in an emulator and judges its own transcript against what the file said.</p></div>
+          <div class="step"><b>Boot it — in QEMU</b><p>One script builds the image and boots the whole machine in an emulator, and the machine judges its own transcript against what the file said: <code>bash experiment/os2_image.sh qemu_egress</code>. The README's <em>Try it</em> lists what the first boot needs installed.</p></div>
           <div class="step"><b>Break it</b><p>Change one line and watch the machine catch the difference. A guarantee you have only seen succeed is a claim.</p></div>
         </div>
         <p class="muted prose">No board is needed to learn any of this — it runs on a plain laptop.</p>

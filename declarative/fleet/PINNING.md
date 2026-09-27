@@ -39,7 +39,7 @@ each case carries the machine files it names **inside itself**:
 ```json
 {
   "id": "FR8",
-  "source": "DEFINE FLEET ... DEFINE MEMBER box ... DEFINE MEMBER autre ...",
+  "source": "DEFINE FLEET ... MEMBER box ... MEMBER autre ...",
   "files": { "box.machine": "...", "autre.machine": "..." },
   "refusal": "already serves salle"
 }

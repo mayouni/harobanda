@@ -57,6 +57,7 @@
 
 <span class="kw">DEFINE SERVICE</span> assistant <span class="kw">AS</span> (
   RUN [<span class="c">"/app/assistant"</span>],
+  RESTART always,
   <span class="d">-- read docs and run the model; no network at all</span>
   NEEDS [filesystem, inference],
   MEMORY 2048, CPU 200,           <span class="d">-- a ceiling the kernel holds</span>

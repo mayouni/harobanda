@@ -26,6 +26,7 @@ const project = @import("project.zig");
 const guarantee = @import("guarantee.zig");
 const journal = @import("journal.zig");
 const learn = @import("learn.zig");
+const docs = @import("docs.zig");
 const fleet = @import("fleet.zig");
 const confine = @import("confine.zig");
 const expect = @import("expect.zig");
@@ -57,6 +58,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
         \\  harb learn  [n] [--all] [--words] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
+        \\  harb docs   --check                         (every page's code fits its column, and every machine it shows is accepted)
         \\  harb version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });
@@ -112,6 +114,19 @@ pub fn main() !u8 {
         return 1;
     }
     const verb = args[1];
+
+    if (std.mem.eql(u8, verb, "docs")) {
+        // What a page SHOWS is a claim like any other: a code line the
+        // reader has to scroll sideways to read, or a machine the court
+        // would refuse, is the page lying about how it reads or about the
+        // machine (DOC-1). Run from the repository root, as the court runs it.
+        if (args.len != 3 or !std.mem.eql(u8, args[2], "--check")) {
+            try out.print("harb: usage: harb docs --check  (from the repository root)\n", .{});
+            return 1;
+        }
+        const bad = try docs.check(out);
+        return if (bad == 0) 0 else 1;
+    }
 
     if (std.mem.eql(u8, verb, "learn")) {
         // The tour lives in the binary, beside the verbs it teaches, so
@@ -943,4 +958,5 @@ test {
     _ = names;
     _ = fleet;
     _ = learn;
+    _ = docs;
 }

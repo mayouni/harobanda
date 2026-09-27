@@ -89,7 +89,7 @@ for (title, sub, design), c in zip(DEV, centres):
 # ---- what does not change, for every one of them ----
 KY, KH = 610, 96
 band(d, ML, KY, W - ML - MR, KH, 13, KERN_FILL, KERN_LINE, lw=2.0, amp=0.8)
-text(d, ML + 36, KY + KH/2, "harb check · harb plan · harb boot", f_readm, INK)
+text(d, ML + 36, KY + KH/2, "harb check · harb plan", f_readm, INK)
 text(d, W - MR - 36, KY + KH/2, "every target", f_read, MUTED, anchor="rm")
 
 print("wrote", save(img, "harobanda-diagram-6.png"))

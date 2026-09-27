@@ -43,7 +43,7 @@ centre_ls(d, W/2, 46, "THE LAST STEP RETURNS TO THE FIRST.", f_kick, INK, 3.2)
 BEATS = [("declare", "one file"),
          ("judge",   "harb check"),
          ("plan",    "harb plan"),
-         ("boot",    "harb boot")]
+         ("boot",    "in QEMU")]
 
 xs = [ML + i*(CW + CGAP) for i in range(4)]
 for (title, sub), x in zip(BEATS, xs):

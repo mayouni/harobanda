@@ -55,14 +55,16 @@ floor means adding fixtures first, prose second (the W discipline).
 
 ```
 file        = declaration { declaration } ;
-declaration = "DEFINE" kind IDENT "AS" "(" [ clauses ] ")" rationale ;
-kind        = "MACHINE" | "SERVICE" | "CAPABILITY" | "MOUNT" | "PIN"
-            | "NETWORK" | "USER" | "PEER" ;
-rationale   = "RATIONALE" STRING ;                       (mandatory)
+declaration = "DEFINE" kind IDENT "AS"
+              "(" [ clauses ] ")" rationale ;
+kind        = "MACHINE" | "SERVICE" | "CAPABILITY"
+            | "MOUNT" | "PIN" | "NETWORK" | "USER" | "PEER" ;
+rationale   = "RATIONALE" STRING ;         (mandatory)
 
 clauses     = clause { "," clause } [ "," ] ;
 clause      = CLAUSE_NAME value ;
-value       = STRING | IDENT | NUMBER | name_list | string_list ;
+value       = STRING | IDENT | NUMBER
+            | name_list | string_list ;
 name_list   = "[" [ IDENT  { "," IDENT  } [ "," ] ] "]" ;
 string_list = "[" [ STRING { "," STRING } [ "," ] ] "]" ;
 ```

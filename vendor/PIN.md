@@ -11,6 +11,17 @@ toolchain" (`doc/ARCHITECTURE.md` §3); a mirror of the tarball inside the
 estate, so that even kernel.org cannot withdraw it, is the next step of
 that verdict and is not done.
 
+*Amended 2026-09-27 (DOC-1).* The fetch now takes exactly the tarball
+this file names, and refuses unless kernel.org's digest and this file's
+agree. "The newest 6.12 point release" was a different kernel on every
+day after the pin, and a fresh clone -- which has only this file -- was
+re-pinned by it without a word, in a gitignored `PIN.txt` nobody reads.
+It extracts nothing any more either: `os2_image.sh` extracts where it
+builds. It reads the `tarball` and `sha256` rows of the table below, so
+their shape is load-bearing; `experiment/kernel_fetch_probe.sh` judges it
+both ways (the pin fetched and verified; a wrong digest, an unreleased
+version and a tarball that is not the pinned one, each refused).
+
 | what | value |
 |---|---|
 | tarball | `linux-6.12.109.tar.xz` |
@@ -22,6 +33,9 @@ that verdict and is not done.
 
 Changing the pin means changing this file, `os2_kernel_fetch.sh`'s
 version pattern, and the first boot transcript in the same commit.
+*(Amended 2026-09-27: the fetch has no version pattern now -- it reads
+the two rows above -- so changing the pin is changing those rows, and
+re-judging every boot against its pin in the same commit.)*
 
 ## The Linux Zig, pinned the same way (ZIGCC-1)
 

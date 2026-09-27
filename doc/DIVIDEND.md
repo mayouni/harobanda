@@ -34,12 +34,18 @@ its lines:
 DEFINE NETWORK lan AS (
   INTERFACE "eth0",
   ADDRESS "192.168.10.1/24"
-) RATIONALE "The box is the network's address; the phones find it here. No gateway: the box is the gateway"
+) RATIONALE "The box is the network's address; the phones find
+  it here. No gateway: the box is the gateway"
 ...
 DEFINE MOUNT data AS (
-  AT "/data", FS ext4, DEVICE "/dev/mmcblk0p2", OPTIONS [rw, noatime]
-) RATIONALE "The persistent partition: the SD card's second partition"
+  AT "/data", FS ext4, DEVICE "/dev/mmcblk0p2",
+  OPTIONS [rw, noatime]
+) RATIONALE "The persistent partition: the SD card's second
+  partition"
 ```
+
+(A string may continue on the next line; its indentation folds to
+one space, so these read exactly as the file says them.)
 
 And what the box says as it boots, before any server starts:
 
@@ -48,7 +54,8 @@ boot: mount ext4 at /data -- done
 boot: network lan -- eth0 up 192.168.10.1/24
 boot: watchdog armed (/dev/watchdog)
 boot: start kds -- pid N -- /stzr /app/kds.luau
-boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
+boot: judge -- the boot matches its expectation
+    (/etc/expected, 16 lines)
 ```
 
 The address is not leased. It is declared, brought up by PID 1, and in
@@ -83,7 +90,8 @@ DEFINE SERVICE commons AS (
   READY "/run/commons.ready",
   USER world,
   NEEDS [network, filesystem]
-) RATIONALE "The Commons: catalogue, orders, payments; it says when it is serving"
+) RATIONALE "The Commons: catalogue, orders, payments; it says
+  when it is serving"
 ```
 
 Each word is something the floor does for the service:
@@ -209,7 +217,8 @@ this shape (the wording is illustrative: stzr does not yet read the
 machine file):
 
 ```
-stzr: /etc/shadow refused -- the machine grants filesystem at /data only
+stzr: /etc/shadow refused -- the machine grants filesystem
+    at /data only
 ```
 
 Tomorrow the kernel gives the same answer before the runtime sees the
@@ -264,14 +273,29 @@ machine it perceives through logs written for people.
   agent on the machine can propose a change to the machine:
 
 ```
-  the agent drafts     DEFINE SERVICE alerts AS (RUN ["/stzr", "/app/alerts.luau"], RESTART always, NEEDS [network]) RATIONALE "..."
-  the court judges     machine (line 41): alerts needs network, which no declaration grants
-  the agent revises    DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "..."
-  a person ratifies    the new .machine file
-  the image is derived harb image; /etc/expected gains two lines
-  the box tries it     boot: slot B -- a trial (committed is A)
-  the box judges       boot: judge -- the boot matches its expectation (/etc/expected, 18 lines)
-  the box commits      boot: slot B -- committed: every service is ready and the boot matches its expectation
+  the agent drafts
+      DEFINE SERVICE alerts AS (
+        RUN ["/stzr", "/app/alerts.luau"],
+        RESTART always,
+        NEEDS [network]
+      ) RATIONALE "..."
+  the court judges
+      machine (line 41): alerts needs network, which no
+          declaration grants
+  the agent revises
+      DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "..."
+  a person ratifies
+      the new .machine file
+  the image is derived
+      harb image; /etc/expected gains two lines
+  the box tries it
+      boot: slot B -- a trial (committed is A)
+  the box judges
+      boot: judge -- the boot matches its expectation
+          (/etc/expected, 18 lines)
+  the box commits
+      boot: slot B -- committed: every service is ready and
+          the boot matches its expectation
 ```
 
   Every step in that list exists today except the first two being
@@ -284,7 +308,8 @@ machine it perceives through logs written for people.
   the natural door can answer from the judge's own lines:
 
 ```
-boot: judge -- expected, not said: network lan -- eth0 up 192.168.10.1/24
+boot: judge -- expected, not said:
+    network lan -- eth0 up 192.168.10.1/24
 ```
 
 - Rehearse on the twin, commit through the trial. The virtual system

@@ -262,7 +262,9 @@ buying anything.*
 2. **One binary.** Where `harb` comes from, for Windows, macOS and Linux.
    This is the paragraph that cannot be written until there is somewhere to
    point at, and it is the whole reason this page does not exist yet.
-3. **Three commands.** `harb check`, `harb plan`, `harb boot` — with the
+3. **Three commands.** *(Amended 2026-09-27: `harb boot` does not exist --
+   the boot is `bash experiment/os2_image.sh <name>` -- so the brief is
+   two commands and one script, or the verb is built first.)* `harb check`, `harb plan`, `harb boot` — with the
    transcript the reader should see, so he knows when it worked.
 4. **Break it.** Change one line, watch the court refuse it by name. The
    site's own argument is that a refusal is the evidence; this is the first

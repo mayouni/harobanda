@@ -27,5 +27,5 @@ c.box("a tablet or phone", "touch shape · design", "old")
 c.box("a sensor or MCU", "edge shape · no kernel", "plain")
 c.gap(18)
 
-c.strip("harb check · harb plan · harb boot", "the same command, every target")
+c.strip("harb check · harb plan", "the same command, every target")
 c.render("harobanda-diagram-6-narrow.png")

@@ -3,11 +3,27 @@
 ## 1. The pipeline
 
 ```
- .machine ──declare──▶ judged structure ──derive──▶ boot plan ──image──▶ bootable artifact ──boot──▶ transcript
-   (text)   src/machine.zig                src/plan.zig     (OS-2)        hosted: kernel+initramfs   src/init.zig
-                │                                                          edge:   firmware (MicroRing)
-                └── judged by declarative/machine/fixtures.json            touch:  AOSP build
-                └── itself declared in machine.stzu, judged by stz's Stzu.luau
+.machine  (text)
+   │
+   │  declare  src/machine.zig
+   │           ├─ judged by declarative/machine/fixtures.json
+   │           └─ itself declared in machine.stzu, judged by
+   │              stz's Stzu.luau
+   ▼
+judged structure
+   │
+   │  derive   src/plan.zig
+   ▼
+boot plan
+   │
+   │  image    (OS-2)
+   ▼
+bootable artifact  hosted: kernel+initramfs
+   │               edge:   firmware (MicroRing)
+   │               touch:  AOSP build
+   │  boot     src/init.zig
+   ▼
+transcript
 ```
 
 Every arrow is text-before-act: a declaration is judged before a plan

@@ -160,7 +160,8 @@ whoever can answer it, and this floor will not enforce `threads`.
 for twelve:
 
 ```
-swarm: 5 tasks made, and the kernel refused the next (AGAIN): this world is as many as the machine agreed to hold
+swarm: 5 tasks made, and the kernel refused the next (AGAIN):
+    this world is as many as the machine agreed to hold
 ```
 
 Five children plus the world itself is six. EAGAIN rather than a kill: a
@@ -223,10 +224,12 @@ done before: **two machines, booted at the same time, on one wire**
 no resolver and no printer, learns all three from the link, and asks:
 
 ```
-till: boot: network salle -- eth0 up 192.168.10.40/24 (dhcp), dns [192.168.10.1], names on makeen (/etc/resolv.conf)
+till: boot: network salle -- eth0 up 192.168.10.40/24 (dhcp),
+    dns [192.168.10.1], names on makeen (/etc/resolv.conf)
 till: ask imprimante.makeen -- 192.168.10.50 (from 192.168.10.1)
 till: ask makeen -- 192.168.10.1 (from 192.168.10.1)
-till: ask fantome.makeen -- no such name on this network (from 192.168.10.1)
+till: ask fantome.makeen -- no such name on this network
+    (from 192.168.10.1)
 ```
 
 The third round is the seat's own negative: the SAME image with a
@@ -234,7 +237,8 @@ hardware address nobody declared, which gets nothing at all and is
 right to say so.
 
 ```
-stranger: boot: network salle -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
+stranger: boot: network salle -- eth0 dhcp:
+    no lease after 3 tries (no server answered on this network)
 ```
 
 The generator agreeing with itself would have proved nothing here; the
@@ -311,7 +315,8 @@ identical**:
 
 ```
 boot: network lan -- eth0 up 10.0.2.15/24
-boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
+boot: egress lan -- 10.9.0.0/16 and nowhere else:
+    no default route
 reach 10.9.0.1 -- a route exists: this machine knows a way there
 reach 8.8.8.8 -- no route: this machine knows no way there
 ```

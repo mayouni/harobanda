@@ -49,6 +49,7 @@
           <div class="term" aria-label="The smallest machine, written as a text file">
             <div class="term-bar"><i></i><i></i><i></i><b>hello.machine — you write this</b></div>
 <pre><span class="kw">DEFINE MACHINE</span> hello <span class="kw">AS</span> (
+  PROFILE hosted,
   ARCH x86_64,
   KERNEL linux
 ) <span class="kw">RATIONALE</span> <span class="d">"the smallest machine that boots"</span>
@@ -60,20 +61,20 @@
           <p class="cap">A whole machine, in nine lines. Each part must say <b>why</b> it is there.</p>
         </div>
         <div>
-          <div class="term" aria-label="Checking and booting the machine in the console">
-            <div class="term-bar"><i></i><i></i><i></i><b>your laptop — check it, then boot it</b></div>
+          <div class="term" aria-label="Checking the machine, then booting a reference machine in the console">
+            <div class="term-bar"><i></i><i></i><i></i><b>your laptop — check it, then boot one</b></div>
 <pre><span class="d">$</span> <span class="b">harb</span> check hello.machine
-hello <span class="d">--</span> <span class="k">judged, no refusal</span>
+machine hello <span class="d">--</span> hosted / x86_64 / kernel linux <span class="d">-- ... --</span> <span class="k">judged, no refusal</span>
 
-<span class="d">$</span> <span class="b">harb</span> boot hello.machine
-<span class="d">boot:</span> harb init <span class="d">--</span> machine hello <span class="d">--</span> pid 1
-<span class="d">boot:</span> mount /proc /sys /dev <span class="d">--</span> done
-<span class="d">boot:</span> start greet <span class="d">--</span> /app/greet
-greet: hello from a declared machine
-<span class="d">boot:</span> greet exited 0
-<span class="d">boot: judge --</span> the boot <span class="k">matches the file</span></pre>
+<span class="d">$</span> <span class="b">bash</span> experiment/os2_image.sh qemu_egress
+<span class="d">boot:</span> harb init <span class="d">--</span> machine qemu_egress (hosted / x86_64 / qemu_pc) <span class="d">--</span> pid 1
+<span class="d">...</span>
+<span class="d">boot:</span> egress lan <span class="d">--</span> 10.9.0.0/16 and nowhere else: no default route
+<span class="d">...</span>
+reach 8.8.8.8 <span class="d">--</span> <span class="k">no route: this machine knows no way there</span>
+<span class="d">boot: judge --</span> the boot <span class="k">matches its expectation</span> (/etc/expected, 14 lines)</pre>
           </div>
-          <p class="cap"><b>check</b> reads the file and rules on it; <b>boot</b> runs it in an emulator — no hardware needed.</p>
+          <p class="cap"><b>check</b> reads the file and rules on it; the script builds a reference machine into an image, boots it in QEMU, and the machine judges its own boot — here, that it knows no way to the open internet. No hardware needed.</p>
         </div>
       </div>
     </div>
@@ -82,14 +83,14 @@ greet: hello from a declared machine
   <section class="wrap block">
     <p class="eyebrow" style="margin-bottom:16px">What just happened</p>
     <div class="figure" style="margin-bottom:clamp(28px,4vw,44px)">
-      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-9.png" alt="Four beats read left to right — declare a file, judge it with harb check, plan it with harb plan, boot it with harb boot — and one heavy arc returning from the last back to the first: the boot is judged against the file, and a change is a new file, judged again" width="1376" height="500">
-      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-9-narrow.png" alt="Four beats read left to right — declare a file, judge it with harb check, plan it with harb plan, boot it with harb boot — and one heavy arc returning from the last back to the first: the boot is judged against the file, and a change is a new file, judged again" width="640" height="1052">
+      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-9.png" alt="Four beats read left to right — declare a file, judge it with harb check, plan it with harb plan, boot it in QEMU — and one heavy arc returning from the last back to the first: the boot is judged against the file, and a change is a new file, judged again" width="1376" height="500">
+      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-9-narrow.png" alt="Four beats read left to right — declare a file, judge it with harb check, plan it with harb plan, boot it in QEMU — and one heavy arc returning from the last back to the first: the boot is judged against the file, and a change is a new file, judged again" width="640" height="1052">
     </div>
     <div class="four">
       <div class="card"><span class="n">01</span><h4>You wrote it</h4><p>A few lines of plain text: what the machine is, and the one program it runs.</p></div>
       <div class="card"><span class="n">02</span><h4>It was judged</h4><p><code style="color:var(--laterite)">harb check</code> ruled on the file before anything ran — and would have refused it by name.</p></div>
-      <div class="card"><span class="n">03</span><h4>It booted</h4><p>On your own laptop, in an emulator. No install, no setup, no board to buy.</p></div>
-      <div class="card"><span class="n">04</span><h4>It judged itself</h4><p>At the end it checked what it did against what you wrote. That is the whole method.</p></div>
+      <div class="card"><span class="n">03</span><h4>It booted</h4><p>A machine built from a file like this one, in an emulator on your own laptop. No board to buy.</p></div>
+      <div class="card"><span class="n">04</span><h4>It judged itself</h4><p>At the end it checked what it did against what its file declared. That is the whole method.</p></div>
     </div>
   </section>
 
@@ -125,7 +126,7 @@ greet: hello from a declared machine
       <a class="xcard" href="ai.html"><span class="k">AI &amp; agents</span><h3>The full stack &amp; AI</h3><p>The computational foundation, the floor an agent cannot escape or abuse, and a governed assistant that keeps your data on the box.</p><span class="go">Three pages →</span></a>
       <a class="xcard" href="enterprise.html"><span class="k">Enterprise</span><h3>Enterprise IT</h3><p>Security, scalability and integration answered from one design — and why it is cloud-friendly rather than a cloud replacement.</p><span class="go">For IT →</span></a>
       <a class="xcard" href="field.html"><span class="k">In the field</span><h3>Cases &amp; status</h3><p>Two real engagements — a restaurant in Lyon and an NGO in Niger — and an honest account of what is real today.</p><span class="go">Two pages →</span></a>
-      <a class="xcard act" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer"><span class="k">The source</span><h3>Run one yourself</h3><p>Nine lines of text, one command, and a machine boots on the laptop you are reading this on — no hardware, no account, nothing to install. The tour is eighteen lessons, and every one of them ends by showing you how to break it.</p><span class="go">Read the source, build it, boot it →</span></a>
+      <a class="xcard act" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer"><span class="k">The source</span><h3>Run one yourself</h3><p>Nine lines of text, and the court rules on them. One script, and a machine boots in an emulator on the laptop you are reading this on — no hardware, no account. The tour is eighteen lessons, and every one of them ends by showing you how to break it.</p><span class="go">Read the source, build it, boot it →</span></a>
     </div>
   </section>
 </main>

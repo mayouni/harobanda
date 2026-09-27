@@ -1,3 +1,125 @@
+# DOC-1 — what a page shows is a claim, and a stranger's path through it is the judge
+
+The author, 2026-09-27, with a screenshot of the README's own "Try it"
+block scrolling sideways: no code zone on a GitHub page with a horizontal
+scrollbar; and the README does not introduce the project simply, nor
+explain its rationale and its practical value -- take inspiration from
+the site.
+
+## What was measured
+
+GitHub showed 68 characters of a README code line on the author's screen
+before the block scrolled. The rule is 64, a margin under that. Measured
+before anything moved: 152 code lines wider than 64 in 10 of the
+repository's 17 Markdown files, 98 of them in this one, whose transcripts
+quote a boot event as one line however long its sentence is.
+
+## The check
+
+`harb docs --check` (`src/docs.zig`), which `zig build court` runs beside
+`learn --check`:
+
+1. no fenced code line in any Markdown file is wider than 64 characters
+   -- characters, not bytes, so a line of arrows is measured as it looks;
+2. every machine a page shows IN FULL -- a block with `DEFINE MACHINE`
+   and no `...` -- is one the court accepts, by the same
+   `machine.declare` that `harb check` runs: Markdown fences, and the
+   site's `<pre>` blocks with their markup removed.
+
+Its first run found only widths, because the second rule's findings had
+been caught by hand the same day: the README's headline example ("a
+whole machine, in nine lines") and the site's home page were both
+REFUSED -- `PROFILE` is required -- and the assistant page's excerpt
+showed a daemon that signals READY and never says it restarts. The first
+thing a visitor read was a claim no judge had ever read. The check is
+what makes the next one fail in the commit that writes it, and it names
+the line of the PAGE, where the reader can go and look.
+
+Not judged, and named rather than implied: an excerpt (what is elided
+cannot be judged, which is why a page says "in full"); code indented
+rather than fenced; and transcript QUOTES in pages. LRN-2 checks the
+tour's, but this file quotes boots of machines that have changed since,
+and is right to.
+
+Probed with seven mutations, each in a scratch copy of the pages and
+never the working tree: a code line of 65 convicted at its page line and
+one of 64 acquitted; the README's machine without `PROFILE`, the site
+home page's without `PROFILE`, and the README's service without a
+`RATIONALE`, each convicted at the page line the court names; and the
+assistant excerpt losing `RESTART`, acquitted, because an excerpt is not
+judged. A unit-test expectation broken on purpose failed (41/42), which
+is how it is known the new tests run at all.
+
+## How a wide line was wrapped
+
+A transcript line continues on the next with four more spaces of indent
+-- the tour's own convention, so a reader sees one line of output. A
+command takes its comment on the line above, and a long one continues
+with its shell's own continuation (`\` in bash, a backtick in
+PowerShell), so it still pastes as one command. A `RATIONALE` continues
+inside its quotes: the grammar folds a continuation's indent to one
+space (C6 3.2), so the wrapped string IS the same string. The
+architecture's pipeline was redrawn top to bottom. No quoted word
+changed.
+
+## What following the README as a stranger found
+
+The README's "Try it" ended with `bash experiment/os2_image.sh
+qemu_hello`. Walked with only what a stranger has -- a fresh clone:
+
+1. **No cross build.** The script stages
+   `zig-out/cross/x86_64-linux-musl/harb`, which only `zig build cross`
+   makes. The README said `zig build`.
+2. **No kernel.** `vendor/linux/` is gitignored, and the script's first
+   act on the kernel is to read `vendor/linux/PIN.txt`.
+3. **The fetch took the newest kernel, not the pinned one.**
+   `os2_kernel_fetch.sh` took "the newest 6.12 point release" from
+   kernel.org and wrote whatever it took into `PIN.txt` -- on any day
+   after the pin, a different kernel from the one every transcript here
+   was judged on, re-pinned without a word. It also extracted 1.4 GB
+   beside the tarball that nothing ever read: on a Windows mount, the
+   thing this repository's own notes forbid. It now takes exactly the
+   tarball `vendor/PIN.md` names, refuses unless kernel.org's digest and
+   the pin agree, and extracts nothing. `experiment/kernel_fetch_probe.sh`
+   judges it both ways, each verdict requiring the exit code AND the
+   reason: the pin fetched and verified, and a wrong digest, a version
+   kernel.org never released and a tarball on disk that is not the
+   pinned one, each refused for its own reason. 5/5. (A probe of the
+   probe -- the fetch with its comparison disabled -- was not run.)
+4. **stz is private.** `qemu_hello` runs its world under `stzr`, built
+   from the stz repository, which a stranger cannot clone. The boot
+   would run, print `stzr NOT staged`, and judge itself different from
+   its pin -- correctly, and to the one reader who could not know why.
+
+So the README now boots `qemu_egress`, which runs only `harb`, needs
+nothing outside this repository, and shows a promise worth the minutes:
+the kernel knows a way to the one declared destination and none to
+8.8.8.8. Booted end to end after the change: kernel cache HIT, the boot
+judged itself, and the transcript matched its pin line for line (20
+lines, exit 0). The README lists the packages a first boot needs and
+says which machines need the private runtime.
+
+The site's home page had the same flaw in a worse form. Its terminal
+showed `harb boot hello.machine` -- a verb that does not exist --
+printing lines no machine has ever said. It now shows the two real
+commands and the machine's own words.
+
+Five lessons of the tour boot `stzr` machines too (4, 5, 6, the budget
+lesson, the flagship). Reworking a judged lesson means running every
+BREAK IT again, so it is queued as its own seat, not folded in here.
+
+## The law this pays for
+
+**What a page SHOWS is a claim about the system, so it is judged like
+one**: a code line the reader has to scroll sideways to read, and a
+machine the court would refuse, fail the court in the commit that wrote
+them. **And an instruction is judged by walking it with only what a
+stranger has** -- a fresh clone, no private repository, no kernel
+already fetched. Every step the author's own machine had taken for them
+long ago was a step the README did not say.
+
+---
+
 # EGR-3 — everywhere has one spelling, and the check asks what a list covers
 
 The author delegated what waited on him (2026-09-27: "do what waits on me
@@ -166,8 +288,9 @@ the pin names another file, even with every case passing.
 Its first verdict, before a fixture had been touched:
 
 ```
-FAIL pin -- declarative/machine/fixtures.json hashes to 4c6aef6163840094,
-  and declarative/machine/PINNING.md pins 4ed7adee6a389edb
+FAIL pin -- declarative/machine/fixtures.json hashes to
+  4c6aef6163840094, and declarative/machine/PINNING.md pins
+  4ed7adee6a389edb
 ```
 
 The rename of 2026-09-20 (NAME-1) changed fixture A3 -- `stzos project`
@@ -221,11 +344,17 @@ correct. Reading the diff instead (SYS-1) found five things:
 Then the arc, on a real device:
 
 ```
-rebuilt: enrol fleet_temoin ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
-roll:     retired carte_1 -- a key temoin held before, fingerprint FP1, trusted through hash=H
-retired: ... 1 entry verified against a key it no longer holds (retired as carte_1, fingerprint FP1), ...
-stolen: ... entry 2 is not this device's under the key retired as carte_1: it comes after the entry ...
-stolen: ... 1 entry from there on verifies under the retired key all the same: whoever still holds it signed after it was retired
+rebuilt: enrol fleet_temoin ed25519 KEY2 -- KEY for this
+    machine's MEMBER in a fleet
+roll:     retired carte_1 -- a key temoin held before,
+    fingerprint FP1, trusted through hash=H
+retired: ... 1 entry verified against a key it no longer holds
+    (retired as carte_1, fingerprint FP1), ...
+stolen: ... entry 2 is not this device's under the key retired
+    as carte_1: it comes after the entry ...
+stolen: ... 1 entry from there on verifies under the retired
+    key all the same: whoever still holds it signed after it
+    was retired
 ```
 
 Nothing is simulated. The rebuilt card is a fresh disk that made its own
@@ -316,9 +445,9 @@ STZ-OS-RULING-01, and the rename rewrote the record rather than the
 world:
 
 ```
-`harb` — chosen 2026-09-12 by the session on the author's instruction
-to choose, under the estate's registers: `stz` is the distribution, the
-suffix says which floor.
+`harb` — chosen 2026-09-12 by the session on the author's
+instruction to choose, under the estate's registers: `stz` is
+the distribution, the suffix says which floor.
 ```
 
 The sentence reasons about a name with an `stz` prefix and a suffix
@@ -355,7 +484,8 @@ matching ONE separator after `GitHub` walked straight past both -- and
 both are in the tour's header:
 
 ```
-  BEFORE YOU START -- Run everything from the repository root, ...
+  BEFORE YOU START -- Run everything from the repository root,
+      ...
   RUN  (from ...)
 ```
 
@@ -562,7 +692,9 @@ the cause, in a place the cause is not visible from.
 
 ```sh
 if ! TILL_MAC=$("$S" fleet "$FLEET" hardware caisse); then
-  echo "the fleet is refused, so there are no devices to be:"; echo "$TILL_MAC"; exit 1
+  echo "the fleet is refused, so there are no devices to be:"
+  echo "$TILL_MAC"
+  exit 1
 fi
 ```
 
@@ -604,8 +736,10 @@ three lessons found this way.
 `src/journal.zig`:
 
 ```zig
-const tampered = try std.mem.replaceOwned(u8, alloc, text, "seq=2 prev=", "seq=2 prev=");
-const with_lie = try std.mem.replaceOwned(u8, alloc, tampered, "verdict=matched hash", "verdict=perfect hash");
+const tampered = try std.mem.replaceOwned(u8, alloc, text,
+    "seq=2 prev=", "seq=2 prev=");
+const with_lie = try std.mem.replaceOwned(u8, alloc, tampered,
+    "verdict=matched hash", "verdict=perfect hash");
 const broken = verify(with_lie, pair.public_key);
 try std.testing.expect(broken.broken_at != null);
 try std.testing.expect(broken.verified < 3);
@@ -634,8 +768,8 @@ Tampering line by line, only the line beginning `seq=2 `:
 
 ```
 broken_at == 2     the position it is named for
-verified == 1      entry one still verifies: the break is where the lie
-                   is, and not before it
+verified == 1      entry one still verifies: the break
+                   is where the lie is, and not before it
 reason contains    "do not hash to the hash it carries"
 ```
 
@@ -720,7 +854,8 @@ which is the doctrine holding up. A destination whose prefix is 0 is a
 default route, so:
 
 ```
-boot: egress lan -- 0.0.0.0/0: a DEFAULT route, so this machine knows a way anywhere
+boot: egress lan -- 0.0.0.0/0: a DEFAULT route, so this
+    machine knows a way anywhere
 ```
 
 Nothing else moved: no committed machine declares a prefix-0 destination,
@@ -782,7 +917,8 @@ transcript -- boot the machine, and watch the court refuse it. It does,
 exactly as promised:
 
 ```
-JUDGED: FAIL -- the transcript differs from machines/qemu_hello.expected:
+JUDGED: FAIL -- the transcript differs from
+    machines/qemu_hello.expected:
 -boot: console /dev/ttyS9
 +boot: console /dev/ttyS0
 ```
@@ -794,7 +930,7 @@ Then the script printed `exit 0` and returned 0 to the shell.
 
 ```sh
 {
-  ... the whole run: derive, stage, kernel, image, boot, judge ...
+  # the whole run: derive, stage, kernel, image, boot, judge
   echo "exit 0"
 } 2>&1 | tee "$LOG"
 ```
@@ -895,12 +1031,13 @@ it exits 0. A judge that cannot convict is not judging.
 Six fields, and the fourth is the whole point.
 
 ```
-  THE QUESTION       what you do not yet know
-  RUN                one command, copy-pasteable
-  LOOK FOR           the exact lines that answer it
-  BREAK IT           a change you make so the machine convicts YOU
-  THE LAW IT PAID FOR   the doctrine sentence, verbatim
-  THE FULL STORY     where the account lives
+  THE QUESTION        what you do not yet know
+  RUN                 one command, copy-pasteable
+  LOOK FOR            the exact lines that answer it
+  BREAK IT            a change you make so the machine
+                      convicts YOU
+  THE LAW IT PAID FOR the doctrine sentence, verbatim
+  THE FULL STORY      where the account lives
 ```
 
 **Break it** is why this is a tutorial and not a tour. A guarantee you
@@ -947,15 +1084,24 @@ refused.
 ```zig
 pub const Break = struct {
     pub const How = enum { append, replace, create };
-    proves: []const u8,          // one sentence: what you are about to prove
-    file: []const u8 = "",       // the file, spelled as you would type it
-    where: []const u8 = "",      // where in it, in plain words
-    how: How = .append,          // add a line, replace one, or make a file
-    paste: []const []const u8 = &.{},   // the exact text, line by line
-    then: []const u8 = "",       // the command
-    expect: []const []const u8 = &.{},  // the refusal, in the machine's words
-    undo: []const u8 = "",       // how to put everything back
-    note: []const u8 = "",       // for a lesson with nothing to edit
+    // one sentence: what you are about to prove
+    proves: []const u8,
+    // the file, spelled as you would type it
+    file: []const u8 = "",
+    // where in it, in plain words
+    where: []const u8 = "",
+    // add a line, replace one, or make a file
+    how: How = .append,
+    // the exact text, line by line
+    paste: []const []const u8 = &.{},
+    // the command
+    then: []const u8 = "",
+    // the refusal, in the machine's words
+    expect: []const []const u8 = &.{},
+    // how to put everything back
+    undo: []const u8 = "",
+    // for a lesson with nothing to edit
+    note: []const u8 = "",
 };
 ```
 
@@ -1027,9 +1173,11 @@ count it predicted (18, up from 16) was exact. But the lesson had
 described ONE judge and the script runs TWO, and the second one FAILS:
 
 ```
-boot: judge -- the boot matches its expectation (/etc/expected, 18 lines)
+boot: judge -- the boot matches its expectation
+    (/etc/expected, 18 lines)
 ...
-JUDGED: FAIL -- the transcript differs from machines/qemu_hello.expected:
+JUDGED: FAIL -- the transcript differs from
+    machines/qemu_hello.expected:
 ```
 
 Both are correct and they say opposite-sounding things, which is the
@@ -1075,12 +1223,19 @@ an assumption about what the reader already knows.
 ## Eighteen lessons, six acts
 
 ```
-I.   THE DECLARATION      a machine is a text file, judged before anything runs
-II.  THE BOOT             it narrates, it judges ITSELF, and a pin judges that
-III. WHAT A WORLD MAY DO  the envelope, the floor, whose storage, the budgets, the reach
-IV.  WHO A DEVICE IS      the key, the signed record, attribution by a stranger
-V.   THE NETWORK          the box as its link's server of names; facts about a SET
-VI.  THE FLAGSHIP         four card boots, a held trial, and the four promises
+I.   THE DECLARATION
+     a machine is a text file, judged before anything runs
+II.  THE BOOT
+     it narrates, it judges ITSELF, and a pin judges that
+III. WHAT A WORLD MAY DO
+     the envelope, the floor, whose storage, the budgets,
+     the reach
+IV.  WHO A DEVICE IS
+     the key, the signed record, attribution by a stranger
+V.   THE NETWORK
+     the box as its link's server of names; facts about a SET
+VI.  THE FLAGSHIP
+     four card boots, a held trial, and the four promises
 ```
 
 The acts are ordered so that a reader who stops half way has finished a
@@ -1154,9 +1309,11 @@ this floor will never enforce `threads` at the kernel.
 ## Judged
 
 ```
-boot: budget -- modest 64 MiB and 50% of a core, swarm 6 tasks, greedy 32 MiB; the kernel holds the ceiling, not the world
+boot: budget -- modest 64 MiB and 50% of a core, swarm 6 tasks,
+    greedy 32 MiB; the kernel holds the ceiling, not the world
 boot: start swarm -- pid N -- /harb swarm 12
-swarm: 5 tasks made, and the kernel refused the next (AGAIN): this world is as many as the machine agreed to hold
+swarm: 5 tasks made, and the kernel refused the next (AGAIN):
+    this world is as many as the machine agreed to hold
 boot: swarm (pid N) exited 0
 ```
 
@@ -1252,12 +1409,16 @@ worlds are exact mirrors:
 
 ```
 boot: start ledger ...
-confined: /data -- mounted here: this world can see the machine's storage
-confined: /var/log -- an empty directory and nothing mounted on it: ...
+confined: /data -- mounted here:
+    this world can see the machine's storage
+confined: /var/log -- an empty directory and nothing mounted
+    on it: ...
 
 boot: start caisse ...
-confined: /data -- an empty directory and nothing mounted on it: ...
-confined: /var/log -- mounted here: this world can see the machine's storage
+confined: /data -- an empty directory and nothing mounted
+    on it: ...
+confined: /var/log -- mounted here:
+    this world can see the machine's storage
 ```
 
 Same machine, same binary, same capability granted to both. The only
@@ -1321,9 +1482,11 @@ and reused; two machines that want the same kernel share it; and the
 boot log says which it got:
 
 ```
-kernel cache: MISS x86_64-f4e24d5fe4b5 -- first build of this configuration
+kernel cache: MISS x86_64-f4e24d5fe4b5
+    -- first build of this configuration
 real    1m49.423s
-kernel cache: HIT x86_64-f4e24d5fe4b5 -- this configuration is already built
+kernel cache: HIT x86_64-f4e24d5fe4b5
+    -- this configuration is already built
 real    0m6.611s
 ```
 
@@ -1446,8 +1609,12 @@ per machine rather than per world, because it is a fact about the floor
 and not about any declaration:
 
 ```
-boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
-confined: the floor -- refused by the kernel (EPERM): this world cannot change the machine it runs on
+boot: floor -- the machine is not a world's to change:
+    none may mount or unmount, set the clock, load a module,
+    rename the host, make or enter a namespace,
+    trace another process, or reboot the box
+confined: the floor -- refused by the kernel (EPERM):
+    this world cannot change the machine it runs on
 ```
 
 The witness TRIES it rather than reporting it, and the call it tries is
@@ -1580,10 +1747,14 @@ regardless. Both checked before a line was written.
 four independent answers, each from one word above it:
 
 ```
-confined: eth0 -- present: this world shares the machine's network
-confined: processes -- this world is pid 1 and no other process exists here: a table of its own
-confined: /data -- mounted here: this world can see the machine's storage
-confined: fork -- refused by the kernel (EPERM): this world cannot start another process
+confined: eth0 -- present:
+    this world shares the machine's network
+confined: processes -- this world is pid 1 and no other process
+    exists here: a table of its own
+confined: /data -- mounted here:
+    this world can see the machine's storage
+confined: fork -- refused by the kernel (EPERM):
+    this world cannot start another process
 ```
 
 `exited 0` came back through the stand-in unchanged.
@@ -1663,8 +1834,11 @@ not exist as a syscall on aarch64 at all -- and says which of the two
 things it found:
 
 ```
-confined: /data -- mounted here: this world can see the machine's storage
-confined: /data -- an empty directory and nothing mounted on it: this world has a mount namespace of its own and the machine's storage is not in it
+confined: /data -- mounted here:
+    this world can see the machine's storage
+confined: /data -- an empty directory and nothing mounted on it:
+    this world has a mount namespace of its own and the
+    machine's storage is not in it
 ```
 
 A witness that asks a question next to the one that matters will report
@@ -1733,11 +1907,16 @@ is not.
 only difference between them is what their own NEEDS say:
 
 ```
-boot: confine -- sealed has no network of its own, still has no way to start another process
-confined: eth0 -- no such interface from here: this world has a network namespace of its own and there is nothing in it
-confined: fork -- permitted: this world started another process, and this line is the child speaking
-confined: eth0 -- present: this world shares the machine's network
-confined: fork -- refused by the kernel (EPERM): this world cannot start another process
+boot: confine -- sealed has no network of its own,
+    still has no way to start another process
+confined: eth0 -- no such interface from here: this world has
+    a network namespace of its own and there is nothing in it
+confined: fork -- permitted: this world started another process,
+    and this line is the child speaking
+confined: eth0 -- present:
+    this world shares the machine's network
+confined: fork -- refused by the kernel (EPERM):
+    this world cannot start another process
 ```
 
 `harb confined` asks a sharper question than `harb reach`: not whether
@@ -1796,7 +1975,8 @@ the till that will claim it and says nothing about its own hardware.
 The only thing connecting the two was this, in `experiment/os6_names.sh`:
 
 ```
-TILL_MAC=52:54:00:12:34:61        # the `caisse` peer, declared in the box
+# the `caisse` peer, declared in the box
+TILL_MAC=52:54:00:12:34:61
 ```
 
 A comment. In a shell script. In a repository whose entire argument is
@@ -1829,7 +2009,8 @@ none of which any single file can fail:
 **22/22**, from 16/16. And the roll now says the join out loud:
 
 ```
-caisse -- caisse_makeen (caisse_makeen.machine, asks) -- 52:54:00:12:34:61, promised 192.168.10.40 as caisse
+caisse -- caisse_makeen (caisse_makeen.machine, asks)
+    -- 52:54:00:12:34:61, promised 192.168.10.40 as caisse
 ```
 
 A `PEER` no member claims is deliberately NOT refused. The kitchen
@@ -1917,10 +2098,14 @@ tests** on attribution. And the whole arc on a real device
 decide it:
 
 ```
-verify:     temoin: 1 entry verified against the enrolled key (fingerprint FP1), and no secret took part
-tampered:   temoin: entry 1 is not this device's: the entry's own bytes do not hash to the hash it carries
-foreign:    temoin: entry 1 is not this device's: this device's key did not sign this entry
-unenrolled: temoin has no KEY in this fleet: nobody can speak for its records
+verify:     temoin: 1 entry verified against the enrolled key
+    (fingerprint FP1), and no secret took part
+tampered:   temoin: entry 1 is not this device's:
+    the entry's own bytes do not hash to the hash it carries
+foreign:    temoin: entry 1 is not this device's:
+    this device's key did not sign this entry
+unenrolled: temoin has no KEY in this fleet:
+    nobody can speak for its records
 ```
 
 The device makes a NEW key on every run of that script and the pin still
@@ -2012,18 +2197,21 @@ the wire is ready exactly when the server says it is.
 no printer. It is the till:
 
 ```
-till: boot: network salle -- eth0 up 192.168.10.40/24 (dhcp), dns [192.168.10.1], names on makeen (/etc/resolv.conf)
+till: boot: network salle -- eth0 up 192.168.10.40/24 (dhcp),
+    dns [192.168.10.1], names on makeen (/etc/resolv.conf)
 till: ask imprimante.makeen -- 192.168.10.50 (from 192.168.10.1)
 till: ask imprimante -- 192.168.10.50 (from 192.168.10.1)
 till: ask makeen -- 192.168.10.1 (from 192.168.10.1)
-till: ask fantome.makeen -- no such name on this network (from 192.168.10.1)
+till: ask fantome.makeen -- no such name on this network
+    (from 192.168.10.1)
 ```
 
 And the seat's own negative, in a third round: the SAME image, with a
 hardware address nobody declared.
 
 ```
-stranger: boot: network salle -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
+stranger: boot: network salle -- eth0 dhcp:
+    no lease after 3 tries (no server answered on this network)
 ```
 
 That line was not written for this seat. It is what the DHCP client has
@@ -2044,7 +2232,9 @@ types one. A box that stopped the moment nobody was asking would be a
 box that works until it is needed. PID 1 now says so and waits:
 
 ```
-box: boot: every service has ended -- and this machine is still makeen: a server stops when the machine stops, not when the asking does
+box: boot: every service has ended -- and this machine is
+    still makeen: a server stops when the machine stops,
+    not when the asking does
 ```
 
 ## Also paid for here
@@ -2097,7 +2287,8 @@ Plain text, one entry per line, because a record a person cannot read is
 a record nobody audits:
 
 ```
-seq=1 prev=- machine=qemu_identity declaration=a48c59fbf8070f67 verdict=matched hash=<64 hex> sig=<128 hex>
+seq=1 prev=- machine=qemu_identity declaration=a48c59fbf8070f67
+    verdict=matched hash=<64 hex> sig=<128 hex>
 ```
 
 `hash` is sha256 of everything before ` hash=`, and `sig` is Ed25519
@@ -2134,20 +2325,27 @@ of one boot proves nothing about a chain (46 lines):
 
 ```
 boot: start record -- pid N -- /harb journal
-journal /data/boot.journal -- no record yet: this is the first boot, and its entry is written after the verdict
-boot: judge -- the boot matches its expectation (/etc/expected, 13 lines)
-boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict matched)
+journal /data/boot.journal -- no record yet: this is the first
+    boot, and its entry is written after the verdict
+boot: judge -- the boot matches its expectation
+    (/etc/expected, 13 lines)
+boot: journal -- /data/boot.journal: the chain begins,
+    entry 1 signed by this device (verdict matched)
 ...
-again: journal /data/boot.journal -- 1 entry, every one chained to the one before it and signed by this device
-again: journal:   seq=1 prev=- machine=qemu_identity declaration=a48c59fbf8070f67 verdict=matched
-again: boot: journal -- /data/boot.journal: 1 entry verified, entry 2 appended and signed (verdict matched)
+again: journal /data/boot.journal -- 1 entry, every one chained
+    to the one before it and signed by this device
+again: journal:   seq=1 prev=- machine=qemu_identity
+    declaration=a48c59fbf8070f67 verdict=matched
+again: boot: journal -- /data/boot.journal: 1 entry verified,
+    entry 2 appended and signed (verdict matched)
 ```
 
 `makeen_box` (121 lines) carries it across four card boots, and the
 entry the UNMET trial wrote is the one worth reading:
 
 ```
-unmet: boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict differed)
+unmet: boot: journal -- /data/boot.journal: the chain begins,
+    entry 1 signed by this device (verdict differed)
 ```
 
 The box wrote down that its boot was not the declared one. That is the
@@ -2197,9 +2395,9 @@ of its findings are law here:
 And the refusal that matters most is the one about WHERE:
 
 ```
-R65: IDENTITY /tmp/device.key is where the key lives, and no declared
-     MOUNT keeps it: a key on a filesystem that dies with the power is
-     a new device every morning
+R65: IDENTITY /tmp/device.key is where the key lives, and no
+     declared MOUNT keeps it: a key on a filesystem that dies
+     with the power is a new device every morning
 ```
 
 R66 refuses the whole clause on the edge profile and says whose it is:
@@ -2222,10 +2420,12 @@ committed, and that boot is where both of the first boot's decisions are
 read back:
 
 ```
-boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint KEY1
+boot: identity -- ed25519, custody a file at /data/device.key
+    -- created on this device, fingerprint KEY1
 ...
 steady: boot: slot B -- committed, steady
-steady: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint KEY1
+steady: boot: identity -- ed25519, custody a file at
+    /data/device.key -- already on this device, fingerprint KEY1
 ```
 
 The held and unmet trials run on PRISTINE copies of the card and each
@@ -2293,7 +2493,8 @@ DEFINE NETWORK lan AS (
   ADDRESS "10.0.2.15/24",
   GATEWAY "10.0.2.2",
   EGRESS ["10.9.0.0/16"]
-) RATIONALE "The programme's own range, reached through the gateway, and nowhere else"
+) RATIONALE "The programme's own range, reached through the
+  gateway, and nowhere else"
 ```
 
 Fixture-first, the court red for four named reasons before the parser
@@ -2329,7 +2530,8 @@ TRUSTED to refrain.
 
 ```
 boot: network lan -- eth0 up 10.0.2.15/24
-boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
+boot: egress lan -- 10.9.0.0/16 and nowhere else:
+    no default route
 boot: start allowed -- pid N -- /harb reach 10.9.0.1
 reach 10.9.0.1 -- a route exists: this machine knows a way there
 boot: start denied -- pid N -- /harb reach 8.8.8.8
@@ -2398,7 +2600,8 @@ finds `harb.watchdog=off`, `harb.expect=`, `--halt-on-verdict` or
 `--hold`. Today they are clean:
 
 ```
-  cmdline.A.txt: console=ttyS1,115200 quiet loglevel=3 harb.slot=A rdinit=/harb -- init /etc/machine
+  cmdline.A.txt: console=ttyS1,115200 quiet loglevel=3
+      harb.slot=A rdinit=/harb -- init /etc/machine
   clean: the card boots the box, not the court
 ```
 
@@ -2431,10 +2634,13 @@ transcript, with no hardware at all. That is how this script was proven
 today:
 
 ```
---- 1. the BOARD's own verdict (what PID 1 said about its own boot)
-    the boot matches its expectation (/etc/expected.emulator, 17 lines)
+--- 1. the BOARD's own verdict
+       (what PID 1 said about its own boot)
+    the boot matches its expectation
+        (/etc/expected.emulator, 17 lines)
 --- 2. the COURT's verdict (the same judge, run from the host)
-    judge makeen_box -- the boot this machine EXPECTS (emulator lens, 17 lines)
+    judge makeen_box -- the boot this machine EXPECTS
+        (emulator lens, 17 lines)
       every expected line was said
 ```
 
@@ -2604,14 +2810,17 @@ and is killed by signal 9, five times, each restart the declared policy
 and each kill the kernel's:
 
 ```
-boot: budget -- modest 64 MiB and 50% of a core, greedy 32 MiB; the kernel holds the ceiling, not the world
+boot: budget -- modest 64 MiB and 50% of a core, greedy 32 MiB;
+    the kernel holds the ceiling, not the world
 boot: start greedy -- pid N -- /stzr /app/greedy.luau
-greedy: this world was granted 32 MiB, and is about to ask for far more
+greedy: this world was granted 32 MiB,
+    and is about to ask for far more
 boot: greedy (pid N) killed by signal 9
 boot: restart greedy (on_failure, 1/5) -- pid N
 ...
 boot: greedy -- restart on_failure, but gave up after 5 restarts
-boot: every service has ended -- init has nothing left to keep alive
+boot: every service has ended
+    -- init has nothing left to keep alive
 ```
 
 35 lines. The world's own file carries a bound of 512 MiB that the
@@ -2726,8 +2935,10 @@ With `HEALTH 2` declared it is caught in seconds, with no kernel and no
 emulator:
 
 ```
-boot: signals -- stale: /tmp/harb-signals.ready has not been refreshed for 2s (window 2s)
-boot: this machine declares no SLOTS and arms no watchdog; on a board a stale world is what resets it
+boot: signals -- stale: /tmp/harb-signals.ready has not been
+    refreshed for 2s (window 2s)
+boot: this machine declares no SLOTS and arms no watchdog;
+    on a board a stale world is what resets it
 ```
 
 The rehearsal's `--turns` went from 8 to 12 for one reason, stated in
@@ -2739,8 +2950,10 @@ The box's worlds refresh every second against a five-second window. The
 card's three boots are unchanged in kind and now carry the rule:
 
 ```
-boot: health -- kds every 5s, poste every 5s; a world that stops refreshing stops the watchdog
-boot: slot B -- committed: every service is ready and has held its health window and the boot matches its expectation
+boot: health -- kds every 5s, poste every 5s;
+    a world that stops refreshing stops the watchdog
+boot: slot B -- committed: every service is ready and has held
+    its health window and the boot matches its expectation
 ```
 
 - `makeen_box`: **84 lines** (from 81), three card boots.
@@ -2777,7 +2990,9 @@ DEFINE SERVICE kds AS (
   RESTART always,
   READY "/run/kds.ready",
   NEEDS [network, filesystem]
-) RATIONALE "The kitchen display world: a daemon that serves the kitchen and says so by creating its READY path; PID 1 keeps it alive for the life of the box"
+) RATIONALE "The kitchen display world: a daemon that serves
+  the kitchen and says so by creating its READY path; PID 1
+  keeps it alive for the life of the box"
 ```
 
 The grammar needed nothing new: RESTART and READY were seated at RDY-1.
@@ -2885,20 +3100,32 @@ and, the moment every service is ready, judges the ledger against the
 expectation in its own words:
 
 ```
-boot: judge -- the boot matches its expectation (/etc/expected.emulator, 16 lines)
-boot: slot B -- committed: every service is ready and the boot matches its expectation; config.txt now boots B, A is the fallback
+boot: judge -- the boot matches its expectation
+    (/etc/expected.emulator, 16 lines)
+boot: slot B -- committed: every service is ready and the boot
+    matches its expectation; config.txt now boots B,
+    A is the fallback
 ```
 
 The rule for a trial changed from "ready" to "ready AND matches". A
 boot that differs names the lines and holds itself:
 
 ```
-boot: judge -- the boot differs from its expectation (/etc/expected): 2 line(s) expected and not said, 2 said and not expected
-boot: judge -- expected, not said: network lan -- eth0 up 192.168.10.1/24
-boot: judge -- expected, not said: watchdog armed (/dev/watchdog)
-boot: judge -- said, not expected: network lan -- eth0: no such interface (NODEV)
-boot: judge -- said, not expected: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
-boot: slot B -- held: every service is ready but the boot is not the one expected; not committed, the watchdog is no longer fed -- the next boot is A
+boot: judge -- the boot differs from its expectation
+    (/etc/expected): 2 line(s) expected and not said,
+    2 said and not expected
+boot: judge -- expected, not said:
+    network lan -- eth0 up 192.168.10.1/24
+boot: judge -- expected, not said:
+    watchdog armed (/dev/watchdog)
+boot: judge -- said, not expected:
+    network lan -- eth0: no such interface (NODEV)
+boot: judge -- said, not expected:
+    watchdog -- off by the boot line (the emulator resets on
+    arming); a trial cannot roll back by hardware here
+boot: slot B -- held: every service is ready but the boot is
+    not the one expected; not committed, the watchdog is no
+    longer fed -- the next boot is A
 ```
 
 No expectation is no verdict, and nothing to judge by is nothing to
@@ -2919,8 +3146,11 @@ printed at build time:
 --- the emulator's lacks (expected vs expected.emulator):
   the board:  boot: network lan -- eth0 up 192.168.10.1/24
   the board:  boot: watchdog armed (/dev/watchdog)
-  the emulator:  boot: network lan -- eth0: no such interface (NODEV)
-  the emulator:  boot: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
+  the emulator:  boot: network lan -- eth0: no such interface
+      (NODEV)
+  the emulator:  boot: watchdog -- off by the boot line (the
+      emulator resets on arming); a trial cannot roll back by
+      hardware here
 ```
 
 The sentence this repository has repeated since OS-4 — "the board is

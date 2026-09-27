@@ -54,18 +54,61 @@ silently (ZinOS, Zos, MakeenOS and Device all exist in the estate —
 ## Commands
 
 ```
-zig build -j2 && zig build test -j2 && zig build court -j2 && zig build cross -j2
+zig build -j2
+zig build test -j2
+zig build court -j2
+zig build cross -j2
 zig-out\bin\harb.exe check|plan machines\<name>.machine
-bash experiment/judge_guarantees.sh [name]   # the four standing promises, judged twice and pinned (GRT-1)
-wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/wsl_boot.sh    # then read zig-out/wsl/*.txt
-wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello   # image, kernel, QEMU boot, judge -> zig-out/wsl/image_qemu_hello.txt
-wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os6_names.sh              # TWO machines on one wire: a box that serves names, a till that asks -> zig-out/wsl/names.txt
-wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/os7_fleet.sh              # a device publishes its key, a fleet enrols it, its record is verified by something that never held the secret -> zig-out/wsl/fleet.txt
-zig-out\bin\harb.exe fleet machines\salle_makeen.fleet     # the roll: who is in the set, and who nobody can speak for yet
-zig-out\bin\harb.exe learn                                 # the guided tour: 18 lessons, each with a command, the lines to look for, and a way to BREAK it
-zig-out\bin\harb.exe learn 7                               # one lesson in full; `--all` for every one, `--words` for the vocabulary, `--run` where the command is this binary's
-cd D:\GitHub\stz; zig build -Dtarget=x86_64-linux-musl -Doptimize=ReleaseSmall -j2 --prefix D:\GitHub\harobanda\zig-out\stz-x86_64-linux-musl   # stzr for the image
+
+# the four standing promises, judged twice and pinned (GRT-1)
+bash experiment/judge_guarantees.sh [name]
+
+# then read zig-out/wsl/*.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/wsl_boot.sh
+
+# image, kernel, QEMU boot, judge
+#   -> zig-out/wsl/image_qemu_hello.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_hello
+
+# TWO machines on one wire: a box that serves names, a till
+# that asks -> zig-out/wsl/names.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os6_names.sh
+
+# a device publishes its key, a fleet enrols it, its record is
+# verified by something that never held the secret
+#   -> zig-out/wsl/fleet.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os7_fleet.sh
+
+# the roll: who is in the set, and who nobody can speak for yet
+zig-out\bin\harb.exe fleet machines\salle_makeen.fleet
+
+# the guided tour: 18 lessons, each with a command, the lines
+# to look for, and a way to BREAK it
+zig-out\bin\harb.exe learn
+
+# one lesson in full; `--all` for every one, `--words` for the
+# vocabulary, `--run` where the command is this binary's
+zig-out\bin\harb.exe learn 7
+
+# the pages: no code line wider than 64, and every machine a
+# page shows in full is one the court accepts (DOC-1)
+zig-out\bin\harb.exe docs --check
+
+# stzr for the image
+cd D:\GitHub\stz
+zig build -j2 -Dtarget=x86_64-linux-musl `
+  -Doptimize=ReleaseSmall `
+  --prefix D:\GitHub\harobanda\zig-out\stz-x86_64-linux-musl
 ```
+
+A backtick at the end of a line is PowerShell's continuation: each
+block above pastes as one command. Code on every page here is
+wrapped at 64 characters, because that is what GitHub shows of a
+code line before the block scrolls sideways (DOC-1).
 
 `zig build cross` is not optional: `src/init.zig` is comptime-gated on
 Linux and Zig analyses only the taken side, so a Windows build proves
@@ -158,6 +201,20 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   emphasis in the prose. A BREAK IT's `expect` is exempt by
   construction: it is what the reader sees after changing the machine,
   so it is verified by RUNNING it and nothing else can.
+- **What a page SHOWS is a claim about the system, so it is judged like
+  one** (DOC-1): `harb docs --check`, in `zig build court`, fails on any
+  fenced code line in a Markdown file wider than 64 characters (what
+  GitHub shows before the block scrolls sideways, less a margin) and on
+  any machine a page shows IN FULL that the court refuses -- the README's
+  and the site's headline examples both were. Wrap a transcript line
+  with four more spaces on the continuation; put a command's comment on
+  the line above; continue a RATIONALE inside its quotes. **An
+  instruction is judged by walking it with only what a stranger has**:
+  a fresh clone, no private repository, no kernel already fetched. The
+  README's boot step needed a cross build it did not say, a kernel
+  nobody had fetched, a fetch that took the NEWEST kernel rather than
+  the pinned one, and a runtime (stzr) from a private repository -- so a
+  stranger's first boot is `qemu_egress`, which runs only `harb`.
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.
@@ -501,7 +558,10 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   between two links. A bounded window for the TRIAL itself. The Commons
   as the first declared server world. Haro's runtime as the image's
   second binary. `makeen_box` gets its own `DOMAIN` at OS-5, when there
-  is a NIC to serve.
+  is a NIC to serve. The tour's boot lessons (4, 5, 6, the budget
+  lesson, the flagship) boot machines that run `stzr`, which a stranger
+  cannot build while stz is private (DOC-1): move them to `harb`-only
+  machines where the lesson survives the move, or say so before RUN.
 - **Waiting on the author.** Delegated 2026-09-27 ("do what waits on me
   on my behalf") and ruled in `doc/PROVENANCE.md` as STZ-OS-RULING-03..08:
   retirement's three choices, the MIRROR (a private release, restored
@@ -521,7 +581,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

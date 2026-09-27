@@ -47,7 +47,7 @@
 <section class="wrap block">
     <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
       <p class="lead">The strategic promise is deliberately blunt: one small command — <code>harb</code> — does everything, and it is a single file you drop onto any laptop. No SDK, no build environment to assemble, no dependency to resolve. If you can copy one file, you can develop, boot and ship a machine.</p>
-      <p>You write the <code>.machine</code> file in any editor, on Windows, macOS or Linux. <code>harb check</code> and <code>harb plan</code> need nothing else. <code>harb boot</code> runs the whole machine in an emulator on that same laptop — no board required to see it work. When it is right, the same command writes the image to the real device.</p>
+      <p>You write the <code>.machine</code> file in any editor. <code>harb check</code> and <code>harb plan</code> need nothing else. Booting runs the whole machine in QEMU — on Linux, or on Windows through WSL — on that same laptop, with no board required to see it work. When it is right, the same build produces the image for the real device; writing it to a card is a command you run yourself, and the tooling prints it rather than running it, because a wrong letter there can erase a disk.</p>
     </div>
     <p class="eyebrow" style="margin-bottom:14px;">The same file, projected to four kinds of device</p>
     <div class="four" style="margin-bottom:clamp(24px,3vw,32px)">

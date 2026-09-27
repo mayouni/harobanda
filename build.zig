@@ -45,7 +45,7 @@ pub fn build(b: *std.Build) void {
     court_cmd.addArg("court");
     court_cmd.addArg("declarative/machine/fixtures.json");
     court_cmd.setCwd(b.path("."));
-    const court_step = b.step("court", "Judge the machine grammar and the fleet grammar by their pinned fixtures");
+    const court_step = b.step("court", "Judge the machine grammar and the fleet grammar by their pinned fixtures, the guided tour, and the pages");
     court_step.dependOn(&court_cmd.step);
 
     // the fleet court: the checks no single machine can be wrong about
@@ -64,6 +64,15 @@ pub fn build(b: *std.Build) void {
     learn_cmd.addArg("--check");
     learn_cmd.setCwd(b.path("."));
     court_step.dependOn(&learn_cmd.step);
+
+    // and so are the pages: a code line the reader must scroll sideways to
+    // read, or a machine shown in full that the court would refuse, turns
+    // the court red in the commit that wrote it (DOC-1)
+    const docs_cmd = b.addRunArtifact(exe);
+    docs_cmd.addArg("docs");
+    docs_cmd.addArg("--check");
+    docs_cmd.setCwd(b.path("."));
+    court_step.dependOn(&docs_cmd.step);
 
     // the machine targets: static, musl, one flag each
     const cross = b.step("cross", "Build harb for the hosted-profile machine targets (static musl)");

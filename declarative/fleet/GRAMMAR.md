@@ -84,8 +84,13 @@ the declaration through `harb fleet <file> hardware <member>` instead
 of carrying a constant.
 
 ```
-caisse -- caisse_makeen (caisse_makeen.machine, asks) -- 52:54:00:12:34:61, promised 192.168.10.40 as caisse
+caisse -- caisse_makeen (caisse_makeen.machine, asks)
+    -- 52:54:00:12:34:61, promised 192.168.10.40 as caisse
 ```
+
+(An indented line continues the one above it: the roll prints this
+as one line. Every transcript quoted in these pages is wrapped the
+same way, so no code block is wider than GitHub shows.)
 
 A `PEER` that no member claims is NOT refused: the kitchen printer is a
 declared peer of the box and will never be a Harobanda machine. The fleet
@@ -130,8 +135,11 @@ device could verify it — attribution nobody else can test, which is a
 claim and not evidence.
 
 ```
-harb fleet <file.fleet>                              judge the set, print the roll
-harb fleet <file.fleet> verify <member> <record>     attribute a signed record
+# judge the set, print the roll
+harb fleet <file.fleet>
+
+# attribute a signed record
+harb fleet <file.fleet> verify <member> <record>
 ```
 
 `verify` uses **only** the member's public key. No secret takes part, so
@@ -173,7 +181,8 @@ its head.
 chain has verified:
 
 ```
-fleet atelier -- temoin: its head is entry 1, hash=... -- the entry a RETIREMENT of this key would be trusted THROUGH
+fleet atelier -- temoin: its head is entry 1, hash=... -- the
+    entry a RETIREMENT of this key would be trusted THROUGH
 ```
 
 A head copied out of a file nobody checked is a head somebody else may
@@ -194,8 +203,12 @@ verifier printed, both records are heard -- and then the SAVED first card
 is booted again. It signs entry 2 with the retired key, and:
 
 ```
-stolen: fleet atelier -- temoin: entry 2 is not this device's under the key retired as carte_1: it comes after the entry the fleet trusts this retired key through, ...
-stolen: fleet atelier -- 1 entry from there on verifies under the retired key all the same: whoever still holds it signed after it was retired
+stolen: fleet atelier -- temoin: entry 2 is not this device's
+    under the key retired as carte_1: it comes after the entry
+    the fleet trusts this retired key through, ...
+stolen: fleet atelier -- 1 entry from there on verifies under
+    the retired key all the same: whoever still holds it
+    signed after it was retired
 ```
 
 ## Named seams (stated, not hidden)
