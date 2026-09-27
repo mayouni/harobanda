@@ -161,6 +161,12 @@ repositories this session does not work in. 08 draws the alphabet with
 A in it and hands adaptations to fifteen other works, so it cannot be
 ratified apart from 06. Both wait on that one word.
 
+*Amended 2026-09-27, later: the author ruled A ("go with A"). The
+sentence above overstated what one word frees. 06 also carries the N
+proposal seam and the zin-register question, and ratifying it gives the
+go for the ZQL -> Z rename in three repositories; 08 follows 06. Both
+remain drafts, and ratifying 06 is the author's.*
+
 **Not done on anyone's word.** The board's kit (`STZ-OS-HARDWARE-01`) is
 a purchase, and physical. Publishing the repository, private to public,
 was held by the author on 2026-09-20; it is PREPARED -- the licence is
