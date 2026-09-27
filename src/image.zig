@@ -197,6 +197,12 @@ fn staged(arena: std.mem.Allocator, root: []const u8, path: []const u8) !?[]cons
     return full;
 }
 
+/// The refusal of a machine whose program is not staged -- worded ONCE,
+/// because the guided tour quotes it to every reader who has not got the
+/// program (a Luau world, when the runtime is private): service, program,
+/// staging root (LRN-3).
+pub const unstaged_fmt = "image: refused -- service {s}: program {s} is not staged under {s}\n";
+
 pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Writer) !u8 {
     const m = p.machine;
     if (m.profile != .hosted) {
@@ -235,6 +241,21 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         try writeOut(opts.out_dir, "image.env", env.items);
     }
 
+    // The expectation second, for the same reason: what a faithful boot
+    // prints is derived from the plan alone, so it is written before
+    // anything is staged. A machine whose programs are not here -- a Luau
+    // world when the runtime is private -- is refused an image below, but
+    // what its boot WOULD print is still the declaration's to say, and
+    // judge_guarantees.sh reads it. Until LRN-3 it was written after the
+    // staging checks, so the refusal took the expectation with it, and the
+    // judge's advice ("run os2_image.sh first") led back to the refusal.
+    // Where it rides in the image is unchanged: it is appended to the
+    // file list below, in the same place, so no image and no pin moves.
+    const board = try expect.derive(arena, p, .{});
+    try writeOut(opts.out_dir, "expected", board);
+    const emu: ?[]const u8 = if (t.qemu_lens) |lens| try expect.derive(arena, p, lens) else null;
+    if (emu) |e| try writeOut(opts.out_dir, "expected.emulator", e);
+
     var dirs: std.ArrayList([]const u8) = .{};
     var files: std.ArrayList(Entry) = .{};
     for ([_][]const u8{ "/dev", "/proc", "/sys", "/etc", "/tmp" }) |d| try addDir(arena, &dirs, d);
@@ -261,7 +282,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             return 2;
         }
         const src = (try staged(arena, opts.root, prog)) orelse {
-            try out.print("image: refused -- service {s}: program {s} is not staged under {s}\n", .{ svc.name, prog, opts.root });
+            try out.print(unstaged_fmt, .{ svc.name, prog, opts.root });
             return 2;
         };
         try appendFile(arena, &files, &dirs, prog, src);
@@ -303,15 +324,11 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     // line -- selected by harb.expect=emulator on the emulator's boot line
     // and never on the card's. The diff of the two texts IS the list of
     // the emulator's lacks, and os2_image.sh prints it at build time.
-    {
-        const board = try expect.derive(arena, p, .{});
-        try writeOut(opts.out_dir, "expected", board);
-        try files.append(arena, .{ .path = "/etc/expected", .source = try std.fs.path.join(arena, &.{ opts.out_dir, "expected" }) });
-        if (t.qemu_lens) |lens| {
-            const emu = try expect.derive(arena, p, lens);
-            try writeOut(opts.out_dir, "expected.emulator", emu);
-            try files.append(arena, .{ .path = "/etc/expected.emulator", .source = try std.fs.path.join(arena, &.{ opts.out_dir, "expected.emulator" }) });
-        }
+    // (both texts were written above, before staging; here they join the
+    // image, in the order they always did)
+    try files.append(arena, .{ .path = "/etc/expected", .source = try std.fs.path.join(arena, &.{ opts.out_dir, "expected" }) });
+    if (emu != null) {
+        try files.append(arena, .{ .path = "/etc/expected.emulator", .source = try std.fs.path.join(arena, &.{ opts.out_dir, "expected.emulator" }) });
     }
 
     // the block devices the declared mounts need -- one in this version

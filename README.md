@@ -333,8 +333,12 @@ capability nothing grants, and read what the court says back.
 The reference machines that run only `harb` need nothing outside this
 repository. Four also run a Luau world under `stzr`, the runtime from the
 stz repository, which is private today: `qemu_hello`, `qemu_budget`,
-`makeen_box` and `makeen_qemu`. Without it they boot, and judge
-themselves different from their pins.
+`makeen_box` and `makeen_qemu`. Without it they do not boot at all:
+`harb image` refuses each one before any kernel is built, naming the first
+service it cannot stage. The guided tour says so before the two lessons
+that boot one of them, and every line those lessons quote is in the
+machine's pinned transcript, `machines/<name>.expected`, for a reader
+without the runtime to follow.
 
 ## What is real today
 

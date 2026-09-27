@@ -32,6 +32,10 @@ const std = @import("std");
 /// from it: the count below is this array's length, not a word somebody
 /// typed (lesson 8)
 const confine = @import("confine.zig");
+/// the machine files, read by `--check` to hold the runtime table to them
+const machine = @import("machine.zig");
+/// the refusal a reader without the runtime sees, worded once (LRN-3)
+const image = @import("image.zig");
 
 /// How to make the machine refuse YOU. A guarantee you have only watched
 /// succeed is a claim; one that has turned you down is evidence.
@@ -96,6 +100,56 @@ pub const repo = "harobanda";
 const WIN = "D:\\GitHub\\" ++ repo;
 /// the one way this tour tells a reader to run something inside WSL
 const RUN_WSL = "wsl -d Ubuntu -- bash /mnt/d/GitHub/" ++ repo ++ "/experiment/";
+
+/// A reference machine whose worlds run under `stzr`, the Luau runtime
+/// from the stz repository -- private today, so a reader with only THIS
+/// repository cannot build it (LRN-3). `harb image` refuses such a
+/// machine before any kernel is built, naming the first service it cannot
+/// stage, so a lesson that boots one says so BEFORE its RUN: derived from
+/// this table, never written per lesson. `--check` holds the table to the
+/// machine files, so a machine that gains or loses a Luau world cannot
+/// leave a lesson promising a boot a stranger will not get.
+pub const Private = struct {
+    /// the file's name under machines/, which os2_image.sh is given
+    machine: []const u8,
+    /// the first world under stzr, which the refusal names
+    service: []const u8,
+};
+pub const needs_runtime = [_]Private{
+    .{ .machine = "qemu_hello", .service = "hello" },
+    .{ .machine = "qemu_budget", .service = "modest" },
+    .{ .machine = "makeen_box", .service = "kds" },
+    .{ .machine = "makeen_qemu", .service = "kds" },
+};
+
+/// The machine a command boots with os2_image.sh, or null.
+fn bootsMachine(cmd: []const u8) ?[]const u8 {
+    const key = "os2_image.sh ";
+    const at = std.mem.indexOf(u8, cmd, key) orelse return null;
+    const rest = cmd[at + key.len ..];
+    const end = std.mem.indexOfAny(u8, rest, " \t;&|") orelse rest.len;
+    if (end == 0) return null;
+    return rest[0..end];
+}
+
+/// The runtime a command's boot needs and this repository does not
+/// carry, or null when this repository is enough.
+fn needsRuntime(cmd: []const u8) ?Private {
+    const name = bootsMachine(cmd) orelse return null;
+    for (needs_runtime) |p| {
+        if (std.mem.eql(u8, p.machine, name)) return p;
+    }
+    return null;
+}
+
+/// The first lesson whose own RUN boots a machine: where the tour says,
+/// once, what a first boot needs.
+fn firstBoot() usize {
+    for (lessons, 1..) |l, i| {
+        if (bootsMachine(l.run) != null) return i;
+    }
+    return 0;
+}
 
 /// The project's words, in plain terms and in the order a reader meets
 /// them. Each says what the thing DOES, never another metaphor: "the judge
@@ -256,36 +310,45 @@ pub const lessons = [_]Lesson{
         .act = "II. THE BOOT",
         .title = "The machine boots, and narrates every step as it takes it",
         .question = "What does a declared machine actually DO when it starts?",
-        .run = RUN_WSL ++ "os2_image.sh qemu_hello",
+        .run = RUN_WSL ++ "os2_image.sh qemu_egress",
         .look = &.{
-            "boot: harb init -- machine qemu_hello (hosted / x86_64 / qemu_pc) -- pid 1",
+            "boot: harb init -- machine qemu_egress (hosted / x86_64 / qemu_pc) -- pid 1",
             "boot: mount proc at /proc -- done",
-            "hello from a declared machine -- stzr on Harobanda, a Luau world under PID 1",
+            "reach 10.9.0.1 -- a route exists: this machine knows a way there",
             "",
-            "A Linux kernel was configured and built, an image packed, QEMU booted, three",
-            "worlds run and the box halted. Every line of it came from the one text file",
-            "you judged in lesson 1. This takes a few minutes the first time and about",
-            "thirty seconds afterwards, because the kernel build is cached.",
+            "A Linux kernel was configured and built, an image packed, QEMU booted, two",
+            "worlds run and the box halted. Every line of it came from one text file,",
+            "machines\\qemu_egress.machine -- open it, it is short. The first line is",
+            "harb itself, started by the kernel as the machine's first program: pid 1.",
+            "The `reach` lines are what its two worlds said, and lesson 11 is about",
+            "them; here, notice only that the machine says what each world did. This",
+            "takes a few minutes the first time and about a minute afterwards, because",
+            "the kernel build is cached.",
         },
         .breakit = .{
-            .proves = "that even the console a machine talks on is declared",
-            .file = "machines\\qemu_hello.machine",
-            .where = "in the DEFINE MACHINE block at the top, on the CONSOLE line",
+            .proves = "that every line the machine narrates comes from the file, and nowhere else",
+            .file = "machines\\qemu_egress.machine",
+            .where = "in the `denied` service, on the line reading  RUN [\"/harb\", \"reach\", \"8.8.8.8\"],",
             .how = .replace,
             .paste = &.{
-                "  CONSOLE \"/dev/ttyS3\"",
+                "  RUN [\"/harb\", \"reach\", \"1.1.1.1\"],",
             },
-            .then = RUN_WSL ++ "os2_image.sh qemu_hello",
+            .then = RUN_WSL ++ "os2_image.sh qemu_egress",
             .expect = &.{
-                "The boot goes SILENT. QEMU shows the kernel's own lines and then nothing,",
-                "because PID 1 is narrating to a serial port that is not the one the",
-                "emulator is showing you. The machine is running fine and talking to a wall.",
+                "The narration follows your edit, and the kernel answers the new question:",
+                "",
+                "  boot: start denied -- pid N -- /harb reach 1.1.1.1",
+                "  reach 1.1.1.1 -- no route: this machine knows no way there",
+                "",
+                "(N is whatever number the kernel gave that world.) Nobody wrote those",
+                "lines: the address went from the file into the machine's plan, and came",
+                "back out of the machine's own mouth.",
             },
-            .undo = "git checkout -- machines/qemu_hello.machine",
+            .undo = "git checkout -- machines/qemu_egress.machine",
         },
         .law = "The transcript is the fixture; it is never stored. Rendered from the run into zig-out/, gitignored.",
-        .story = "experiment/PROTOCOL.md (OS-2)",
-        .needs = &.{ "experiment/os2_image.sh", "experiment/PROTOCOL.md" },
+        .story = "experiment/PROTOCOL.md (OS-2, LRN-3)",
+        .needs = &.{ "machines/qemu_egress.machine", "experiment/os2_image.sh", "experiment/os2_kernel_fetch.sh", "experiment/PROTOCOL.md" },
     },
     .{
         .act = "II. THE BOOT",
@@ -293,7 +356,7 @@ pub const lessons = [_]Lesson{
         .question = "Who decides whether a boot went as declared?",
         .run = "(read the output of lesson 4 and find the line beginning `boot: judge`)",
         .look = &.{
-            "boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)",
+            "boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)",
             "",
             "The image CARRIES the lines a faithful boot prints, worked out from the plan",
             "before the image was even packed. PID 1 writes down what it said and compares",
@@ -302,7 +365,7 @@ pub const lessons = [_]Lesson{
         },
         .breakit = .{
             .proves = "that the expectation moves WITH the declaration, so a match is not a rubber stamp",
-            .file = "machines\\qemu_hello.machine",
+            .file = "machines\\qemu_egress.machine",
             .where = "at the very END of the file",
             .paste = &.{
                 "DEFINE SERVICE extra AS (",
@@ -310,14 +373,26 @@ pub const lessons = [_]Lesson{
                 "  NEEDS [process]",
                 ") RATIONALE \"A world the expectation was written before\"",
             },
-            .then = RUN_WSL ++ "os2_image.sh qemu_hello",
+            .then = RUN_WSL ++ "os2_image.sh qemu_egress",
             .expect = &.{
-                "It still boots. Then it judges itself and says so:",
+                "It still boots -- after a few minutes, because the kernel is built again:",
+                "the log says `kernel cache: MISS`, a configuration it had not built",
+                "before. Then the machine judges itself and says so:",
                 "",
-                "  boot: judge -- the boot matches its expectation (/etc/expected, 18 lines)",
+                "  boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)",
                 "",
-                "Eighteen, where it counted 16 before: your service added lines to BOTH the",
-                "transcript and the expectation.",
+                "Seventeen, where it counted 14 before: your service added three lines to",
+                "BOTH the transcript and the expectation -- its start, its end, and one",
+                "you did not write:",
+                "",
+                "  boot: confine -- extra has no network of its own; what a world did not",
+                "  declare, the kernel does not give it",
+                "",
+                "Your service asked for `process` and not for `network`, so the machine",
+                "built it a world with no network at all, and said so. That is also why",
+                "the kernel was rebuilt: walls around a network are a part of the kernel",
+                "(CONFIG_NET_NS) this machine had never needed switched on. Lesson 7 is",
+                "about those walls.",
                 "",
                 "It MATCHES, because the expectation was derived from the same file you just",
                 "edited -- change the machine and its expectation changes with it. To see a",
@@ -329,7 +404,7 @@ pub const lessons = [_]Lesson{
                 "hardware the board has. Lesson 15's is the cleaner one -- nothing about",
                 "the declaration differs at all, only the wire.",
             },
-            .undo = "git checkout -- machines/qemu_hello.machine",
+            .undo = "git checkout -- machines/qemu_egress.machine",
         },
         .law = "The machine judges its own boot: a trial commits only on a match, and no expectation is no commit.",
         .story = "experiment/PROTOCOL.md (JDG-1)",
@@ -339,9 +414,9 @@ pub const lessons = [_]Lesson{
         .act = "II. THE BOOT",
         .title = "A pin is not a record of what happened -- it is a claim that it was right",
         .question = "The boot judged itself. Who judges the judge?",
-        .run = RUN_WSL ++ "os2_image.sh qemu_hello",
+        .run = RUN_WSL ++ "os2_image.sh qemu_egress",
         .look = &.{
-            "JUDGED: the boot transcript matches machines/qemu_hello.expected line for line (35 lines)",
+            "JUDGED: the boot transcript matches machines/qemu_egress.expected line for line (20 lines)",
             "",
             "The court takes what the boot printed, replaces the few things no two boots",
             "share -- the process numbers, a leased address, a device's key fingerprint --",
@@ -349,26 +424,26 @@ pub const lessons = [_]Lesson{
         },
         .breakit = .{
             .proves = "that the pin is compared line for line, not skimmed",
-            .file = "machines\\qemu_hello.expected",
+            .file = "machines\\qemu_egress.expected",
             .where = "line 2, which today reads  boot: console /dev/ttyS0",
             .how = .replace,
             .paste = &.{
                 "boot: console /dev/ttyS9",
             },
-            .then = RUN_WSL ++ "os2_image.sh qemu_hello",
+            .then = RUN_WSL ++ "os2_image.sh qemu_egress",
             .expect = &.{
-                "JUDGED: FAIL -- the transcript differs from machines/qemu_hello.expected:",
+                "JUDGED: FAIL -- the transcript differs from machines/qemu_egress.expected:",
                 "followed by a unified diff showing exactly your one-character edit.",
                 "",
                 "Now the important part. When a diff appears, READ IT before you replace the",
                 "pin. Copying a transcript over its expectation without reading the diff",
                 "once pinned four broken machines in this repository in a single afternoon.",
             },
-            .undo = "git checkout -- machines/qemu_hello.expected",
+            .undo = "git checkout -- machines/qemu_egress.expected",
         },
         .law = "A PIN is not a record of what happened, it is a claim that what happened was RIGHT.",
         .story = "experiment/PROTOCOL.md (SYS-1)",
-        .needs = &.{ "machines/qemu_hello.expected", "experiment/os2_image.sh" },
+        .needs = &.{ "machines/qemu_egress.expected", "experiment/os2_image.sh" },
     },
 
     // ---- III. what a world may do --------------------------------------
@@ -640,7 +715,9 @@ pub const lessons = [_]Lesson{
         .question = "The box may speak. May it speak to ANYONE?",
         .run = RUN_WSL ++ "os2_image.sh qemu_egress",
         .look = &.{
-            "PID 1 states the perimeter before either witness runs:",
+            "You have booted this machine before: it is lessons 4 to 6's. Now read",
+            "what it says about its network. PID 1 states the perimeter before",
+            "either witness runs:",
             "",
             "  boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route",
             "",
@@ -1326,7 +1403,9 @@ pub const lessons = [_]Lesson{
             "them today and neither keeps them all.",
             "",
             "First against the board's EXPECTATION, which `harb image` derived before",
-            "anything booted:",
+            "anything booted -- and derives even when lesson 17's image is refused for",
+            "want of the runtime, because what a boot must print is the declaration's",
+            "alone. So this lesson needs nothing but this repository:",
             "",
             "    always reachable   KEPT -- boot: network lan -- eth0 up 192.168.10.1/24",
             "    a stable name      KEPT -- (the same line: declared, not leased)",
@@ -1470,6 +1549,48 @@ fn pinPath(b: Break, buf: []u8) ?[]const u8 {
     return out;
 }
 
+/// "lessons 10 and 17": the lessons whose own boot needs the private
+/// runtime, counted from the table rather than typed (LRN-3)
+fn privateLessons(buf: []u8) ![]const u8 {
+    var total: usize = 0;
+    for (lessons) |l| {
+        if (needsRuntime(l.run) != null) total += 1;
+    }
+    var len = (try std.fmt.bufPrint(buf, "{s}", .{if (total == 1) "lesson " else "lessons "})).len;
+    var n: usize = 0;
+    for (lessons, 1..) |l, i| {
+        if (needsRuntime(l.run) == null) continue;
+        const sep = if (n == 0) "" else if (n + 1 == total) " and " else ", ";
+        len += (try std.fmt.bufPrint(buf[len..], "{s}{d}", .{ sep, i })).len;
+        n += 1;
+    }
+    return buf[0..len];
+}
+
+/// Once, before the tour's first boot: what a reader with only this
+/// repository must run before any machine can boot. Derived for whichever
+/// lesson boots first, so reordering the tour cannot lose it (LRN-3).
+fn renderFirstBoot(w: *std.Io.Writer) !void {
+    try w.print("\n  BEFORE THE FIRST BOOT -- once, from " ++ WIN ++ "\n", .{});
+    try w.print("    zig build cross -j2\n", .{});
+    try w.print("    " ++ RUN_WSL ++ "os2_kernel_fetch.sh\n\n", .{});
+    try wrapped(w, "    ", "The first builds harb for the machine itself. The second fetches the kernel source this repository pins, and refuses it unless its fingerprint matches. The boots run inside WSL's Ubuntu, which also needs QEMU and the tools that build a Linux kernel; the README's Try it lists them. A boot that needs more than this repository says so before its RUN.");
+}
+
+/// Derived for every lesson whose RUN boots a machine with a world under
+/// stzr: what a reader with only this repository sees instead, in the
+/// words `harb image` prints (the same constant), and where the lesson
+/// can still be read. Written once here, never per lesson (LRN-3).
+fn renderPrivate(w: *std.Io.Writer, p: Private) !void {
+    var buf: [640]u8 = undefined;
+    try w.print("\n  BEFORE YOU RUN -- this boot needs a program this repository does not carry\n", .{});
+    try wrapped(w, "    ", try std.fmt.bufPrint(&buf, "{s} runs worlds written in Luau under stzr, the runtime from the stz repository, which is private today. Without it, os2_image.sh says that stzr is NOT staged, and harb refuses the image before any kernel is built:", .{p.machine}));
+    var root: [128]u8 = undefined;
+    try w.print("\n      " ++ image.unstaged_fmt ++ "\n", .{ p.service, "/stzr", try std.fmt.bufPrint(&root, "zig-out/image/{s}/root", .{p.machine}) });
+    var which: [64]u8 = undefined;
+    try wrapped(w, "    ", try std.fmt.bufPrint(&buf, "Nothing boots, and that is the right answer: a machine is never built short of a program it declares. Every line this lesson quotes is in machines\\{s}.expected, the transcript of a boot that had the runtime, so read the lesson against that file. Of this tour's boots, only {s} need the runtime.", .{ p.machine, try privateLessons(&which) }));
+}
+
 fn renderBreak(w: *std.Io.Writer, b: Break) !void {
     if (b.proves.len + "  BREAK IT -- to prove ".len <= 76) {
         try w.print("  BREAK IT -- to prove {s}\n", .{b.proves});
@@ -1502,6 +1623,15 @@ fn renderBreak(w: *std.Io.Writer, b: Break) !void {
     }
     if (b.then.len > 0) {
         try w.print("\n    {d}. Run:\n         {s}\n", .{ step, b.then });
+        // derived like the lesson's own note: without the runtime a reader
+        // can still make the edit and watch the DECLARATION change; what
+        // the boot then does is the author's run, quoted below (LRN-3)
+        if (needsRuntime(b.then) != null and std.mem.endsWith(u8, b.file, ".machine")) {
+            try w.print("\n", .{});
+            try wrapped(w, "         ", "This boot needs stzr too, like the lesson's own. Without it, make the edit anyway and run");
+            try w.print("           {s} plan {s}\n", .{ EXE, b.file });
+            try wrapped(w, "         ", "which prints the changed declaration before anything runs. What the boot then does, below, is from a run that had the runtime.");
+        }
         step += 1;
     }
     if (b.expect.len > 0) {
@@ -1559,6 +1689,11 @@ pub fn one(w: *std.Io.Writer, n: usize) !void {
         try wrapped(w, "    ", l.run[1 .. l.run.len - 1]);
         try w.print("\n", .{});
     } else {
+        // both derived, never written per lesson (LRN-3): what the first
+        // boot needs, and what a boot that needs the private runtime does
+        // for a reader who has only this repository
+        if (n == firstBoot()) try renderFirstBoot(w);
+        if (needsRuntime(l.run)) |p| try renderPrivate(w, p);
         try w.print("\n  RUN  (from " ++ WIN ++ ")\n    {s}\n\n", .{l.run});
     }
     try w.print("  LOOK FOR\n", .{});
@@ -1690,6 +1825,60 @@ fn fixtureCounts(alloc: std.mem.Allocator, path: []const u8) ?[2]usize {
     return .{ a.array.items.len, r.array.items.len };
 }
 
+/// The runtime table is a claim about the machine files, so the files are
+/// asked (LRN-3): every machine with a world under /stzr is in the table,
+/// under the first such world's name -- the service `harb image` names
+/// when it refuses -- and nothing is in the table that has none.
+fn checkRuntime(w: *std.Io.Writer, alloc: std.mem.Allocator) !usize {
+    var bad: usize = 0;
+    var seen = [_]bool{false} ** needs_runtime.len;
+    var dir = try std.fs.cwd().openDir("machines", .{ .iterate = true });
+    defer dir.close();
+    var it = dir.iterate();
+    while (try it.next()) |e| {
+        const ext = ".machine";
+        if (e.kind != .file or !std.mem.endsWith(u8, e.name, ext)) continue;
+        const name = e.name[0 .. e.name.len - ext.len];
+        const src = try dir.readFileAlloc(alloc, e.name, 1 << 20);
+        var refusal = machine.Refusal{};
+        // a machine the court refuses is the court's to report, not this
+        const m = machine.declare(alloc, src, &refusal) catch continue;
+        var first: ?[]const u8 = null;
+        for (m.services) |s| {
+            if (s.run.len > 0 and std.mem.eql(u8, s.run[0], "/stzr")) {
+                first = s.name;
+                break;
+            }
+        }
+        var listed: ?usize = null;
+        for (needs_runtime, 0..) |p, k| {
+            if (std.mem.eql(u8, p.machine, name)) listed = k;
+        }
+        if (listed) |k| seen[k] = true;
+        if (first) |svc| {
+            if (listed) |k| {
+                if (!std.mem.eql(u8, needs_runtime[k].service, svc)) {
+                    bad += 1;
+                    try w.print("  the tour says {s} is refused at service {s}, and its first world under stzr is {s}\n", .{ name, needs_runtime[k].service, svc });
+                }
+            } else {
+                bad += 1;
+                try w.print("  machines/{s}.machine runs a world under stzr, and the tour does not know it needs the private runtime\n", .{name});
+            }
+        } else if (listed != null) {
+            bad += 1;
+            try w.print("  the tour says {s} needs the private runtime, and no world of it runs under stzr\n", .{name});
+        }
+    }
+    for (seen, 0..) |s, k| {
+        if (!s) {
+            bad += 1;
+            try w.print("  the tour says {s} needs the private runtime, and there is no machines/{s}.machine\n", .{ needs_runtime[k].machine, needs_runtime[k].machine });
+        }
+    }
+    return bad;
+}
+
 pub fn check(w: *std.Io.Writer) !usize {
     var missing: usize = 0;
     var buf: [256]u8 = undefined;
@@ -1725,6 +1914,22 @@ pub fn check(w: *std.Io.Writer) !usize {
         //
         // Only LOOK FOR is checked. A BREAK IT's `expect` is what the
         // reader sees AFTER changing the machine, so no pin can hold it.
+        //
+        // And a lesson whose boot needs the private runtime tells a reader
+        // without it that every line it quotes is in ITS machine's pin
+        // (LRN-3) -- a narrower claim than "some pin holds it", so it is
+        // held to that one file.
+        const own: ?[]const u8 = if (needsRuntime(l.run)) |p| blk: {
+            const path = try std.fmt.allocPrint(alloc, "machines/{s}.expected", .{p.machine});
+            const text = std.fs.cwd().readFileAlloc(alloc, path, 1 << 22) catch {
+                missing += 1;
+                try w.print("  lesson {d} sends a reader without the runtime to {s}, which is not there\n", .{ i, path });
+                break :blk null;
+            };
+            var flat: std.ArrayList(u8) = .{};
+            try flatten(&flat, alloc, text);
+            break :blk flat.items;
+        } else null;
         var j: usize = 0;
         while (j < l.look.len) : (j += 1) {
             if (!looksSaid(l.look[j])) continue;
@@ -1748,6 +1953,11 @@ pub fn check(w: *std.Io.Writer) !usize {
             if (std.mem.indexOf(u8, hay, q) == null) {
                 missing += 1;
                 try w.print("  lesson {d} quotes a line no pin holds:\n    {s}\n", .{ i, q });
+            } else if (own) |pin| {
+                if (std.mem.indexOf(u8, pin, q) == null) {
+                    missing += 1;
+                    try w.print("  lesson {d} tells a reader without the runtime that its quotes are in its machine's pin, and this one is not:\n    {s}\n", .{ i, q });
+                }
             }
             j = k - 1;
         }
@@ -1773,6 +1983,15 @@ pub fn check(w: *std.Io.Writer) !usize {
             try w.print("  the tour sends readers to {s}, and this repository is called {s}\n", .{ WIN, name });
         }
     }
+
+    // WHAT A STRANGER CAN BOOT (LRN-3): the table the derived notes are
+    // made from, held to the machine files; and the script the first-boot
+    // note tells every reader to run, which no lesson's data names
+    missing += try checkRuntime(w, alloc);
+    std.fs.cwd().access("experiment/os2_kernel_fetch.sh", .{}) catch {
+        missing += 1;
+        try w.print("  the first boot sends readers to experiment/os2_kernel_fetch.sh, which is not there\n", .{});
+    };
 
     // the whole tour as a reader sees it, headers and all
     {
@@ -1928,6 +2147,66 @@ test "a step that boots an edited machine warns about the pin it will fail" {
     // words -- verified by running it, 2026-09-27. This count is a
     // tripwire: it moved, somebody looked, and the reason is here.
     try t.expectEqual(@as(usize, 5), warned);
+}
+
+test "the machine a command boots is read from the command" {
+    const t = std.testing;
+    try t.expectEqualStrings("qemu_egress", bootsMachine(RUN_WSL ++ "os2_image.sh qemu_egress").?);
+    try t.expect(bootsMachine(EXE ++ " check machines\\qemu_hello.machine") == null);
+    try t.expect(bootsMachine(RUN_WSL ++ "judge_guarantees.sh") == null);
+}
+
+test "a stranger's first boot needs only this repository" {
+    const t = std.testing;
+    const first = firstBoot();
+    try t.expect(first > 0);
+    // the first lesson that boots anything boots a machine with no world
+    // under stzr, and so does its BREAK IT: a reader with only this
+    // repository gets there. Until LRN-3 it was qemu_hello, which harb
+    // image refuses without the runtime, so the tour's first boot was the
+    // first thing a stranger could not do.
+    try t.expect(needsRuntime(lessons[first - 1].run) == null);
+    try t.expect(needsRuntime(lessons[first - 1].breakit.then) == null);
+
+    // and the tour says, once and only once, what that first boot needs
+    var aw = std.Io.Writer.Allocating.init(t.allocator);
+    defer aw.deinit();
+    try all(&aw.writer);
+    try t.expectEqual(@as(usize, 1), std.mem.count(u8, aw.written(), "BEFORE THE FIRST BOOT"));
+}
+
+test "the private-runtime note is derived for exactly the boots that need it" {
+    const t = std.testing;
+    var runs: usize = 0;
+    var breaks: usize = 0;
+    for (lessons) |l| {
+        if (needsRuntime(l.run) != null) runs += 1;
+        if (needsRuntime(l.breakit.then) != null) breaks += 1;
+    }
+    // lesson 10 (the budget) and lesson 17 (the flagship) boot machines
+    // with Luau worlds, and lesson 10's BREAK IT boots one again. Lessons
+    // 4 to 6 booted qemu_hello until LRN-3 and boot qemu_egress now, which
+    // runs only harb. A tripwire, like the pin-warning census above.
+    try t.expectEqual(@as(usize, 2), runs);
+    try t.expectEqual(@as(usize, 1), breaks);
+
+    // what the note QUOTES is the refusal harb image prints, from the same
+    // constant, naming the first world under stzr -- the words a stranger
+    // saw when this was walked from a copy with no stz build
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var aw = std.Io.Writer.Allocating.init(arena);
+    for (lessons, 1..) |l, i| {
+        if (needsRuntime(l.run) != null) try one(&aw.writer, i);
+    }
+    var flat: std.ArrayList(u8) = .{};
+    try flatten(&flat, arena, aw.written());
+    const seen = flat.items;
+    try t.expect(std.mem.indexOf(u8, seen, "image: refused -- service modest: program /stzr is not staged under zig-out/image/qemu_budget/root") != null);
+    try t.expect(std.mem.indexOf(u8, seen, "image: refused -- service kds: program /stzr is not staged under zig-out/image/makeen_box/root") != null);
+    try t.expect(std.mem.indexOf(u8, seen, "only lessons 10 and 17 need the runtime") != null);
+    try t.expect(std.mem.indexOf(u8, seen, "plan machines\\qemu_budget.machine") != null);
 }
 
 test "a lesson that can be run names this binary" {

@@ -98,6 +98,12 @@ zig-out\bin\harb.exe learn 7
 # page shows in full is one the court accepts (DOC-1)
 zig-out\bin\harb.exe docs --check
 
+# every boot the tour asks for, from a copy of only what is
+# published -- no stz, no zig-out (LRN-3)
+#   -> zig-out/wsl/stranger.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/stranger_walk.sh
+
 # stzr for the image
 cd D:\GitHub\stz
 zig build -j2 -Dtarget=x86_64-linux-musl `
@@ -229,6 +235,22 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   EGRESS; the journal signs BOOTS, never an agent's actions; the twin and
   the agent's half of the proposal loop are not built). Never write
   "best": say what is specific and checked, and what is not built.
+- **What a reader WITHOUT something sees is observed by taking it away,
+  never reasoned** (LRN-3): "a stranger's `qemu_hello` boots and judges
+  itself different" was reasoned, written into the README, and false --
+  `harb image` refuses a machine whose program is not staged, before any
+  kernel is built. `experiment/stranger_walk.sh` copies only what is
+  published into `$HOME/harb-stranger` (no zig-out, no stz) and walks
+  every boot the tour asks for; it is the judge of any claim about what
+  a stranger can do. A lesson whose boot needs the private runtime says
+  so before its RUN, DERIVED from `needs_runtime`, which `--check` holds
+  to the machine files, quoting `image.unstaged_fmt`; every line it
+  quotes must be in THAT machine's pin. **A text derived from the
+  declaration alone is written before anything that can refuse**
+  (`image.env`, the expectation), or the refusal takes it along and a
+  judge's advice leads back to the refusal. **A BREAK IT is run again
+  whenever it moves**: lesson 4's "the boot goes SILENT" was false on
+  every machine, because the boot line's console comes from the board.
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.
@@ -572,10 +594,14 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   between two links. A bounded window for the TRIAL itself. The Commons
   as the first declared server world. Haro's runtime as the image's
   second binary. `makeen_box` gets its own `DOMAIN` at OS-5, when there
-  is a NIC to serve. The tour's boot lessons (4, 5, 6, the budget
-  lesson, the flagship) boot machines that run `stzr`, which a stranger
-  cannot build while stz is private (DOC-1): move them to `harb`-only
-  machines where the lesson survives the move, or say so before RUN.
+  is a NIC to serve. ~~The tour's boot lessons that need `stzr`~~ --
+  done (LRN-3): lessons 4-6 boot `qemu_egress`, and 10 and 17 say before
+  their RUN what a reader without the runtime sees. **CONSOLE is
+  announced, never acted on** (LRN-3): the boot line's console comes from
+  the board table (`console_qemu`, `console_board`), so a machine can say
+  `boot: console /dev/ttyS3` while narrating on ttyS0 -- NS-1's worse
+  case. Decide whether the boot line follows CONSOLE or the grammar
+  refuses a CONSOLE the board does not use.
 - **Waiting on the author.** Delegated 2026-09-27 ("do what waits on me
   on my behalf") and ruled in `doc/PROVENANCE.md` as STZ-OS-RULING-03..08:
   retirement's three choices, the MIRROR (a private release, restored
@@ -595,7 +621,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

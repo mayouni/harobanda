@@ -32,7 +32,7 @@ mkdir -p "$OUT" zig-out/wsl
   echo "=== stage ==="
   ROOT=$OUT/root; rm -rf "$ROOT"; mkdir -p "$ROOT/app"
   cp "zig-out/cross/$TRIPLE/harb" "$ROOT/harb" || { echo "no harb for $TRIPLE (zig build cross)"; exit 1; }
-  if [ -f "zig-out/stz-$TRIPLE/bin/stzr" ]; then cp "zig-out/stz-$TRIPLE/bin/stzr" "$ROOT/stzr"; echo "stzr staged ($TRIPLE)"; else echo "stzr NOT staged (no build of stz under zig-out/stz-$TRIPLE)"; fi
+  if [ -f "zig-out/stz-$TRIPLE/bin/stzr" ]; then cp "zig-out/stz-$TRIPLE/bin/stzr" "$ROOT/stzr"; echo "stzr staged ($TRIPLE)"; else echo "stzr NOT staged (no build of stz under zig-out/stz-$TRIPLE) -- only a machine with a world under /stzr needs it, and harb image refuses that one below"; fi
   cp app/*.luau "$ROOT/app/" 2>/dev/null && echo "app staged"
   echo "=== derive ==="
   "$HOST_HARB" image "$M" --root "$ROOT" --out "$OUT" || { echo "derive refused"; exit 1; }

@@ -1,3 +1,129 @@
+# LRN-3 — the tour, walked by a stranger
+
+Found while fixing the README's "Try it" (DOC-1): stz is private, and the
+tour's boots in lessons 4, 5, 6, 10 and 17 ran Luau worlds under `stzr`.
+Queued as a seat of its own, because a lesson that moves is a BREAK IT
+that must be run again.
+
+## The premise was wrong, twice
+
+The queued task said a stranger's `qemu_hello` "boots but judges itself
+different from its pin", and the README said the same -- written in the
+DOC-1 seat from that premise, and never run. So before anything moved,
+`experiment/stranger_walk.sh` was written to find out. It copies what
+this repository publishes (`git ls-files`, tracked and not ignored) into
+`$HOME/harb-stranger` -- no zig-out, no stz build, no kernel; the tarball
+is seeded to spare 142 MB and then verified by the fetch like any
+download -- builds `harb` with the pinned Linux zig, and walks the tour's
+boots. A stranger's `qemu_hello`, in under a second, exit 1:
+
+```
+stzr NOT staged (no build of stz under
+    zig-out/stz-x86_64-linux-musl)
+image: refused -- service hello: program /stzr is not staged
+    under zig-out/image/qemu_hello/root
+derive refused
+```
+
+Nothing boots. `harb image` refuses a machine whose program is not
+staged, before any kernel is built -- the right answer, NS-1's shape (a
+machine is never built short of what it declares), and not the one
+anybody had written down. `qemu_budget` (lesson 10) and `makeen_box`
+(lesson 17) the same, naming `modest` and `kds`.
+
+And lesson 18, which boots nothing: `judge_guarantees.sh` reads the
+expectation `harb image` derives, and it was written AFTER the staging
+checks. The refusal took it along; the report said "the board's
+expectation is not built ... run experiment/os2_image.sh makeen_box
+first", and that advice led straight back to the refusal. `JUDGED: FAIL`,
+for a lesson that needs no runtime at all.
+
+## What was done
+
+**Lessons 4, 5 and 6 boot `qemu_egress`**, which runs only `harb`: the
+boot narrating and judging itself survives the move, and lesson 11 now
+says it is the same machine. Every BREAK IT was run before it was
+written:
+
+- **Lesson 4's old step was false on every machine.** It promised "The
+  boot goes SILENT" when CONSOLE says `/dev/ttyS3`. Run on `qemu_egress`,
+  PID 1 announced `boot: console /dev/ttyS3` and went on narrating on the
+  emulator's console: the boot line's console comes from the BOARD table
+  (`console_qemu`), and CONSOLE is announced, never acted on --
+  `qemu_hello` included. Replaced by a step that is true: move the
+  `denied` witness to `1.1.1.1`, and the narration follows (`boot: start
+  denied -- pid N -- /harb reach 1.1.1.1`, `reach 1.1.1.1 -- no route`)
+  while the pin refuses exactly those two lines. The CONSOLE seam is
+  named here and not fixed: a machine announcing a console it is not
+  speaking on is NS-1's worse case, and whether the boot line should
+  follow CONSOLE or the grammar refuse one the board does not use is a
+  decision of its own.
+- **Lesson 5 teaches more on this machine.** 14 lines to 17, not 16 to
+  18, and the third is one the reader never wrote: `boot: confine --
+  extra has no network of its own`. A world that asked for `process` and
+  not `network` got walls around a network, a part of the kernel this
+  machine had never switched on -- the derived fragment gains exactly
+  `CONFIG_NAMESPACES=y` and `CONFIG_NET_NS=y`, so the kernel is built
+  again (`kernel cache: MISS`, about three minutes). The lesson says so.
+- **Lesson 6:** one character of the pin's line 2, and `JUDGED: FAIL`
+  with a one-line diff while the machine's own judge still matches.
+  Exactly as promised.
+
+**Lessons 10 and 17 stay** -- the budget's memory kill and the
+flagship's cards are Luau worlds -- **and say so before their RUN**,
+derived and never written per lesson. `needs_runtime` in `src/learn.zig`
+names each machine with a world under `/stzr` and its first such world;
+the note quotes the refusal from `image.unstaged_fmt`, the constant
+`harb image` prints; and it tells the reader that every line the lesson
+quotes is in `machines/<name>.expected`. Lesson 10's BREAK IT adds how to
+see the edit without the runtime: `harb plan` prints the new ceiling.
+
+**`--check` holds all of it:** the table against the machine files (a
+machine that gains or loses a Luau world, or whose first one is renamed,
+turns the court red), and every quotation of a lesson carrying the note
+against THAT machine's pin -- a narrower claim than "some pin holds it".
+Probed with three planted mistakes in one fresh build (a wrong first
+world, a machine missing from the table, a lesson quoting another
+machine's pin): three convictions, each named, exit 1.
+
+**The first boot says once what it needs** (derived: whichever lesson
+boots first): `zig build cross -j2` and the kernel fetch, with QEMU and
+a kernel toolchain in WSL.
+
+**`harb image` writes the expectation beside `image.env`**, before the
+staging checks, and keeps its place in the image's file list: a clean
+`qemu_egress` boot matched its pin line for line after the change.
+**`os2_image.sh`'s `stzr NOT staged` says who needs it** -- every
+stranger saw that line on every boot, the ten that need nothing
+included. The README's sentence is corrected.
+
+## Walked from a stranger's copy of the working tree
+
+| lessons | what a stranger runs | what happened |
+|---|---|---|
+| 4-6, 11 | `os2_image.sh qemu_egress` | boots; its pin matches (20 lines) |
+| 7-9 | `os2_image.sh qemu_confine` | boots; matches (65 lines) |
+| 10 | `os2_image.sh qemu_budget` | refused, as the note says |
+| 12-13 | `os2_image.sh qemu_identity` | boots twice; matches (48 lines) |
+| 14 | `os7_fleet.sh` | the arc matches (43 lines) |
+| 15 | `os6_names.sh` | two machines, one wire; matches (68 lines) |
+| 17 | `os2_image.sh makeen_box` | refused, as the note says; the expectation stays |
+| 18 | `judge_guarantees.sh` | matches its pin (39 lines); it was FAIL |
+
+Lessons 1-3 and 16 boot nothing and need only the binary.
+
+## The law this pays for
+
+**What a reader WITHOUT something sees is observed by taking it away,
+never reasoned.** Two sentences said a stranger's boot would run and
+judge itself different; neither was run, and the machine does something
+better and different. **A text derived from the declaration alone is
+written before anything that can refuse**, or the refusal takes it along
+and a judge's advice leads back to the refusal. **A BREAK IT is run
+again whenever it moves** -- which is how a false one is found.
+
+---
+
 # DOC-2 — a word is explained by what it does, and worded once
 
 The author, 2026-09-27, four things in one message: the AI facet belongs
@@ -204,6 +330,10 @@ qemu_hello`. Walked with only what a stranger has -- a fresh clone:
    from the stz repository, which a stranger cannot clone. The boot
    would run, print `stzr NOT staged`, and judge itself different from
    its pin -- correctly, and to the one reader who could not know why.
+   *Amended 2026-09-27 (LRN-3): it does not boot at all. `harb image`
+   refuses a machine whose program is not staged, before any kernel is
+   built. The sentence above was reasoned from the queued task, not run;
+   a stranger's copy (`experiment/stranger_walk.sh`) showed the refusal.*
 
 So the README now boots `qemu_egress`, which runs only `harb`, needs
 nothing outside this repository, and shows a promise worth the minutes:
