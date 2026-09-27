@@ -167,7 +167,8 @@ proposal seam and the zin-register question, and ratifying it gives the
 go for the ZQL -> Z rename in three repositories; 08 follows 06. Both
 remain drafts, and ratifying 06 is the author's.* *Ratified by him the
 same day, as drafted; the go is routed through Central; 08 is no longer
-blocked and awaits his word.*
+blocked and awaits his word.* *And 08 ratified by him the same day: every
+chapter of the corpus is ratified.*
 
 **Not done on anyone's word.** The board's kit (`STZ-OS-HARDWARE-01`) is
 a purchase, and physical. Publishing the repository, private to public,

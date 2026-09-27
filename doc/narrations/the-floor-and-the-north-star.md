@@ -335,7 +335,8 @@ illustrative; a restaurant where a platform was meant.
   does not own, and the attempt to change that failed and is recorded.
 - The chapters that carry this moment, 06, 07 and 08 of the Vision
   Corpus, are drafts awaiting the author's ratification, and he
-  reverses by name.
+  reverses by name. *Amended 2026-09-27: all three are ratified -- 06
+  and 08 by the author in session, 07 by his delegation.*
 - The five-row guarantee sheet, the fleet court, the teaching kit and
   the twelve seams of the dividend are proposals.
 - The name of the floor is provisional, until the critical point the
@@ -353,3 +354,6 @@ illustrative; a restaurant where a platform was meant.
 | the diagram, validated and redrawn (draft) | `softanza/vision/08-NORTH-STAR.md` |
 | the memos of the two days | `softanza/memos/2026-09-12.md`, `2026-09-13.md` |
 | the machines, their transcripts pinned | `harobanda/machines/*.machine`, `*.expected` |
+
+*Amended 2026-09-27: both chapters marked (draft) in this map are
+ratified -- 07 by the author's delegation, 08 by the author.*

@@ -12,12 +12,13 @@ and `doc/DIVIDEND.md` for what owning the floor gives each layer above
 it (the servers, the runtime, the intelligence modules, the pages, the
 flagships) and what each owes it, didactic, one example per layer; the
 estate-wide reflection that places the floor in the author's 2020
-diagram is `softanza/vision/08-NORTH-STAR.md` (draft), and the story of
+diagram is `softanza/vision/08-NORTH-STAR.md` (ratified 2026-09-27), and the story of
 the two days that built the floor and read the diagram again is
 `doc/narrations/the-floor-and-the-north-star.md`; the ratified strategy of the whole estate is the
 Vision Corpus at `D:\GitHub\softanza\vision` (amended 2026-09-12 for the
 Ring++ turn of 08-30 -- Amended blocks beside the superseded sentences --
-and carrying the floor as `07-SYSTEM.md`, v0.1 DRAFT, unratified). Daily memos go to
+and carrying the floor as `07-SYSTEM.md`, ratified 2026-09-27 by the author's delegation;
+every chapter, 01 to 08, is ratified). Daily memos go to
 `D:\GitHub\softanza\memos\YYYY-MM-DD.md` in the estate's yaml style,
 `by:` stamp read from the clock, never composed.
 
@@ -508,8 +509,8 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   is not built), and chapter 07 ratified. What still waits on him, and
   why no delegation reaches it: ~~one word for 06 -- X or A~~ **ruled A
   by the author, 2026-09-27**, and ~~ratifying 06~~ **ratified by him as
-  drafted** the same day (the ZQL -> Z go routed through Central); 08,
-  no longer blocked by 06, awaits his own word; the Pi kit, a purchase; and
+  drafted** the same day (the ZQL -> Z go routed through Central), and
+  **08 ratified by him** too; the Pi kit, a purchase; and
   PUBLISHING, prepared (licence in, no secret in any file or any of the
   142 commits) and not done, because a public copy cannot be recalled.
 - **What is built, and where its story is.** Every seat is written up in

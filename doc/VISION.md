@@ -1,6 +1,7 @@
 # The Declared Machine — the OS chapter
 
-*Proposed as 07-SYSTEM of the Vision Corpus. Provenance: the author's
+*Proposed as 07-SYSTEM of the Vision Corpus (ratified there 2026-09-27, by
+the author's delegation). Provenance: the author's
 ruling of 2026-09-12 (push the sovereign vertical below Ring++ to the
 operating system, then MicroRing, then the PCB); the memo of
 2026-09-12 11:02 in softanza/memos; zin's ZinOS and Zhw documents of
