@@ -1,3 +1,117 @@
+# DOC-2 — a word is explained by what it does, and worded once
+
+The author, 2026-09-27, four things in one message: the AI facet belongs
+at the front of the project, on GitHub and on the site, "since Harobanda
+is the better possible OS solution for governed agents, right?"; "what it
+mounts" should say what it means, disks, "keep in mind the educational
+dimension of any project we make around the Softanza Project"; cryptic
+phrases like "this binary as PID 1" should be explained where they stand;
+and "judges" should be tied to the practical thing, because "not anyone
+has the ability to get the link between a metaphoric concept and the
+practical thing of a technology".
+
+## What was found
+
+**Metaphors explained by metaphors.** The site's word page said "the
+court: the judge of the grammar". The tour's glossary said PID 1 "mounts,
+it starts the worlds, it reaps them". A reader who does not already know
+what a PID, a mount or a reap is learned nothing from either. And the two
+lists disagreed: eight words on the site, eleven in the tour, worded
+differently on purpose (PEDAGOGY finding 6, whose reason was a Windows
+path).
+
+**The facet to be pushed forward held claims stronger than the code.**
+Reading them before moving them:
+
+1. `agents.html`, "The data cannot leave". `EGRESS` writes routes: the
+   machine knows no way out, which EGR-1 says is not the same as being
+   prevented. There is no firewall behind it.
+2. `agents.html`, "Every act is recorded ... an agent's actions are
+   auditable". The journal records BOOTS -- what the machine was and what
+   it judged of itself (JRN-1). What a world does is the world's record,
+   and nothing records it today. `assistant.html` ("every exchange is
+   recorded") and `field.html` ("every action recorded") said the same.
+3. `agents.html`, "It rehearses first ... on a virtual twin", and "an
+   agent can draft a change" as a present fact. The twin is stzlib's and
+   does not read this machine's file yet; the agent's half of the
+   proposal loop is not built. The check and the trial are.
+4. `enterprise.html`, "bit-for-bit reproducible". No build script fixes
+   the kernel's build timestamp, so two builds of one file differ. The
+   claim is gone; the seam is named here.
+5. The refusal quoted on `agents.html` and `running.html` ("needs the
+   network, which nothing here grants") was not the machine's words:
+   `alerts needs network, which no declaration grants`.
+6. `ship.html`, "`harb` writes it" to the device -- beside a paragraph
+   saying the tooling prints that command and never runs it.
+
+One claim is in pixels: diagram 3, hand-drawn outside this repository,
+labels the assistant's envelope "every exchange recorded". Its page and
+alt text were left describing the image, the page's prose was corrected,
+and the image is the author's to redraw.
+
+## What was done
+
+**One plain vocabulary.** `learn.words` rewritten, eleven words to
+twenty-three, each saying what the thing does: a machine, a declaration,
+a clause, a service, a capability, to mount, the kernel, to judge, the
+court, the plan, an image, QEMU, PID 1, the transcript, a pin, a world,
+the envelope, the floor, EGRESS, a trial, the watchdog, a fleet, a seat.
+Where the project's word IS a metaphor (the court, a world, the floor, a
+pin), the definition says so and then says the plain thing. Checked
+against the code while written: "a world sees none of the other
+programs" was drafted and cut, because a world that declares `process`
+shares the machine's process table; the watchdog is also released when a
+service that promised to keep answering goes quiet (HLT-1), not only on
+a bad trial.
+
+**Worded once, carried three times.** The README's "The words, in plain
+terms" and `site/words.html` were generated from the source, and `harb
+docs --check` gained a third rule: every word of the tour, in its order
+and in its words, on both pages -- backticks, bold and `<code>` are not
+differences, a changed word is. Unit test: carried, changed, missing,
+reordered, each convicted where it should be.
+
+**The agents, in front.** A lead under the README's tagline and a
+section, "Built for governed AI agents": a whole box for an office
+assistant that the court accepts -- no network, one disk, 2 GiB and two
+cores -- a table of what each line means and WHAT enforces it (the
+kernel, its control groups, its filter, or the image, where the shell was
+never put), the proposal loop with its unbuilt half said, why the
+operating system rather than only a sandbox, and what is real today for
+agents. On the site: the hero line, a section after "What just
+happened", the AI card first in "ways in", "AI & agents" second in every
+page's nav, and the six claims above corrected to what is built.
+
+**Plain words where they stand.** "What it mounts" became which disks it
+uses and in which folder each appears; "this binary as PID 1" became the
+first program the kernel starts; "judged" is now, wherever it first does
+work, "checked against what must be, and the difference said"; the
+image, the kernel, QEMU, the watchdog, LTS and a digest are each said
+once in plain words where they are first used. Every page's footer links
+to the words.
+
+## On the author's question
+
+Is it "the better possible OS solution for governed agents"? The pages
+do not say "best", by the rule this repository already keeps: a claim is
+what can be checked, and "best" is a comparison nobody has run. They say
+what is specific and checked instead -- the limits are the kernel's,
+derived from one file a reviewer can read, proven by reference boots, and
+there is no shell or installer to go around them -- and they say what is
+not built.
+
+## The law this pays for
+
+**A word is explained by what it DOES, never by another metaphor.** A
+reader who does not already know the practical thing cannot get it from
+a figure of speech, and the reader a project most needs is that one.
+**A vocabulary is worded once**, and every page that lists it carries it
+verbatim under a judge. And **the moment a claim is pushed to the front
+is the moment to read it again**: the facet the author wanted in front
+held six sentences the code did not back.
+
+---
+
 # DOC-1 — what a page shows is a claim, and a stranger's path through it is the judge
 
 The author, 2026-09-27, with a screenshot of the README's own "Try it"

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The words — Harobanda</title>
-<meta name="description" content="Eight terms this site uses, defined before they start doing work.">
+<meta name="description" content="Every word this project uses, explained by what it does: PID 1, the kernel, to mount, to judge, a world, a pin, and the rest.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -21,9 +21,9 @@
     <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
     <nav class="nav" id="nav">
       <a href="why.html">Why</a>
+      <a href="ai.html">AI &amp; agents</a>
       <a href="machine.html" class="active">The machine</a>
       <a href="build.html">Build</a>
-      <a href="ai.html">AI &amp; agents</a>
       <a href="enterprise.html">Enterprise</a>
       <a href="field.html">In the field</a>
     </nav>
@@ -43,21 +43,37 @@
 <main id="main">
   <section class="wrap pagehead">
     <p class="eyebrow">The words</p>
-    <h1>Eight terms, before they start doing work.</h1>
+    <h1>The words, in plain terms.</h1>
   </section>
 <section class="wrap block">
-    <div class="prose" style="margin-bottom:clamp(24px,3vw,34px)">
-      <p class="lead">This page and the next few use a small vocabulary, and it is worth ten seconds now rather than a guess later. The machine defines these itself — <code style="font-family:var(--mono);font-size:.9em;color:var(--laterite)">harb learn --words</code> prints the list and a few more.</p>
+    <div class="prose stack-gap" style="margin-bottom:clamp(24px,3vw,34px)">
+      <p class="lead">Every word this project uses, explained by what it does, in the order you meet them. Some are ordinary computing words, like <em>PID 1</em> or <em>to mount</em>; some are this project's own names for plain things, like <em>the court</em>, which is simply the check a machine file must pass before anything runs.</p>
+      <p>These are the same words, in the same order, that <code style="font-family:var(--mono);font-size:.9em;color:var(--laterite)">harb learn --words</code> prints and that the README carries. A check in the repository fails if any of them drift apart.</p>
     </div>
     <div class="words">
-      <div><b>a machine</b><span>One computer, written down: what it is, what it mounts, what it runs. One <code>.machine</code> file, and nothing more — it is text until something builds it.</span></div>
-      <div><b>a declaration</b><span>A block in that file. Its <code>RATIONALE</code> is not a comment: the grammar requires it, so every part of a machine has to say why it is there.</span></div>
-      <div><b>a world</b><span>One running program the machine declared, once it is alive. Called a world because it gets its own little universe — its own view of the network, the storage and the process table.</span></div>
-      <div><b>the envelope</b><span>What the kernel lets a world see and do. Derived from what that world declared it needs, never granted by a separate permission file someone can edit later.</span></div>
-      <div><b>the court</b><span>The judge of the grammar. Cases that must be accepted, and more that must be refused — each carrying the exact words its refusal has to contain.</span></div>
-      <div><b>a pin</b><span>A stored copy of everything a boot should print. Boot again and the two are compared, so a change shows up as a difference instead of a shrug.</span></div>
-      <div><b>the transcript</b><span>Everything one boot actually printed, from the first line the machine speaks to the halt. The pin is what it should have said; the transcript is what it did.</span></div>
-      <div><b>a fleet</b><span>A set of machines judged together. Some mistakes are only visible across a set: two boxes that each call themselves the server of one network are each faultless alone.</span></div>
+      <div><b>a machine</b><span>One computer, written down in a <code>.machine</code> file: which board and processor it has, which disks it uses, which programs it runs, and what each program may touch. It is only text until it is built.</span></div>
+      <div><b>a declaration</b><span>One block of that file, starting with <code>DEFINE</code>: the machine itself, a program, a disk, a network, a permission. Every block must end with a <code>RATIONALE</code>, which says in plain words why it is there, and a file with one missing is refused.</span></div>
+      <div><b>a clause</b><span>One line inside a block, such as <code>RUN [...]</code> (the program to start) or <code>NEEDS [...]</code> (what it must be allowed to do). Each kind of block accepts a fixed list of clauses, and any other is refused by name.</span></div>
+      <div><b>a service</b><span>A program the machine starts and looks after, declared with <code>DEFINE SERVICE</code>. It says what to run, whether to restart it when it stops, and what it needs.</span></div>
+      <div><b>a capability</b><span>One kind of access a program must be granted before it has it: <code>network</code>, <code>filesystem</code> (the disks), <code>process</code> (starting other programs), and a few more. A program that did not ask for <code>network</code> runs with no network at all, because the kernel gives it none.</span></div>
+      <div><b>to mount</b><span>To attach a disk, or one part of a disk, so that its files appear in a folder: an SD card's second partition at <code>/data</code>, for instance. A <code>MOUNT</code> block names the disk and the folder. It can also be scratch space held in memory, which vanishes when the machine stops.</span></div>
+      <div><b>the kernel</b><span>The core of the operating system: the part that drives the hardware and decides what each program is allowed to do. Harobanda uses the Linux kernel, unmodified; the machine file decides which of its parts are switched on. What is new is everything above it.</span></div>
+      <div><b>to judge</b><span>To check something against what it must be, and say plainly where it differs. Before anything runs, <code>harb check</code> judges a machine file against the language's rules. At the end of every boot, the machine judges what it printed against what its file says a correct boot prints.</span></div>
+      <div><b>the court</b><span>The part of <code>harb</code> that judges a machine file before anything runs (<code>harb check</code>). It gives a verdict, which is why it is called a court: accepted, or refused with the line number and the reason in plain words. It is checked in turn against example files it must accept and more it must refuse (<code>zig build court</code>).</span></div>
+      <div><b>the plan</b><span>The order in which the machine will do things when it boots: which disks first, which programs after which. <code>harb plan</code> works it out from the file and prints it before anything runs.</span></div>
+      <div><b>an image</b><span>The exact files a machine boots from: the kernel, <code>harb</code>, the programs, the machine file itself, and a copy of what a correct boot must print. A change to the machine is a new image, built from the changed file.</span></div>
+      <div><b>QEMU</b><span>A free program that imitates a whole computer, so a machine can boot on your laptop with no board at all.</span></div>
+      <div><b>PID 1</b><span>The first program the kernel starts when a computer boots. It starts every other program and looks after them until the machine stops. Every Linux system has one (on Ubuntu it is systemd); on a declared machine it is <code>harb</code> itself, reading the machine file. PID means process ID, the number the kernel gives each running program.</span></div>
+      <div><b>the transcript</b><span>Everything one boot printed, from the first line to the last. The machine prints a line for every step as it takes it, which this project calls narrating.</span></div>
+      <div><b>a pin</b><span>A saved copy of a transcript someone read and found right, kept in the repository as <code>machines/&lt;name&gt;.expected</code>. The next boot is compared with it line by line, so any change shows up as a difference.</span></div>
+      <div><b>a world</b><span>One service while it runs, inside walls the kernel keeps: what it did not ask for (the network, a disk, starting other programs) it does not have. The word is this project's; the walls are Linux's own (namespaces and control groups).</span></div>
+      <div><b>the envelope</b><span>The walls around one world: exactly what it may see and do, and how much memory and processor time it may use. They are worked out from what the world declared it <code>NEEDS</code>, never from a separate permission file someone could edit later.</span></div>
+      <div><b>the floor</b><span>What no world may do, whatever it declared: attach or detach disks, set the clock, load code into the kernel, rename the machine, build or enter walls of its own, look inside or take control of another program, or restart the box.</span></div>
+      <div><b>EGRESS</b><span>The list of networks a machine may reach beyond its own. The kernel is given a route (the directions to a network) to those and to no others, and every boot says so. A route is not a wall: the machine knows no way anywhere else, which is not the same as being blocked from finding one.</span></div>
+      <div><b>a trial</b><span>How an update is installed: it is written to a second copy of the system and booted once. If that boot matches its file, the update is committed, which means kept. If it does not, the board goes back to the copy it had.</span></div>
+      <div><b>the watchdog</b><span>A timer in the hardware that restarts the board unless the system keeps resetting it. The machine stops resetting it when a trial boot does not match its file, or when a service that promised to keep answering goes quiet: a bad update undoes itself, and a stuck box restarts.</span></div>
+      <div><b>a fleet</b><span>A set of machines checked together, in a <code>.fleet</code> file. Some mistakes only show across a set: two boxes that each claim to be the network's server are each fine alone.</span></div>
+      <div><b>a seat</b><span>One unit of work in this project's history, tagged like <code>NS-1</code> or <code>SEE-1</code>. Every rule in the doctrine names the seat that paid for it, and <code>experiment/PROTOCOL.md</code> tells each story in full.</span></div>
     </div>
   </section></main>
 

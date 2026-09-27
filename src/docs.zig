@@ -15,6 +15,14 @@
 //!    signals READY but never said it restarts. The first thing a visitor
 //!    reads was a claim no judge had ever read.
 //!
+//! 3. The project's words are worded ONCE (DOC-2). The tour's glossary
+//!    (`learn.words`) is the source; the README's "The words, in plain
+//!    terms" and the site's words.html carry every word of it, in its
+//!    order and in its words. A page's own formatting -- backticks, bold,
+//!    <code> -- is not a difference; a changed word is. The pages had eight
+//!    terms, each explained by another metaphor ("the court: the judge of
+//!    the grammar"), and the tour had its own wording of the same eight.
+//!
 //! What this does NOT judge, stated rather than implied: an excerpt elided
 //! with `...` (what is elided cannot be judged, which is why the pages say
 //! "in full"); code INDENTED four spaces rather than fenced; and the width
@@ -22,6 +30,7 @@
 
 const std = @import("std");
 const machine = @import("machine.zig");
+const learn = @import("learn.zig");
 
 /// What GitHub shows of a code line in a README column before the block
 /// scrolls: 68 characters on the author's screen, less a margin.
@@ -175,6 +184,106 @@ fn byPath(_: void, a: []const u8, b: []const u8) bool {
     return std.mem.lessThan(u8, a, b);
 }
 
+// ---- the words, carried word for word (DOC-2) ----
+
+/// where each page keeps the words
+pub const readme_words_heading = "## The words, in plain terms";
+
+const Word = struct { term: []const u8, def: []const u8, line: usize };
+
+/// The words as a reader sees them: code and bold marks dropped, every run
+/// of whitespace one space. A backtick in the source, the same span in
+/// <code> on the site: the same words.
+fn plainWords(alloc: std.mem.Allocator, s: []const u8) ![]const u8 {
+    var out: std.ArrayList(u8) = .{};
+    var space = false;
+    for (s) |c| {
+        if (c == '`' or c == '*') continue;
+        if (c == ' ' or c == '\n' or c == '\r' or c == '\t') {
+            space = out.items.len > 0;
+            continue;
+        }
+        if (space) try out.append(alloc, ' ');
+        space = false;
+        try out.append(alloc, c);
+    }
+    return out.items;
+}
+
+/// the rows `| **term** | definition |` of the README's words table
+fn readmeWords(alloc: std.mem.Allocator, text: []const u8) ![]Word {
+    var out: std.ArrayList(Word) = .{};
+    var inside = false;
+    var n: usize = 0;
+    var it = std.mem.splitScalar(u8, text, '\n');
+    while (it.next()) |raw| {
+        n += 1;
+        const line = std.mem.trimRight(u8, raw, "\r");
+        if (std.mem.startsWith(u8, line, "## ")) {
+            inside = std.mem.eql(u8, line, readme_words_heading);
+            continue;
+        }
+        if (!inside or !std.mem.startsWith(u8, line, "| **")) continue;
+        const cells = std.mem.trim(u8, line, " |");
+        const bar = std.mem.indexOf(u8, cells, " | ") orelse continue;
+        try out.append(alloc, .{
+            .term = try plainWords(alloc, cells[0..bar]),
+            .def = try plainWords(alloc, cells[bar + 3 ..]),
+            .line = n,
+        });
+    }
+    return out.items;
+}
+
+/// the entries `<div><b>term</b><span>definition</span></div>` of the
+/// site's words page, inside its `class="words"` block
+fn siteWords(alloc: std.mem.Allocator, text: []const u8) ![]Word {
+    var out: std.ArrayList(Word) = .{};
+    const from = std.mem.indexOf(u8, text, "class=\"words\"") orelse return out.items;
+    const to = std.mem.indexOfPos(u8, text, from, "</section>") orelse text.len;
+    var pos = from;
+    while (std.mem.indexOfPos(u8, text[0..to], pos, "<b>")) |b| {
+        const b_end = std.mem.indexOfPos(u8, text, b, "</b>") orelse break;
+        const s = std.mem.indexOfPos(u8, text, b_end, "<span>") orelse break;
+        const s_end = std.mem.indexOfPos(u8, text, s, "</span>") orelse break;
+        try out.append(alloc, .{
+            .term = try plainWords(alloc, try plainText(alloc, text[b + 3 .. b_end])),
+            .def = try plainWords(alloc, try plainText(alloc, text[s + 6 .. s_end])),
+            .line = std.mem.count(u8, text[0..b], "\n") + 1,
+        });
+        pos = s_end;
+    }
+    return out.items;
+}
+
+/// Every word the source defines, in its order and in its words; nothing
+/// the source does not define.
+fn compareWords(alloc: std.mem.Allocator, w: *std.Io.Writer, path: []const u8, found: []const Word, source: []const [2][]const u8, t: *Tally) !void {
+    const n = @max(found.len, source.len);
+    for (0..n) |i| {
+        if (i >= found.len) {
+            t.bad += 1;
+            try w.print("  {s} -- '{s}' is missing: the tour defines it (src/learn.zig), and every page that lists the words carries all of them\n", .{ path, source[i][0] });
+            continue;
+        }
+        const f = found[i];
+        if (i >= source.len) {
+            t.bad += 1;
+            try w.print("  {s}:{d} -- '{s}' is not a word the tour defines (src/learn.zig)\n", .{ path, f.line, f.term });
+            continue;
+        }
+        if (!std.mem.eql(u8, f.term, try plainWords(alloc, source[i][0]))) {
+            t.bad += 1;
+            try w.print("  {s}:{d} -- '{s}' is here, where the tour's order has '{s}'\n", .{ path, f.line, f.term, source[i][0] });
+            continue;
+        }
+        if (!std.mem.eql(u8, f.def, try plainWords(alloc, source[i][1]))) {
+            t.bad += 1;
+            try w.print("  {s}:{d} -- '{s}' is not defined in the tour's words (src/learn.zig): a word is worded once\n", .{ path, f.line, f.term });
+        }
+    }
+}
+
 /// Run from the repository root, as `zig build court` runs it.
 pub fn check(w: *std.Io.Writer) !usize {
     var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -195,8 +304,21 @@ pub fn check(w: *std.Io.Writer) !usize {
     for (found.html.items) |p| {
         try checkHtml(alloc, w, p, try root.readFileAlloc(alloc, p, 1 << 24), &t);
     }
+    const pages = [_]struct { path: []const u8, html: bool }{
+        .{ .path = "README.md", .html = false },
+        .{ .path = "site/words.html", .html = true },
+    };
+    for (pages) |pg| {
+        const text = root.readFileAlloc(alloc, pg.path, 1 << 24) catch {
+            t.bad += 1;
+            try w.print("  {s} -- cannot be read, and it is where the words are carried\n", .{pg.path});
+            continue;
+        };
+        const got = if (pg.html) try siteWords(alloc, text) else try readmeWords(alloc, text);
+        try compareWords(alloc, w, pg.path, got, &learn.words, &t);
+    }
     if (t.bad == 0) {
-        try w.print("docs -- {d} Markdown files: no code line wider than {d}; {d} machine(s) shown in full, and the court accepts every one\n", .{ found.md.items.len, max_code_width, t.judged });
+        try w.print("docs -- {d} Markdown files: no code line wider than {d}; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site\n", .{ found.md.items.len, max_code_width, t.judged, learn.words.len });
     } else {
         try w.print("docs -- {d} claim(s) the documents make do not hold\n", .{t.bad});
     }
@@ -278,6 +400,54 @@ test "a refusal names the line of the PAGE, not the line of the block" {
     const h = try probe(arena, html, true);
     try t.expectEqual(@as(usize, 1), h.tally.bad);
     try t.expect(std.mem.indexOf(u8, h.said, "t.html:3 shows a machine the court refuses: PROFILE is required") != null);
+}
+
+test "the words are carried word for word, and a changed word is convicted" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const source = [_][2][]const u8{
+        .{ "a pin", "A saved copy of a transcript, kept as `machines/<name>.expected`." },
+        .{ "PID 1", "The first program the kernel starts." },
+    };
+    const readme = readme_words_heading ++ "\n\n| word | in practice |\n|---|---|\n" ++
+        "| **a pin** | A saved copy of a  transcript, kept as `machines/<name>.expected`. |\n" ++
+        "| **PID 1** | The first program the kernel starts. |\n\n## Next\n";
+    const html = "<div class=\"words\">\n  <div><b>a pin</b><span>A saved copy of a transcript, kept as <code>machines/&lt;name&gt;.expected</code>.</span></div>\n" ++
+        "  <div><b>PID 1</b><span>The first program the kernel starts.</span></div>\n</div>\n</section>";
+
+    // carried: formatting and spacing are not differences
+    var aw = std.Io.Writer.Allocating.init(arena);
+    var ok = Tally{};
+    try compareWords(arena, &aw.writer, "README.md", try readmeWords(arena, readme), &source, &ok);
+    try compareWords(arena, &aw.writer, "site/words.html", try siteWords(arena, html), &source, &ok);
+    try t.expectEqual(@as(usize, 0), ok.bad);
+
+    // one word changed: convicted, by name and by line
+    const changed = try std.mem.replaceOwned(u8, arena, readme, "kernel starts", "kernel runs");
+    var aw2 = std.Io.Writer.Allocating.init(arena);
+    var bad = Tally{};
+    try compareWords(arena, &aw2.writer, "README.md", try readmeWords(arena, changed), &source, &bad);
+    try t.expectEqual(@as(usize, 1), bad.bad);
+    try t.expect(std.mem.indexOf(u8, aw2.written(), "README.md:6 -- 'PID 1' is not defined in the tour's words") != null);
+
+    // a word left out of the site: convicted as missing
+    const short = "<div class=\"words\">\n  <div><b>a pin</b><span>A saved copy of a transcript, kept as <code>machines/&lt;name&gt;.expected</code>.</span></div>\n</div>\n</section>";
+    var aw3 = std.Io.Writer.Allocating.init(arena);
+    var missing = Tally{};
+    try compareWords(arena, &aw3.writer, "site/words.html", try siteWords(arena, short), &source, &missing);
+    try t.expectEqual(@as(usize, 1), missing.bad);
+    try t.expect(std.mem.indexOf(u8, aw3.written(), "'PID 1' is missing") != null);
+
+    // the right words in the wrong order: convicted where the order breaks
+    const swapped = readme_words_heading ++ "\n\n| **PID 1** | The first program the kernel starts. |\n" ++
+        "| **a pin** | A saved copy of a transcript, kept as `machines/<name>.expected`. |\n";
+    var aw4 = std.Io.Writer.Allocating.init(arena);
+    var order = Tally{};
+    try compareWords(arena, &aw4.writer, "README.md", try readmeWords(arena, swapped), &source, &order);
+    try t.expectEqual(@as(usize, 2), order.bad);
+    try t.expect(std.mem.indexOf(u8, aw4.written(), "'PID 1' is here, where the tour's order has 'a pin'") != null);
 }
 
 test "a site page's machine is judged through its markup" {

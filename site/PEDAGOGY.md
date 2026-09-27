@@ -84,6 +84,19 @@ checked against what it claimed. This is the record of what changed after it.
   editing them while still calling them quotations would have broken LRN-2. So
   the meaning is faithful, the wording is the site's, and the panel points at
   `harb learn --words` as the authority.
+
+  *Amended 2026-09-27 (DOC-2).* The panel explained each term by another
+  metaphor -- "the court: the judge of the grammar" -- and the author asked
+  for the practical thing instead: what a word DOES, for a reader who does
+  not already know what a PID or a mount is. The tour's glossary was
+  rewritten in plain terms and grew from eleven words to twenty-three
+  (PID 1, the kernel, to mount, to judge, the plan, an image, QEMU, a
+  trial, the watchdog, EGRESS, the floor, among them). Its definitions now
+  write paths the way every page does (`machines/<name>.expected`, never
+  `machines\`), so the reason above for carrying the meaning rather than
+  the wording is gone: the page carries the tour's words verbatim, so does
+  the README, and `harb docs --check` fails on any difference. Every
+  page's footer links to them.
 - **Finding 7 — the two ejections. Done.** The hardware gate on `index` became
   an intensifier: the section is now headed *whether or not they build the
   hardware*, and choosing the device is something that makes the fit tighter

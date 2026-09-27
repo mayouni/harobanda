@@ -9,6 +9,16 @@
 
 ---
 
+**Built for AI agents you must be able to govern.** An agent on a declared
+machine is one program the file names, and the file says what it may touch:
+the network or not, which disks, how much memory. The kernel, the core of the
+operating system, holds it to exactly that, and there is no shell, no
+installer and no login on the box for it to use instead.
+[How that works →](#built-for-governed-ai-agents)
+
+New to the words this project uses? Each one is explained by what it does in
+[The words, in plain terms](#the-words-in-plain-terms).
+
 ## Why it exists
 
 Every operating system you can buy is shaped by its vendor: the account you
@@ -35,21 +45,25 @@ by your solution, not by a vendor.**
 
 You write down what the machine must be, in one text file:
 
-- what the computer is — its board and its architecture;
-- what storage it mounts;
+- which computer it is: the board (a PC, a Raspberry Pi) and the kind of
+  processor;
+- which disks it uses, and in which folder the files of each one appear;
 - which programs it keeps running;
-- what each of those programs is allowed to touch.
+- what each of those programs is allowed to touch: the network, the disks,
+  how much memory and processor time.
 
-Every part must say **why** it is there: the grammar requires a reason.
+Every part must say **why** it is there: a part with no reason is refused.
 
-Harobanda derives everything else from that file — the boot order, the kernel
-configuration, the disk image. The machine then boots as that description,
-narrates each step as it takes it, and at the end **checks what it did against
-what you wrote**. If the two differ, it says where.
+Harobanda works out everything else from that file: the order things start
+in, which parts of the kernel (the core of the operating system) are switched
+on, and the image, the exact files the machine boots from. The machine then
+boots as that description, printing a line for every step as it takes it, and
+at the end **checks what it did against what you wrote**, line by line. If the
+two differ, it says where.
 
-There is no shell, no package manager, no login and no store on the machine.
-Nothing is installed afterwards: to change the machine, you change the file,
-and the new file is judged again.
+There is no shell (no command line to type into), no package manager, no
+login and no app store on the machine. Nothing is installed afterwards: to
+change the machine, you change the file, and the new file is checked again.
 
 ### A whole machine, in nine lines
 
@@ -65,9 +79,91 @@ DEFINE SERVICE greet AS (
 ) RATIONALE "say hello, then exit"
 ```
 
-`RATIONALE` is not a comment. The court refuses any part of a machine that
-does not say why it is there — and it accepts this one, which the repository
-checks on every build.
+`RATIONALE` is not a comment. `harb check`, which this project calls *the
+court* because it gives a verdict, refuses any part of a machine that does not
+say why it is there. It accepts this one, and the repository checks that on
+every build.
+
+## Built for governed AI agents
+
+An AI agent that can act (read files, call services, change things) needs
+limits it cannot talk its way out of. On most systems those limits live in the
+agent's instructions, or in a policy that some software above the operating
+system is trusted to enforce. On a declared machine they live in the machine
+file, and the kernel enforces them: the agent is a program like any other, and
+it has what its declaration grants and nothing else.
+
+This is a whole box for an assistant that answers from an office's own
+documents. The court accepts it:
+
+```
+DEFINE MACHINE hub AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux
+) RATIONALE "an office's own assistant, on one box"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "the assistant reads the office's documents"
+
+DEFINE CAPABILITY inference AS (
+  GRANT yes
+) RATIONALE "the model runs here, on this box"
+
+DEFINE MOUNT docs AS (
+  AT "/docs",
+  FS ext4,
+  DEVICE "/dev/vda"
+) RATIONALE "the disk that holds the documents"
+
+DEFINE SERVICE assistant AS (
+  RUN ["/app/assistant"],
+  RESTART always,
+  NEEDS [filesystem, inference],
+  MEMORY 2048,
+  CPU 200
+) RATIONALE "answers from the documents; no network at all"
+```
+
+What that file means for the assistant, and what enforces each part:
+
+| the file says | what happens | who enforces it |
+|---|---|---|
+| no `NETWORK` block | the box brings up no network, so there is nothing to send the documents through | nothing exists to use: no network interface is ever set up |
+| `NEEDS [filesystem, inference]`, and not `process` | it may read the disk the file attaches, and it may not start any other program | the kernel refuses the request to start a program |
+| `MEMORY 2048` | at most 2 GiB of memory; past that, the kernel stops it, and nothing else on the box notices | the kernel's control groups |
+| `CPU 200` | at most two processor cores' worth of time; past that, it waits its turn | the kernel's control groups |
+| nothing: this holds for every program | no program may attach disks, set the clock, load code into the kernel, look inside another program or restart the box | a kernel filter, set before the program starts |
+| nothing: there is no shell and no installer | there is no command line to open and nothing to install | the image: they were never put in |
+
+Every boot prints these limits before the assistant starts. If the kernel
+could not set one of them up, the assistant is not started, and the boot is
+judged different from its file.
+
+**If the agent wants more, it has to ask in writing.** The machine is a file
+in a small, strict language, which an agent can write as well as a person
+can. A change it drafts is checked by `harb check` before anything runs, a
+person approves it, and the box tries it once: if the boot does not match the
+new file, the box goes back to the old one.
+
+**Why the operating system, and not only a sandbox?** Because the kernel is
+the one layer a program cannot argue with. Instructions can be talked around,
+and a policy enforced by software above the operating system is only as strong
+as that software. A sandbox can fence one program on a general-purpose
+machine; a declared machine has nothing else on it, so the file that sets the
+agent's limits is also the whole description of the box, and a reviewer reads
+both at once.
+
+**What is real today, for agents.** The limits in the table are built, and
+each is proven by a reference machine whose boot shows the kernel holding a
+program to it. Not built yet: a firewall (a machine that declares a network has
+routes only to what it declares, and knows no way anywhere else, but nothing
+yet blocks a program that looks for one); a record of what an agent did (the
+machine signs a record of every boot, not of each action inside it); and the
+tools for an agent to draft a change and a person to approve it. Harobanda
+does not include a model: `inference` is a permission the file grants, and
+the program brings its own model.
 
 ## How it works
 
@@ -78,14 +174,49 @@ checks on every build.
 | step | what happens |
 |---|---|
 | **declare** | you write a `.machine` file |
-| **judge** | `harb check` accepts it, or refuses it in plain words, such as *needs the network, which nothing here grants* |
-| **plan** | `harb plan` shows the order things will happen in, before any of it does |
-| **boot** | the machine boots in QEMU and judges its own transcript against the file |
-| **break it** | change one line and watch the machine catch the difference |
+| **judge** | `harb check` reads the file against the language's rules: every line must be one the language knows, every program must be granted what it asks for, every part must say why it is there. It accepts the file, or refuses it with the line and the reason, such as *alerts needs network, which no declaration grants* |
+| **plan** | `harb plan` prints the order things will happen in at boot, before any of it does |
+| **boot** | QEMU, a program that imitates a whole computer, boots the machine, and the machine prints a line for every step. At the end it compares, line by line, what it printed with what the file says a correct boot prints, and lists any difference |
+| **break it** | change one line and watch the check catch the difference |
+
+To *judge*, in this project, always means that: compare with what must be,
+and say plainly where it differs.
 
 A guarantee you have only ever watched succeed is a claim. One you have
 watched refuse you is evidence — which is why every lesson in the guided tour
 ends by showing you how to break it.
+
+## The words, in plain terms
+
+Every word this project uses, explained by what it does. They are the same
+words, in the same order, that `harb learn --words` prints and that the site's
+word page shows, and `harb docs --check` fails if any of them drift apart.
+
+| word | what it means in practice |
+|---|---|
+| **a machine** | One computer, written down in a `.machine` file: which board and processor it has, which disks it uses, which programs it runs, and what each program may touch. It is only text until it is built. |
+| **a declaration** | One block of that file, starting with `DEFINE`: the machine itself, a program, a disk, a network, a permission. Every block must end with a `RATIONALE`, which says in plain words why it is there, and a file with one missing is refused. |
+| **a clause** | One line inside a block, such as `RUN [...]` (the program to start) or `NEEDS [...]` (what it must be allowed to do). Each kind of block accepts a fixed list of clauses, and any other is refused by name. |
+| **a service** | A program the machine starts and looks after, declared with `DEFINE SERVICE`. It says what to run, whether to restart it when it stops, and what it needs. |
+| **a capability** | One kind of access a program must be granted before it has it: `network`, `filesystem` (the disks), `process` (starting other programs), and a few more. A program that did not ask for `network` runs with no network at all, because the kernel gives it none. |
+| **to mount** | To attach a disk, or one part of a disk, so that its files appear in a folder: an SD card's second partition at `/data`, for instance. A `MOUNT` block names the disk and the folder. It can also be scratch space held in memory, which vanishes when the machine stops. |
+| **the kernel** | The core of the operating system: the part that drives the hardware and decides what each program is allowed to do. Harobanda uses the Linux kernel, unmodified; the machine file decides which of its parts are switched on. What is new is everything above it. |
+| **to judge** | To check something against what it must be, and say plainly where it differs. Before anything runs, `harb check` judges a machine file against the language's rules. At the end of every boot, the machine judges what it printed against what its file says a correct boot prints. |
+| **the court** | The part of `harb` that judges a machine file before anything runs (`harb check`). It gives a verdict, which is why it is called a court: accepted, or refused with the line number and the reason in plain words. It is checked in turn against example files it must accept and more it must refuse (`zig build court`). |
+| **the plan** | The order in which the machine will do things when it boots: which disks first, which programs after which. `harb plan` works it out from the file and prints it before anything runs. |
+| **an image** | The exact files a machine boots from: the kernel, `harb`, the programs, the machine file itself, and a copy of what a correct boot must print. A change to the machine is a new image, built from the changed file. |
+| **QEMU** | A free program that imitates a whole computer, so a machine can boot on your laptop with no board at all. |
+| **PID 1** | The first program the kernel starts when a computer boots. It starts every other program and looks after them until the machine stops. Every Linux system has one (on Ubuntu it is systemd); on a declared machine it is `harb` itself, reading the machine file. PID means process ID, the number the kernel gives each running program. |
+| **the transcript** | Everything one boot printed, from the first line to the last. The machine prints a line for every step as it takes it, which this project calls narrating. |
+| **a pin** | A saved copy of a transcript someone read and found right, kept in the repository as `machines/<name>.expected`. The next boot is compared with it line by line, so any change shows up as a difference. |
+| **a world** | One service while it runs, inside walls the kernel keeps: what it did not ask for (the network, a disk, starting other programs) it does not have. The word is this project's; the walls are Linux's own (namespaces and control groups). |
+| **the envelope** | The walls around one world: exactly what it may see and do, and how much memory and processor time it may use. They are worked out from what the world declared it `NEEDS`, never from a separate permission file someone could edit later. |
+| **the floor** | What no world may do, whatever it declared: attach or detach disks, set the clock, load code into the kernel, rename the machine, build or enter walls of its own, look inside or take control of another program, or restart the box. |
+| **EGRESS** | The list of networks a machine may reach beyond its own. The kernel is given a route (the directions to a network) to those and to no others, and every boot says so. A route is not a wall: the machine knows no way anywhere else, which is not the same as being blocked from finding one. |
+| **a trial** | How an update is installed: it is written to a second copy of the system and booted once. If that boot matches its file, the update is committed, which means kept. If it does not, the board goes back to the copy it had. |
+| **the watchdog** | A timer in the hardware that restarts the board unless the system keeps resetting it. The machine stops resetting it when a trial boot does not match its file, or when a service that promised to keep answering goes quiet: a bad update undoes itself, and a stuck box restarts. |
+| **a fleet** | A set of machines checked together, in a `.fleet` file. Some mistakes only show across a set: two boxes that each claim to be the network's server are each fine alone. |
+| **a seat** | One unit of work in this project's history, tagged like `NS-1` or `SEE-1`. Every rule in the doctrine names the seat that paid for it, and `experiment/PROTOCOL.md` tells each story in full. |
 
 ## Not a new kernel
 
@@ -93,8 +224,9 @@ ends by showing you how to break it.
   <img src="site/harobanda-diagram-4.png" width="820" alt="The kernel is the same, everything above it is not. An ordinary distribution stacks a shell, a package manager, a service manager, mutable configuration, a login and a store on Linux LTS. Harobanda puts only the declaration, where every line says why, and the court, which judges it before it runs, on the same Linux LTS.">
 </p>
 
-Underneath runs the same Linux LTS kernel as Ubuntu and Red Hat — the same
-drivers, the same hardware support, the same years of hardening. What was
+Underneath runs the same Linux LTS kernel as Ubuntu and Red Hat (LTS: long-term
+support, a version maintained for years) — the same drivers, the same hardware
+support, the same years of hardening. What was
 rethought is everything the industry treats as inevitable above it. For an IT
 team that is the reassuring part: no exotic kernel to certify; what is new is
 the discipline above it.
@@ -103,12 +235,13 @@ the discipline above it.
 
 | on an ordinary OS | on a declared machine |
 |---|---|
-| the box's address can move after a power cut | its address and name come from the file, and it serves them itself |
-| a bad update can leave it unable to boot | an update is a trial, committed only if its boot matches the file |
+| the box's address can move after a power cut | its network address and its name are written in the file, and the box itself tells the other devices where to find it |
+| a bad update can leave it unable to boot | an update is tried once and kept only if its boot matches the file; otherwise the board goes back to the version it had |
 | a shell and packages to patch and guard | no shell and no packages: most of what you usually secure is not there |
 | "the data stays here" is a policy on paper | one declared line leaves the box no route out, and every boot says so |
+| an AI agent is limited by its instructions | an agent has what its declaration grants, and the kernel holds it there |
 | you hope it behaves as intended | it checks its own boot against its file, every time |
-| records are whatever the software kept | a device signs its own boot record; anyone with the fleet file can check it |
+| records are whatever the software kept | the box signs a record of every boot with a key only it holds, and anyone with its public key can check that no record was altered |
 
 An update, concretely — two copies of the system, and a trial:
 
@@ -116,14 +249,17 @@ An update, concretely — two copies of the system, and a trial:
   <img src="site/harobanda-diagram-5.png" width="820" alt="Two slots, a trial, and a timer that is not software. Slot A runs; the update is written to slot B, not yet trusted; slot B boots with the watchdog armed. If its boot matches what the file declared, it is committed and the watchdog keeps being fed. If not, the feed stops and the board boots slot A again.">
 </p>
 
-The emulator proves the trial and the rollback today; the Raspberry Pi's own
-hardware watchdog is the next step (see [What is real today](#what-is-real-today)).
+The emulator proves the trial and the rollback today. On a real board the
+last word belongs to the watchdog, a timer in the hardware that restarts the
+board unless the system keeps resetting it; the Raspberry Pi's is the next
+step (see [What is real today](#what-is-real-today)).
 
 **Who it is for.** Whoever answers for a whole solution, not only its code.
 The programmer, whose machine is its own configuration and its own
 documentation. The administrator, who has no shell to secure and no packages
 to patch. The auditor, who can read the whole machine in one file and check a
-signed record of every boot.
+signed record of every boot. And whoever puts an AI agent to work, and has to
+answer for what it can reach.
 
 Two real engagements shaped the design: a restaurant in Lyon whose whole
 service runs on one box behind the counter, and a national NGO in Niger whose
@@ -208,24 +344,29 @@ Honesty is part of the design, so these are the plain limits.
   judge themselves in an emulator today. No customer yet runs a critical
   production workload on one.
 - **The kernel underneath is borrowed on purpose** — the same Linux LTS the
-  major distributions ship, pinned by digest and rebuilt by your own
-  toolchain. Borrowed is not the same as withdrawable.
+  major distributions ship, pinned by digest (a fingerprint of the exact
+  source, so any change to it would show) and built by your own compiler.
+  Borrowed is not the same as withdrawable.
 - **The card has not met a Pi yet.** The Raspberry Pi 4 image boots under
   QEMU's `raspi4b` and is judged against a pinned transcript; the real board
   is the next step.
 - **Single-binary deployment is the goal, not yet the whole reality.**
-  Declaring, judging and emulating need only this binary; producing a
-  flashable image still calls a standard kernel build underneath.
+  Declaring, judging and planning need only this binary. Booting in an
+  emulator, and producing an image you can write to a card, still need QEMU
+  and a standard kernel build underneath (see [Try it](#try-it)).
 - **It will never be a product you buy from a vendor**, because a vendor
   inside the system is the one thing it refuses. That is not a gap to close.
 
 ## Three profiles, one language
 
-| profile | substrate | state |
-|---|---|---|
-| **hosted** | the Linux kernel, a static userland, this binary as PID 1 | **boots** on x86_64 and aarch64 under QEMU, and as a Raspberry Pi 4 image; judged |
-| **edge** | no kernel — the binary is the device (MicroRing's substrate) | declared and judged; projected to MicroRing; not yet booted |
-| **touch** | a tablet's own kernel, with the app as its launcher | declared and judged; not built |
+A profile is the kind of device a machine file describes. The language is the
+same for all three.
+
+| profile | the device | what runs on it | state |
+|---|---|---|---|
+| **hosted** | a PC, a server, a Raspberry Pi | the Linux kernel, a few self-contained programs (no shared libraries to install), and `harb` itself as the first program the kernel starts (PID 1) | **boots** on x86_64 and ARM processors under QEMU, and as a Raspberry Pi 4 image; judged |
+| **edge** | a microcontroller: a small chip with no operating system underneath | one program that is the whole device (MicroRing's side of the family) | declared and judged; turned into a MicroRing project; not yet booted |
+| **touch** | a tablet | the tablet's own kernel, with the app as the only thing it starts | declared and judged; not built |
 
 ## Where things are
 
@@ -234,14 +375,14 @@ Honesty is part of the design, so these are the plain limits.
 | the machine language: its kinds and their closed menus | `declarative/machine/GRAMMAR.md` | every case pinned, in `zig build court` |
 | the parser and the court's checks | `src/machine.zig` | unit tests and fixtures |
 | the boot plan, derived | `src/plan.zig` | fixtures |
-| PID 1 | `src/init.zig` | its own transcript, run for real |
-| the image: initramfs, kernel fragment, boot line | `src/image.zig` | QEMU transcripts against `machines/*.expected` |
+| PID 1: `harb` as the first program the machine runs | `src/init.zig` | its own transcript, run for real |
+| the image: the files the machine boots from, the kernel's options, the boot settings | `src/image.zig` | QEMU transcripts against `machines/*.expected` |
 | the network: the wire is up before any service | `src/netcfg.zig`, `src/net.zig` | fixtures and a two-machine boot |
 | identity: a device's key, and the record it signs | `src/journal.zig` | `machines/qemu_identity.expected` |
 | a fleet: facts about a set, and the keys a device used to have | `src/fleet.zig` | `declarative/fleet/`, `experiment/os7_fleet.sh` |
 | updates: two slots, and a trial before any commit | `src/update.zig` | the card read back after a trial |
 | the guided tour, judged like any other claim | `src/learn.zig` | `harb learn --check` |
-| the pages: every code line fits GitHub's column, and every machine a page shows in full is one the court accepts | `src/docs.zig` | `harb docs --check`, in `zig build court` |
+| the pages: every code line fits GitHub's column, every machine a page shows in full is one the court accepts, and the words are the tour's own | `src/docs.zig` | `harb docs --check`, in `zig build court` |
 | the reference machines | `machines/` | each boots and is judged against its pin |
 | the illustrated long version | `site/` — open `site/index.html` | the court judges every machine it shows in full |
 | the vendored kernel, pinned by digest | `vendor/PIN.md` | kernel.org's own sums |
@@ -263,7 +404,8 @@ zig build cross -j2
 
 `zig build cross` is not optional: `src/init.zig` only compiles for Linux, and
 Zig analyses only the side of a compile-time branch it takes, so a Windows
-build proves nothing about PID 1.
+build proves nothing about PID 1, the part of `harb` that runs as the
+machine's first program.
 
 The experiments that boot real machines, each judged against a pinned
 transcript:

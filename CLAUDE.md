@@ -215,6 +215,20 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   nobody had fetched, a fetch that took the NEWEST kernel rather than
   the pinned one, and a runtime (stzr) from a private repository -- so a
   stranger's first boot is `qemu_egress`, which runs only `harb`.
+- **A word is explained by what it DOES, never by another metaphor, and
+  it is worded ONCE** (DOC-2): "the court: the judge of the grammar" and
+  "PID 1 ... reaps them" taught nothing to a reader who did not already
+  know. The author's rule for every Softanza project is the educational
+  one: say "which disks it uses", not "what it mounts"; say what "judge"
+  does in practice where it first does work. `learn.words` is the one
+  wording; the README's "The words, in plain terms" and `site/words.html`
+  carry it verbatim, and `harb docs --check` compares them -- regenerate
+  both from the source when a word changes, never retype. **The moment a
+  claim is pushed to the front is the moment to read it again**: the AI
+  facet held six sentences stronger than the code (no firewall behind
+  EGRESS; the journal signs BOOTS, never an agent's actions; the twin and
+  the agent's half of the proposal loop are not built). Never write
+  "best": say what is specific and checked, and what is not built.
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.
@@ -581,7 +595,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

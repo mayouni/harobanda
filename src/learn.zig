@@ -97,18 +97,39 @@ const WIN = "D:\\GitHub\\" ++ repo;
 /// the one way this tour tells a reader to run something inside WSL
 const RUN_WSL = "wsl -d Ubuntu -- bash /mnt/d/GitHub/" ++ repo ++ "/experiment/";
 
+/// The project's words, in plain terms and in the order a reader meets
+/// them. Each says what the thing DOES, never another metaphor: "the judge
+/// of the grammar" explained a metaphor with a metaphor, and a reader who
+/// does not already know what a PID or a mount is learned nothing from it
+/// (DOC-2). The README's "The words, in plain terms" and the site's
+/// words.html carry this list word for word, and `harb docs --check` fails
+/// on any difference: one wording, three places, one judge. No dashes and
+/// no `|` in a definition -- the tour prints ASCII, the pages print their
+/// own dashes, and a table cell cannot hold a pipe.
 pub const words = [_][2][]const u8{
-    .{ "a machine", "One computer, written down: what it is, what it mounts, what it runs. A `.machine` file under `machines\\`. Nothing more -- it is text until something builds it." },
-    .{ "a declaration", "A block in that file: `DEFINE SERVICE mine AS ( ... ) RATIONALE \"...\"`. The RATIONALE is not a comment; the grammar requires it, so every part of a machine says why it is there." },
-    .{ "a clause", "One line inside a declaration, like `RUN [...]` or `NEEDS [...]`. Each kind of declaration has a closed list of clauses it accepts, and anything else is refused by name." },
-    .{ "a world", "One running program the machine declared -- a SERVICE, once it is alive. Called a world because it gets its own little universe: its own view of the network, the storage and the process table." },
-    .{ "the envelope", "What the kernel lets a world see and do. Derived from what the world declared it NEEDS, never granted by a separate permission file." },
-    .{ "the court", "The judge of the grammar. A file of cases -- some that must be ACCEPTED, more that must be REFUSED, each with the exact words its refusal has to contain. `zig build court` runs them all." },
-    .{ "a pin", "A stored copy of everything a boot should print. Boot again and the court diffs the two, so any change shows up as a diff instead of a shrug." },
-    .{ "the transcript", "Everything one boot actually printed, from the first line of PID 1 to the halt." },
-    .{ "PID 1", "The first process the kernel starts, which on this machine is `harb` itself. It mounts, it starts the worlds, it reaps them, and it narrates every step." },
-    .{ "a fleet", "A set of machines judged TOGETHER, in a `.fleet` file. Some mistakes are only visible across a set -- two boxes that each call themselves the server of one network are each faultless alone." },
-    .{ "a seat", "One unit of work in this project's history, tagged like `NS-1` or `SEE-1`. Every doctrine line names the seat that paid for it, and `experiment/PROTOCOL.md` tells each story in full." },
+    .{ "a machine", "One computer, written down in a `.machine` file: which board and processor it has, which disks it uses, which programs it runs, and what each program may touch. It is only text until it is built." },
+    .{ "a declaration", "One block of that file, starting with `DEFINE`: the machine itself, a program, a disk, a network, a permission. Every block must end with a `RATIONALE`, which says in plain words why it is there, and a file with one missing is refused." },
+    .{ "a clause", "One line inside a block, such as `RUN [...]` (the program to start) or `NEEDS [...]` (what it must be allowed to do). Each kind of block accepts a fixed list of clauses, and any other is refused by name." },
+    .{ "a service", "A program the machine starts and looks after, declared with `DEFINE SERVICE`. It says what to run, whether to restart it when it stops, and what it needs." },
+    .{ "a capability", "One kind of access a program must be granted before it has it: `network`, `filesystem` (the disks), `process` (starting other programs), and a few more. A program that did not ask for `network` runs with no network at all, because the kernel gives it none." },
+    .{ "to mount", "To attach a disk, or one part of a disk, so that its files appear in a folder: an SD card's second partition at `/data`, for instance. A `MOUNT` block names the disk and the folder. It can also be scratch space held in memory, which vanishes when the machine stops." },
+    .{ "the kernel", "The core of the operating system: the part that drives the hardware and decides what each program is allowed to do. Harobanda uses the Linux kernel, unmodified; the machine file decides which of its parts are switched on. What is new is everything above it." },
+    .{ "to judge", "To check something against what it must be, and say plainly where it differs. Before anything runs, `harb check` judges a machine file against the language's rules. At the end of every boot, the machine judges what it printed against what its file says a correct boot prints." },
+    .{ "the court", "The part of `harb` that judges a machine file before anything runs (`harb check`). It gives a verdict, which is why it is called a court: accepted, or refused with the line number and the reason in plain words. It is checked in turn against example files it must accept and more it must refuse (`zig build court`)." },
+    .{ "the plan", "The order in which the machine will do things when it boots: which disks first, which programs after which. `harb plan` works it out from the file and prints it before anything runs." },
+    .{ "an image", "The exact files a machine boots from: the kernel, `harb`, the programs, the machine file itself, and a copy of what a correct boot must print. A change to the machine is a new image, built from the changed file." },
+    .{ "QEMU", "A free program that imitates a whole computer, so a machine can boot on your laptop with no board at all." },
+    .{ "PID 1", "The first program the kernel starts when a computer boots. It starts every other program and looks after them until the machine stops. Every Linux system has one (on Ubuntu it is systemd); on a declared machine it is `harb` itself, reading the machine file. PID means process ID, the number the kernel gives each running program." },
+    .{ "the transcript", "Everything one boot printed, from the first line to the last. The machine prints a line for every step as it takes it, which this project calls narrating." },
+    .{ "a pin", "A saved copy of a transcript someone read and found right, kept in the repository as `machines/<name>.expected`. The next boot is compared with it line by line, so any change shows up as a difference." },
+    .{ "a world", "One service while it runs, inside walls the kernel keeps: what it did not ask for (the network, a disk, starting other programs) it does not have. The word is this project's; the walls are Linux's own (namespaces and control groups)." },
+    .{ "the envelope", "The walls around one world: exactly what it may see and do, and how much memory and processor time it may use. They are worked out from what the world declared it `NEEDS`, never from a separate permission file someone could edit later." },
+    .{ "the floor", "What no world may do, whatever it declared: attach or detach disks, set the clock, load code into the kernel, rename the machine, build or enter walls of its own, look inside or take control of another program, or restart the box." },
+    .{ "EGRESS", "The list of networks a machine may reach beyond its own. The kernel is given a route (the directions to a network) to those and to no others, and every boot says so. A route is not a wall: the machine knows no way anywhere else, which is not the same as being blocked from finding one." },
+    .{ "a trial", "How an update is installed: it is written to a second copy of the system and booted once. If that boot matches its file, the update is committed, which means kept. If it does not, the board goes back to the copy it had." },
+    .{ "the watchdog", "A timer in the hardware that restarts the board unless the system keeps resetting it. The machine stops resetting it when a trial boot does not match its file, or when a service that promised to keep answering goes quiet: a bad update undoes itself, and a stuck box restarts." },
+    .{ "a fleet", "A set of machines checked together, in a `.fleet` file. Some mistakes only show across a set: two boxes that each claim to be the network's server are each fine alone." },
+    .{ "a seat", "One unit of work in this project's history, tagged like `NS-1` or `SEE-1`. Every rule in the doctrine names the seat that paid for it, and `experiment/PROTOCOL.md` tells each story in full." },
 };
 
 pub const lessons = [_]Lesson{
@@ -1413,7 +1434,7 @@ fn wrapped(w: *std.Io.Writer, pad: []const u8, text: []const u8) !void {
 }
 
 pub fn glossary(w: *std.Io.Writer) !void {
-    try w.print("\n  The words this tour uses, in the order you meet them.\n", .{});
+    try w.print("\n  The words this project uses, in plain terms, in the order you meet them.\n", .{});
     try rule(w);
     for (words) |pair| {
         try w.print("\n  {s}\n", .{pair[0]});

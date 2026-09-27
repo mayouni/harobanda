@@ -21,9 +21,9 @@
     <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
     <nav class="nav" id="nav">
       <a href="why.html">Why</a>
+      <a href="ai.html">AI &amp; agents</a>
       <a href="machine.html">The machine</a>
       <a href="build.html">Build</a>
-      <a href="ai.html">AI &amp; agents</a>
       <a href="enterprise.html">Enterprise</a>
       <a href="field.html">In the field</a>
     </nav>
@@ -37,7 +37,7 @@
       <div>
         <p class="eyebrow">A sovereign operating system</p>
         <h1 style="margin-top:16px;"><span class="l1">The machine,</span><br><em>declared.</em></h1>
-        <p class="hero-sub">Built from first principles, on proven Linux, for critical work that must keep running — and stay its owner's — when everything else stops.</p>
+        <p class="hero-sub">Built on proven Linux, for AI agents you must be able to govern, and for critical work that must keep running — and stay its owner's — when everything else stops.</p>
         <div class="hero-meta">
           <span class="chip"><b>declare</b> · judge · plan · boot · narrate</span>
           <span class="chip">one file, <b>one job</b></span>
@@ -74,7 +74,7 @@ machine hello <span class="d">--</span> hosted / x86_64 / kernel linux <span cla
 reach 8.8.8.8 <span class="d">--</span> <span class="k">no route: this machine knows no way there</span>
 <span class="d">boot: judge --</span> the boot <span class="k">matches its expectation</span> (/etc/expected, 14 lines)</pre>
           </div>
-          <p class="cap"><b>check</b> reads the file and rules on it; the script builds a reference machine into an image, boots it in QEMU, and the machine judges its own boot — here, that it knows no way to the open internet. No hardware needed.</p>
+          <p class="cap"><b>check</b> reads the file and rules on it. The script builds a reference machine into an image and boots it in QEMU, a program that imitates a whole computer. Its first line is <code>harb</code> itself, started by the kernel as the machine's first program (PID 1); its last compares the boot with the file — here, that it knows no way to the open internet. No hardware needed.</p>
         </div>
       </div>
     </div>
@@ -88,10 +88,28 @@ reach 8.8.8.8 <span class="d">--</span> <span class="k">no route: this machine k
     </div>
     <div class="four">
       <div class="card"><span class="n">01</span><h4>You wrote it</h4><p>A few lines of plain text: what the machine is, and the one program it runs.</p></div>
-      <div class="card"><span class="n">02</span><h4>It was judged</h4><p><code style="color:var(--laterite)">harb check</code> ruled on the file before anything ran — and would have refused it by name.</p></div>
-      <div class="card"><span class="n">03</span><h4>It booted</h4><p>A machine built from a file like this one, in an emulator on your own laptop. No board to buy.</p></div>
-      <div class="card"><span class="n">04</span><h4>It judged itself</h4><p>At the end it checked what it did against what its file declared. That is the whole method.</p></div>
+      <div class="card"><span class="n">02</span><h4>It was judged</h4><p>That is, checked: before anything ran, <code style="color:var(--laterite)">harb check</code> read the file against the language's rules — every line one it knows, every program granted what it asks for, every part saying why it is there. Break a rule and it refuses, naming the line and the reason.</p></div>
+      <div class="card"><span class="n">03</span><h4>It booted</h4><p>A machine built from a file like this one, in an emulator on your own laptop, printing a line for every step it took. No board to buy.</p></div>
+      <div class="card"><span class="n">04</span><h4>It judged itself</h4><p>At the end, the machine compared what it had printed, line by line, with what its file says a correct boot prints. A difference is listed, and an update that differs is not kept. That is the whole method.</p></div>
     </div>
+    <p class="muted prose" style="margin-top:clamp(20px,2.6vw,28px)">New to a word here — PID 1, the kernel, a world, a pin? <a href="words.html">Every word this project uses, in plain terms →</a></p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Built for governed AI agents</p>
+      <h2>An agent has what its file grants — and the kernel, not a policy, holds it there.</h2>
+    </div>
+    <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
+      <p class="lead">An AI agent that can act needs limits it cannot talk its way out of. Instructions can be argued with, and a policy enforced by software above the operating system is only as strong as that software. On a declared machine the agent is one program the file names, and the kernel — the core of the operating system, which decides what every program may do — gives it exactly what the file grants and nothing else.</p>
+    </div>
+    <div class="four">
+      <div class="card"><h4>No network unless declared</h4><p>A program that did not ask for the network runs with none at all: the kernel gives it an empty one, with nothing to send data through.</p></div>
+      <div class="card"><h4>No disk unless declared</h4><p>A program that did not ask for the disks sees none of them, and one that did can be limited to the ones it names.</p></div>
+      <div class="card"><h4>A ceiling it cannot pass</h4><p>Memory and processor time are capped per program by the kernel. Past its memory, the agent is stopped; nothing else on the box notices.</p></div>
+      <div class="card"><h4>No way around the box</h4><p>No program may attach disks, set the clock, load code into the kernel, look inside another program or restart the box — and there is no shell to open and nothing to install.</p></div>
+    </div>
+    <p class="prose" style="margin-top:clamp(20px,2.6vw,28px)">Every limit here is built, and proven by a reference machine whose boot shows the kernel holding a program to it. Not built yet: a firewall, a signed record of each action an agent takes, and the tools for an agent to propose a change. <a href="agents.html">The agent floor, in full →</a></p>
   </section>
 
   <section class="wrap block">
@@ -109,7 +127,7 @@ reach 8.8.8.8 <span class="d">--</span> <span class="k">no route: this machine k
   <section class="wrap block">
     <div class="panel prose">
       <p class="eyebrow lat" style="margin-bottom:10px">What is real today</p>
-      <p style="font-size:18px;line-height:1.6;">It is a working system, and a young one. Declared machines boot and judge themselves in an emulator today; <b>no customer yet runs a critical production workload on one.</b> The kernel underneath is borrowed on purpose — the same Linux LTS the major distributions ship, pinned and rebuilt by your own toolchain. And it will never be a product you buy from a vendor, because a vendor inside the system is the one thing it refuses.</p>
+      <p style="font-size:18px;line-height:1.6;">It is a working system, and a young one. Declared machines boot and judge themselves in an emulator today; <b>no customer yet runs a critical production workload on one.</b> The kernel underneath is borrowed on purpose — the same long-term-support Linux the major distributions ship, fingerprinted so that any change to its source would show, and built by your own compiler. And it will never be a product you buy from a vendor, because a vendor inside the system is the one thing it refuses.</p>
       <p style="margin-top:14px;"><a href="field.html">The full list of limits, without flattery →</a></p>
     </div>
   </section>
@@ -120,10 +138,10 @@ reach 8.8.8.8 <span class="d">--</span> <span class="k">no route: this machine k
       <h2>Seven ways in.</h2>
     </div>
     <div class="explore">
-      <a class="xcard" href="why.html"><span class="k">Why</span><h3>Where this came from</h3><p>The context that produced it, what it is <em>not</em> against the tools you already run, the gap in all three kinds of OS — and the three differences that follow.</p><span class="go">Five pages →</span></a>
-      <a class="xcard" href="machine.html"><span class="k">The machine</span><h3>How it works</h3><p>Not a new kernel, the eight words it uses, the four promises kept before any hardware is bought, and what running one is like.</p><span class="go">Four pages →</span></a>
-      <a class="xcard" href="build.html"><span class="k">Build</span><h3>Build on it</h3><p>Your apps as declared services, the local-first model, and one binary to a PC, a Pi, a tablet or a sensor.</p><span class="go">Three pages →</span></a>
       <a class="xcard" href="ai.html"><span class="k">AI &amp; agents</span><h3>The full stack &amp; AI</h3><p>The computational foundation, the floor an agent cannot escape or abuse, and a governed assistant that keeps your data on the box.</p><span class="go">Three pages →</span></a>
+      <a class="xcard" href="why.html"><span class="k">Why</span><h3>Where this came from</h3><p>The context that produced it, what it is <em>not</em> against the tools you already run, the gap in all three kinds of OS — and the three differences that follow.</p><span class="go">Five pages →</span></a>
+      <a class="xcard" href="machine.html"><span class="k">The machine</span><h3>How it works</h3><p>Not a new kernel, every word it uses in plain terms, the four promises kept before any hardware is bought, and what running one is like.</p><span class="go">Four pages →</span></a>
+      <a class="xcard" href="build.html"><span class="k">Build</span><h3>Build on it</h3><p>Your apps as declared services, the local-first model, and one binary to a PC, a Pi, a tablet or a sensor.</p><span class="go">Three pages →</span></a>
       <a class="xcard" href="enterprise.html"><span class="k">Enterprise</span><h3>Enterprise IT</h3><p>Security, scalability and integration answered from one design — and why it is cloud-friendly rather than a cloud replacement.</p><span class="go">For IT →</span></a>
       <a class="xcard" href="field.html"><span class="k">In the field</span><h3>Cases &amp; status</h3><p>Two real engagements — a restaurant in Lyon and an NGO in Niger — and an honest account of what is real today.</p><span class="go">Two pages →</span></a>
       <a class="xcard act" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer"><span class="k">The source</span><h3>Run one yourself</h3><p>Nine lines of text, and the court rules on them. One script, and a machine boots in an emulator on the laptop you are reading this on — no hardware, no account. The tour is eighteen lessons, and every one of them ends by showing you how to break it.</p><span class="go">Read the source, build it, boot it →</span></a>
@@ -137,6 +155,7 @@ reach 8.8.8.8 <span class="d">--</span> <span class="k">no route: this machine k
     <div class="foot-id">
       <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
       <p>Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+      <p><a href="words.html">Every word this site uses, in plain terms &rarr;</a></p>
     </div>
     <div class="credits">
       <div class="credit-logos">

@@ -21,9 +21,9 @@
     <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
     <nav class="nav" id="nav">
       <a href="why.html">Why</a>
+      <a href="ai.html">AI &amp; agents</a>
       <a href="machine.html" class="active">The machine</a>
       <a href="build.html">Build</a>
-      <a href="ai.html">AI &amp; agents</a>
       <a href="enterprise.html">Enterprise</a>
       <a href="field.html">In the field</a>
     </nav>
@@ -53,9 +53,9 @@
         <p class="lead prose">The whole loop is the same five verbs the machine lives by, judged and planned by one binary, <code style="font-family:var(--mono);font-size:.85em;color:var(--laterite)">harb</code>, and booted by one script. There is no configuration to discover and no hidden state to unravel. Every command tells you what it did and why.</p>
         <div class="steps">
           <div class="step"><b>Declare it</b><p>Write a <code>.machine</code> file. Every line must say why it is there.</p></div>
-          <div class="step"><b>Judge it — <code>harb check</code></b><p>The court accepts it, or refuses it in plain words: <code>needs the network, which nothing here grants.</code></p></div>
+          <div class="step"><b>Judge it — <code>harb check</code></b><p>That is, check it against the language's rules before anything runs: every line one the language knows, every program granted what it asks for, every part saying why. It accepts the file, or refuses it with the line and the reason in plain words: <code>alerts needs network, which no declaration grants</code>.</p></div>
           <div class="step"><b>Plan it — <code>harb plan</code></b><p>See the order things will happen in, before any of it does. A mistake is caught here, not at 2 a.m.</p></div>
-          <div class="step"><b>Boot it — in QEMU</b><p>One script builds the image and boots the whole machine in an emulator, and the machine judges its own transcript against what the file said: <code>bash experiment/os2_image.sh qemu_egress</code>. The README's <em>Try it</em> lists what the first boot needs installed.</p></div>
+          <div class="step"><b>Boot it — in QEMU</b><p>One script builds the image and boots the whole machine in QEMU, a program that imitates a computer. The machine prints a line for every step, and at the end compares what it printed, line by line, with what the file says a correct boot prints: <code>bash experiment/os2_image.sh qemu_egress</code>. The README's <em>Try it</em> lists what the first boot needs installed.</p></div>
           <div class="step"><b>Break it</b><p>Change one line and watch the machine catch the difference. A guarantee you have only seen succeed is a claim.</p></div>
         </div>
         <p class="muted prose">No board is needed to learn any of this — it runs on a plain laptop.</p>
@@ -125,6 +125,7 @@ against what the emulator PRINTED:
   <div class="wrap foot-in">
     <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
     <p>Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+    <p><a href="words.html">Every word this site uses, in plain terms &rarr;</a></p>
   </div>
 </footer>
 

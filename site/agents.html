@@ -21,9 +21,9 @@
     <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
     <nav class="nav" id="nav">
       <a href="why.html">Why</a>
+      <a href="ai.html" class="active">AI &amp; agents</a>
       <a href="machine.html">The machine</a>
       <a href="build.html">Build</a>
-      <a href="ai.html" class="active">AI &amp; agents</a>
       <a href="enterprise.html">Enterprise</a>
       <a href="field.html">In the field</a>
     </nav>
@@ -46,19 +46,19 @@
   </section>
 <section class="wrap block">
     <div class="prose stack-gap" style="margin-bottom:clamp(26px,3.5vw,38px)">
-      <p class="lead">An AI agent is a program like any other, and here it runs inside the same declared envelope as everything else. That single fact is what makes a genuinely secure, sovereign agent possible — not a guardrail bolted on after the model, but the design of the floor beneath it.</p>
-      <p>Give an agent real power inside its world, and remove every way for it to reach beyond that world. The machine does exactly that, by construction:</p>
+      <p class="lead">An AI agent is a program like any other, and here it runs inside the same walls as everything else: exactly what its declaration grants, held there by the kernel, the core of the operating system that decides what every program may do. That single fact is what makes a genuinely governed agent possible — not a guardrail bolted on after the model, but the design of the floor beneath it: the operating system itself.</p>
+      <p>Give an agent real power inside its walls, and remove every way for it to reach beyond them. What the machine does today, and what it does not do yet:</p>
     </div>
     <div class="trio" style="margin-bottom:clamp(26px,3.5vw,40px)">
-      <div class="card"><h4>Only what it was granted</h4><p>An agent has exactly the capabilities its declaration lists — a network only if declared, storage only where mounted, and nothing else. There is no shell to break out to, because there is no shell.</p></div>
-      <div class="card"><h4>Never past its budget</h4><p>Memory and processor time are held by the kernel, per program, in its own group. A runaway agent is stopped inside its own envelope; the rest of the machine never feels it.</p></div>
-      <div class="card"><h4>The data cannot leave</h4><p>Declare a box with no route out, and “the model runs here, the data stays here” becomes a fact the court enforces — the sovereign answer for AI on sensitive data.</p></div>
-      <div class="card"><h4>It proposes; the floor disposes</h4><p>Because the machine is a declared grammar, an agent can draft a change to it. The court judges the draft, a person ratifies it, the box tries it once and rolls back if wrong.</p></div>
-      <div class="card"><h4>Every act is recorded</h4><p>The machine keeps a signed, tamper-evident record of what it did. An agent's actions are auditable afterwards by anyone holding the public key — evidence, not logs.</p></div>
-      <div class="card"><h4>It rehearses first</h4><p>Risky effects are tried on a virtual twin that cannot touch the real machine; only a plan leaves the sandbox. Rehearse, then commit through the trial.</p></div>
+      <div class="card"><h4>Only what it was granted</h4><p>A program that did not ask for the network runs with none at all: the kernel gives it an empty one. It sees only the disks it asked for, and it cannot start another program unless its file says it may. There is no shell to break out to, because there is no shell.</p></div>
+      <div class="card"><h4>Never past its budget</h4><p>Memory and processor time are capped per program by the kernel. Past its memory, a runaway agent is stopped; past its share of the processor, it waits. The rest of the machine never feels it.</p></div>
+      <div class="card"><h4>No route out</h4><p>Declare a network with <code>EGRESS none</code> and the kernel has no directions to anywhere beyond it — and every boot says so. The model runs here, and the box knows no way to send the data elsewhere. A firewall that also stops a program looking for a way is not built yet.</p></div>
+      <div class="card"><h4>A change goes through a check and a trial</h4><p>The machine is a file in a small, strict language, which an agent can write as well as a person can. <code>harb check</code> judges the draft before anything runs, a person approves it, and the box tries it once and goes back if its boot does not match. The check and the trial are built; the tools for the agent's side are not yet.</p></div>
+      <div class="card"><h4>Every boot is signed</h4><p>The machine signs a record of each boot: which file it ran, and whether the boot matched it. Anyone holding its public key can check that no record was changed. What an agent does inside its walls is that program's record to keep — the machine signs what the machine was.</p></div>
+      <div class="card"><h4>Not built yet, said plainly</h4><p>A firewall. A signed record of each action an agent takes. The tools for an agent to propose a change and a person to approve it. And rehearsing an action first on Softanza's virtual twin, a model of the system that cannot touch the real one.</p></div>
     </div>
 
-    <p class="eyebrow" style="margin-bottom:14px;">An agent proposes a change — and the floor judges it before anything happens</p>
+    <p class="eyebrow" style="margin-bottom:14px;">An agent proposes a change — and <code>harb check</code> judges it before anything happens</p>
     <div class="term" aria-label="An agent drafting a change to the machine, judged by the court" style="margin-bottom:clamp(26px,3vw,36px)">
       <div class="term-bar"><i></i><i></i><i></i><b>an agent, inside the envelope</b></div>
 <pre><span class="d"># 1 · the agent drafts a new service</span>
@@ -66,16 +66,16 @@
   RUN [<span class="c">"/app/alerts"</span>], NEEDS [network]
 ) <span class="kw">RATIONALE</span> <span class="c">"watch, and warn"</span>
 
-<span class="d"># 2 · the court judges the draft — and refuses it</span>
-alerts needs network, which nothing grants <span class="r">→ refused</span>
+<span class="d"># 2 · harb check judges the draft — and refuses it</span>
+alerts needs network, which no declaration grants <span class="r">→ refused</span>
 
-<span class="d"># 3 · the agent revises; a person ratifies the file</span>
+<span class="d"># 3 · the agent revises; a person approves the file</span>
 + <span class="kw">DEFINE CAPABILITY</span> network ...  <span class="d">(a human approves)</span>
 
 <span class="d"># 4 · the box tries it once, then decides for itself</span>
-<span class="d">boot:</span> slot B <span class="d">--</span> a trial
-<span class="d">boot: judge --</span> <span class="k">matches</span>
-<span class="d">boot:</span> slot B <span class="d">--</span> <span class="k">committed</span></pre>
+<span class="d">boot:</span> slot B <span class="d">--</span> a trial (committed is A)
+<span class="d">boot: judge --</span> <span class="k">the boot matches its expectation</span> ...
+<span class="d">boot:</span> slot B <span class="d">--</span> <span class="k">committed</span>: ...</pre>
     </div>
   </section>
 </main>
@@ -84,6 +84,7 @@ alerts needs network, which nothing grants <span class="r">→ refused</span>
   <div class="wrap foot-in">
     <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
     <p>Named for the Harobanda bridge across the Niger River that joins the two banks of Niamey, the capital. The OS also joins a solution's promises to the machine that keeps them.</p>
+    <p><a href="words.html">Every word this site uses, in plain terms &rarr;</a></p>
   </div>
 </footer>
 
