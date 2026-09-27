@@ -509,8 +509,11 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   is not built), and chapter 07 ratified. What still waits on him, and
   why no delegation reaches it: ~~one word for 06 -- X or A~~ **ruled A
   by the author, 2026-09-27**, and ~~ratifying 06~~ **ratified by him as
-  drafted** the same day (the ZQL -> Z go routed through Central), and
-  **08 ratified by him** too; the Pi kit, a purchase; and
+  drafted** the same day, and **08 ratified by him** too. The ZQL -> Z
+  go did NOT reach Central through a CONCLUSIONS line -- a log it records,
+  not a queue it routes -- and this desk is NOT IN `protocol/REPOS.md`, so
+  Central cannot see it: relayed to Central's live session directly
+  (2026-09-27 05:49) with the author's go to route it and to adopt this desk; the Pi kit, a purchase; and
   PUBLISHING, prepared (licence in, no secret in any file or any of the
   142 commits) and not done, because a public copy cannot be recalled.
 - **What is built, and where its story is.** Every seat is written up in

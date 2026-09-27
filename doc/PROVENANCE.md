@@ -168,7 +168,10 @@ go for the ZQL -> Z rename in three repositories; 08 follows 06. Both
 remain drafts, and ratifying 06 is the author's.* *Ratified by him the
 same day, as drafted; the go is routed through Central; 08 is no longer
 blocked and awaits his word.* *And 08 ratified by him the same day: every
-chapter of the corpus is ratified.*
+chapter of the corpus is ratified.* *Amended again: the go was NOT routed
+by what this desk wrote -- a line in dashboard/CONCLUSIONS.md is a log Central records, not a channel it routes from, and this desk was never adopted into protocol/REPOS.md, so Central could not see it at all. Checked at the author's
+request and found still waiting; relayed to Central's live session
+directly, 2026-09-27 05:49, with his go to route it and to ADOPT this desk.*
 
 **Not done on anyone's word.** The board's kit (`STZ-OS-HARDWARE-01`) is
 a purchase, and physical. Publishing the repository, private to public,
