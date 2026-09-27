@@ -181,6 +181,34 @@ pub const User = struct {
 pub const Ipv4 = struct { text: []const u8, addr: u32 };
 pub const Destination = struct { text: []const u8, ip: u32, prefix: u6 };
 
+/// Whether a list of destinations reaches EVERY IPv4 address, however it
+/// is spelled (STZ-OS-RULING-06). `0.0.0.0/0` is the one-piece spelling;
+/// `10.0.0.0/0` writes the same network over another address; `0.0.0.0/1`
+/// with `128.0.0.0/1` is the same claim in two pieces. EGR-2's first fix
+/// looked only for a prefix of 0, and the boot went on printing "and
+/// nowhere else: no default route" over the two-piece spelling while the
+/// machine reached 8.8.8.8. So the question is what the list COVERS, not
+/// how it is written -- and the grammar and the boot line ask it of this
+/// one function, never of two readings that have to agree.
+pub fn coversEverything(dests: []const Destination) bool {
+    const space: u64 = @as(u64, 1) << 32;
+    // [0, reach) is covered; extend it by any destination that starts
+    // inside it, until nothing extends it further
+    var reach: u64 = 0;
+    while (reach < space) {
+        var next = reach;
+        for (dests) |d| {
+            const size: u64 = @as(u64, 1) << @as(u6, @intCast(32 - @as(u8, d.prefix)));
+            // the NETWORK the prefix names, not the address as written
+            const lo = @as(u64, d.ip) & ~(size - 1);
+            if (lo <= reach and lo + size > next) next = lo + size;
+        }
+        if (next == reach) return false;
+        reach = next;
+    }
+    return true;
+}
+
 /// How far a granted network reaches (EGR-1).
 ///
 /// CAPABILITY network says the machine may speak; EGRESS says whom to.
@@ -935,6 +963,9 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
                         const cidr = parseCidr(s2) orelse return ctx.refuse(c.line, "EGRESS takes destinations as address/prefix (10.9.0.0/16), and '{s}' is not one", .{s2});
                         try dests.append(arena, .{ .text = s2, .ip = cidr.ip, .prefix = cidr.prefix });
                     }
+                    // a list is a perimeter; one that covers every address
+                    // is not one, and everywhere already has a spelling
+                    if (coversEverything(dests.items)) return ctx.refuse(c.line, "EGRESS names a perimeter, and these destinations together cover every address there is: a machine that may go anywhere says so by declaring no EGRESS at all, so that a list never reads as a perimeter it is not", .{});
                     egress = .{ .to = try dests.toOwnedSlice(arena) };
                 },
             }
@@ -1259,4 +1290,23 @@ test "a shell line is refused by name" {
     try std.testing.expectError(error.Refused, declare(arena_state.allocator(), src, &r));
     try std.testing.expect(std.mem.indexOf(u8, r.message, "never a shell line") != null);
     try std.testing.expectEqual(@as(usize, 2), r.line);
+}
+
+test "a list covers everything however it is spelled, and half the space is still a perimeter" {
+    const t = std.testing;
+    const D = Destination;
+    const all = [_]D{.{ .text = "0.0.0.0/0", .ip = 0, .prefix = 0 }};
+    const elsewhere = [_]D{.{ .text = "10.0.0.0/0", .ip = 0x0A000000, .prefix = 0 }};
+    const halves = [_]D{ .{ .text = "128.0.0.0/1", .ip = 0x80000000, .prefix = 1 }, .{ .text = "0.0.0.0/1", .ip = 0, .prefix = 1 } };
+    const quarters = [_]D{ .{ .text = "a", .ip = 0x00000000, .prefix = 2 }, .{ .text = "b", .ip = 0x40000000, .prefix = 2 }, .{ .text = "c", .ip = 0x80000000, .prefix = 2 }, .{ .text = "d", .ip = 0xC0000000, .prefix = 2 } };
+    const half = [_]D{.{ .text = "0.0.0.0/1", .ip = 0, .prefix = 1 }};
+    const gap = [_]D{ .{ .text = "0.0.0.0/2", .ip = 0, .prefix = 2 }, .{ .text = "128.0.0.0/1", .ip = 0x80000000, .prefix = 1 } };
+    const one = [_]D{.{ .text = "10.9.0.0/16", .ip = 0x0A090000, .prefix = 16 }};
+    try t.expect(coversEverything(&all));
+    try t.expect(coversEverything(&elsewhere)); // the network, not the address as written
+    try t.expect(coversEverything(&halves)); // two pieces, in either order
+    try t.expect(coversEverything(&quarters));
+    try t.expect(!coversEverything(&half)); // half the internet IS a perimeter
+    try t.expect(!coversEverything(&gap)); // 64.0.0.0/2 is missing
+    try t.expect(!coversEverything(&one));
 }

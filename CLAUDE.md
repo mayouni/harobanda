@@ -71,6 +71,15 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A check that asks how a claim is SPELLED is narrower than one that
+  asks what it COVERS** (EGR-3): EGR-2 recognised "everywhere" by a
+  prefix of 0, and `EGRESS ["0.0.0.0/1", "128.0.0.0/1"]` walked past it
+  while the boot announced "nowhere else" over a machine that reached
+  8.8.8.8. The grammar now refuses any list whose NETWORKS together cover
+  every address (STZ-OS-RULING-06: everywhere is said by declaring no
+  EGRESS), and the boot line asks the same `coversEverything` -- never a
+  second reading that has to agree. When a guard recognises a claim by
+  its shape, ask the question the claim is ABOUT.
 - **A key a device no longer holds is trusted THROUGH one entry, and the
   chain draws the line** (RET-1): a card that DIED needs its old records
   checkable; a card that was STOLEN goes on signing with the same key. A
@@ -444,9 +453,12 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
      GPIO is 3.3 V). It does not name what a first boot also needs and a
      desk may not have: the Pi 4's USB-C supply (5.1 V, 3 A) and a way
      to write a micro-SD card from this PC.
-  2. **Rebuild the card before anything reads it.** The image in
-     `zig-out/image/makeen_box/` was built 2026-09-15, before the
-     rename, and its boot line says `stzos.slot=A rdinit=/stzos`.
+  2. ~~**Rebuild the card before anything reads it.**~~ **Done
+     2026-09-27** (EGR-3): `makeen_box` was booted to settle its pin and
+     the card was rebuilt with it -- `harb.slot=A rdinit=/harb`. What
+     follows is why it mattered, and why step 3 still stands. The image in
+     `zig-out/image/makeen_box/` had been built 2026-09-15, before the
+     rename, and its boot line said `stzos.slot=A rdinit=/stzos`.
      Flashed as it is, the three judges SPLIT: the board judges itself
      against the stale `/etc/expected` it carries and passes, `harb
      judge` derives from today's source and fails, and the first real
@@ -478,22 +490,29 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   gcc stays; the instrument and its six probes are kept.
 - **Open seams, none blocking.** A trusted CLOCK (the journal carries no
   timestamp because the board has no clock, and a box with `EGRESS none`
-  cannot ask the network -- where the trust comes from is the author's
-  ruling). ~~REVOCATION in a fleet~~ -- built as RETIREMENT (RET-1);
+  cannot ask the network -- where the trust comes from was the author's
+  ruling -- ruled 2026-09-27, STZ-OS-RULING-07: attested by a declared
+  time authority, never assumed; the seat is not built). ~~REVOCATION in
+  a fleet~~ -- built as RETIREMENT (RET-1);
   what remains is retiring the RECORDS a retired card signed. Hardware
   DECLARED but never observed (in the OS-5 plan, step 4). Forwarding
   between two links. A bounded window for the TRIAL itself. The Commons
   as the first declared server world. Haro's runtime as the image's
   second binary. `makeen_box` gets its own `DOMAIN` at OS-5, when there
   is a NIC to serve.
-- **Waiting on the author.** The hardware above; ratification of
-  `softanza/vision/` chapters 06, 07 and 08 (`07-SYSTEM.md` is v0.1
-  DRAFT and the three refusals are ruled in `doc/PROVENANCE.md`); the
-  estate's tarball MIRROR errand (availability, not integrity -- the
-  digests are pinned).
+- **Waiting on the author.** Delegated 2026-09-27 ("do what waits on me
+  on my behalf") and ruled in `doc/PROVENANCE.md` as STZ-OS-RULING-03..08:
+  retirement's three choices, the MIRROR (a private release, restored
+  and verified), the LICENCE (MIT, the estate's), EGRESS (everywhere has
+  one spelling), the CLOCK (time is attested, never assumed -- the seat
+  is not built), and chapter 07 ratified. What still waits on him, and
+  why no delegation reaches it: **one word for 06 -- X or A** for the
+  algorithm letter, which also frees 08; the Pi kit, a purchase; and
+  PUBLISHING, prepared (licence in, no secret in any file or any of the
+  142 commits) and not done, because a public copy cannot be recalled.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

@@ -5,10 +5,15 @@
 `fixtures.json` sha256:
 
 ```
-f26bdc087e85393f33058b3c7f907d8729e97e282db227bd91a00a3c8ac311ce
+03b94b47d81cf13b119df0c8bd47e74840d402531451a568e3fe70f20a7a5741
 ```
 
-(Before the RETIREMENT seat of 2026-09-26 (RET-1): the file hashed to
+(Before the EGRESS ruling of 2026-09-27 (STZ-OS-RULING-06):
+`f26bdc087e85393f33058b3c7f907d8729e97e282db227bd91a00a3c8ac311ce`,
+110/110; the widening added A24 and R88-R90 -- a list whose
+destinations cover every address is refused however it is spelled,
+and half the space is still a perimeter.
+Before the RETIREMENT seat of 2026-09-26 (RET-1): the file hashed to
 `4c6aef6163840094...`, 107/107 -- and that digest was NEVER PINNED. The
 rename of 2026-09-20 changed fixture A3 (`stzos project` became `harb
 project` inside the cold-room sensor's own comment) and left
@@ -82,7 +87,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **110/110** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **114/114** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):

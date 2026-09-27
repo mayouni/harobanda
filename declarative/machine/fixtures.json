@@ -416,6 +416,22 @@
           "single"
         ]
       }
+    },
+    {
+      "id": "A24",
+      "name": "half the address space is still a perimeter: a list is refused only when it covers EVERY address",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"10.0.2.15/24\",\n  GATEWAY \"10.0.2.2\",\n  EGRESS [\"0.0.0.0/1\"]\n) RATIONALE \"x\"\n",
+      "expect": {
+        "counts": {
+          "services": 0,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "order": []
+      }
     }
   ],
   "rejects": [
@@ -940,6 +956,24 @@
       "name": "a RETIREMENT belongs to a fleet file: which keys a device has held is a fact about a set",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE RETIREMENT carte_1 AS (MEMBER caisse, KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", THROUGH \"8268cdcd77e480573bef62425e35af5cf938d837f3467c514fd2db198d43767a\") RATIONALE \"x\"\n",
       "refusal": "RETIREMENT belongs to a fleet file"
+    },
+    {
+      "id": "R88",
+      "name": "everywhere has one spelling, and it is no EGRESS at all",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"10.0.2.15/24\",\n  GATEWAY \"10.0.2.2\",\n  EGRESS [\"0.0.0.0/0\"]\n) RATIONALE \"x\"\n",
+      "refusal": "cover every address"
+    },
+    {
+      "id": "R89",
+      "name": "the same claim in two pieces: EGR-2's lie, spelled so a prefix-0 check missed it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"10.0.2.15/24\",\n  GATEWAY \"10.0.2.2\",\n  EGRESS [\"0.0.0.0/1\", \"128.0.0.0/1\"]\n) RATIONALE \"x\"\n",
+      "refusal": "cover every address"
+    },
+    {
+      "id": "R90",
+      "name": "a prefix of 0 written over another address is still every address",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"10.0.2.15/24\",\n  GATEWAY \"10.0.2.2\",\n  EGRESS [\"10.0.0.0/0\"]\n) RATIONALE \"x\"\n",
+      "refusal": "cover every address"
     }
   ]
 }

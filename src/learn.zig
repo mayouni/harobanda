@@ -191,11 +191,11 @@ pub const lessons = [_]Lesson{
         .run = "zig build court -j2",
         .look = &.{
             "ok   pin -- declarative/machine/fixtures.json is the file declarative/machine/PINNING.md names (sha256 ...)",
-            "110/110 -- 23 accepts, 87 rejects, 0 failures      (the machine grammar)",
+            "114/114 -- 24 accepts, 90 rejects, 0 failures      (the machine grammar)",
             "32/32 -- 6 accepts, 26 rejects, 0 failures         (the fleet grammar)",
             "learn -- 18 lessons: every path they name is present, ...",
             "",
-            "Eighty-seven of those cases are things the language REFUSES, and each one",
+            "Ninety of those cases are things the language REFUSES, and each one",
             "carries the exact words its refusal must contain. So refusing for the wrong",
             "reason fails as loudly as not refusing at all. And the file of cases is",
             "itself PINNED: its sha256 is written in PINNING.md beside it, and the court",
@@ -642,31 +642,42 @@ pub const lessons = [_]Lesson{
             "mechanism stops, and says so (EGR-1).",
         },
         .breakit = .{
-            .proves = "that the perimeter is one line of declaration",
+            .proves = "that a list is a perimeter, and a list that is not one is refused however it is spelled",
             .file = "machines\\qemu_egress.machine",
             .where = "in the `lan` network block, on the line reading  EGRESS [\"10.9.0.0/16\"]",
             .how = .replace,
             .paste = &.{
                 "  EGRESS [\"0.0.0.0/0\"]",
             },
-            .then = RUN_WSL ++ "os2_image.sh qemu_egress",
+            .then = EXE ++ " check machines\\qemu_egress.machine",
             .expect = &.{
-                "boot: egress lan -- 0.0.0.0/0: a DEFAULT route, so this machine knows a",
-                "way anywhere",
-                "reach 8.8.8.8 -- a route exists: this machine knows a way there",
+                "machine (line 35): EGRESS names a perimeter, and these destinations",
+                "together cover every address there is: a machine that may go anywhere",
+                "says so by declaring no EGRESS at all, so that a list never reads as a",
+                "perimeter it is not",
                 "",
-                "You declared a reach to everything, so a route to everything was written.",
-                "Two lines again: the announcement and the fact, moving together.",
+                "0.0.0.0/0 is every address there is, and a list is a PERIMETER: it names",
+                "where the machine may go. A machine that may go anywhere already has a way",
+                "to say so -- no EGRESS at all -- so this spelling is refused before",
+                "anything is built. This lesson is why. It used to boot and announce",
+                "`0.0.0.0/0 and nowhere else: no default route`, a sentence false twice:",
+                "0.0.0.0/0 has no `else`, and a route to it through the gateway is exactly",
+                "what a default route IS. The first fix made the boot say so truthfully",
+                "(EGR-2); the grammar now refuses to let the claim be made at all.",
                 "",
-                "That first line is worded the way it is because of THIS lesson. It used to",
-                "read `0.0.0.0/0 and nowhere else: no default route` -- a sentence that is",
-                "false twice, since 0.0.0.0/0 has no `else` and a route to it through the",
-                "gateway is precisely what a default route IS. The boot announced a",
-                "perimeter it was not keeping, which is the one thing a boot may never do.",
-                "Running this step is what found it.",
+                "NOW THE SAME CLAIM IN TWO PIECES. Replace that line with this one:",
                 "",
-                "NOW THE SECOND EXPERIMENT, which looks equivalent and is not. Put the file",
-                "back, then delete the EGRESS clause ALTOGETHER -- these two lines:",
+                "    EGRESS [\"0.0.0.0/1\", \"128.0.0.0/1\"]",
+                "",
+                "and run the same command. Neither piece is 0.0.0.0/0, and together they",
+                "are every address. The first fix looked for a prefix of 0, so this",
+                "spelling booted and announced `and nowhere else: no default route` while",
+                "8.8.8.8 was reachable -- the same lie, in two pieces. It is refused now",
+                "with the same sentence on the same line, because the check asks what a",
+                "list COVERS, never how it is written (EGR-3).",
+                "",
+                "NOW THE SPELLING THAT IS ALLOWED, which looks equivalent and is not. Put",
+                "the file back, then delete the EGRESS clause ALTOGETHER -- these two lines:",
                 "",
                 "    GATEWAY \"10.0.2.2\",",
                 "    EGRESS [\"10.9.0.0/16\"]",
@@ -685,6 +696,10 @@ pub const lessons = [_]Lesson{
                 "nothing produced a byte-identical transcript. Here they do not. Same",
                 "outcome, different RECORD: an explicit EGRESS leaves evidence that someone",
                 "decided, and silence leaves evidence that nobody did.",
+                "",
+                "That last boot ran on a machine you edited, so underneath it the PIN",
+                "refuses the transcript, with a diff of exactly the lines you changed:",
+                "lesson 6's second judge, doing its job. The undo below makes it match.",
             },
             .undo = "git checkout -- machines/qemu_egress.machine",
         },
@@ -1884,8 +1899,14 @@ test "a step that boots an edited machine warns about the pin it will fail" {
             try t.expect(std.mem.indexOfScalar(u8, pin, '\\') == null);
         }
     }
-    // lessons 4, 5, 7, 9, 10 and 11 all edit a pinned machine and boot it
-    try t.expectEqual(@as(usize, 6), warned);
+    // lessons 4, 5, 7, 9 and 10 edit a pinned machine and boot it. Lesson
+    // 11 did too, until STZ-OS-RULING-06: `EGRESS ["0.0.0.0/0"]` is now
+    // REFUSED before anything is built, so its step is a check and the
+    // derivation rightly does not fire. Its last experiment still boots an
+    // edited machine, in prose, and says the pin will refuse it in its own
+    // words -- verified by running it, 2026-09-27. This count is a
+    // tripwire: it moved, somebody looked, and the reason is here.
+    try t.expectEqual(@as(usize, 5), warned);
 }
 
 test "a lesson that can be run names this binary" {

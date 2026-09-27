@@ -42,7 +42,19 @@ ZIGCC-1); nothing in the shipped images depends on it.
 
 A digest makes a tarball's CONTENT sovereign, not its EXISTENCE. Both
 tarballs are fetched from their upstream and would have to be fetched
-again on a new machine. An estate mirror is a routed errand for the
-author (the kernel's 148 MB exceeds a git file limit, so it needs
-storage he picks); until then the honest statement is: integrity ours,
+again on a new machine. An estate mirror was a routed errand for the
+author (the kernel's 148 MB exceeds a git file limit, so it needed
+storage he picks); until then the honest statement was: integrity ours,
 availability theirs.
+
+**Mirrored 2026-09-27 (STZ-OS-RULING-04).** Every file above, and the Pi
+firmware, is a release asset of this repository:
+
+    gh release download vendor-mirror-2026-09-27 -R mayouni/harobanda
+    sha256sum -c SHA256SUMS
+
+Each was verified against its pin before upload, and the mirror was
+judged by a RESTORE -- downloaded whole, every digest checked, the two
+tarballs against the pins in this file. The pins here stay the
+authority; the mirror carries a copy of them so it can be checked on its
+own. Integrity ours, availability ours, for as long as the account is.

@@ -72,6 +72,103 @@ ruling can be one-meaning-per-word:
 - **Device** — the L2 language (ex-MicroRing's seam); PIN here is its
   first seat, and the two must converge or one must yield.
 
+## The rulings of 2026-09-27 (taken on the author's behalf, at his word)
+
+The author delegated what waited on him: *"do what waits on me on my
+behalf."* Ruled, each open to his reversal -- and one row left for him
+with its reason, and two acts no delegation reaches.
+
+**STZ-OS-RULING-03 — retirement, as built at RET-1.** Its three open
+choices confirmed. A declaration of its own, `DEFINE RETIREMENT`, and not
+a clause on the member, because each retirement must say WHY: a card
+that failed and a card that went missing are the same mechanism and
+different stories. The word *retirement*, not *revocation*: revocation
+promises the key is dead, and what the fleet can say is how far it is
+still trusted. And a record that never reaches the head is refused even
+when every entry in it verifies, because a shorter record and a chain
+the key's holder wrote since cannot be told apart.
+
+**STZ-OS-RULING-04 — the mirror.** `vendor/PIN.md` routed this errand to
+the author because it "needs storage he picks". Picked: a release on
+this repository, `vendor-mirror-2026-09-27`, private while the
+repository is. It carries the kernel, the Linux Zig and the Pi firmware,
+each verified against its pin before it left this machine, and a
+`SHA256SUMS`; the pins in git stay the authority. It was judged by what
+CONSUMES a mirror -- a restore: downloaded whole into scratch, every file
+checked against the mirror's list and the two tarballs against the
+digests git pins, all four OK. Integrity was already ours; availability
+is now ours too, for as long as the account is.
+
+**STZ-OS-RULING-05 — the licence: MIT, (c) 2026 Mansour Ayouni.** The
+licence every code repository of the estate that carries one already
+carries -- stzlib, Ring++, MicroRing, zin; a floor with its own would be
+a second answer to one question. `LICENSE` says what it covers and what
+it does not: a machine is built from Linux, which is GPL-2.0 and is
+fetched and pinned, never contained here, and an IMAGE that carries the
+kernel carries the kernel's obligations. Adding it changes nothing about
+who can read the repository.
+
+**STZ-OS-RULING-06 — everywhere has one spelling.** EGR-2 left open
+whether the grammar should refuse the explicit spelling of an
+unrestricted reach. Refused: a list of EGRESS destinations is a
+perimeter, and one whose destinations together cover every address is
+refused however it is spelled -- `0.0.0.0/0`, `10.0.0.0/0`, or
+`0.0.0.0/1` with `128.0.0.0/1`. A machine that may go anywhere says so
+by declaring no EGRESS at all. Ruling it found a live defect: EGR-2's
+fix looked for a prefix of 0, and printed "and nowhere else" over the
+two-piece spelling while the machine reached 8.8.8.8 (EGR-3 in
+`experiment/PROTOCOL.md`).
+
+**STZ-OS-RULING-07 — where the trust in time comes from.** Time is
+ATTESTED, never assumed.
+1. The floor's journal stays clock-free. The sequence is the order, and
+   a time nothing attests is the epoch wearing a date's authority
+   (JRN-1).
+2. A time enters a record only as a signed statement bound to a chain
+   head -- "the chain ending at H existed no later than T" -- made by a
+   time authority the fleet DECLARES and enrolls like any member, so it
+   is checked the way every record is: with a public key, holding no
+   secret, by anyone who has the fleet file (FLT-1).
+3. What that authority stands on is its own declaration: a
+   battery-backed clock declared as hardware, or AUTHENTICATED network
+   time (NTS, RFC 8915) through a declared EGRESS -- never plain NTP,
+   which is a claim the wire makes about itself.
+4. A machine with no declared source says its records are ORDERED and
+   UNDATED, in those words, rather than print a date it cannot stand
+   behind.
+
+For the Makeen box, `EGRESS none` turns the consequence into hardware: a
+clock module the box declares, or a member of its fleet that has one. A
+till's business records need dates -- the world's to keep, the floor's to
+make trustworthy -- so this is the box's next hardware question after
+the board itself. The mechanism is a seat, not built.
+
+**STZ-OS-RULING-08 — chapter 07 ratified; 06 and 08 left for the
+author.** `softanza/vision/07-SYSTEM.md`, the floor's own chapter, is
+ratified in session by delegation. What it asks is the direction the
+author has ordered for two weeks: that the floor is part of the vision,
+that it is built by the kernel act and judged by the court, and that
+sovereignty there means what it means everywhere else. Its facts carry
+Amended blocks where they have moved (the name), and every chapter that
+named the floor `stzos` carries one beside it.
+
+Chapters 06 and 08 are NOT ratified on his behalf, and not for want of
+reading them. 06 holds a choice on which his own proposal and the draft
+disagree -- **X or A** for the algorithm letter; the draft counter-
+proposes A because X collides with `stzx`, the external door -- and its
+ratification starts a rename across four runtimes and three
+repositories this session does not work in. 08 draws the alphabet with
+A in it and hands adaptations to fifteen other works, so it cannot be
+ratified apart from 06. Both wait on that one word.
+
+**Not done on anyone's word.** The board's kit (`STZ-OS-HARDWARE-01`) is
+a purchase, and physical. Publishing the repository, private to public,
+was held by the author on 2026-09-20; it is PREPARED -- the licence is
+in, and no secret, key or personal address was found in any tracked file
+or in any of the 142 commits of its history -- and not done, because a
+copy made public cannot be recalled from the caches that take it. It
+waits on his yes.
+
 ## The ruling of 2026-09-20
 
 **STZ-OS-RULING-02 — Harobanda, and `harb` as the command.** The author
@@ -112,6 +209,9 @@ recorded under RET-1 and PIN-1 in `experiment/PROTOCOL.md`. The pins the
 rename touched that no boot has settled since -- `qemu_budget`,
 `qemu_confine`, `qemu_egress`, `names`, `makeen_box`, `makeen_qemu` --
 carry no digest and changed only in text; they are claims until booted.*
+
+*Settled 2026-09-27: all six booted and matched their pins unchanged
+(EGR-3). The rename is now booted everywhere it touched.*
 
 ## The rulings of 2026-09-12 (taken on the author's behalf, at his word)
 

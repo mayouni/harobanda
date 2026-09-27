@@ -1,3 +1,97 @@
+# EGR-3 — everywhere has one spelling, and the check asks what a list covers
+
+The author delegated what waited on him (2026-09-27: "do what waits on me
+on my behalf"). One row was EGR-2's open question: should the grammar
+REFUSE the explicit spelling of an unrestricted reach? Ruled yes
+(STZ-OS-RULING-06), and ruling it found a live defect.
+
+## The defect ruling it found
+
+EGR-2 fixed what the BOOT said about `EGRESS ["0.0.0.0/0"]` by looking for
+a destination whose prefix is 0. Reading that code to implement the
+ruling: `EGRESS ["0.0.0.0/1", "128.0.0.0/1"]` has no prefix of 0, so the
+boot printed `0.0.0.0/1, 128.0.0.0/1 and nowhere else: no default route`
+while the two routes between them reach every address, 8.8.8.8 included.
+EGR-2's lie, spelled in two pieces. The guard asked how the claim was
+SPELLED; the claim is about what the list COVERS.
+
+## The rule
+
+A list of destinations is a perimeter. `machine.coversEverything` asks
+whether the NETWORKS a list names -- not the addresses as written, so
+`10.0.0.0/0` is every address -- together span the whole space, by
+extending the covered prefix of the space until nothing extends it. The
+grammar refuses such a list, however it is spelled; everywhere already
+has a spelling, which is to declare no EGRESS at all. And `egressLine`
+asks the SAME function: a boot line is never the place a coverage rule is
+re-derived, and two readings that must agree are two readings that will
+not.
+
+Fixtures: A24 (half the space, `0.0.0.0/1`, is still a perimeter --
+accepted, which is what proves the check is not over-eager), R88
+(`0.0.0.0/0`), R89 (the two halves), R90 (`10.0.0.0/0`). 114/114; one
+unit test holds seven lists, three that cover and four that do not.
+
+## The lesson, rewritten from its own run
+
+Lesson 11's BREAK IT had the reader paste `EGRESS ["0.0.0.0/0"]` and boot.
+Under the ruling that line never boots, so the step is now `harb check`,
+and the lesson was rewritten from what it printed when RUN -- in
+PowerShell, the reader's shell, exactly as the lesson prints the command,
+after Git Bash had eaten the backslash in `machines\qemu_egress.machine`
+on the first attempt. Both spellings: the same sentence, the same line
+(35), exit 1. The third experiment -- deleting EGRESS, the spelling that
+IS allowed -- was booted too: no `boot: egress` line, the network line
+grows its gateway, 8.8.8.8 is reachable, and the pin refuses the
+transcript, which the lesson now says in its own words.
+
+That last sentence tripped a census: a unit test counts the lessons whose
+BREAK IT boots an edited machine, because those get a DERIVED warning
+that the pin will refuse them (LRN-1). It expected six and found five.
+The per-lesson assertion -- the warning fires exactly when a reader would
+see `JUDGED: FAIL` -- held for every lesson; only the census moved,
+because lesson 11's step is a check now. The count is a tripwire, it
+tripped, somebody looked, and the reason is written beside it.
+
+## Probed before it was believed
+
+Five mutations in fresh builds, each red for its own reason, and each
+naming what must NOT go red -- the part that proves precision:
+
+| mutation | convicts | and not |
+|---|---|---|
+| the old rule (a single prefix of 0) | R89 | R88, R90 |
+| the refusal removed | R88, R89, R90 | |
+| an over-eager check (every list is everywhere) | A24, A18 | |
+| the address as written, not its network (court) | R90 | R88, R89 |
+| the same, in the unit test | the coverage test | |
+
+## Also done on the delegation, recorded here because they are acts
+
+- **The rename is booted everywhere it touched.** The six pins RET-1
+  left open all matched unchanged: `qemu_budget` (39 lines),
+  `qemu_confine` (65), `qemu_egress` (20), `names` (68, two machines),
+  `makeen_qemu` (27), `makeen_box` (129). The rename's text edits were
+  consistent wherever the rename had not already been found broken.
+- **The card is rebuilt.** `makeen_box`'s boot rebuilt the SD image, so
+  its boot line reads `harb.slot=A rdinit=/harb`: step 2 of the OS-5
+  plan is done. Step 3 stands -- `card` should REFUSE a stale card, so
+  that the trap cannot come back when a person forgets.
+- **The mirror** (STZ-OS-RULING-04) was uploaded and then judged by a
+  restore: every file back OK, the two tarballs identical to the digests
+  git pins.
+
+## The doctrine
+
+**A check that asks how a claim is SPELLED is narrower than one that
+asks what it COVERS** (EGR-3): EGR-2 recognised "everywhere" by a prefix
+of 0, and the same claim in two pieces walked past it, with the boot
+announcing a perimeter over it. When a guard recognises a claim by its
+shape, find the claim's other shapes -- or ask the question the claim is
+ABOUT.
+
+---
+
 # RET-1 — a key a device used to have, trusted through one entry; and what the first real run found
 
 The author's word, 2026-09-26: plan the Raspberry task for later and
@@ -161,7 +255,8 @@ that says so; a clean one exits 0.
   readable, and nothing yet says they are wanted no longer.
 - The pins the rename touched that no boot has settled since:
   `qemu_budget`, `qemu_confine`, `qemu_egress`, `names`, `makeen_box`,
-  `makeen_qemu` -- textual, no digest, claims until booted.
+  `makeen_qemu` -- textual, no digest, claims until booted. *Settled
+  2026-09-27: all six booted and matched unchanged (EGR-3).*
 - A lesson for retirement: the tour teaches the fleet (lesson 14) and not
   yet what happens when a card is replaced.
 

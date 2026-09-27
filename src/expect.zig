@@ -210,10 +210,12 @@ pub fn egressLine(w: *std.Io.Writer, n: *const machine.Network, prefix: []const 
             // can reach. Found by a reader doing lesson 11 of the tour,
             // where `EGRESS ["0.0.0.0/0"]` made 8.8.8.8 reachable while
             // this line still said there was no way there.
-            var everywhere = false;
-            for (dests) |d| {
-                if (d.prefix == 0) everywhere = true;
-            }
+            //
+            // STZ-OS-RULING-06 then made the grammar REFUSE such a list,
+            // in any spelling, so a declared machine never reaches this
+            // branch. It stays, asking the grammar's own function: a boot
+            // line must never be the place a coverage rule is re-derived.
+            const everywhere = machine.coversEverything(dests);
             try w.print("{s}egress {s} -- ", .{ prefix, n.name });
             for (dests, 0..) |d, i| try w.print("{s}{s}", .{ if (i > 0) ", " else "", d.text });
             if (everywhere) {
