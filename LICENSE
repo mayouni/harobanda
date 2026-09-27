@@ -32,13 +32,16 @@ upstream and pinned by digest in vendor/PIN.md; none of them is committed:
 
   Linux 6.12 LTS            GPL-2.0, the kernel's own COPYING
   the Linux Zig toolchain   MIT, the Zig authors
-  Raspberry Pi firmware     the firmware's redistributable binary licence
+  Raspberry Pi firmware     its binary licence, LICENCE.broadcom -- redistribution
+                            must carry that notice with the files
 
 An IMAGE that `harb image` builds contains the Linux kernel. Distributing
 such an image carries the kernel's GPL-2.0 obligations -- chiefly, that its
 source is available -- whatever licence this repository's own code is under.
 The source it was built from is the digest-pinned tarball named in
-vendor/PIN.md.
+vendor/PIN.md. Likewise a CARD image for the Raspberry Pi carries the Pi's
+firmware, and distributing one carries that firmware's licence: its notice,
+LICENCE.broadcom, travels with the card.
 
 The site's fonts, under site/diagrams/fonts/, are IBM Plex, under the SIL Open
 Font License 1.1 (site/diagrams/fonts/LICENSE-IBM-Plex.txt).

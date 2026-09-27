@@ -3,7 +3,8 @@
 ## What this repository is
 
 The operating layer of the Softanza vertical: the machine beneath stz.
-Private; created 2026-09-12 on the author's ruling to push the sovereign
+Public since 2026-09-27, on the author's word (`github.com/mayouni/harobanda`,
+MIT); created 2026-09-12 on the author's ruling to push the sovereign
 stack below Ring++ to the operating system, then MicroRing, then the
 PCB. **Read `doc/VISION.md` and `doc/PROVENANCE.md` before any
 strategic claim**, `doc/GROUND.md` for what the machine is FOR (the
@@ -514,8 +515,10 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   not a queue it routes -- and this desk is NOT IN `protocol/REPOS.md`, so
   Central cannot see it: relayed to Central's live session directly
   (2026-09-27 05:49) with the author's go to route it and to adopt this desk; the Pi kit, a purchase; and
-  PUBLISHING, prepared (licence in, no secret in any file or any of the
-  142 commits) and not done, because a public copy cannot be recalled.
+  ~~PUBLISHING~~ -- **published 2026-09-27 on his word**: the
+  commit history keeps his address as author (his choice; this repo's
+  future commits use his GitHub noreply address), and the firmware's
+  licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
   line carries: EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,

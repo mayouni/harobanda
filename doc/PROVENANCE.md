@@ -174,7 +174,13 @@ request and found still waiting; relayed to Central's live session
 directly, 2026-09-27 05:49, with his go to route it and to ADOPT this desk.*
 
 **Not done on anyone's word.** The board's kit (`STZ-OS-HARDWARE-01`) is
-a purchase, and physical. Publishing the repository, private to public,
+a purchase, and physical. *Amended 2026-09-27: PUBLISHED on the author's
+word the same day, after two findings put to him first -- his address is
+the author of every commit (kept, his choice; this repository's future
+commits use his GitHub noreply address), and the mirror's firmware needed
+its licence to travel with it (LICENCE.broadcom attached before the
+release went public). Verified from outside with no credentials.*
+Publishing the repository, private to public,
 was held by the author on 2026-09-20; it is PREPARED -- the licence is
 in, and no secret, key or personal address was found in any tracked file
 or in any of the 142 commits of its history -- and not done, because a

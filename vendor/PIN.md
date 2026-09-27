@@ -48,7 +48,11 @@ storage he picks); until then the honest statement was: integrity ours,
 availability theirs.
 
 **Mirrored 2026-09-27 (STZ-OS-RULING-04).** Every file above, and the Pi
-firmware, is a release asset of this repository:
+firmware with its licence (`LICENCE.broadcom`, fetched from the same tag
+as the firmware, 1,594 bytes, sha256 `c7283ff5...`), is a release asset of
+this repository -- public since the repository is, and the licence was
+attached before it was, because redistributing the firmware requires its
+notice to travel with it:
 
     gh release download vendor-mirror-2026-09-27 -R mayouni/harobanda
     sha256sum -c SHA256SUMS
