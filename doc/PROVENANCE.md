@@ -165,7 +165,9 @@ ratified apart from 06. Both wait on that one word.
 sentence above overstated what one word frees. 06 also carries the N
 proposal seam and the zin-register question, and ratifying it gives the
 go for the ZQL -> Z rename in three repositories; 08 follows 06. Both
-remain drafts, and ratifying 06 is the author's.*
+remain drafts, and ratifying 06 is the author's.* *Ratified by him the
+same day, as drafted; the go is routed through Central; 08 is no longer
+blocked and awaits his word.*
 
 **Not done on anyone's word.** The board's kit (`STZ-OS-HARDWARE-01`) is
 a purchase, and physical. Publishing the repository, private to public,

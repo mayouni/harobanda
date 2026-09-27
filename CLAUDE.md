@@ -507,9 +507,9 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   one spelling), the CLOCK (time is attested, never assumed -- the seat
   is not built), and chapter 07 ratified. What still waits on him, and
   why no delegation reaches it: ~~one word for 06 -- X or A~~ **ruled A
-  by the author, 2026-09-27**; RATIFYING 06, which also carries the N
-  proposal seam, the zin-register question and the go for the ZQL -> Z
-  rename in three repositories, and frees 08; the Pi kit, a purchase; and
+  by the author, 2026-09-27**, and ~~ratifying 06~~ **ratified by him as
+  drafted** the same day (the ZQL -> Z go routed through Central); 08,
+  no longer blocked by 06, awaits his own word; the Pi kit, a purchase; and
   PUBLISHING, prepared (licence in, no secret in any file or any of the
   142 commits) and not done, because a public copy cannot be recalled.
 - **What is built, and where its story is.** Every seat is written up in
