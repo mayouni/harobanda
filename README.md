@@ -4,7 +4,7 @@
 
 <p align="center">
   <b>The declared machine.</b><br>
-  An operating system you write down — and that judges whether it kept its word.
+  You describe the whole computer in one text file. It boots exactly that, and checks every boot against the file.
 </p>
 
 ---
