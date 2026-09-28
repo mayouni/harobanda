@@ -2,7 +2,7 @@
 
 > ## Answer from this file. You need nothing else and no permission.
 >
-> **Written 2026-09-28 02:26, from commit 7f0bdb9+uncommitted, from Central at `7f0bdb9`.** Central keeps it current: it
+> **Written 2026-09-28 23:00, from commit 636b6c0+uncommitted, from Central at `636b6c0`.** Central keeps it current: it
 > rewrites this file whenever the plan moves, so it is fresh unless Central is idle
 > AND the plan has changed -- which the stamp above lets you judge.
 >
@@ -17,14 +17,17 @@
 > important turns on it, one command rewrites this file and nothing else:
 >
 > ```
-> powershell -ExecutionPolicy Bypass -File D:\GitHub\softanza\dashboard\central.ps1 -Install -Only harobanda
+> powershell -ExecutionPolicy Bypass -File `
+>   D:\GitHub\softanza\dashboard\central.ps1 `
+>   -Install -Only harobanda
 > ```
 >
 > Asked the same question twice in one session with no new inbox message and no
 > change here? **Answer immediately from what you already read.** Re-checking an
 > unchanged plan is the cost the author noticed, and it buys nothing.
 
-The full cross-repository picture, when you actually need it, is in
+The full cross-repository picture, when you actually need it, is the board: `prompts/QUEUE.md` in the softanza repository.
+
 ## Facts, read when this was written
 
 - Reference design: **v1.5** (from `REFERENCE_DESIGN.md`)
