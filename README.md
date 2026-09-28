@@ -459,7 +459,8 @@ carries. The ruling that changed it is STZ-OS-RULING-02 in
 ## Licence
 
 MIT, © 2026 Mansour Ayouni — the licence the estate's other code already
-carries (stzlib, Ring++, MicroRing, zin). [`LICENSE`](LICENSE) says what it
-covers and what it does not: a machine is built from Linux, which is GPL-2.0
-and is fetched and pinned by digest rather than contained here, so an image
-that carries the kernel carries the kernel's obligations.
+carries (stzlib, Ring++, MicroRing, zin). [`LICENSE`](LICENSE) is the
+licence itself, and [`LICENSING.md`](LICENSING.md) says what it covers and
+what it does not: a machine is built from Linux, which is GPL-2.0 and is
+fetched and pinned by digest rather than contained here, so an image that
+carries the kernel carries the kernel's obligations.

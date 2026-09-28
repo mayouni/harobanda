@@ -106,7 +106,11 @@ a second answer to one question. `LICENSE` says what it covers and what
 it does not: a machine is built from Linux, which is GPL-2.0 and is
 fetched and pinned, never contained here, and an IMAGE that carries the
 kernel carries the kernel's obligations. Adding it changes nothing about
-who can read the repository.
+who can read the repository. *Amended 2026-09-28: what it covers and
+what it does not moved from `LICENSE` to `LICENSING.md`, on the author's
+word. With those notes after the MIT text, GitHub did not recognise the
+file and labelled the repository's licence "Other"; `LICENSE` is now the
+MIT text alone. The terms did not change.*
 
 **STZ-OS-RULING-06 — everywhere has one spelling.** EGR-2 left open
 whether the grammar should refuse the explicit spelling of an
