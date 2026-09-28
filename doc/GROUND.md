@@ -277,6 +277,20 @@ bailleurs' reports ask for.
 paragraph above is a projection of the requirements onto the language,
 and the egress seam it needs is not built.
 
+*Amended 2026-09-29, after a security reading of the estate: three
+sentences above are no longer true, two of them never were. Zin's
+regulatory pillar does not carry HAPDP: the word appears nowhere in
+zin, Niger's regime is modelled only as `CNDP loi 2017-28` in a banking
+pack, and the pillar's runtime checks are stubs -- a requirement
+defaults to met and a rule to allow
+(`zin/src/foundry/handler_registry.zig`). Refine's audit chain is a
+specification: the engine is at milestone M0 (version, status and
+init), and `init` writes an empty `.refine/audit.log`. The bridge is
+what those two pillars would carry, not what they carry today. And the
+egress seam this section waits for has existed since EGR-1
+(2026-09-14): `EGRESS` writes the routing table, so the box knows no
+way out; the packet filter behind it is still not built (§6).*
+
 ### 4.3 Sonibank (Niamey; BCEAO and WAEMU supervision, OHADA law)
 
 **The ground.** A small commercial bank where every code change carries

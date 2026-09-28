@@ -45,12 +45,20 @@
 //! installed between the fork and the exec, with `NO_NEW_PRIVS` set, so
 //! it survives `execve` and the world cannot lift it.
 //!
-//! It is NOT a sandbox. A world still sees the machine's filesystem and
-//! its process table; a MOUNT namespace and a PID namespace are named
-//! seams and are not built. Say what is true: a world that did not
-//! declare the network HAS no network, and a world that did not declare
-//! process creation CANNOT create one. Nothing here says anything about
-//! what it can read.
+//! It is NOT a sandbox, and it says what it is. A world that did not
+//! declare the network HAS no network. A world that did not declare
+//! process creation CANNOT create one, and since PID-1 it is alone in a
+//! process table of its own, where no other world's pid exists. Since
+//! MNT-1 the machine's declared storage is detached from a world that did
+//! not declare the filesystem, and since SEE-1 a world that did keeps
+//! only the mounts it names. What every world still has: the image it
+//! was built from, and threads, which are read and not enforced. The
+//! SYS-1 list is refused to every world, and it is a closed list, never a
+//! claim that everything else is safe.
+//!
+//! (Until 2026-09-29 this paragraph said the MOUNT and PID namespaces
+//! were named seams and not built. It was true when NS-1 wrote it and
+//! stale once MNT-1 and PID-1 built both; a security reading found it.)
 //!
 //! The denial is EPERM rather than a kill, deliberately. A world refused
 //! by the kernel reports it in its own words and the transcript carries
