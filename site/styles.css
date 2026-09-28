@@ -380,48 +380,4 @@ p code{color:var(--laterite);}
 .bridge-band{display:block;width:100%;height:auto;aspect-ratio:1675 / 430;object-fit:cover;
   object-position:center 72%;margin:0 0 clamp(28px,4.5vw,56px);}
 
-/* ---------- relief ----------
-   The patterns are drawn from the walls of the National Museum in Niamey:
-   raised geometry on a calm wall (the author's choice, 2026-09-28). The
-   rule is the facade's own -- ornament FRAMES the wall and never covers
-   it: a parapet under the bar, one motif in the empty side of a page
-   head, a medallion where a plain rule stood. Never behind text, never in
-   the reading column, never in a diagram (those keep their own rules).
-   Laterite, because it is already this site's second colour and the
-   opposite of the river's teal; the teal stays the voice of text and
-   links. CSS backgrounds only, so neither a reader nor a screen reader is
-   handed an ornament as content. A data URI cannot read a variable, so
-   each SVG carries the laterite's value, #a9552a, itself. */
-:root{
-  --relief-line:color-mix(in srgb,var(--laterite) 35%,transparent);
-  --parapet:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 11'%3E%3Crect y='10' width='14' height='1' fill='%23a9552a' fill-opacity='.55'/%3E%3Cpath d='M4.5 10V6.3Q4.5 3.4 7 1.4Q9.5 3.4 9.5 6.3V10Z' fill='%23a9552a' fill-opacity='.75'/%3E%3C/svg%3E");
-  --medallion:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23a9552a'%3E%3Ccircle cx='50' cy='50' r='34' stroke-width='9'/%3E%3Cpath d='M50 24L76 50L50 76L24 50Z' stroke-width='8'/%3E%3C/svg%3E");
-  --peaks:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23a9552a' stroke-opacity='.3'%3E%3Cpath d='M8 84L29 24L50 84L71 24L92 84' stroke-width='5'/%3E%3Cpath d='M4 90H96' stroke-width='4'/%3E%3C/svg%3E");
-}
-/* The parapet: the roofline of every page, so it stays with the bar --
-   pointed crenels standing on one line, which is what makes a row of
-   shapes read as a wall's crown rather than a string of beads. */
-.bar{border-bottom:0;padding-bottom:11px;
-  background:var(--parapet) left bottom/14px 11px repeat-x,
-    color-mix(in srgb,var(--bg) 86%,transparent);}
-@media(max-width:900px){.nav{top:calc(100% + 11px);}}
-/* The medallion where a plain rule stood: under every page head, and over
-   every footer except the one the bridge already opens. */
-.pagehead{position:relative;border-bottom:0;
-  background:var(--medallion) center bottom/18px 18px no-repeat,
-    linear-gradient(var(--relief-line),var(--relief-line)) left calc(100% - 8.5px)/calc(50% - 20px) 1px no-repeat,
-    linear-gradient(var(--relief-line),var(--relief-line)) right calc(100% - 8.5px)/calc(50% - 20px) 1px no-repeat;}
-.foot:not(:has(.bridge-band)){border-top:0;
-  background:var(--medallion) center top/18px 18px no-repeat,
-    linear-gradient(var(--relief-line),var(--relief-line)) left 8.5px/calc(50% - 20px) 1px no-repeat,
-    linear-gradient(var(--relief-line),var(--relief-line)) right 8.5px/calc(50% - 20px) 1px no-repeat;}
-/* The twin peaks, in the side of a page head that no text reaches: a title
-   stops at 22ch and a lead at 64ch. Below 960px that side is not empty,
-   so the motif is not drawn there at all. */
-@media(min-width:960px){
-  .pagehead::before{content:"";position:absolute;right:var(--gutter);top:50%;
-    width:clamp(150px,15vw,190px);aspect-ratio:1;transform:translateY(-50%);
-    background:var(--peaks) center/contain no-repeat;pointer-events:none;}
-}
-
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
