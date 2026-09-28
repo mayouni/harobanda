@@ -843,11 +843,14 @@ pub fn main() !u8 {
             try out.print("harb: judge needs <file.machine> and a captured transcript\n", .{});
             return 1;
         }
+        const m = (try load(arena, args[2], out)) orelse return 1;
+        // the board's own emulator lens, from the one place it is written
+        // (image.zig): this verb kept a second copy until CON-1, and the
+        // copy would have judged the emulator without its console lack
         var lens = expect.Lens{};
         if (args.len > 5 and std.mem.eql(u8, args[4], "--lens") and std.mem.eql(u8, args[5], "emulator")) {
-            lens = .{ .watchdog = .off, .network_absent = true };
+            lens = image.emulatorLens(m.board) orelse expect.Lens{};
         }
-        const m = (try load(arena, args[2], out)) orelse return 1;
         const text = std.fs.cwd().readFileAlloc(arena, args[3], 1 << 20) catch |e| {
             try out.print("harb: cannot read {s}: {s}\n", .{ args[3], @errorName(e) });
             return 1;

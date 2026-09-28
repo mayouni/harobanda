@@ -1,3 +1,121 @@
+# CON-1 — a console is where the kernel speaks, and PID 1 asks it
+
+LRN-3 found it by running a BREAK IT: a machine's `CONSOLE` was
+declared, announced and judged, and never acted on. The kernel's
+console came from a board table in `src/image.zig`, and PID 1 only SAID
+the declaration. `qemu_egress` with `CONSOLE "/dev/ttyS3"` booted with
+`console=ttyS0`, printed `boot: console /dev/ttyS3`, and went on
+narrating on ttyS0. And the lie was not hypothetical: the flagship's
+pinned transcript said `boot: console /dev/ttyS1` in every emulated
+boot, while QEMU booted it with `console=ttyAMA0`.
+
+## The question that decides
+
+Two honest shapes were on the table: (a) the boot line follows CONSOLE,
+or (b) the grammar refuses a CONSOLE the board does not use. Which one
+is possible turns on something physical -- can the emulator LISTEN
+wherever a machine declares it speaks? `experiment/console_probe.sh`
+booted images that were already built, changing only `console=` and
+which QEMU serial port feeds stdio:
+
+| boot line | QEMU listens on | heard |
+|---|---|---|
+| PC, `console=ttyS0` | serial 0 (as today) | 18 boot lines |
+| PC, `console=ttyS3` | serial 0 | nothing |
+| PC, `console=ttyS3` | serial 3 only | 18 boot lines |
+| Pi, `console=ttyAMA0` | the PL011 (as today) | 27 boot lines |
+| Pi, `console=ttyS1,115200` | the PL011 | nothing |
+| Pi, `console=ttyS1,115200` | the mini-UART only | two bytes, `bb` |
+
+A PC's four serial ports are real in both worlds, so a declaration can
+choose among them and the emulator can follow it. The Pi cannot be
+followed: QEMU's raspi4b models a mini-UART, and Linux's driver stalls
+on it after two bytes. The board's console is a port the emulator
+cannot carry -- a lack, like its watchdog and its missing NIC.
+
+## Why (a)
+
+- **(b) would not have fixed the lie that was live.** The Pi's only
+  port on the pins is ttyS1 under either rule; the flagship's emulator
+  would have gone on announcing it while speaking on the PL011.
+- **(b) would turn CONSOLE into a restatement.** One legal value per
+  board is a value BOARD already fixes, and SEE-1 says derive what the
+  declaration already knows; a clause is for what it does not.
+- **(a) carries information where the hardware offers a choice**, and
+  the probe showed the whole chain holding for the PC's fourth port.
+
+## What was built
+
+- **The consoles a board HAS** (`machine.boardConsoles`): the PC's
+  `/dev/ttyS0`..`ttyS3`, the ARM emulator's `/dev/ttyAMA0`, the Pi's
+  `/dev/ttyS1` (its PL011 goes to Bluetooth). A hosted CONSOLE names one
+  of them or nothing -- the kernel's own `/dev/console`, which is the
+  board's first. Fixture-first: A25, A26, R91-R94; the court's first
+  run on them was 116/120, the four refusals accepted by the code as it
+  stood.
+- **Both boot lines follow the declaration.** The card's `cmdline.txt`
+  names the port. The emulator's line names it too, and routes QEMU so
+  that every serial port before it goes nowhere and it is stdio: the
+  emulator hears the declared port and no other. For the first port the
+  line is what it always was, byte for byte.
+- **The Pi's emulator speaks on the PL011, and its lens says so**
+  (`Lens.console`). The build's list of the emulator's lacks now has
+  three lines.
+- **PID 1 asks the kernel.** `TIOCGDEV` on its own standard output --
+  `/dev/console` -- returns the real tty's number; PID 1 names it
+  (`machine.consoleDevice`, from the kernel's device numbering) and says
+  the declared line only when the two agree. Otherwise it says both:
+  `boot: console /dev/ttyS1 -- declared, and the kernel speaks on
+  /dev/ttyAMA0`. Under the Pi emulator's lens that line is the lack; on
+  a card it is a boot that differs from its file, and a trial holds.
+- **`harb judge --lens emulator` asks the board's lens** in `image.zig`
+  instead of keeping its own copy (HDW-1). The copy lacked the console
+  and would have judged the emulator by a lens nobody else used.
+
+## Every machine, booted
+
+Every image's PID 1 changed, so every pinned machine was booted:
+`qemu_hello` (35), `qemu_budget` (39), `qemu_confine` (65),
+`qemu_egress` (20), `qemu_identity` (48), `fleet_temoin` (51), the fleet
+arc (43), the two machines on one wire (68) and `makeen_qemu` (27)
+match their pins unchanged -- the kernel named the declared port, so
+PID 1 said what it always said. The four promises match theirs (39).
+The WSL rehearsal is unchanged: `/dev/console` names no port, and
+nothing is asked.
+
+`makeen_box` differed, and the diff was read before it was pinned (SYS-1):
+line 2 and the `steady:` boot's line 2 now say the emulator speaks on
+the PL011, and the `unmet:` trial -- judged by the BOARD's expectation
+-- counts three lacks where it counted two, naming the console pair.
+129 lines to 131, matched again on a second boot. Lessons 17 and 18
+quote the new counts; `learn --check` refused them until they did.
+
+The BREAK IT now in lesson 4 was run before it was written: with
+`CONSOLE "/dev/ttyS3"` the boot line said `console=ttyS3`, QEMU was
+given three `-serial null` and `-serial mon:stdio`, the whole boot was
+heard, and PID 1 said `boot: console /dev/ttyS3` because the kernel
+did. `CONSOLE "/dev/ttyS4"` is refused, naming the four ports.
+
+## Named, not closed
+
+- **The card's witness is unobserved until OS-5.** On a Pi the kernel
+  should report the mini-UART as `/dev/ttyS1` (major 4, minor 65); no
+  board has booted this code.
+- **An edge or touch CONSOLE is the substrate's, and nothing here reads
+  it** -- `harb project` does not carry it to MicroRing. Declared and not
+  acted on in this repository, and now said so in the grammar.
+
+## The law this pays for
+
+**A line that says where the machine is, is said only after asking.**
+A restatement of the declaration cannot be wrong about the declaration,
+and so it is never a witness to the machine. And **when a lack is
+physical, find it before choosing a shape**: one probe showed that one
+board could follow the declaration and the other could not, and the
+choice followed from that, not from taste.
+
+---
+
 # LRN-3 — the tour, walked by a stranger
 
 Found while fixing the README's "Try it" (DOC-1): stz is private, and the

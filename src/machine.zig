@@ -43,6 +43,92 @@ pub fn boardProfile(b: Board) Profile {
         .sim, .pico2, .pico2w, .esp32c6 => .edge,
     };
 }
+
+/// A serial port a hosted board carries, as a console (CON-1).
+pub const Console = struct {
+    /// the device PID 1 speaks on, as CONSOLE declares it
+    device: []const u8,
+    /// how the kernel's boot line names it, options included
+    kernel: []const u8,
+    /// which of QEMU's serial ports the emulator hears it on, or null when
+    /// the emulator cannot carry it -- a lack its lens then names
+    qemu_serial: ?u8,
+};
+
+pub const Consoles = struct {
+    /// the board's ports, its default first: on this board, a machine that
+    /// declares no CONSOLE speaks on the first
+    ports: []const Console,
+    /// what they are, for the refusal of a port the board does not have
+    about: []const u8,
+};
+
+/// The consoles each hosted board HAS. CONSOLE names one of them or says
+/// nothing (the kernel's own, /dev/console, which is the first). The
+/// kernel's boot line follows the declaration -- the card's and the
+/// emulator's -- so a port that is not here would be a machine announcing a
+/// console nothing can hear. Until CON-1 the boot line came from a board
+/// table and CONSOLE was only ever said, never done: a machine declaring
+/// ttyS3 announced it while it spoke on ttyS0. Edge and touch boards have
+/// none here: their consoles are their substrates' (MicroRing's, the
+/// phone's), and this repository neither boots them nor narrates them.
+pub fn boardConsoles(b: Board) Consoles {
+    return switch (b) {
+        .qemu_pc => .{
+            .ports = &.{
+                .{ .device = "/dev/ttyS0", .kernel = "ttyS0", .qemu_serial = 0 },
+                .{ .device = "/dev/ttyS1", .kernel = "ttyS1", .qemu_serial = 1 },
+                .{ .device = "/dev/ttyS2", .kernel = "ttyS2", .qemu_serial = 2 },
+                .{ .device = "/dev/ttyS3", .kernel = "ttyS3", .qemu_serial = 3 },
+            },
+            .about = "the four serial ports of a PC",
+        },
+        .qemu_virt => .{
+            .ports = &.{.{ .device = "/dev/ttyAMA0", .kernel = "ttyAMA0", .qemu_serial = 0 }},
+            .about = "the emulator's one PL011",
+        },
+        // The header pins carry the mini-UART; the PL011 is wired to the
+        // board's Bluetooth. QEMU's raspi4b models a mini-UART, and Linux's
+        // driver stalls on it after two bytes (CON-1's probe): the emulator
+        // cannot carry this port, and says so through its lens.
+        .rpi4 => .{
+            .ports = &.{.{ .device = "/dev/ttyS1", .kernel = "ttyS1,115200", .qemu_serial = null }},
+            .about = "the mini-UART on the header pins; the PL011 is wired to the board's Bluetooth",
+        },
+        .sim, .pico2, .pico2w, .esp32c6 => .{ .ports = &.{}, .about = "" },
+    };
+}
+
+/// The port a hosted machine speaks on: the one its CONSOLE names, or its
+/// board's first when it declares none. Null only for a console the court
+/// has already refused, or a board that has none (edge).
+pub fn consolePort(m: *const Machine) ?Console {
+    const cs = boardConsoles(m.board);
+    if (cs.ports.len == 0) return null;
+    if (std.mem.eql(u8, m.console, "/dev/console")) return cs.ports[0];
+    for (cs.ports) |p| {
+        if (std.mem.eql(u8, p.device, m.console)) return p;
+    }
+    return null;
+}
+
+/// The device a console NUMBER names, as the kernel numbers them
+/// (Documentation/admin-guide/devices.txt): major 4 from minor 64 is the
+/// 8250 family, ttyS; major 204 from minor 64 is the AMBA PL011, ttyAMA.
+/// PID 1 asks the kernel which device /dev/console really is (TIOCGDEV)
+/// and says this name, so the console line is a witness and not a
+/// restatement (CON-1). `dev` is the kernel's new_encode_dev form.
+pub fn consoleDevice(buf: []u8, dev: u32) []const u8 {
+    const major = (dev >> 8) & 0xfff;
+    const minor = (dev & 0xff) | ((dev >> 12) & 0xfff00);
+    const named: ?[]const u8 = if (major == 4 and minor >= 64 and minor < 256)
+        std.fmt.bufPrint(buf, "/dev/ttyS{d}", .{minor - 64}) catch null
+    else if (major == 204 and minor >= 64 and minor < 96)
+        std.fmt.bufPrint(buf, "/dev/ttyAMA{d}", .{minor - 64}) catch null
+    else
+        std.fmt.bufPrint(buf, "the device {d}:{d}", .{ major, minor }) catch null;
+    return named orelse "a device";
+}
 pub const Restart = enum { never, always, on_failure };
 pub const PinMode = enum { in, out };
 pub const Fs = enum { proc, sysfs, devtmpfs, tmpfs, ext4, vfat, littlefs, cgroup2 };
@@ -848,7 +934,28 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .edge => "uart0",
         .touch => "logcat",
     };
-    if (find(md, "CONSOLE")) |c| console = try wantString(&ctx, c);
+    if (find(md, "CONSOLE")) |c| {
+        console = try wantString(&ctx, c);
+        // a hosted machine speaks on a port its board HAS, because the
+        // boot line follows what is declared here (CON-1). The kernel's own
+        // /dev/console is every board's, and is the default.
+        if (profile == .hosted and !std.mem.eql(u8, console, "/dev/console")) {
+            const cs = boardConsoles(board);
+            var known = false;
+            for (cs.ports) |p| {
+                if (std.mem.eql(u8, p.device, console)) known = true;
+            }
+            if (!known) {
+                var list: std.ArrayList(u8) = .{};
+                for (cs.ports, 0..) |p, i| {
+                    const sep = if (i == 0) "" else if (i + 1 == cs.ports.len) " and " else ", ";
+                    try list.appendSlice(arena, sep);
+                    try list.appendSlice(arena, p.device);
+                }
+                return ctx.refuse(c.line, "CONSOLE {s} is not a console of BOARD {s}: its {s} {s}, {s}", .{ console, @tagName(board), if (cs.ports.len == 1) "console is" else "consoles are", list.items, cs.about });
+            }
+        }
+    }
     // IDENTITY -- where this device's key lives. WHERE it may live is
     // checked once the mounts are known, at the end of this function.
     var identity: ?[]const u8 = null;
@@ -1290,6 +1397,30 @@ test "a shell line is refused by name" {
     try std.testing.expectError(error.Refused, declare(arena_state.allocator(), src, &r));
     try std.testing.expect(std.mem.indexOf(u8, r.message, "never a shell line") != null);
     try std.testing.expectEqual(@as(usize, 2), r.line);
+}
+
+test "a console number names the device PID 1 says, and every port is one the board has" {
+    const t = std.testing;
+    var buf: [48]u8 = undefined;
+    // the numbers TIOCGDEV returns: major << 8 | minor, for minors < 256
+    try t.expectEqualStrings("/dev/ttyS0", consoleDevice(&buf, (4 << 8) | 64));
+    try t.expectEqualStrings("/dev/ttyS3", consoleDevice(&buf, (4 << 8) | 67));
+    try t.expectEqualStrings("/dev/ttyAMA0", consoleDevice(&buf, (204 << 8) | 64));
+    // a number that is no serial port is named as a number, never guessed
+    try t.expectEqualStrings("the device 5:1", consoleDevice(&buf, (5 << 8) | 1));
+
+    // every hosted board has a first port, and the first is where a machine
+    // that declares nothing speaks; the edge boards have none of harb's
+    for ([_]Board{ .qemu_pc, .qemu_virt, .rpi4 }) |b| {
+        const cs = boardConsoles(b);
+        try t.expect(cs.ports.len > 0);
+        for (cs.ports) |p| {
+            try t.expect(std.mem.startsWith(u8, p.device, "/dev/"));
+            // the kernel's spelling of a port begins with its device's name
+            try t.expect(std.mem.startsWith(u8, p.kernel, p.device["/dev/".len..]));
+        }
+    }
+    try t.expectEqual(@as(usize, 0), boardConsoles(.pico2).ports.len);
 }
 
 test "a list covers everything however it is spelled, and half the space is still a perimeter" {

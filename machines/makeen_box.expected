@@ -1,5 +1,5 @@
 boot: harb init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
-boot: console /dev/ttyS1
+boot: console /dev/ttyS1 -- declared, and the kernel speaks on /dev/ttyAMA0
 boot: slots on /dev/mmcblk0p1 -- A and B
 boot: mount proc at /proc -- done
 boot: mount sysfs at /sys -- done
@@ -37,7 +37,7 @@ card: [tryboot]
 card: os_prefix=slots/A/
 steady: the same card, booted again:
 steady: boot: harb init -- machine makeen_box (hosted / aarch64 / rpi4) -- pid 1
-steady: boot: console /dev/ttyS1
+steady: boot: console /dev/ttyS1 -- declared, and the kernel speaks on /dev/ttyAMA0
 steady: boot: slots on /dev/mmcblk0p1 -- A and B
 steady: boot: mount proc at /proc -- done
 steady: boot: mount sysfs at /sys -- done
@@ -113,9 +113,11 @@ unmet: poste: the counter world is up on the Makeen box, after kds
 unmet: poste: /data is the box's persistent partition, mounted by PID 1 before any world spoke
 unmet: poste: serving -- signalling /run/poste.ready
 unmet: boot: poste -- ready (/run/poste.ready)
-unmet: boot: judge -- the boot differs from its expectation (/etc/expected): 2 line(s) expected and not said, 2 said and not expected
+unmet: boot: judge -- the boot differs from its expectation (/etc/expected): 3 line(s) expected and not said, 3 said and not expected
+unmet: boot: judge -- expected, not said: console /dev/ttyS1
 unmet: boot: judge -- expected, not said: network lan -- eth0 up 192.168.10.1/24
 unmet: boot: judge -- expected, not said: watchdog armed (/dev/watchdog)
+unmet: boot: judge -- said, not expected: console /dev/ttyS1 -- declared, and the kernel speaks on /dev/ttyAMA0
 unmet: boot: judge -- said, not expected: network lan -- eth0: no such interface (NODEV)
 unmet: boot: judge -- said, not expected: watchdog -- off by the boot line (the emulator resets on arming); a trial cannot roll back by hardware here
 unmet: boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict differed)

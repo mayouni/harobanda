@@ -37,6 +37,13 @@ const plan = @import("plan.zig");
 
 pub const fmt_banner = "boot: harb init -- machine {s} ({s} / {s} / {s}) -- pid {d}{s}\n";
 pub const fmt_console = "boot: console {s}\n";
+/// PID 1 asked the kernel which device its console really is (TIOCGDEV)
+/// and it is not the declared one: said, never smoothed over (CON-1). On a
+/// card it is a boot that differs from its file; under the emulator's lens,
+/// where QEMU cannot carry the board's port, it is the lack itself.
+pub const fmt_console_elsewhere = "boot: console {s} -- declared, and the kernel speaks on {s}\n";
+/// the kernel would not say: nothing is claimed, so nothing matches
+pub const fmt_console_unknown = "boot: console {s} -- declared, and the kernel would not say which device it speaks on\n";
 pub const fmt_slots = "boot: slots on {s} -- A and B\n";
 pub const fmt_mount_done = "boot: mount {s} at {s} -- done\n";
 pub const fmt_capability = "boot: {s} {s} ({s})\n";
@@ -239,6 +246,15 @@ pub const Lens = struct {
     watchdog: Watchdog = .armed,
     /// the emulator has no NIC behind the declared interface: NODEV
     network_absent: bool = false,
+    /// the device the emulator's kernel speaks on, when QEMU cannot carry
+    /// the board's port (the rpi4's mini-UART): a declared console is then
+    /// said to be elsewhere (CON-1)
+    console: ?[]const u8 = null,
+
+    /// whether this is an emulator's lens at all
+    pub fn isEmulator(self: Lens) bool {
+        return self.network_absent or self.watchdog == .off or self.console != null;
+    }
 };
 
 fn fmtIp(buf: *[16]u8, ip: u32) []const u8 {
@@ -255,7 +271,18 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
     const m = p.machine;
     try w.print(fmt_banner, .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.board), @as(i32, 1), "" });
     for (p.steps) |step| switch (step) {
-        .console => |c| try w.print(fmt_console, .{c}),
+        .console => |c| {
+            // the kernel's own /dev/console names no port, so there is no
+            // elsewhere for it to be; a declared port the emulator cannot
+            // carry is said to be where the emulator's kernel speaks
+            if (lens.console) |seen| {
+                if (!std.mem.eql(u8, c, "/dev/console") and !std.mem.eql(u8, c, seen)) {
+                    try w.print(fmt_console_elsewhere, .{ c, seen });
+                    continue;
+                }
+            }
+            try w.print(fmt_console, .{c});
+        },
         .slots => |dev| try w.print(fmt_slots, .{dev}),
         .mount => |mt| try w.print(fmt_mount_done, .{ @tagName(mt.fs), mt.at }),
         .capability => |c| try w.print(fmt_capability, .{ if (c.granted) "grant" else "refuse", @tagName(c.name), @tagName(machine.kindOf(c.name)) }),
@@ -440,7 +467,7 @@ pub fn judgeTranscript(arena: std.mem.Allocator, p: plan.Plan, lens: Lens, text:
 
     try out.print("judge {s} -- the boot this machine EXPECTS ({s} lens, {d} lines), against {s}\n", .{
         p.machine.name,
-        if (lens.network_absent or lens.watchdog == .off) "emulator" else "board",
+        if (lens.isEmulator()) "emulator" else "board",
         exp.len,
         label,
     });
@@ -545,14 +572,34 @@ test "the emulator's lens differs from the board's exactly where the emulator la
     const arena = arena_state.allocator();
     const p = try boxPlan(arena);
     const board = try derive(arena, p, .{});
-    const emu = try derive(arena, p, .{ .watchdog = .off, .network_absent = true });
+    // the rpi4's lens: no NIC, no watchdog it may arm, and no mini-UART it
+    // can carry, so its kernel speaks on the PL011 (CON-1)
+    const emu = try derive(arena, p, .{ .watchdog = .off, .network_absent = true, .console = "/dev/ttyAMA0" });
     const v = try judge(arena, board, emu);
-    try std.testing.expectEqual(@as(usize, 2), v.missing.len);
-    try std.testing.expectEqual(@as(usize, 2), v.unexpected.len);
-    try std.testing.expectEqualStrings("boot: network lan -- eth0 up 192.168.10.1/24, gateway 192.168.10.254, dns [1.1.1.1]", v.missing[0]);
-    try std.testing.expectEqualStrings("boot: watchdog armed (/dev/watchdog)", v.missing[1]);
-    try std.testing.expectEqualStrings("boot: network lan -- eth0: no such interface (NODEV)", v.unexpected[0]);
-    try std.testing.expectEqualStrings(std.mem.trimRight(u8, fmt_watchdog_off, "\n"), v.unexpected[1]);
+    try std.testing.expectEqual(@as(usize, 3), v.missing.len);
+    try std.testing.expectEqual(@as(usize, 3), v.unexpected.len);
+    try std.testing.expectEqualStrings("boot: console /dev/ttyS1", v.missing[0]);
+    try std.testing.expectEqualStrings("boot: network lan -- eth0 up 192.168.10.1/24, gateway 192.168.10.254, dns [1.1.1.1]", v.missing[1]);
+    try std.testing.expectEqualStrings("boot: watchdog armed (/dev/watchdog)", v.missing[2]);
+    try std.testing.expectEqualStrings("boot: console /dev/ttyS1 -- declared, and the kernel speaks on /dev/ttyAMA0", v.unexpected[0]);
+    try std.testing.expectEqualStrings("boot: network lan -- eth0: no such interface (NODEV)", v.unexpected[1]);
+    try std.testing.expectEqualStrings(std.mem.trimRight(u8, fmt_watchdog_off, "\n"), v.unexpected[2]);
+}
+
+test "a lens that cannot carry the declared console has no elsewhere for /dev/console" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var refusal = machine.Refusal{};
+    const m = try arena.create(machine.Machine);
+    m.* = try machine.declare(arena, "DEFINE MACHINE d AS ( PROFILE hosted, ARCH aarch64, KERNEL linux, BOARD rpi4 ) RATIONALE \"the default console\"\n", &refusal);
+    const p = try plan.derive(arena, m);
+    // the kernel's own console names no port, so the emulator's lens has
+    // nothing to say it is elsewhere from: the line is the same in both
+    const board = try derive(arena, p, .{});
+    const emu = try derive(arena, p, .{ .console = "/dev/ttyAMA0" });
+    try std.testing.expect(std.mem.indexOf(u8, board, "boot: console /dev/console\n") != null);
+    try std.testing.expectEqualStrings(board, emu);
 }
 
 test "a boot that said the expected lines matches, whatever pids the kernel gave and in whatever order daemons signalled" {

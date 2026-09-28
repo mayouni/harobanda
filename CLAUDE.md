@@ -251,6 +251,21 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   judge's advice leads back to the refusal. **A BREAK IT is run again
   whenever it moves**: lesson 4's "the boot goes SILENT" was false on
   every machine, because the boot line's console comes from the board.
+- **A line that says where the machine is, is said only after asking**
+  (CON-1): `boot: console /dev/ttyS1` was the declaration read back, and
+  the flagship's emulator said it in every boot while its kernel spoke
+  on the PL011. CONSOLE is now a port the board HAS
+  (`machine.boardConsoles`, R91-R94); both boot lines follow it, the
+  emulator listens on that port and no other, and PID 1 asks the kernel
+  (`TIOCGDEV` on `/dev/console`) which device it really speaks on -- the
+  declared line only when they agree, both when they do not. The Pi's
+  emulator cannot carry the mini-UART, so its lens names the PL011 as a
+  lack. **When a lack is physical, find it before choosing a shape**:
+  one probe (`experiment/console_probe.sh`) showed the PC could follow
+  the declaration and the Pi's emulator could not, and (a) -- the boot
+  line follows CONSOLE -- over (b) -- refuse all but the board's one --
+  followed from that: (b) left the live lie standing and made the clause
+  a restatement of BOARD (SEE-1).
 - **Fixtures are the judge**; re-pin `declarative/machine/PINNING.md`
   (sha256) in the same commit that changes `fixtures.json`. Every
   reject carries the fragment its refusal must contain.
@@ -475,6 +490,12 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   emmc2; mainline gives that host to the Wi-Fi SDIO. The emulator's
   tree opens it and aliases mmc0 to it; the card's tree aliases mmc0 to
   emmc2. Both derived, both printed at build time.
+- **QEMU's raspi4b cannot carry the board's console** (CON-1): routing
+  stdio to its mini-UART (`-serial null -serial mon:stdio`) with
+  `console=ttyS1,115200` gets two bytes and then silence -- Linux's
+  8250_bcm2835aux driver stalls on QEMU's model. The emulator speaks on
+  the PL011 (`emulator_console`) and its lens says so. Do not spend a
+  session trying the mini-UART in QEMU again without a newer QEMU.
 - **QEMU's raspi4b resets the board the moment `/dev/watchdog` is
   opened**: its power-management model has no countdown and reads the
   driver's "full reset on expiry" bit as "reset now". The emulator's
@@ -575,8 +596,10 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   5. **Then the board**: `card`, flash (the author runs the command the
      script prints -- it never writes to a device), `listen
      /dev/ttyUSB0 120`, `judge <file>`. It should differ from the
-     emulator on exactly the two lines the build prints as the
-     emulator's lacks; the watchdog's real countdown and the tryboot
+     emulator on exactly the three lines the build prints as the
+     emulator's lacks (the console, the wire, the watchdog -- CON-1
+     added the console, and on the board PID 1 must report the kernel
+     speaking on `/dev/ttyS1`); the watchdog's real countdown and the tryboot
      flag (a vendored patch to `bcm2835_wdt.c`) are the two things only
      a board can show.
 - **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
@@ -596,12 +619,11 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   second binary. `makeen_box` gets its own `DOMAIN` at OS-5, when there
   is a NIC to serve. ~~The tour's boot lessons that need `stzr`~~ --
   done (LRN-3): lessons 4-6 boot `qemu_egress`, and 10 and 17 say before
-  their RUN what a reader without the runtime sees. **CONSOLE is
-  announced, never acted on** (LRN-3): the boot line's console comes from
-  the board table (`console_qemu`, `console_board`), so a machine can say
-  `boot: console /dev/ttyS3` while narrating on ttyS0 -- NS-1's worse
-  case. Decide whether the boot line follows CONSOLE or the grammar
-  refuses a CONSOLE the board does not use.
+  their RUN what a reader without the runtime sees. ~~CONSOLE announced,
+  never acted on~~ -- done (CON-1): the boot line follows it and PID 1
+  asks the kernel; what remains is observing the card's witness on a
+  real Pi (OS-5), and an edge machine's CONSOLE, which `harb project`
+  does not carry to MicroRing.
 - **Waiting on the author.** Delegated 2026-09-27 ("do what waits on me
   on my behalf") and ruled in `doc/PROVENANCE.md` as STZ-OS-RULING-03..08:
   retirement's three choices, the MIRROR (a private release, restored
@@ -621,7 +643,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

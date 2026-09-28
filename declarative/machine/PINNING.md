@@ -5,10 +5,17 @@
 `fixtures.json` sha256:
 
 ```
-03b94b47d81cf13b119df0c8bd47e74840d402531451a568e3fe70f20a7a5741
+197fb6ee952b45e9249802bd060fe6e72e2a49a8f55661f998a478d6e8e66492
 ```
 
-(Before the EGRESS ruling of 2026-09-27 (STZ-OS-RULING-06):
+(Before the CONSOLE seat of 2026-09-28 (CON-1):
+`03b94b47d81cf13b119df0c8bd47e74840d402531451a568e3fe70f20a7a5741`,
+114/114; the widening added A25, A26 and R91-R94 -- a hosted machine's
+CONSOLE is a port its board HAS, because the boot line now follows it:
+a PC's four serial ports, the ARM emulator's one PL011, the Pi's
+mini-UART on the header pins; saying nothing is the kernel's own
+/dev/console, on every board.
+Before the EGRESS ruling of 2026-09-27 (STZ-OS-RULING-06):
 `f26bdc087e85393f33058b3c7f907d8729e97e282db227bd91a00a3c8ac311ce`,
 110/110; the widening added A24 and R88-R90 -- a list whose
 destinations cover every address is refused however it is spelled,
@@ -87,7 +94,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **114/114** — 15 accepts with structural expectations, 52 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **120/120** — 26 accepts with structural expectations, 94 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):

@@ -432,6 +432,43 @@
         },
         "order": []
       }
+    },
+    {
+      "id": "A25",
+      "name": "a PC has four serial ports, and a machine may speak on any of them: the boot line follows the declaration",
+      "source": "DEFINE MACHINE m AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux,\n  CONSOLE \"/dev/ttyS3\"\n) RATIONALE \"the operator's cable is on the fourth serial port\"\n",
+      "expect": {
+        "name": "m",
+        "board": "qemu_pc",
+        "console": "/dev/ttyS3",
+        "counts": {
+          "services": 0,
+          "capabilities": 0,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 0,
+          "users": 0
+        },
+        "order": []
+      }
+    },
+    {
+      "id": "A26",
+      "name": "saying nothing is the kernel's own console, on every board",
+      "source": "DEFINE MACHINE m AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  BOARD rpi4\n) RATIONALE \"x\"\n",
+      "expect": {
+        "board": "rpi4",
+        "console": "/dev/console",
+        "counts": {
+          "services": 0,
+          "capabilities": 0,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 0,
+          "users": 0
+        },
+        "order": []
+      }
     }
   ],
   "rejects": [
@@ -974,6 +1011,30 @@
       "name": "a prefix of 0 written over another address is still every address",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"10.0.2.15/24\",\n  GATEWAY \"10.0.2.2\",\n  EGRESS [\"10.0.0.0/0\"]\n) RATIONALE \"x\"\n",
       "refusal": "cover every address"
+    },
+    {
+      "id": "R91",
+      "name": "a console the board does not have: a PC's fifth serial port",
+      "source": "DEFINE MACHINE m AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux,\n  CONSOLE \"/dev/ttyS4\"\n) RATIONALE \"x\"\n",
+      "refusal": "is not a console of BOARD qemu_pc"
+    },
+    {
+      "id": "R92",
+      "name": "the Pi's PL011 is wired to its Bluetooth, not to the pins an operator listens on",
+      "source": "DEFINE MACHINE m AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  BOARD rpi4,\n  CONSOLE \"/dev/ttyAMA0\"\n) RATIONALE \"x\"\n",
+      "refusal": "is not a console of BOARD rpi4"
+    },
+    {
+      "id": "R93",
+      "name": "a PC's serial port on the ARM emulator, which has one PL011",
+      "source": "DEFINE MACHINE m AS (\n  PROFILE hosted,\n  ARCH aarch64,\n  KERNEL linux,\n  CONSOLE \"/dev/ttyS0\"\n) RATIONALE \"x\"\n",
+      "refusal": "is not a console of BOARD qemu_virt"
+    },
+    {
+      "id": "R94",
+      "name": "the kernel's name for a port is not its device: CONSOLE names the device PID 1 speaks on",
+      "source": "DEFINE MACHINE m AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux,\n  CONSOLE \"ttyS0\"\n) RATIONALE \"x\"\n",
+      "refusal": "is not a console of BOARD qemu_pc"
     }
   ]
 }

@@ -51,8 +51,11 @@ const Target = struct {
     qemu: []const u8,
     machine_args: []const u8,
     memory_mb: u32, // 0: the board's own, fixed
-    console_qemu: []const u8,
-    console_board: []const u8,
+    /// The kernel's name for the port the EMULATOR speaks on, for a board
+    /// whose own port QEMU cannot carry (rpi4). Null when the emulator
+    /// carries every port the board has: then both boot lines name the
+    /// port the machine declares (machine.boardConsoles, CON-1).
+    emulator_console: ?[]const u8 = null,
     serial_cfg: []const []const u8,
     platform_cfg: []const []const u8 = &.{},
     block_cfg: []const []const u8, // for a declared block mount
@@ -75,6 +78,14 @@ const Target = struct {
     qemu_lens: ?expect.Lens = null,
 };
 
+/// The emulator's lens for a board, or null for a board that IS an
+/// emulator. The one place it is written: `harb judge --lens emulator`
+/// asks here, rather than keeping a second copy that has to agree (HDW-1).
+pub fn emulatorLens(board: machine.Board) ?expect.Lens {
+    const t = target(board) orelse return null;
+    return t.qemu_lens;
+}
+
 fn target(board: machine.Board) ?Target {
     return switch (board) {
         // the edge boards have no image here: their substrate is
@@ -88,8 +99,6 @@ fn target(board: machine.Board) ?Target {
             .qemu = "qemu-system-x86_64",
             .machine_args = "-M pc -cpu max",
             .memory_mb = 256,
-            .console_qemu = "ttyS0",
-            .console_board = "ttyS0",
             .serial_cfg = &.{ "CONFIG_SERIAL_8250=y", "CONFIG_SERIAL_8250_CONSOLE=y", "CONFIG_KERNEL_GZIP=y" },
             .block_cfg = &.{ "CONFIG_PCI=y", "CONFIG_VIRTIO_PCI=y" },
             .blk_device = "virtio-blk-pci",
@@ -104,8 +113,6 @@ fn target(board: machine.Board) ?Target {
             .qemu = "qemu-system-aarch64",
             .machine_args = "-M virt -cpu cortex-a53",
             .memory_mb = 512,
-            .console_qemu = "ttyAMA0",
-            .console_board = "ttyAMA0",
             .serial_cfg = &.{ "CONFIG_SERIAL_AMBA_PL011=y", "CONFIG_SERIAL_AMBA_PL011_CONSOLE=y" },
             .block_cfg = &.{"CONFIG_VIRTIO_MMIO=y"},
             .blk_device = "virtio-blk-device",
@@ -148,13 +155,17 @@ fn target(board: machine.Board) ?Target {
             },
             .memory_mb = 0,
             // raspi4b models no GENET, so a declared NETWORK is NODEV there;
-            // and it resets the board the moment the watchdog is armed, so
-            // the emulator's boot line turns it off. Two lacks, two lines.
-            .qemu_lens = .{ .watchdog = .off, .network_absent = true },
-            // the emulator's PL011 sits on the header pins; the board's
-            // PL011 goes to Bluetooth and its mini-UART (ttyS1) to the pins
-            .console_qemu = "ttyAMA0",
-            .console_board = "ttyS1,115200",
+            // it resets the board the moment the watchdog is armed, so the
+            // emulator's boot line turns it off; and it cannot carry the
+            // board's console. Three lacks, three lines.
+            .qemu_lens = .{ .watchdog = .off, .network_absent = true, .console = "/dev/ttyAMA0" },
+            // The board's pins carry the mini-UART (ttyS1, its only port in
+            // machine.boardConsoles); its PL011 goes to Bluetooth. QEMU's
+            // raspi4b wires stdio to the PL011, and routing stdio to its
+            // mini-UART instead gets two bytes and then silence -- Linux's
+            // driver stalls on QEMU's model (CON-1's probe) -- so the
+            // emulator speaks on the PL011, and its lens says so.
+            .emulator_console = "ttyAMA0",
             // the mini-UART driver sits behind SERIAL_8250_EXTENDED and
             // SHARE_IRQ; without them olddefconfig drops it (first rpi4 build)
             .serial_cfg = &.{ "CONFIG_SERIAL_8250=y", "CONFIG_SERIAL_8250_CONSOLE=y", "CONFIG_SERIAL_8250_EXTENDED=y", "CONFIG_SERIAL_8250_SHARE_IRQ=y", "CONFIG_SERIAL_8250_BCM2835AUX=y", "CONFIG_SERIAL_AMBA_PL011=y", "CONFIG_SERIAL_AMBA_PL011_CONSOLE=y" },
@@ -215,6 +226,11 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     }
     const t = target(m.board) orelse {
         try out.print("image: refused -- {s} is an edge board; an edge machine is projected onto MicroRing's substrate, not imaged here (harb project)\n", .{@tagName(m.board)});
+        return 2;
+    };
+    // the port this machine speaks on: both boot lines name it (CON-1)
+    const port = machine.consolePort(m) orelse {
+        try out.print("image: refused -- CONSOLE {s} is not a port BOARD {s} has\n", .{ m.console, @tagName(m.board) });
         return 2;
     };
 
@@ -519,7 +535,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             , .{ m.name, @tagName(m.board) });
             try writeOut(opts.out_dir, "config.txt", config);
             for ([_][]const u8{ "A", "B" }) |slot| {
-                const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 harb.slot={s} rdinit=/harb -- init /etc/machine\n", .{ t.console_board, slot });
+                const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 harb.slot={s} rdinit=/harb -- init /etc/machine\n", .{ port.kernel, slot });
                 try writeOut(opts.out_dir, try std.fmt.allocPrint(arena, "cmdline.{s}.txt", .{slot}), cmdline);
                 try w.print("boot slots/{s}/cmdline.txt cmdline.{s}.txt\n", .{ slot, slot });
                 try w.print("boot slots/{s}/kernel8.img {s}\n", .{ slot, t.image_name });
@@ -527,7 +543,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
                 try w.print("boot slots/{s}/initramfs.cpio initramfs.cpio\n", .{slot});
             }
         } else {
-            const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 rdinit=/harb -- init /etc/machine\n", .{t.console_board});
+            const cmdline = try std.fmt.allocPrint(arena, "console={s} quiet loglevel=3 rdinit=/harb -- init /etc/machine\n", .{port.kernel});
             try writeOut(opts.out_dir, "cmdline.txt", cmdline);
             const config = try std.fmt.allocPrint(arena,
                 \\# config.txt -- derived by harb image for {s} ({s}); read by the board's firmware
@@ -550,9 +566,26 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     {
         var cmd: std.ArrayList(u8) = .{};
         const w = cmd.writer(arena);
+        // The emulator listens where the machine speaks (CON-1): every
+        // serial port before the declared one goes nowhere and the declared
+        // one is stdio, so a boot heard at all was heard on the declared
+        // port. The first port is QEMU's stdio already, and its line is
+        // what it always was. A port QEMU cannot carry is spoken on the
+        // emulator's own, and the lens says so.
+        var routing: std.ArrayList(u8) = .{};
+        const emu_console: []const u8 = if (port.qemu_serial) |k| blk: {
+            if (k > 0) {
+                for (0..k) |_| try routing.appendSlice(arena, " -serial null");
+                try routing.appendSlice(arena, " -serial mon:stdio");
+            }
+            break :blk port.kernel;
+        } else t.emulator_console orelse {
+            try out.print("image: refused -- the emulator of BOARD {s} cannot carry {s}, and names no port of its own\n", .{ @tagName(m.board), port.device });
+            return 2;
+        };
         try w.print("{s} {s}", .{ t.qemu, t.machine_args });
         if (t.memory_mb > 0) try w.print(" -m {d}M", .{t.memory_mb});
-        try w.print(" -nographic -no-reboot -kernel {s} -initrd initramfs.cpio", .{t.image_name});
+        try w.print(" -nographic{s} -no-reboot -kernel {s} -initrd initramfs.cpio", .{ routing.items, t.image_name });
         if (t.sd) {
             try w.print(" -drive file=sd.img,if=sd,format=raw", .{});
         } else if (block != null) {
@@ -587,7 +620,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             if (svc.restart != .never) serves = true;
         }
         const init_args = try std.fmt.allocPrint(arena, "-- init /etc/machine{s}", .{if (serves) " --halt-on-verdict" else ""});
-        try w.print(" -append \"console={s} quiet loglevel=3{s}{s} rdinit=/harb {s}\"\n", .{ t.console_qemu, slot_arg, lens_arg, init_args });
+        try w.print(" -append \"console={s} quiet loglevel=3{s}{s} rdinit=/harb {s}\"\n", .{ emu_console, slot_arg, lens_arg, init_args });
         try writeOut(opts.out_dir, "boot.cmd", cmd.items);
         if (m.slots != null) {
             // the rollback instrument: the same trial, held -- never committed,

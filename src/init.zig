@@ -133,6 +133,31 @@ fn cmdlineValue(gpa: std.mem.Allocator, key: []const u8) ?[]u8 {
     return gpa.dupe(u8, rest[0..end]) catch null;
 }
 
+/// TIOCGDEV: the number of the tty behind /dev/console, asked of the
+/// kernel -- not read off the boot line, and not assumed from the
+/// declaration (CON-1). _IOR('T', 0x32, unsigned int): the same number on
+/// x86_64 and aarch64, which share the generic ioctl encoding.
+const TIOCGDEV: u32 = 0x80045432;
+
+/// The console, said only as far as the kernel agrees (CON-1). Until then
+/// PID 1 SAID the declared console and nothing made it so: a machine
+/// declaring /dev/ttyS3 announced it while it spoke on ttyS0. The boot line
+/// now follows the declaration, and this asks which device PID 1's own
+/// standard output -- /dev/console -- really is. A declared port is said as
+/// declared only when the kernel agrees; otherwise both are said, and a
+/// boot that differs from its file is judged so. A rehearsal is not the
+/// machine's console, and /dev/console names no port: neither is asked.
+fn sayConsole(led: *Ledger, declared: []const u8, rehearse: bool) !void {
+    if (rehearse or std.mem.eql(u8, declared, "/dev/console")) return led.say(expect.fmt_console, .{declared});
+    var dev: u32 = 0;
+    const rc = std.os.linux.ioctl(1, TIOCGDEV, @intFromPtr(&dev));
+    if (std.os.linux.E.init(rc) != .SUCCESS) return led.say(expect.fmt_console_unknown, .{declared});
+    var buf: [48]u8 = undefined;
+    const actual = machine.consoleDevice(&buf, dev);
+    if (std.mem.eql(u8, actual, declared)) return led.say(expect.fmt_console, .{declared});
+    try led.say(expect.fmt_console_elsewhere, .{ declared, actual });
+}
+
 /// The machine judges its own boot: the ledger against /etc/expected -- or
 /// /etc/expected.<lens> when the boot line names one with harb.expect=
 /// (the emulator's court does; a card's cmdline.txt never does). The
@@ -704,7 +729,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     if (opts.hold and ab != null) try out.print("boot: --hold: a trial will not be committed and the watchdog will not be fed -- the rollback instrument\n", .{});
 
     for (p.steps) |step| switch (step) {
-        .console => |c| try led.say(expect.fmt_console, .{c}),
+        .console => |c| try sayConsole(&led, c, opts.rehearse),
         .slots => |dev| {
             if (opts.rehearse) {
                 try out.print("boot: slots on {s} -- rehearsed, not read\n", .{dev});

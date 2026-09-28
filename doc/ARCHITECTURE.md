@@ -115,7 +115,11 @@ declared network refused with NODEV; the worlds run anyway, because a
 network is brought up like a mount and a refused one does not hold a
 service back (NET-1). The board will show the interface up and the
 watchdog armed -- the two lines the build prints as the emulator's
-lacks, and the only place the two are allowed to differ.
+lacks, and the only place the two are allowed to differ. *(Amended
+2026-09-28, CON-1: three lines. The board's console is its mini-UART on
+the header pins, and QEMU cannot carry it, so the emulator's kernel
+speaks on the PL011 and PID 1 says so: `console /dev/ttyS1 -- declared,
+and the kernel speaks on /dev/ttyAMA0`.)*
 
 ## 4. The edge profile (declared here, projected onto MicroRing)
 
