@@ -303,7 +303,11 @@ img{max-width:100%;}
 
 .foot{border-top:1px solid var(--line);padding:clamp(30px,4vw,44px) 0;margin-top:clamp(20px,4vw,40px);}
 .foot:has(.bridge-band){border-top:0;padding-top:0;margin-top:0;}
-.foot p{font-size:18px;color:var(--muted);line-height:1.6;}
+/* The footer is set smaller than the page, on the author's word
+   (2026-09-28): it is a signature, not something to read, and the credit
+   lines beside it were already 14px -- so the whole footer is one size.
+   Small, so never also light (StzZui): the ink, not the muted grey. */
+.foot p{font-size:14px;color:var(--ink);line-height:1.5;}
 
 p code{color:var(--laterite);}
 
@@ -372,7 +376,7 @@ p code{color:var(--laterite);}
 .foot:has(.bridge-band){padding-bottom:clamp(40px,5vw,64px);}
 .credit-logos{display:flex;flex-direction:row;align-items:center;gap:clamp(14px,2vw,28px);}
 .credit-logo{height:clamp(76px,8.5vw,100px);width:auto;flex:none;}
-.credits .credit-line{font-size:14px;color:var(--muted);text-align:left;line-height:1.5;}
+.credits .credit-line{font-size:14px;color:var(--ink);text-align:left;line-height:1.5;}
 @media(max-width:640px){
   .foot .foot-in:has(.credits){flex-direction:column;align-items:flex-start;}
   .credits{align-self:flex-start;}
