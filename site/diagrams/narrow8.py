@@ -24,6 +24,6 @@ c.kicker("AND THE CLOUD YOU RUN")
 c.box("your cloud", "a peer, not a parent. not above them, not under them.", "old")
 c.gap(18)
 
-c.strip("no snowflakes", "every box derived from one file, bit-for-bit")
+c.strip("no snowflakes", "every box derived from one file")
 c.strip("evidence", "checked by anyone who never held the secret")
 c.render("harobanda-diagram-8-narrow.png")

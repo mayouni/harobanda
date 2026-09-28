@@ -293,6 +293,27 @@ labels the assistant's envelope "every exchange recorded". Its page and
 alt text were left describing the image, the page's prose was corrected,
 and the image is the author's to redraw.
 
+> **Amended 2026-09-28.** The author asked for diagram 3 without "every
+> exchange recorded", and it was drawn again in the house style
+> (`site/diagrams/diagram3.py`, a PNG at both widths). Drawing it showed
+> the count above was wrong: it was not the one claim left outside the
+> prose. Diagram 8 still said `bit-for-bit` (point 4) and diagram 10
+> `every action recorded` (point 2) -- both drawn by scripts in this
+> repository -- and the `<meta name="description">` of `assistant.html`
+> and `agents.html`, the line a search result prints under the page's
+> name, still said "every exchange recorded" and "every act recorded".
+> The reading above read what each page says in its body. A claim is
+> wherever a reader meets it: the prose, the picture, its alt text, and
+> the snippet a search engine shows before anyone opens the page. All
+> five now say what their pages say.
+>
+> The phone variant of diagram 3 had also been published with two labels
+> wider than their boxes -- "internet — a cloud model, a ver", cut at both
+> edges -- because `narrowlib` never asked `house.fit`, which the wide
+> drawings had always been held to. It now asks it of every label it does
+> not wrap, and refused the old narrow 3 (exit 1) before it was fixed; the
+> other nine narrow drawings re-rendered byte for byte.
+
 ## What was done
 
 **One plain vocabulary.** `learn.words` rewritten, eleven words to

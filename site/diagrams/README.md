@@ -1,8 +1,10 @@
 # Drawing the site's diagrams
 
-Diagrams 1, 2 and 3 were authored by hand, outside this repository. From
-diagram 4 on they are **drawn here**, so a change to one is an edit to a
-file rather than a redraw from memory.
+Diagrams 1 and 2 were authored by hand, outside this repository. Every other
+one is **drawn here**, so a change to one is an edit to a file rather than a
+redraw from memory. Diagram 3 was hand-drawn too, until 2026-09-28: it
+carried a claim the machine does not keep, and a picture could only be
+replaced, so it was drawn again here.
 
 The brief each composition answers — what sentence it must make true, its
 labels, and what it must not do — is `site/DIAGRAMS.md`. This directory is
@@ -31,6 +33,8 @@ commit.
 |---|---|
 | `house.py` | the palette and the primitives — the house style, in code |
 | `diagramN.py` | one composition, importing `house` |
+| `narrowN.py` | the same argument as one column, for a phone, on `narrowlib.py` |
+| `narrowlib.py` | the column's items; every label not wrapped is fitted, and one wider than its item is refused |
 | `fonts/` | IBM Plex Sans and Mono, as WOFF, under the OFL (`LICENSE-IBM-Plex.txt`) |
 | `activate_slot.py` | uncomment a slot once its image exists |
 

@@ -74,8 +74,10 @@ text(d, CLOUD_X + CLOUD_W/2, CLOUD_Y + 82,
 
 # ---- the two claims, stated once each ----
 SW = W - ML - MR
+# "bit-for-bit" ended the first strip until 2026-09-28. No build fixes the
+# kernel's build timestamp, so two builds of one file differ (DOC-2).
 for y, left, right in [
-    (506, "no snowflakes", "every box derived from one file, bit-for-bit"),
+    (506, "no snowflakes", "every box derived from one file"),
     (598, "evidence",      "checked by anyone who never held the secret"),
 ]:
     band(d, ML, y, SW, 78, 13, KERN_FILL, KERN_LINE, lw=2.0, amp=0.8)

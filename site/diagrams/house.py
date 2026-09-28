@@ -54,9 +54,11 @@ TITLE  = 40   # a primary label
 KICKER = 26   # an uppercase mono label, letterspaced
 
 
-def fit(font, s, max_w, where):
-    """A label wider than its box is a defect, not a rendering detail."""
-    w = font.getlength(s) / S
+def fit(font, s, max_w, where, ls=0.0):
+    """A label wider than its box is a defect, not a rendering detail.
+
+    `ls` is the letterspacing the label is drawn with, which widens it."""
+    w = (ls_w(font, s, ls) if ls else font.getlength(s)) / S
     if w > max_w:
         raise SystemExit("OVERFLOW in %s: %r needs %.0fpx, has %.0f" % (where, s, w, max_w))
     return s

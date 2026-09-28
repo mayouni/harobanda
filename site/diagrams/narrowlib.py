@@ -11,9 +11,14 @@ two columns set against each other. On a phone a diagram becomes a labelled
 SEQUENCE instead. What does survive is every fact: if something earned its
 place in the wide drawing, it earns its place here, or it should not have
 been in the wide one either.
+
+A label that is not wrapped is FITTED: `house.fit` refuses one wider than
+the item that holds it, as it does for the wide drawings. Until 2026-09-28
+it was not asked here, and diagram 3's phone variant was published with
+"the internet" cut to "internet" at the canvas edge.
 """
 from PIL import Image
-from house import (S, OUT, canvas, band, dashed, rr_path, chip, arrow_down,
+from house import (S, OUT, canvas, band, dashed, rr_path, chip, arrow_down, fit,
                    sans, mono, text, ls_text, centre_ls, ls_w,
                    READ, TITLE, KICKER,
                    INK, MUTED, OLD_FILL, OLD_LINE, OLD_TEXT,
@@ -75,6 +80,7 @@ class Col:
 
     def kicker(self, s, colour=MUTED):
         f = mono(KICKER, "Medium")
+        fit(f, s, INNER, "kicker", 2.4)
 
         def fn(d, y):
             ls_text(d, M * S, (y + 30) * S, s, f, colour, 2.4)
@@ -92,6 +98,7 @@ class Col:
     def bar(self, label, style="plain", empty=False, accent=False):
         fill, line, ink, _, lw = STYLES[style]
         f = mono(READ)
+        fit(f, label, INNER - (40 if accent else 22) - 22, "bar")
 
         def fn(d, y):
             pts = rr_path(M * S, y * S, (NW - M) * S, (y + 62) * S, 10 * S)
@@ -109,6 +116,7 @@ class Col:
     def box(self, title, sub=None, style="machine", accent=False):
         fill, line, ink, subink, lw = STYLES[style]
         ft, fs = sans(TITLE, "SemiBold"), mono(READ)
+        fit(ft, title, INNER - (44 if accent else 26) - 26, "box title")
         subs = wrap(fs, sub, INNER - 52) if sub else []
         h = 34 + 44 + len(subs) * 40 + 24
 
@@ -123,17 +131,23 @@ class Col:
                 text(d, tx, y + 92 + i * 40, ln, fs, subink)
         self._push(h + 14, fn)
 
-    def absence(self, label):
+    def absence(self, label, sub=None):
         f = mono(READ)
+        for s in filter(None, (label, sub)):
+            fit(f, s, INNER - 52, "absence", 1.4)
+        h = 78 + (40 if sub else 0)
 
         def fn(d, y):
-            dashed(d, rr_path(M * S, y * S, (NW - M) * S, (y + 78) * S, 13 * S),
+            dashed(d, rr_path(M * S, y * S, (NW - M) * S, (y + h) * S, 13 * S),
                    OLD_LINE, int(2.0 * S))
             centre_ls(d, NW / 2, y + 50, label, f, MUTED, 1.4)
-        self._push(90, fn)
+            if sub:
+                centre_ls(d, NW / 2, y + 90, sub, f, MUTED, 1.4)
+        self._push(h + 12, fn)
 
     def chipline(self, label, fill=NEW_LINE):
         f = mono(READ, "Medium")
+        fit(f, label, INNER - 52, "chip", 1.6)
         w = ls_w(f, label, 1.6) / S + 52
 
         def fn(d, y):
@@ -147,6 +161,7 @@ class Col:
 
     def strip(self, label, note):
         f1, f2 = mono(READ, "Medium"), mono(READ)
+        fit(f1, label, INNER - 52, "strip")
         lines = wrap(f2, note, INNER - 52)
         h = 24 + 42 + len(lines) * 40 + 20
 
@@ -161,6 +176,8 @@ class Col:
         """A declaration. Code is the one thing the type rule lets sit below READ."""
         fill, line, ink, _, lw = STYLES[style]
         f = mono(28)
+        for ln in lines:
+            fit(f, ln, INNER - 60, "code")
         h = 26 + len(lines) * 40 + 24
 
         def fn(d, y):

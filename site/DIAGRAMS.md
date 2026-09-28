@@ -21,7 +21,7 @@ carrying no diagram at all.
 
 | | |
 |---|---|
-| **size** | 1376 x 768 (16:9) JPEG for the wide version; a shorter canvas only when the page demands it (diagram 9 is 1376 x 500). Every diagram also has a **narrow variant** at 640 x N, PNG -- see below. Set the `width`/`height` attributes on each `<img>` to match, or the page reserves the wrong box |
+| **size** | 1376 x 768 (16:9) PNG for the wide version (diagrams 1 and 2, drawn by hand, stay JPEG -- see below); a shorter canvas only when the page demands it (diagram 9 is 1376 x 500). Every diagram also has a **narrow variant** at 640 x N, PNG -- see below. Set the `width`/`height` attributes on each `<img>` to match, or the page reserves the wrong box |
 | **canvas** | warm cream `#f5efe1` — the diagram's own ground, *not* the page background `#e8e8e3`; the border comes from CSS |
 | **ink** | dark navy `#283347` for titles and primary labels |
 | **the machine** | blue-grey fill `#8a9ba5`–`#b4bfc1`, heavier dark stroke — Harobanda is always the emphasised box |
@@ -75,24 +75,31 @@ What changes in the narrow drawing:
   holds every tone used here. The seven wide diagrams fell from 1150KB to
   348KB, 70% smaller and sharper; the ten narrow ones come to about 500KB.
 
-  **Diagrams 1, 2 and 3 stay JPEG.** They were drawn by hand and are not
+  **Diagrams 1 and 2 stay JPEG.** They were drawn by hand and are not
   re-renderable from source, so converting them means quantizing an image
   that already carries JPEG artifacts. Tried and looked at: at 64 colours
   the fill inside the HAROBANDA box goes mottled and the strokes pick up a
   red fringe, for a 23% saving. Not a trade worth making on someone else's
   artwork.
 
+  **Diagram 3 was the third, until 2026-09-28.** Its hand drawing labelled
+  the envelope `every exchange recorded`, and nothing records one (DOC-2).
+  A picture cannot be edited, only replaced, so the author asked for it to
+  be drawn again: `diagram3.py`, a PNG like the rest, with the hand
+  drawing's words less that phrase.
+
 Swapped in CSS (`.wide-only` / `.narrow-only`), **not** with `<picture>`: a
 `<picture>` chooses once at load and never re-evaluates, so a reader who
 rotates a tablet would keep the wrong one. `loading="lazy"` on both means the
 hidden variant is never fetched.
 
-**Diagrams 1, 2 and 3 were drawn by hand outside this repository, so their
+**Diagrams 1 and 2 were drawn by hand outside this repository, so their
 narrow variants are redraws in the house style** -- which was itself read off
-those three, so they are cousins rather than strangers. If the author would
-rather the phone kept the hand-drawn ones, delete `narrow1-3.py`, their PNGs
-and the `.narrow-only` img tags on `why.html` and `ai.html`; the wide version
-is the fallback and needs no change.
+those two and diagram 3's hand drawing, so they are cousins rather than
+strangers. If the author would rather the phone kept the hand-drawn ones,
+delete `narrow1.py` and `narrow2.py`, their PNGs and the `.narrow-only` img
+tags on `why.html` and `ai.html`; the wide version is the fallback and needs
+no change. Diagram 3 is drawn here at both widths.
 
 ## Register
 
@@ -100,7 +107,7 @@ is the fallback and needs no change.
 |---|---|---|---|---|
 | 1 | `harobanda-diagram-1.jpg` | why | opens the page, 10% | **live** |
 | 2 | `harobanda-diagram-2.jpg` | ai | frames the stack section, 22% | **live** |
-| 3 | `harobanda-diagram-3.jpg` | ai | pays off the example, 78% | **live** |
+| 3 | `harobanda-diagram-3.png` | assistant | pays off the example, 59% | **live** (redrawn 2026-09-28) |
 | 4 | `harobanda-diagram-4.png` | machine | *not a new kernel*, 15% | **live** |
 | 5 | `harobanda-diagram-5.png` | machine | *survives the cut*, 48% | **live** |
 | 6 | `harobanda-diagram-6.png` | build | opens the page, 11% | **live** |
@@ -119,6 +126,13 @@ must-not warns against. What remains is to
 keep it that way — a new section that earns a diagram gets a brief here
 first, and a page that grows long enough to push its opener past a third
 needs re-measuring, not re-arguing.
+
+*Re-measured 2026-09-28, when diagram 3 was redrawn:* it moved to
+`assistant.html` when the AI page was split, and there it stands at 59% of
+2.4 screens -- past the first third, because the page opens on the example
+declaration the diagram pays off. The sentence above does not cover it.
+Whether it should move above the example is a question for that page, left
+open here.
 
 Depths are measured in the browser at 1380 × 900, not estimated. They shift
 downwards a few points as each image lands and the page grows — an image is
@@ -281,8 +295,11 @@ cloud you already run — not a cloud replacement, and not a cloud dependency.*
 
 - **Left, the fleet.** One declaration file at the top, in blue-grey. Arrows
   down to three or four identical boxes in a row, each drawn the same,
-  labelled `derived from one file · bit-for-bit`. Each box carries a small key
-  glyph and its own short fingerprint in monospace (`KEY1`, `KEY2`, `KEY3` —
+  labelled `derived from one file · bit-for-bit` (*amended 2026-09-28: no
+  build fixes the kernel's build timestamp, so two builds of one file differ;
+  the drawing says `every box derived from one file`, DOC-2*). Each box
+  carries a small key glyph and its own short fingerprint in monospace
+  (`KEY1`, `KEY2`, `KEY3` —
   distinct, never the same value). Under them a mono strip: `no snowflakes ·
   scale adds no configuration entropy`.
 - **Right, the cloud — drawn at the same altitude, never above.** A cloud
@@ -352,8 +369,10 @@ thin divider between them.
   `Gothèye` and `Diffa`, joined to it. Each site drawn as the same declared
   box. Between them, a sync line labelled `local-first · syncs on declared
   terms`. Inside the hub, a small agent glyph inside an envelope outline,
-  labelled `confined · every action recorded`. Status chip: `won · in
-  development`.
+  labelled `confined · every action recorded` (*amended 2026-09-28: nothing
+  records an agent's actions, DOC-2; the drawing says `agents confined by the
+  kernel / to what their files grant`, as the page does*). Status chip: `won ·
+  in development`.
 
 **Exact labels.** Title strip: `TWO PLACES, ONE FLOOR.` Keep the two status
 chips honest and visibly different — one delivered, one in development.
@@ -366,9 +385,9 @@ that happen to share a floor.
 
 ## After an image lands
 
-Diagrams 1–3 were authored by hand outside this repository. From 4 on they
-are drawn by a script in `site/diagrams/`, so a change is an edit rather
-than a redraw — see `site/diagrams/README.md`.
+Diagrams 1 and 2 were authored by hand outside this repository, and 3 was
+until 2026-09-28. Every other one is drawn by a script in `site/diagrams/`,
+so a change is an edit rather than a redraw — see `site/diagrams/README.md`.
 
 ```
 # writes site/harobanda-diagram-4.png

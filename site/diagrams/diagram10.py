@@ -89,8 +89,11 @@ band(d, RX, LOW_Y, BOX_W, LOW_H, 13, BG, NEW_LINE, lw=2.4, amp=1.0)
 text(d, RX + 26, LOW_Y + LOW_H/2, fit(f_title, "the agents", BOX_W - 52, "agents"),
      f_title, NEW_TEXT)
 
-text(d, RX, 500, fit(f_read, "agents confined to the box", CW, "R cap1"), f_read, MUTED)
-text(d, RX, 538, fit(f_read, "every action recorded", CW, "R cap2"), f_read, MUTED)
+# Worded as the page words it. "every action recorded" stood here until
+# 2026-09-28, and nothing records an agent's actions: the journal signs what
+# the machine was at each boot (DOC-2).
+text(d, RX, 500, fit(f_read, "agents confined by the kernel", CW, "R cap1"), f_read, MUTED)
+text(d, RX, 538, fit(f_read, "to what their files grant", CW, "R cap2"), f_read, MUTED)
 
 # ---- what each one honestly is today ----
 chip(d, LX, 572, 318, 48, "app delivered", f_readm, NEW_LINE)
