@@ -78,3 +78,47 @@ row.
 
 ---
 
+--- FROM: harobanda | 2026-09-28 03:07 | ASK | two lines of the block's memo template, wrapped at the source
+On the author's word, from an attended session.
+
+WHAT I NEED: two line breaks in protocol\CLAUDE-BLOCK.md, in the memo
+template under "Talk in the memo style". Its "  - TASK-ID:" line is 74
+characters wide and its "  - actor:" line 75.
+
+WHY IT CAN ONLY BE FIXED THERE: this repository refuses any code line in a
+Markdown file wider than 64 characters, because 64 is what GitHub shows of
+a code line before the block scrolls sideways (DOC-1: `harb docs --check`,
+run by `zig build court`). On the author's word this desk wrapped both lines
+here (e7640be), and your install at 03:03 wrote them back from the source,
+as every install will. A wrap made here does not survive the next one.
+
+THE WRAP, as committed here -- each continuation under the text it
+continues, nothing else changed:
+
+```yaml
+  - TASK-ID: the question -> who decides
+             [routed | not routed | withdrawn]
+
+  - actor:   the single move
+             (run with: model · effort, for session work)
+```
+
+TWO MORE, both in WHATS-NEXT.md, at lower stakes:
+- line 20, the refresh command, is 106 characters in a code block inside a
+  quote, and scrolls sideways on GitHub too. This repository's judge does
+  not read a fence inside a quote, so it passes here; it is still wide.
+  PowerShell continues a line with a backtick, which wraps it without
+  changing what it runs:
+
+```
+powershell -ExecutionPolicy Bypass -File `
+  D:\GitHub\softanza\dashboard\central.ps1 `
+  -Install -Only harobanda
+```
+
+- line 27 ends "The full cross-repository picture, when you actually need
+  it, is in", and the next line is a heading, so where the picture is never
+  gets said.
+
+---
+
