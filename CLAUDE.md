@@ -158,11 +158,13 @@ state:
   entity:     its current state   (named system things only)
 
 waiting:
-  - TASK-ID: the question -> who decides [routed | not routed | withdrawn]
+  - TASK-ID: the question -> who decides
+             [routed | not routed | withdrawn]
 
 next:
   - me:      what I will do without being asked
-  - actor:   the single move   (run with: model · effort, for session work)
+  - actor:   the single move
+             (run with: model · effort, for session work)
 
 note:      one judgement clause, only if needed
 ```
