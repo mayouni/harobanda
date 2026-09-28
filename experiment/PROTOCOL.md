@@ -307,6 +307,11 @@ and the image is the author's to redraw.
 > the snippet a search engine shows before anyone opens the page. All
 > five now say what their pages say.
 >
+> A sixth was in prose, on the author's word the same day: `promises.html`
+> told the administrator a fleet is "reproducible", which reads as point 4
+> in one word. It now says the files are versioned, diffable, and the
+> source every box is built from.
+>
 > The phone variant of diagram 3 had also been published with two labels
 > wider than their boxes -- "internet — a cloud model, a ver", cut at both
 > edges -- because `narrowlib` never asked `house.fit`, which the wide
