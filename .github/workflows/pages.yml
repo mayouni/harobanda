@@ -1,0 +1,45 @@
+# site -- publishes site/, the illustrated long version of this
+# repository, to GitHub Pages: https://mayouni.github.io/harobanda/
+#
+# Only what a browser loads is served: the pages, the stylesheet, the
+# script and the images. The site's working documents (DIAGRAMS.md,
+# PEDAGOGY.md, "not deployed content" by their own words) and the
+# scripts that draw the diagrams stay in the repository and are not
+# published. Every page links to the others relatively, so the site
+# works under the /harobanda/ path as it does from the folder.
+name: site
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Only what a browser loads
+        run: |
+          mkdir _site
+          cp site/*.html site/*.css site/*.js site/*.png site/*.jpg _site/
+          echo "$(ls _site | wc -l) files published"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

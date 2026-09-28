@@ -4,7 +4,10 @@
 
 The operating layer of the Softanza vertical: the machine beneath stz.
 Public since 2026-09-27, on the author's word (`github.com/mayouni/harobanda`,
-MIT); created 2026-09-12 on the author's ruling to push the sovereign
+MIT); its site, `site/`, is published since 2026-09-28, on his word, at
+`https://mayouni.github.io/harobanda/` by `.github/workflows/pages.yml`
+(only the pages, the stylesheet, the script and the images -- never the
+working documents), and is the repository's website on GitHub; created 2026-09-12 on the author's ruling to push the sovereign
 stack below Ring++ to the operating system, then MicroRing, then the
 PCB. **Read `doc/VISION.md` and `doc/PROVENANCE.md` before any
 strategic claim**, `doc/GROUND.md` for what the machine is FOR (the

@@ -19,6 +19,9 @@ installer and no login on the box for it to use instead.
 New to the words this project uses? Each one is explained by what it does in
 [The words, in plain terms](#the-words-in-plain-terms).
 
+The illustrated long version, with every diagram, is the site:
+**[mayouni.github.io/harobanda](https://mayouni.github.io/harobanda/)**.
+
 ## Why it exists
 
 Every operating system you can buy is shaped by its vendor: the account you
@@ -388,7 +391,7 @@ same for all three.
 | the guided tour, judged like any other claim | `src/learn.zig` | `harb learn --check` |
 | the pages: every code line fits GitHub's column, every machine a page shows in full is one the court accepts, and the words are the tour's own | `src/docs.zig` | `harb docs --check`, in `zig build court` |
 | the reference machines | `machines/` | each boots and is judged against its pin |
-| the illustrated long version | `site/` — open `site/index.html` | the court judges every machine it shows in full |
+| the illustrated long version | `site/`, published at [mayouni.github.io/harobanda](https://mayouni.github.io/harobanda/) by `.github/workflows/pages.yml` on every push that changes it | the court judges every machine it shows in full |
 | the vendored kernel, pinned by digest | `vendor/PIN.md` | kernel.org's own sums |
 
 Design documents live in `doc/`: `VISION.md` for what this is for,
