@@ -250,12 +250,21 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .ground-row .prob b{color:var(--laterite);font-weight:500;}
 .ground-row .fix{font-size:18px;color:var(--ink);line-height:1.5;}
 .ground-row .fix b{color:var(--river);font-weight:600;}
-/* security.html's ten threats. The machine's answer is the longest cell,
-   so it takes the widest column; the evidence and what stays open sit under
-   it at the SAME size, told apart by colour and never by shrinking -- the
-   open part in laterite, which on this site marks what is not held. */
-.grounds.threats .ground-row{grid-template-columns:.7fr 1fr 1.6fr;}
-@media(max-width:880px){.grounds.threats .ground-row{grid-template-columns:1fr;}}
+/* threats.html's ten rows, in two columns: the threat's name and the threat
+   itself on the left, the machine's answer on the right -- the answer is the
+   long cell, so it takes the width, and a row is as short as its answer.
+   The evidence and what stays open sit under the answer at the SAME size,
+   told apart by colour and never by shrinking -- the open part in laterite,
+   which on this site marks what is not held. */
+.grounds.threats .ground-row{grid-template-columns:1fr 1.9fr;grid-template-rows:auto 1fr;row-gap:8px;}
+.grounds.threats .ground-row .p{grid-column:1;grid-row:1;}
+.grounds.threats .ground-row .prob{grid-column:1;grid-row:2;}
+.grounds.threats .ground-row .fix{grid-column:2;grid-row:1 / span 2;}
+@media(max-width:880px){
+  .grounds.threats .ground-row{grid-template-columns:1fr;grid-template-rows:none;}
+  .grounds.threats .ground-row .p,.grounds.threats .ground-row .prob,
+  .grounds.threats .ground-row .fix{grid-column:1;grid-row:auto;}
+}
 .ground-row .fix .seen,.ground-row .fix .open{display:block;margin-top:9px;color:var(--muted);}
 .ground-row .fix .seen b{color:var(--ink);font-weight:600;}
 .ground-row .fix .open b{color:var(--laterite);font-weight:500;}
@@ -309,6 +318,10 @@ img{max-width:100%;}
 .honest li{list-style:none;padding-left:26px;position:relative;font-size:18px;line-height:1.55;color:var(--muted);}
 .honest li::before{content:"—";position:absolute;left:0;color:var(--laterite);font-family:var(--mono);}
 .honest li b{color:var(--ink);font-weight:600;}
+/* The same honest list in two columns where the page is wide (security.html):
+   the same items at the same size, in half the height. */
+.honest.two{display:grid;grid-template-columns:1fr 1fr;gap:13px clamp(24px,3vw,40px);}
+@media(max-width:760px){.honest.two{grid-template-columns:1fr;}}
 
 .foot{border-top:1px solid var(--line);padding:clamp(30px,4vw,44px) 0;margin-top:clamp(20px,4vw,40px);}
 .foot:has(.bridge-band){border-top:0;padding-top:0;margin-top:0;}

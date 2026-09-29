@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What it refuses — Harobanda</title>
+<meta name="description" content="A program asked from inside what it can reach, in the machine's own words, and the 25 calls the kernel refuses to every program, whatever its file says.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html" aria-label="Harobanda — home">
+      <img class="brandmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="ai.html" class="active">AI &amp; agents</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="field.html">In the field</a>
+    </nav>
+    <a class="ghlink" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </div>
+</header>
+
+  <nav class="path" aria-label="Section">
+    <div class="path-in">
+      <a href="ai.html">The full stack</a>
+      <a href="agents.html">The agent floor</a>
+      <a href="assistant.html">An assistant</a>
+      <a href="security.html">Security</a>
+      <a href="refusals.html" class="here" aria-current="page">What it refuses</a>
+      <a href="threats.html">Ten threats</a>
+      <a href="secure-design.html">Design one</a>
+    </div>
+  </nav>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">What it refuses</p>
+    <h1>Ask a program, from inside, what it can reach.</h1>
+    <p class="lead">The reference machine <code>qemu_confine</code> runs the same small witness as six programs whose files differ by a word or two, and each reports what it can actually reach. The boot calls each one a <a href="words.html">world</a>: one service while it runs, inside walls the kernel keeps. These lines are from its <a href="words.html">pin</a> — a saved copy of a boot someone read and found right, which every later boot is compared with line by line.</p>
+  </section>
+  <section class="wrap block">
+    <div class="term" aria-label="Lines from the pinned boots of the reference machines qemu_confine and qemu_egress">
+      <div class="term-bar"><i></i><i></i><i></i><b>two reference machines, from their pins</b></div>
+<pre><span class="d"># blind: its file asks only to run programs -- NEEDS [process]</span>
+boot: start blind -- pid N -- /harb confined eth0 /data /var/log
+confined: eth0 -- <span class="k">no such interface from here</span>: this world has a network namespace of its own and there is nothing in it
+confined: processes -- this world is pid N and can see the machine's other processes: one table for everybody
+confined: /data -- <span class="k">an empty directory and nothing mounted on it</span>: this world has a mount namespace of its own and the machine's storage is not in it
+confined: /var/log -- <span class="k">an empty directory and nothing mounted on it</span>: this world has a mount namespace of its own and the machine's storage is not in it
+confined: the floor -- <span class="k">refused by the kernel (EPERM)</span>: this world cannot change the machine it runs on
+confined: fork -- permitted: this world started another process, and this line is the child speaking
+
+<span class="d"># still: its file asks for the network and the disks, not to start programs</span>
+confined: fork -- <span class="k">refused by the kernel (EPERM)</span>: this world cannot start another process
+
+<span class="d"># qemu_egress: its network may reach one range, and nowhere else</span>
+boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
+reach 8.8.8.8 -- <span class="k">no route</span>: this machine knows no way there</pre>
+    </div>
+    <p class="cap">Word for word from <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_confine.expected" target="_blank" rel="noopener noreferrer">machines/qemu_confine.expected</a> and <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_egress.expected" target="_blank" rel="noopener noreferrer">machines/qemu_egress.expected</a>; the lines starting with <code>#</code> are this page's. <code>blind</code> got exactly what it asked for and nothing else: it may start programs, and it has no network and none of the machine's disks.</p>
+  </section>
+  <section class="wrap block" id="floor">
+    <div class="sec-head prose">
+      <p class="eyebrow">The floor</p>
+      <h2>Some things no file can ask for.</h2>
+    </div>
+    <div class="prose stack-gap" style="margin-bottom:clamp(22px,3vw,30px)">
+      <p>In this project's words, <a href="words.html">the floor</a> is what no world may do, whatever it declared. The kernel refuses these 25 calls to every program, in eight groups, each kept for a reason. It is a named list, never a claim that everything else is safe.</p>
+    </div>
+    <div class="refuses">
+      <div><b>attaching or detaching disks</b><span>the file says which disks a program sees — <code>mount</code>, <code>umount2</code>, <code>pivot_root</code></span></div>
+      <div><b>loading code into the kernel</b><span>the kernel is the one built into the image — <code>init_module</code>, <code>finit_module</code>, <code>delete_module</code>, <code>kexec_load</code>, <code>kexec_file_load</code></span></div>
+      <div><b>restarting the box</b><span>only the machine's first program decides when it stops — <code>reboot</code></span></div>
+      <div><b>setting the clock</b><span>a program may read the time, never move it under everyone else — <code>settimeofday</code>, <code>clock_settime</code>, <code>adjtimex</code>, <code>clock_adjtime</code></span></div>
+      <div><b>renaming the machine</b><span>who the machine says it is — <code>sethostname</code>, <code>setdomainname</code></span></div>
+      <div><b>building or entering walls of its own</b><span>the walls are built before the program starts, and are not its to widen, narrow or leave — <code>unshare</code>, <code>setns</code></span></div>
+      <div><b>looking inside another program</b><span>another program's memory is not its to read or steer — <code>ptrace</code></span></div>
+      <div><b>touching the machine's own plumbing</b><span>swap, kernel filters, the kernel's log, process accounting, device files — <code>swapon</code>, <code>swapoff</code>, <code>bpf</code>, <code>syslog</code>, <code>acct</code>, <code>mknod</code>, <code>mknodat</code></span></div>
+    </div>
+    <p class="cap">The list is <code>off_limits</code> in <a href="https://github.com/mayouni/harobanda/blob/main/src/confine.zig" target="_blank" rel="noopener noreferrer">src/confine.zig</a>, each group under the sentence that explains it.</p>
+  </section>
+  <section class="wrap block">
+    <p class="prose">Next: <a href="threats.html">The ten threats →</a> What a hijacked agent can still reach, threat by threat.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in foot-row">
+    <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    <p class="foot-credit">A Softanza Project, open source (MIT).<br>By: Mansour Ayouni &copy; 2026.</p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

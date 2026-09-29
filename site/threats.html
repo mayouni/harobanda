@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ten threats — Harobanda</title>
+<meta name="description" content="The OWASP Top 10 for Agentic Applications, read against the machine: what it does about each threat today, where the evidence is, and what stays open.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html" aria-label="Harobanda — home">
+      <img class="brandmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="ai.html" class="active">AI &amp; agents</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="field.html">In the field</a>
+    </nav>
+    <a class="ghlink" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </div>
+</header>
+
+  <nav class="path" aria-label="Section">
+    <div class="path-in">
+      <a href="ai.html">The full stack</a>
+      <a href="agents.html">The agent floor</a>
+      <a href="assistant.html">An assistant</a>
+      <a href="security.html">Security</a>
+      <a href="refusals.html">What it refuses</a>
+      <a href="threats.html" class="here" aria-current="page">Ten threats</a>
+      <a href="secure-design.html">Design one</a>
+    </div>
+  </nav>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">The ten threats</p>
+    <h1>What a hijacked agent can still reach, threat by threat.</h1>
+    <p class="lead">The list is the OWASP Top 10 for Agentic Applications, 2026. Each row says what the machine does about the threat today, where the evidence is, and what stays open. It speaks for the operating system only, not for a whole solution built on it. Why the kernel holds these lines at all is on <a href="security.html">Security</a>; what it does not do yet, <a href="security.html#not-built">said plainly</a>.</p>
+  </section>
+  <section class="wrap block">
+    <div class="grounds threats">
+      <div class="ground-row">
+        <div class="p"><span class="en">Goal hijack</span><span class="lc">OWASP ASI01</span></div>
+        <div class="prob"><b>The threat.</b> A sentence planted in what the agent reads turns it to another goal.</div>
+        <div class="fix"><b>The machine</b> limits what the new goal can reach: no network unless declared, no route beyond its <code>EGRESS</code>, no new program unless declared, no disk it did not name.
+          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_confine.expected" target="_blank" rel="noopener noreferrer">qemu_confine</a> and <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_egress.expected" target="_blank" rel="noopener noreferrer">qemu_egress</a>; lessons 7 and 11.</span>
+          <span class="open"><b>Still open.</b> The persuasion itself, and whatever a granted network reaches.</span></div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Tool misuse</span><span class="lc">OWASP ASI02</span></div>
+        <div class="prob"><b>The threat.</b> The agent uses a real tool, with real rights, for the wrong end.</div>
+        <div class="fix"><b>The machine</b> can run each tool as its own program, with its own needs, disks, user and budget: its reach is a line a reviewer reads, and the court refuses a need nobody granted.
+          <span class="seen"><b>Seen in</b> the court's <a href="https://github.com/mayouni/harobanda/blob/main/declarative/machine/fixtures.json" target="_blank" rel="noopener noreferrer">fixtures</a> R17 and R18: silence is refusal.</span>
+          <span class="open"><b>Still open.</b> Programs that share a disk share what is on it, and a tool's arguments are not the machine's to judge.</span></div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Identity and privilege abuse</span><span class="lc">OWASP ASI03</span></div>
+        <div class="prob"><b>The threat.</b> The agent acts with more authority than its task needs.</div>
+        <div class="fix"><b>The machine</b> has no login, no accounts and no shell. A program runs as the user its file names, and user 0 is refused, so a program running as the machine shows up as a missing <code>USER</code> line.
+          <span class="seen"><b>Seen in</b> the court's fixtures R47 and R5; lesson 12.</span>
+          <span class="open"><b>Still open.</b> A program given the disks sees the device key's disk unless its <code>SEES</code> leaves it out.</span></div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Supply chain</span><span class="lc">OWASP ASI04</span></div>
+        <div class="prob"><b>The threat.</b> A swapped library, model or plugin arrives as trusted code.</div>
+        <div class="fix"><b>The machine</b> installs nothing while it runs: no package manager, no store. The kernel is source fixed by its SHA-256 fingerprint, and the image is made from the file.
+          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/vendor/PIN.md" target="_blank" rel="noopener noreferrer">vendor/PIN.md</a>.</span>
+          <span class="open"><b>Still open.</b> Model files and the programs in the image carry no fingerprint yet.</span></div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Unexpected code execution</span><span class="lc">OWASP ASI05</span></div>
+        <div class="prob"><b>The threat.</b> The agent is talked into running code.</div>
+        <div class="fix"><b>The machine</b> ships no shell, so a command string has nothing to run it. A program not allowed to start others is refused by the kernel, and a <code>noexec</code> disk can be written but not run from.
+          <span class="seen"><b>Seen in</b> qemu_confine: <code>fork -- refused by the kernel (EPERM)</code>; fixture R5.</span>
+          <span class="open"><b>Still open.</b> Code a program interprets runs inside its walls; the machine limits its reach, not its existence.</span></div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Memory and context poisoning</span><span class="lc">OWASP ASI06</span></div>
+        <div class="prob"><b>The threat.</b> Poisoned notes in an agent's memory re-instruct it days later.</div>
+        <div class="fix"><b>The machine</b> keeps each program to the disks it names, so one agent cannot write another's memory unless both name the same disk.
+          <span class="seen"><b>Seen in</b> qemu_confine: <code>ledger has no sight of /var/log, caisse has no sight of /data</code>; lesson 9.</span>
+          <span class="open"><b>Still open.</b> Where a memory came from, and who may forget it, belong to a data layer that is not built.</span></div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Agents talking to agents</span><span class="lc">OWASP ASI07</span></div>
+        <div class="prob"><b>The threat.</b> One agent hands another an instruction nobody reviewed.</div>
+        <div class="fix"><b>The machine</b> gives a program without the network nothing to talk over; such programs meet through a disk both name, a line in the file. Between boxes, a signed record is checked with the public key alone.
+          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/machines/fleet_temoin.expected" target="_blank" rel="noopener noreferrer">fleet_temoin</a>; lesson 14.</span>
+          <span class="open"><b>Still open.</b> Encryption on the wire stays with the servers in front; what crosses a shared disk is the programs' to check.</span></div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Cascading failures</span><span class="lc">OWASP ASI08</span></div>
+        <div class="prob"><b>The threat.</b> One runaway loop drags down everything around it.</div>
+        <div class="fix"><b>The machine</b> holds budgets in the kernel: past its memory a program is stopped, past its processor share it waits, past its task count it is refused. An update is a trial, kept only when every program is ready and the boot matches.
+          <span class="seen"><b>Seen in</b> qemu_budget: <code>greedy (pid N) killed by signal 9</code>; lesson 10.</span>
+          <span class="open"><b>Still open.</b> The hardware watchdog's restart has not been seen on a board yet.</span></div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Human–agent trust exploitation</span><span class="lc">OWASP ASI09</span></div>
+        <div class="prob"><b>The threat.</b> The agent persuades a person to approve something harmful.</div>
+        <div class="fix"><b>The machine</b> turns every change into a new file, read as a difference, judged by the court before anything runs, tried once, and kept only if the machine recognises its own boot.
+          <span class="seen"><b>Seen in</b> the court's 120 fixtures; lesson 5.</span>
+          <span class="open"><b>Still open.</b> The tools for an agent to draft a change and a person to approve it are not built.</span></div>
+      </div>
+      <div class="ground-row">
+        <div class="p"><span class="en">Rogue agents</span><span class="lc">OWASP ASI10</span></div>
+        <div class="prob"><b>The threat.</b> An agent turns on the machine it runs on.</div>
+        <div class="fix"><b>The machine</b> refuses every program the 25 calls of <a href="refusals.html#floor">the floor</a>. One not allowed to start others is alone in a process table of its own.
+          <span class="seen"><b>Seen in</b> qemu_confine: <code>this world cannot change the machine it runs on</code>; lesson 8.</span>
+          <span class="open"><b>Still open.</b> The list is closed, never a claim that all else is safe; and a flaw in the kernel is a flaw in the walls.</span></div>
+      </div>
+    </div>
+  </section>
+  <section class="wrap block">
+    <p class="prose">Next: <a href="secure-design.html">Design one →</a> One machine, one program per role, and four ways to break its promises yourself.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in foot-row">
+    <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    <p class="foot-credit">A Softanza Project, open source (MIT).<br>By: Mansour Ayouni &copy; 2026.</p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

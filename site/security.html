@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Security — Harobanda</title>
-<meta name="description" content="Assume the agent is fooled, then decide in the kernel what it can reach: what the machine holds against the ten agent threats, where to see each one for yourself, and what it does not do yet.">
+<meta name="description" content="Assume the agent is fooled, then decide in the kernel what it can reach: why an agent's reach belongs to the kernel, and what the machine does not do yet.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -21,10 +21,9 @@
     <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
     <nav class="nav" id="nav">
       <a href="why.html">Why</a>
-      <a href="ai.html">AI &amp; agents</a>
+      <a href="ai.html" class="active">AI &amp; agents</a>
       <a href="machine.html">The machine</a>
       <a href="build.html">Build</a>
-      <a href="security.html" class="active">Security</a>
       <a href="enterprise.html">Enterprise</a>
       <a href="field.html">In the field</a>
     </nav>
@@ -32,13 +31,24 @@
   </div>
 </header>
 
+  <nav class="path" aria-label="Section">
+    <div class="path-in">
+      <a href="ai.html">The full stack</a>
+      <a href="agents.html">The agent floor</a>
+      <a href="assistant.html">An assistant</a>
+      <a href="security.html" class="here" aria-current="page">Security</a>
+      <a href="refusals.html">What it refuses</a>
+      <a href="threats.html">Ten threats</a>
+      <a href="secure-design.html">Design one</a>
+    </div>
+  </nav>
+
 <main id="main">
   <section class="wrap pagehead">
     <p class="eyebrow">Security</p>
     <h1>Assume the agent is fooled. Then decide, in the kernel, what it can reach.</h1>
-    <p class="lead">An AI agent will be talked into something sooner or later. Harobanda does not bet on catching every bad sentence. It decides, before the agent starts, what the agent's program can reach — and the kernel, the core of the operating system, holds it there whatever the agent is told. This page shows what that covers today, where you can see each part for yourself, and what it does not do yet.</p>
+    <p class="lead">An AI agent will be talked into something sooner or later. Harobanda does not bet on catching every bad sentence. It decides, before the agent starts, what the agent's program can reach — and the kernel, the core of the operating system, holds it there whatever the agent is told. These four pages show what that covers today, where you can see each part for yourself, and what it does not do yet.</p>
   </section>
-
   <section class="wrap block">
     <div class="sec-head prose">
       <p class="eyebrow">What changed</p>
@@ -50,7 +60,6 @@
     </div>
     <p class="pull prose" style="margin-top:clamp(22px,3vw,32px)">Harobanda never stops a model from being fooled. <b>It decides the size of what a fooled model can do.</b></p>
   </section>
-
   <section class="wrap block">
     <div class="sec-head prose">
       <p class="eyebrow">Who holds what</p>
@@ -65,236 +74,23 @@
       <div class="card"><h4>The record keeps</h4><p>A machine that keeps a record signs one line for every boot with its own key: which file it ran, and whether the boot matched it. Anyone holding the public half can check that no line was changed, and the secret never leaves the device.</p></div>
     </div>
   </section>
-
-  <section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">In the machine's own words</p>
-      <h2>Ask a program, from inside, what it can reach.</h2>
-    </div>
-    <div class="prose stack-gap" style="margin-bottom:clamp(22px,3vw,30px)">
-      <p>The reference machine <code>qemu_confine</code> runs the same small witness as six programs whose files differ by a word or two, and each reports what it can actually reach. The boot calls each one a <a href="words.html">world</a>: one service while it runs, inside walls the kernel keeps. These lines are from its <a href="words.html">pin</a> — a saved copy of a boot someone read and found right, which every later boot is compared with line by line.</p>
-    </div>
-    <div class="term" aria-label="Lines from the pinned boots of the reference machines qemu_confine and qemu_egress">
-      <div class="term-bar"><i></i><i></i><i></i><b>two reference machines, from their pins</b></div>
-<pre><span class="d"># blind: its file asks only to run programs -- NEEDS [process]</span>
-boot: start blind -- pid N -- /harb confined eth0 /data /var/log
-confined: eth0 -- <span class="k">no such interface from here</span>: this world has a network namespace of its own and there is nothing in it
-confined: processes -- this world is pid N and can see the machine's other processes: one table for everybody
-confined: /data -- <span class="k">an empty directory and nothing mounted on it</span>: this world has a mount namespace of its own and the machine's storage is not in it
-confined: /var/log -- <span class="k">an empty directory and nothing mounted on it</span>: this world has a mount namespace of its own and the machine's storage is not in it
-confined: the floor -- <span class="k">refused by the kernel (EPERM)</span>: this world cannot change the machine it runs on
-confined: fork -- permitted: this world started another process, and this line is the child speaking
-
-<span class="d"># still: its file asks for the network and the disks, not to start programs</span>
-confined: fork -- <span class="k">refused by the kernel (EPERM)</span>: this world cannot start another process
-
-<span class="d"># qemu_egress: its network may reach one range, and nowhere else</span>
-boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
-reach 8.8.8.8 -- <span class="k">no route</span>: this machine knows no way there</pre>
-    </div>
-    <p class="cap">Word for word from <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_confine.expected" target="_blank" rel="noopener noreferrer">machines/qemu_confine.expected</a> and <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_egress.expected" target="_blank" rel="noopener noreferrer">machines/qemu_egress.expected</a>; the lines starting with <code>#</code> are this page's. <code>blind</code> got exactly what it asked for and nothing else: it may start programs, and it has no network and none of the machine's disks.</p>
-  </section>
-
-  <section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">The floor</p>
-      <h2>Some things no file can ask for.</h2>
-    </div>
-    <div class="prose stack-gap" style="margin-bottom:clamp(22px,3vw,30px)">
-      <p>In this project's words, <a href="words.html">the floor</a> is what no world may do, whatever it declared. The kernel refuses these 25 calls to every program, in eight groups, each kept for a reason. It is a named list, never a claim that everything else is safe.</p>
-    </div>
-    <div class="refuses">
-      <div><b>attaching or detaching disks</b><span>the file says which disks a program sees — <code>mount</code>, <code>umount2</code>, <code>pivot_root</code></span></div>
-      <div><b>loading code into the kernel</b><span>the kernel is the one built into the image — <code>init_module</code>, <code>finit_module</code>, <code>delete_module</code>, <code>kexec_load</code>, <code>kexec_file_load</code></span></div>
-      <div><b>restarting the box</b><span>only the machine's first program decides when it stops — <code>reboot</code></span></div>
-      <div><b>setting the clock</b><span>a program may read the time, never move it under everyone else — <code>settimeofday</code>, <code>clock_settime</code>, <code>adjtimex</code>, <code>clock_adjtime</code></span></div>
-      <div><b>renaming the machine</b><span>who the machine says it is — <code>sethostname</code>, <code>setdomainname</code></span></div>
-      <div><b>building or entering walls of its own</b><span>the walls are built before the program starts, and are not its to widen, narrow or leave — <code>unshare</code>, <code>setns</code></span></div>
-      <div><b>looking inside another program</b><span>another program's memory is not its to read or steer — <code>ptrace</code></span></div>
-      <div><b>touching the machine's own plumbing</b><span>swap, kernel filters, the kernel's log, process accounting, device files — <code>swapon</code>, <code>swapoff</code>, <code>bpf</code>, <code>syslog</code>, <code>acct</code>, <code>mknod</code>, <code>mknodat</code></span></div>
-    </div>
-    <p class="cap">The list is <code>off_limits</code> in <a href="https://github.com/mayouni/harobanda/blob/main/src/confine.zig" target="_blank" rel="noopener noreferrer">src/confine.zig</a>, each group under the sentence that explains it.</p>
-  </section>
-
-  <section class="wrap block" id="threats">
-    <div class="sec-head prose">
-      <p class="eyebrow">The ten agent threats</p>
-      <h2>What a hijacked agent can still reach, threat by threat.</h2>
-    </div>
-    <div class="prose stack-gap" style="margin-bottom:clamp(22px,3vw,30px)">
-      <p>The list is the OWASP Top 10 for Agentic Applications, 2026. Each row says what the machine does about the threat today, where the evidence is, and what stays open. It speaks for the operating system only, not for a whole solution built on it.</p>
-    </div>
-    <div class="grounds threats">
-      <div class="ground-row">
-        <div class="p"><span class="en">Goal hijack</span><span class="lc">OWASP ASI01</span></div>
-        <div class="prob"><b>The threat.</b> A sentence planted in what the agent reads turns it to another goal.</div>
-        <div class="fix"><b>The machine</b> limits what the new goal can reach: no network unless declared, no route beyond its <code>EGRESS</code>, no new program unless declared, no disk it did not name.
-          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_confine.expected" target="_blank" rel="noopener noreferrer">qemu_confine</a> and <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_egress.expected" target="_blank" rel="noopener noreferrer">qemu_egress</a>; lessons 7 and 11.</span>
-          <span class="open"><b>Still open.</b> The persuasion itself, and whatever a granted network reaches.</span></div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Tool misuse</span><span class="lc">OWASP ASI02</span></div>
-        <div class="prob"><b>The threat.</b> The agent uses a real tool, with real rights, for the wrong end.</div>
-        <div class="fix"><b>The machine</b> can run each tool as its own program, with its own needs, disks, user and budget: its reach is a line a reviewer reads, and the court refuses a need nobody granted.
-          <span class="seen"><b>Seen in</b> the court's <a href="https://github.com/mayouni/harobanda/blob/main/declarative/machine/fixtures.json" target="_blank" rel="noopener noreferrer">fixtures</a> R17 and R18: silence is refusal.</span>
-          <span class="open"><b>Still open.</b> Programs that share a disk share what is on it, and a tool's arguments are not the machine's to judge.</span></div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Identity and privilege abuse</span><span class="lc">OWASP ASI03</span></div>
-        <div class="prob"><b>The threat.</b> The agent acts with more authority than its task needs.</div>
-        <div class="fix"><b>The machine</b> has no login, no accounts and no shell. A program runs as the user its file names, and user 0 is refused, so a program running as the machine shows up as a missing <code>USER</code> line.
-          <span class="seen"><b>Seen in</b> the court's fixtures R47 and R5; lesson 12.</span>
-          <span class="open"><b>Still open.</b> A program given the disks sees the device key's disk unless its <code>SEES</code> leaves it out.</span></div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Supply chain</span><span class="lc">OWASP ASI04</span></div>
-        <div class="prob"><b>The threat.</b> A swapped library, model or plugin arrives as trusted code.</div>
-        <div class="fix"><b>The machine</b> installs nothing while it runs: no package manager, no store. The kernel is source fixed by its SHA-256 fingerprint, and the image is made from the file.
-          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/vendor/PIN.md" target="_blank" rel="noopener noreferrer">vendor/PIN.md</a>.</span>
-          <span class="open"><b>Still open.</b> Model files and the programs in the image carry no fingerprint yet.</span></div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Unexpected code execution</span><span class="lc">OWASP ASI05</span></div>
-        <div class="prob"><b>The threat.</b> The agent is talked into running code.</div>
-        <div class="fix"><b>The machine</b> ships no shell, so a command string has nothing to run it. A program not allowed to start others is refused by the kernel, and a <code>noexec</code> disk can be written but not run from.
-          <span class="seen"><b>Seen in</b> qemu_confine: <code>fork -- refused by the kernel (EPERM)</code>; fixture R5.</span>
-          <span class="open"><b>Still open.</b> Code a program interprets runs inside its walls; the machine limits its reach, not its existence.</span></div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Memory and context poisoning</span><span class="lc">OWASP ASI06</span></div>
-        <div class="prob"><b>The threat.</b> Poisoned notes in an agent's memory re-instruct it days later.</div>
-        <div class="fix"><b>The machine</b> keeps each program to the disks it names, so one agent cannot write another's memory unless both name the same disk.
-          <span class="seen"><b>Seen in</b> qemu_confine: <code>ledger has no sight of /var/log, caisse has no sight of /data</code>; lesson 9.</span>
-          <span class="open"><b>Still open.</b> Where a memory came from, and who may forget it, belong to a data layer that is not built.</span></div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Agents talking to agents</span><span class="lc">OWASP ASI07</span></div>
-        <div class="prob"><b>The threat.</b> One agent hands another an instruction nobody reviewed.</div>
-        <div class="fix"><b>The machine</b> gives a program without the network nothing to talk over; such programs meet through a disk both name, a line in the file. Between boxes, a signed record is checked with the public key alone.
-          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/machines/fleet_temoin.expected" target="_blank" rel="noopener noreferrer">fleet_temoin</a>; lesson 14.</span>
-          <span class="open"><b>Still open.</b> Encryption on the wire stays with the servers in front; what crosses a shared disk is the programs' to check.</span></div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Cascading failures</span><span class="lc">OWASP ASI08</span></div>
-        <div class="prob"><b>The threat.</b> One runaway loop drags down everything around it.</div>
-        <div class="fix"><b>The machine</b> holds budgets in the kernel: past its memory a program is stopped, past its processor share it waits, past its task count it is refused. An update is a trial, kept only when every program is ready and the boot matches.
-          <span class="seen"><b>Seen in</b> qemu_budget: <code>greedy (pid N) killed by signal 9</code>; lesson 10.</span>
-          <span class="open"><b>Still open.</b> The hardware watchdog's restart has not been seen on a board yet.</span></div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Human–agent trust exploitation</span><span class="lc">OWASP ASI09</span></div>
-        <div class="prob"><b>The threat.</b> The agent persuades a person to approve something harmful.</div>
-        <div class="fix"><b>The machine</b> turns every change into a new file, read as a difference, judged by the court before anything runs, tried once, and kept only if the machine recognises its own boot.
-          <span class="seen"><b>Seen in</b> the court's 120 fixtures; lesson 5.</span>
-          <span class="open"><b>Still open.</b> The tools for an agent to draft a change and a person to approve it are not built.</span></div>
-      </div>
-      <div class="ground-row">
-        <div class="p"><span class="en">Rogue agents</span><span class="lc">OWASP ASI10</span></div>
-        <div class="prob"><b>The threat.</b> An agent turns on the machine it runs on.</div>
-        <div class="fix"><b>The machine</b> refuses every program the 25 calls of the floor. One not allowed to start others is alone in a process table of its own.
-          <span class="seen"><b>Seen in</b> qemu_confine: <code>this world cannot change the machine it runs on</code>; lesson 8.</span>
-          <span class="open"><b>Still open.</b> The list is closed, never a claim that all else is safe; and a flaw in the kernel is a flaw in the walls.</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">Break it yourself</p>
-      <h2>A promise you have watched refuse you is evidence.</h2>
-    </div>
-    <div class="prose stack-gap" style="margin-bottom:clamp(22px,3vw,30px)">
-      <p>Four lessons of the guided tour break a security promise on purpose. <code>harb learn</code> prints each one in full: the file to change, the exact line, the command, what you should see, and how to put it back. The boots run in an emulator on an ordinary computer; the <a href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer">README</a> says what they need.</p>
-    </div>
-    <div class="steps">
-      <div class="step"><b>harb learn 7</b><p>Hand the network to a program that had none. Its own report changes from <code>no such interface from here</code> to <code>present: this world shares the machine's network</code> — one word in the file, one line in the boot.</p></div>
-      <div class="step"><b>harb learn 11</b><p>Write <code>EGRESS ["0.0.0.0/0"]</code>, a perimeter that covers everywhere. <code>harb check</code> refuses it before anything is built: a machine that may go anywhere says so by declaring no <code>EGRESS</code> at all.</p></div>
-      <div class="step"><b>harb learn 13</b><p>Run the test that changes one word of a signed record — <code>verdict=matched</code> becomes <code>verdict=perfect</code> — and read what it requires: the break named at entry two, and entry one still verified.</p></div>
-      <div class="step"><b>harb learn 14</b><p>Check a device's record on your own computer, holding no secret. Then point the same command at the tampered copy, and at a fleet that enrolled a different device.</p></div>
-    </div>
-    <p class="cap">And one you cannot break: lesson 8. There is nothing to edit — no line in any file gives back one of the 25 calls.</p>
-  </section>
-
-  <section class="wrap block">
-    <div class="sec-head prose">
-      <p class="eyebrow">Design one</p>
-      <h2>Write the machine before the agent: one program per role.</h2>
-    </div>
-    <div class="prose stack-gap" style="margin-bottom:clamp(22px,3vw,30px)">
-      <p>An office assistant, as an example. The model gets the least of all: its weights, on a disk it can read but never change or run, and nothing to speak with. One small program answers the people in the office. The two meet on one disk, and nothing on the box knows a route beyond the office.</p>
-    </div>
-    <div class="term" aria-label="A machine for an office assistant, shown in full and accepted by the court">
-      <div class="term-bar"><i></i><i></i><i></i><b>office_assistant.machine — shown in full</b></div>
-<pre><span class="kw">DEFINE MACHINE</span> office_assistant <span class="kw">AS</span> (
-  PROFILE hosted, ARCH x86_64, KERNEL linux
-) <span class="kw">RATIONALE</span> <span class="c">"An office assistant: the model reads, one world speaks"</span>
-
-<span class="kw">DEFINE CAPABILITY</span> inference <span class="kw">AS</span> (GRANT yes)
-  <span class="kw">RATIONALE</span> <span class="c">"The model runs on this box, not at a vendor"</span>
-<span class="kw">DEFINE CAPABILITY</span> filesystem <span class="kw">AS</span> (GRANT yes)
-  <span class="kw">RATIONALE</span> <span class="c">"Each world keeps only the disks it names"</span>
-<span class="kw">DEFINE CAPABILITY</span> network <span class="kw">AS</span> (GRANT yes)
-  <span class="kw">RATIONALE</span> <span class="c">"One world answers the people in the office"</span>
-
-<span class="kw">DEFINE MOUNT</span> models <span class="kw">AS</span> (
-  AT <span class="c">"/models"</span>, FS ext4, DEVICE <span class="c">"/dev/vda2"</span>,
-  OPTIONS [ro, noexec]
-) <span class="kw">RATIONALE</span> <span class="c">"The weights: read, never changed, never run"</span>
-
-<span class="kw">DEFINE MOUNT</span> exchange <span class="kw">AS</span> (
-  AT <span class="c">"/exchange"</span>, FS ext4, DEVICE <span class="c">"/dev/vda3"</span>,
-  OPTIONS [rw, noexec]
-) <span class="kw">RATIONALE</span> <span class="c">"Where the two worlds meet: questions in, answers out"</span>
-
-<span class="kw">DEFINE NETWORK</span> office <span class="kw">AS</span> (
-  INTERFACE <span class="c">"eth0"</span>, ADDRESS <span class="c">"192.168.1.20/24"</span>,
-  EGRESS none
-) <span class="kw">RATIONALE</span> <span class="c">"The office's own network, and no route beyond it"</span>
-
-<span class="kw">DEFINE USER</span> reader <span class="kw">AS</span> (UID 1001)
-  <span class="kw">RATIONALE</span> <span class="c">"The model runs as someone, never as the machine"</span>
-<span class="kw">DEFINE USER</span> clerk <span class="kw">AS</span> (UID 1002)
-  <span class="kw">RATIONALE</span> <span class="c">"The world that answers people is someone else"</span>
-
-<span class="kw">DEFINE SERVICE</span> model <span class="kw">AS</span> (
-  RUN [<span class="c">"/app/model"</span>], RESTART always, USER reader,
-  NEEDS [inference, filesystem],
-  SEES [models, exchange],
-  MEMORY 4096, CPU 200,
-  READY <span class="c">"/run/model.ready"</span>
-) <span class="kw">RATIONALE</span> <span class="c">"Reads weights and questions; no network, no new process"</span>
-
-<span class="kw">DEFINE SERVICE</span> desk <span class="kw">AS</span> (
-  RUN [<span class="c">"/app/desk"</span>], RESTART always, USER clerk,
-  NEEDS [network, filesystem],
-  SEES [exchange],
-  MEMORY 256,
-  READY <span class="c">"/run/desk.ready"</span>
-) <span class="kw">RATIONALE</span> <span class="c">"Answers the office, and never sees the weights"</span></pre>
-    </div>
-    <p class="cap">The court accepts this machine as written: <code>harb docs --check</code> judges every machine a page of this site shows in full, each time the site changes.</p>
-    <div class="trio" style="margin-top:clamp(24px,3vw,34px)">
-      <div class="card"><h4>What the model gets</h4><p>No network interface at all, no way to start a program, a process table of its own; its weights, read-only, and the exchange disk. Hijacked, it reaches its own answers — which the desk reads — and its own budget.</p></div>
-      <div class="card"><h4>What the desk gets</h4><p>The office network, with no route beyond it, and the exchange disk — never the weights. Hijacked, it reaches the people in the office, and nothing past them.</p></div>
-      <div class="card"><h4>Reach belongs to the machine</h4><p>Every program given the network shares every route the machine declares. To give two agents different reach, put them on two machines: reach per program is not built.</p></div>
-    </div>
-  </section>
-
   <section class="wrap block" id="not-built">
     <div class="sec-head prose">
       <p class="eyebrow">Said plainly</p>
       <h2>What the machine does not do yet.</h2>
     </div>
-    <ul class="honest prose">
+    <ul class="honest two">
       <li><b>No route is not no way.</b> <code>EGRESS</code> writes the routing table, so the machine knows no way out. A filter that also stops a program looking for one is not built.</li>
       <li><b>Boots are signed; actions are not.</b> The record says what the machine was and what it judged of itself. What an agent did inside its walls is that program's record to keep, and the two are not yet joined.</li>
       <li><b>No trusted clock.</b> The record carries no time, because the board has no clock of its own. Time will come from an authority the file declares, never assumed — and that is not built.</li>
-      <li><b>No board yet.</b> Every boot on this page ran in an emulator. The watchdog's real restart and the board's own console are the two things only the first board can show.</li>
+      <li><b>No board yet.</b> Every boot these pages quote ran in an emulator. The watchdog's real restart and the board's own console are the two things only the first board can show.</li>
       <li><b>No fingerprint on a model.</b> Nothing yet checks a model file, or a program placed in the image, against a fingerprint the way the kernel is checked.</li>
       <li><b>The walls are the kernel's.</b> A flaw in the kernel is a flaw in them. It is Linux, kept as pinned source and built here — and it is still Linux.</li>
       <li><b>No private way yet to report a flaw.</b> A security policy and a contact for it are the next thing to publish.</li>
     </ul>
-    <p class="prose" style="margin-top:clamp(22px,3vw,30px)">The same machine seen from an agent: <a href="agents.html">The agent floor →</a> From an IT team's three questions: <a href="enterprise.html">Enterprise →</a> And every limit of the project, not only its security: <a href="field.html">In the field →</a></p>
+  </section>
+  <section class="wrap block">
+    <p class="prose">Next: <a href="refusals.html">What it refuses →</a> A program asked from inside what it can reach, in the machine's own words, and the 25 calls no file can ask for.</p>
   </section>
 </main>
 
