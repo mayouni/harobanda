@@ -529,6 +529,17 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   nobody had fetched, a fetch that took the NEWEST kernel rather than
   the pinned one, and a runtime (stzr) from a private repository -- so a
   stranger's first boot is `qemu_egress`, which runs only `harb`.
+- **A code block is what the page RENDERS, never a line that begins
+  with three backticks** (DOC-3): `docs --check` knew a fence only at
+  the start of a line, so a block inside a quote was never read, and
+  WHATS-NEXT.md carried a 106-character command in one through 11
+  commits of green courts. The judge now reads fences as GitHub draws
+  them -- inside quotes, with tildes, closed only by their own kind --
+  and a quote costs 5 characters of room, MEASURED on the rendered page
+  (36 pixels of padding and border), never reasoned. EGR-3 one layer
+  over. **A number carried from an estimate is not a measurement**: the
+  commit that found this wrote 104 for a line of 106; it stays pushed,
+  and the correction sits beside it in the record.
 - **A word is explained by what it DOES, never by another metaphor, and
   it is worded ONCE** (DOC-2): "the court: the judge of the grammar" and
   "PID 1 ... reaps them" taught nothing to a reader who did not already
@@ -951,7 +962,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

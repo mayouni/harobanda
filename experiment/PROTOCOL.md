@@ -1,3 +1,130 @@
+# DOC-3 — a code block is what the page renders, not a line that begins with three backticks
+
+`harb docs --check` (DOC-1) knew a fence by one test: a line that, its
+leading spaces trimmed, BEGAN with three backticks. A fence inside a
+quote begins with `>`, so the judge never opened it, and neither of its
+rules -- the width, the machine shown in full -- ever read what was
+inside. WHATS-NEXT.md, which Central writes for this desk, carried its
+refresh command as one line inside a quote: 106 characters, where a page
+allows 64. It stood for 11 commits, from f31dd8e (2026-09-28 02:51) to
+6ade3a0 (2026-09-29 00:44), and the court was green over every one. It
+was found by reading, while committing Central's wrap of that very line:
+the wrapped block measured 44, and the question was why the unwrapped
+one had ever passed.
+
+EGR-3's lesson, one layer over: a guard that recognises a claim by how it
+is SPELLED is narrower than one that asks what it COVERS. The claim is
+that no code block on a page scrolls sideways, and a code block is
+whatever GitHub draws as one.
+
+## What a quote costs, measured
+
+A block inside a quote has less room, and how much less is a fact about
+GitHub's page, so it was measured there and not reasoned (LRN-3): the
+rendered WHATS-NEXT.md, in the browser pane, the window set to 820 and
+then to 1280 pixels wide.
+
+| window | page body | the quote's code container | taken by the quote |
+|---|---|---|---|
+| 820 | 707 px | 671 px | 36 px |
+| 1280 | 846 px | 810 px | 36 px |
+
+An unquoted block's container is the page body itself (the README at
+1280: 823 of 823 pixels). GitHub draws a quote with 16 pixels of padding
+on each side and a 4-pixel border -- 36 pixels at both widths, which is
+4.81 characters of the code font as this machine draws it (7.48 pixels a
+character, 13.6-pixel text). So a quote costs a fixed number of
+characters, not a share of the column. `quote_cost` is 5, rounded up, so
+the 4-character margin that puts 64 under the author's 68 survives
+inside a quote: 59 inside one quote, 54 inside two.
+
+One trap on the way: GitHub shrinks a code block to its longest line, so
+the block's own width said 44 -- the width of what it held. The room is
+the width of the element that holds the block.
+
+## What the judge reads now
+
+- **A fence is three or more backticks or tildes**, after any number of
+  quote markers (`` > ``` ``, `` > > ``` `` and `` >> ``` `` alike), and
+  a backtick fence whose words hold a backtick is inline code, not a
+  fence -- CommonMark, which GitHub renders.
+- **A block closes on its own kind**: the same character, at least as
+  many, and nothing after. Before, any line beginning with three
+  backticks toggled the block, so a four-backtick block ended at the
+  first three, and a `~~~` block was never a block at all.
+- **A quote's end is its block's end.** GitHub closes a code block when
+  the quote around it closes, so a line with fewer markers ends the
+  block and is read again as itself -- it may open the next one.
+- **A page's end closes a block**, and a machine in a block the page
+  never closed is judged like any other.
+- **A line inside a quote is measured without its markers, against the
+  room the quote leaves**: `WHATS-NEXT.md:20 -- a code line 106 wide
+  inside a quote; GitHub shows 59 there before the block scrolls`.
+- **The court says how many blocks sit inside a quote** -- one today --
+  so a reader of the verdict sees that the new reach is live rather than
+  assuming it.
+
+Before any of it was written, the pages were surveyed for the shapes
+that would now be judged differently: no indented fence, no fence of
+four or more backticks, no closing fence with words after it, and one
+quoted block. Over every other page the verdict is unchanged -- 21
+Markdown files, 3 machines in full, 23 words -- and the new judge was
+run over the tree to see that it is.
+
+## Probed
+
+- **The real page, both judges** (a clean worktree of HEAD): WHATS-NEXT.md
+  as it stood at 87f6da4, judged by the binary from before this change,
+  green; by the binary after it, one conviction, at line 20; and the
+  page as it is now, by the binary after it, green, with the quoted
+  block counted.
+- **Seven mutations, each in a scratch copy of the source and never the
+  working tree**: quotes never taken off a line; a quote that costs
+  nothing; the line that ends a quote never read again; any fence
+  closing any block; a page's end never closing a block; three backticks
+  around words taken as a fence; quote markers read inside an unquoted
+  block. Each was caught by the test named for its rule, and no other
+  test moved. A mutation whose text did not occur exactly once was
+  refused before anything ran, so a typo could not pass as an acquittal.
+- **The prober's first reading was wrong, and the tests were right.** It
+  looked for `...FAIL`, and Zig 0.15 prints a failed assertion straight
+  after the `...`: all seven mutations were red, and all seven were
+  reported as not compiling. A verdict must be RECEIVED (NAM-2); the
+  prober now reads the status each test line ends with.
+
+`zig build test`, `court` (120/120, 32/32, the pages, the tour) and
+`cross`, each with `-j2` and one at a time: green.
+
+## A number corrected, beside its commit
+
+6ade3a0's message says the old line "was 104". It was 106 after the
+quote marker, 108 as written. 104 was an estimate, carried into a commit
+as though it had been measured. The commit is pushed and stays as it is;
+this is the correction, and every number in this entry was measured.
+
+## Named, not closed
+
+- **A list's room was not measured.** A block inside a list is measured
+  as written, its indent counted as characters; GitHub pads a list, and
+  no page here has a block in one. Measure it before one is written.
+- **The cost was measured with this machine's code font.** A wider font
+  loses fewer characters to the same 36 pixels, so 5 holds wherever the
+  font is at least as wide as this one; a narrower one was not seen.
+- **68 is the author's screen, on the README.** A file's own page on
+  GitHub is wider at the same window (846 against 823 pixels at 1280),
+  so the rule is a little stricter there than it needs to be -- the safe
+  side.
+
+## The law this pays for
+
+**A code block is what the page RENDERS, never a line that begins with
+three backticks.** The judge asked how a fence is spelled at the start
+of a line; a reader sees whatever GitHub draws. And **a number carried
+from an estimate is not a measurement**: it reads the same in a commit
+message, and it was two characters wrong.
+
+---
+
 # CON-1 — a console is where the kernel speaks, and PID 1 asks it
 
 LRN-3 found it by running a BREAK IT: a machine's `CONSOLE` was

@@ -8,6 +8,15 @@
 //!    "Try it" block scrolling sideways -- and when this was written, 152
 //!    code lines in 10 of the repository's 17 Markdown files were wider.
 //!
+//!    A code block is what GitHub RENDERS as one (DOC-3): three or more
+//!    backticks or tildes, inside any number of quotes, closed by a line
+//!    of the same character at least as long -- or by the end of the
+//!    quote, or of the page, that holds it. A quote takes room from its
+//!    code (`quote_cost`). Until 2026-09-29 a fence was a line that BEGAN
+//!    with three backticks, so a block inside a quote was never read:
+//!    WHATS-NEXT.md carried a 106-character command in one, and the court
+//!    was green.
+//!
 //! 2. Every machine a page shows IN FULL is one the court accepts. When this
 //!    was written, the README's headline example ("a whole machine, in nine
 //!    lines") and the site home page's were both REFUSED -- PROFILE is
@@ -25,8 +34,11 @@
 //!
 //! What this does NOT judge, stated rather than implied: an excerpt elided
 //! with `...` (what is elided cannot be judged, which is why the pages say
-//! "in full"); code INDENTED four spaces rather than fenced; and the width
-//! of the site's own pages, which wrap code in their own CSS.
+//! "in full"); code INDENTED four spaces rather than fenced; the width of
+//! the site's own pages, which wrap code in their own CSS; and the room a
+//! LIST leaves its code -- a block in a list is measured as written, its
+//! indent counted as characters, and GitHub's padding for a list was
+//! never measured, because no page here has one.
 
 const std = @import("std");
 const machine = @import("machine.zig");
@@ -35,6 +47,20 @@ const learn = @import("learn.zig");
 /// What GitHub shows of a code line in a README column before the block
 /// scrolls: 68 characters on the author's screen, less a margin.
 pub const max_code_width: usize = 64;
+
+/// What one quote takes from the room of the code inside it, in
+/// characters. GitHub draws a quote with 16 pixels of padding on each side
+/// and a 4-pixel border: 36 pixels, which is 4.81 characters of the code
+/// font as this machine draws it (7.48 pixels each). Measured on the
+/// rendered WHATS-NEXT.md, 2026-09-29, at 820 and at 1280 pixels wide --
+/// 36 at both, so a quote costs characters, not a share of the column
+/// (DOC-3). Rounded up, so the margin under the 68 survives in a quote.
+pub const quote_cost: usize = 5;
+
+/// how wide a code line may be inside `depth` quotes
+pub fn allowedWidth(depth: usize) usize {
+    return max_code_width -| depth * quote_cost;
+}
 
 /// never descended into: build output, caches, the VCS, the harness
 const skip_dirs = [_][]const u8{ "zig-out", ".zig-cache", "zig-cache", ".git", "__pycache__", ".claude", "node_modules" };
@@ -79,6 +105,8 @@ const Tally = struct {
     bad: usize = 0,
     /// machines shown in full, and so judged
     judged: usize = 0,
+    /// code blocks inside a quote, and so measured with less room
+    quoted: usize = 0,
 };
 
 /// A block that declares a MACHINE and elides nothing is a claim that this
@@ -103,8 +131,70 @@ fn judgeMachine(alloc: std.mem.Allocator, w: *std.Io.Writer, path: []const u8, f
     };
 }
 
+/// how many times `c` begins `s`
+fn runOf(s: []const u8, c: u8) usize {
+    var n: usize = 0;
+    while (n < s.len and s[n] == c) n += 1;
+    return n;
+}
+
+/// A fence: three or more backticks or tildes (CommonMark, which GitHub
+/// renders). The words after a backtick fence may hold no backtick, or the
+/// line is inline code and opens nothing.
+const Fence = struct { char: u8, len: usize };
+
+fn opens(line: []const u8) ?Fence {
+    const s = std.mem.trimLeft(u8, line, " \t");
+    if (s.len == 0 or (s[0] != '`' and s[0] != '~')) return null;
+    const n = runOf(s, s[0]);
+    if (n < 3) return null;
+    if (s[0] == '`' and std.mem.indexOfScalar(u8, s[n..], '`') != null) return null;
+    return .{ .char = s[0], .len = n };
+}
+
+/// A block closes on a line of its OWN character, at least as long as the
+/// fence that opened it, with nothing after: a shorter fence, the other
+/// character, or a fence with words after it is a line of code.
+fn closes(line: []const u8, f: Fence) bool {
+    const s = std.mem.trimLeft(u8, line, " \t");
+    const n = runOf(s, f.char);
+    return n >= f.len and std.mem.trim(u8, s[n..], " \t").len == 0;
+}
+
+const Unquoted = struct { depth: usize, rest: []const u8 };
+
+/// Up to `most` quote markers taken off the front of a line: a `>` after
+/// at most three spaces, with the one space after it. `> > x` and `>> x`
+/// are both two quotes deep.
+fn unquote(line: []const u8, most: usize) Unquoted {
+    var rest = line;
+    var depth: usize = 0;
+    while (depth < most) : (depth += 1) {
+        const i = @min(runOf(rest, ' '), 3);
+        if (i == rest.len or rest[i] != '>') break;
+        const after = i + 1;
+        rest = rest[if (after < rest.len and rest[after] == ' ') after + 1 else after..];
+    }
+    return .{ .depth = depth, .rest = rest };
+}
+
+/// One code line against the room it has, `depth` quotes deep.
+fn measure(w: *std.Io.Writer, path: []const u8, n: usize, code: []const u8, depth: usize, t: *Tally) !void {
+    const width = std.unicode.utf8CountCodepoints(code) catch code.len;
+    const room = allowedWidth(depth);
+    if (width <= room) return;
+    t.bad += 1;
+    switch (depth) {
+        0 => try w.print("  {s}:{d} -- a code line {d} wide; GitHub shows {d} before the block scrolls\n", .{ path, n, width, room }),
+        1 => try w.print("  {s}:{d} -- a code line {d} wide inside a quote; GitHub shows {d} there before the block scrolls\n", .{ path, n, width, room }),
+        else => try w.print("  {s}:{d} -- a code line {d} wide inside {d} quotes; GitHub shows {d} there before the block scrolls\n", .{ path, n, width, depth, room }),
+    }
+}
+
 fn checkMarkdown(alloc: std.mem.Allocator, w: *std.Io.Writer, path: []const u8, text: []const u8, t: *Tally) !void {
-    var inside = false;
+    // the block that is open, if one is, and how many quotes deep it opened
+    var fence: ?Fence = null;
+    var depth: usize = 0;
     var block: std.ArrayList(u8) = .{};
     var start: usize = 0;
     var n: usize = 0;
@@ -112,24 +202,33 @@ fn checkMarkdown(alloc: std.mem.Allocator, w: *std.Io.Writer, path: []const u8, 
     while (it.next()) |raw| {
         n += 1;
         const line = std.mem.trimRight(u8, raw, "\r");
-        if (std.mem.startsWith(u8, std.mem.trimLeft(u8, line, " \t"), "```")) {
-            if (inside) {
-                // the block's text begins on the line after its fence
-                try judgeMachine(alloc, w, path, start + 1, block.items, t);
-                block.clearRetainingCapacity();
-            } else start = n;
-            inside = !inside;
-            continue;
+        if (fence) |f| {
+            const inner = unquote(line, depth);
+            if (inner.depth == depth and !closes(inner.rest, f)) {
+                try block.appendSlice(alloc, inner.rest);
+                try block.append(alloc, '\n');
+                try measure(w, path, n, inner.rest, depth, t);
+                continue;
+            }
+            // the block's text begins on the line after its fence
+            try judgeMachine(alloc, w, path, start + 1, block.items, t);
+            block.clearRetainingCapacity();
+            fence = null;
+            // a closing fence is spent. A line that ended the QUOTE ended
+            // the block inside it too, as GitHub renders it, and is read
+            // again below as the line it is.
+            if (inner.depth == depth) continue;
         }
-        if (!inside) continue;
-        try block.appendSlice(alloc, line);
-        try block.append(alloc, '\n');
-        const width = std.unicode.utf8CountCodepoints(line) catch line.len;
-        if (width > max_code_width) {
-            t.bad += 1;
-            try w.print("  {s}:{d} -- a code line {d} wide; GitHub shows {d} before the block scrolls\n", .{ path, n, width, max_code_width });
+        const q = unquote(line, std.math.maxInt(usize));
+        if (opens(q.rest)) |g| {
+            fence = g;
+            depth = q.depth;
+            start = n;
+            if (depth > 0) t.quoted += 1;
         }
     }
+    // a block the page never closes runs to the page's end (CommonMark)
+    if (fence != null) try judgeMachine(alloc, w, path, start + 1, block.items, t);
 }
 
 /// the text a reader sees inside a <pre>: tags dropped, the entities a
@@ -318,7 +417,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         try compareWords(alloc, w, pg.path, got, &learn.words, &t);
     }
     if (t.bad == 0) {
-        try w.print("docs -- {d} Markdown files: no code line wider than {d}; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site\n", .{ found.md.items.len, max_code_width, t.judged, learn.words.len });
+        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len });
     } else {
         try w.print("docs -- {d} claim(s) the documents make do not hold\n", .{t.bad});
     }
@@ -460,4 +559,83 @@ test "a site page's machine is judged through its markup" {
     // the same page without PROFILE, which is how the home page stood
     const without = "<pre><span class=\"kw\">DEFINE MACHINE</span> hello AS (\n  ARCH x86_64,\n  KERNEL linux\n) RATIONALE &quot;x&quot;\n</pre>";
     try t.expectEqual(@as(usize, 1), (try run(without, true)).bad);
+}
+
+// ---- DOC-3: a code block is what GitHub renders as one ----
+
+/// WHATS-NEXT.md's refresh command as it stood until 6ade3a0, inside a
+/// quote: 106 characters, green, because the fence was never read
+const old_command = "powershell -ExecutionPolicy Bypass -File D:\\GitHub\\softanza\\dashboard\\central.ps1 -Install -Only harobanda";
+
+test "a code block inside a quote is measured, in the room the quote leaves" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    // the line that walked past, convicted at the line of the page
+    const p = try probe(arena, "> ## Answer\n>\n> ```\n> " ++ old_command ++ "\n> ```\n", false);
+    try t.expectEqual(@as(usize, 1), p.tally.bad);
+    try t.expectEqual(@as(usize, 1), p.tally.quoted);
+    const said = std.fmt.comptimePrint("t.md:4 -- a code line {d} wide inside a quote; GitHub shows {d} there before the block scrolls", .{ old_command.len, comptime allowedWidth(1) });
+    try t.expect(std.mem.indexOf(u8, p.said, said) != null);
+
+    // exactly the room a quote leaves: acquitted; one more: convicted
+    const room = comptime allowedWidth(1);
+    try t.expectEqual(@as(usize, 0), (try run("> ```\n> " ++ ("x" ** room) ++ "\n> ```\n", false)).bad);
+    try t.expectEqual(@as(usize, 1), (try run("> ```\n> " ++ ("x" ** (room + 1)) ++ "\n> ```\n", false)).bad);
+    // a quote COSTS room: a line that fits the page does not fit a quote
+    try t.expectEqual(@as(usize, 1), (try run("> ```\n> " ++ ("x" ** max_code_width) ++ "\n> ```\n", false)).bad);
+
+    // two quotes deep, spelled either way, cost it twice
+    const room2 = comptime allowedWidth(2);
+    try t.expectEqual(@as(usize, 0), (try run(">> ```\n>> " ++ ("x" ** room2) ++ "\n>> ```\n", false)).bad);
+    try t.expectEqual(@as(usize, 1), (try run("> > ```\n> > " ++ ("x" ** (room2 + 1)) ++ "\n> > ```\n", false)).bad);
+
+    // prose in a quote is not code, however long
+    try t.expectEqual(@as(usize, 0), (try run("> " ++ ("x" ** 200) ++ "\n", false)).bad);
+    // and in a block that is NOT quoted, a `>` is code, and counts
+    try t.expectEqual(@as(usize, 1), (try run("```\n> " ++ ("x" ** (max_code_width - 1)) ++ "\n```\n", false)).bad);
+}
+
+test "a block inside a quote ends where the quote ends" {
+    const t = std.testing;
+    const over = "x" ** (max_code_width + 1);
+    // GitHub closes a code block when the quote around it closes: the line
+    // after is prose, and a long one is not measured
+    try t.expectEqual(@as(usize, 0), (try run("> ```\n> x\n\n" ++ over ++ "\n", false)).bad);
+    // and a fence right after the quote opens a block of its own
+    try t.expectEqual(@as(usize, 1), (try run("> ```\n> x\n```\n" ++ over ++ "\n```\n", false)).bad);
+}
+
+test "a machine inside a quote is judged, and refused at its page line" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const ok = try probe(arena, "> ```\n> DEFINE MACHINE hello AS (\n>   PROFILE hosted,\n>   ARCH x86_64,\n>   KERNEL linux\n> ) RATIONALE \"x\"\n> ```\n", false);
+    try t.expectEqual(@as(usize, 0), ok.tally.bad);
+    try t.expectEqual(@as(usize, 1), ok.tally.judged);
+    // no PROFILE, on the machine that begins on line 2 of the page
+    const p = try probe(arena, "> ```\n> DEFINE MACHINE hello AS (\n>   ARCH x86_64,\n>   KERNEL linux\n> ) RATIONALE \"x\"\n> ```\n", false);
+    try t.expectEqual(@as(usize, 1), p.tally.bad);
+    try t.expect(std.mem.indexOf(u8, p.said, "t.md:2 shows a machine the court refuses: PROFILE is required") != null);
+}
+
+test "a fence is closed by its own kind, and a page that ends closes it" {
+    const t = std.testing;
+    const over = "x" ** (max_code_width + 1);
+    // tildes open a block as backticks do
+    try t.expectEqual(@as(usize, 1), (try run("~~~\n" ++ over ++ "\n~~~\n", false)).bad);
+    // backticks inside a tilde block are code, not its end
+    try t.expectEqual(@as(usize, 0), (try run("~~~\n```\n~~~\n" ++ over ++ "\n", false)).bad);
+    // a shorter fence inside a longer one is code, not its end
+    try t.expectEqual(@as(usize, 1), (try run("````\n```\n" ++ over ++ "\n````\n", false)).bad);
+    // a fence with words after it never closes a block
+    try t.expectEqual(@as(usize, 1), (try run("```\n```bash\n" ++ over ++ "\n```\n", false)).bad);
+    // three backticks around words on one line are inline code, not a fence
+    try t.expectEqual(@as(usize, 0), (try run("```x```\n" ++ over ++ "\n", false)).bad);
+    // a block the page never closes runs to the end, and its machine is judged
+    const refused = "DEFINE MACHINE hello AS (\n  ARCH x86_64,\n  KERNEL linux\n) RATIONALE \"x\"\n";
+    try t.expectEqual(@as(usize, 1), (try run("```\n" ++ refused, false)).bad);
 }
