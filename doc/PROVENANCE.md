@@ -72,6 +72,57 @@ ruling can be one-meaning-per-word:
 - **Device** — the L2 language (ex-MicroRing's seam); PIN here is its
   first seat, and the two must converge or one must yield.
 
+## The rulings of 2026-09-29 (taken on the author's behalf, at his word)
+
+The author delegated again: *"do what is open for me on my behalf."* What
+was open was a handful of sentences on the public site that ran ahead of
+the estate's own records, and one act no delegation reaches. Each ruling is
+open to his reversal, and each was settled from a record, not from memory.
+
+**STZ-OS-RULING-09 — DIKO is won, and in its study phase.** The status
+page said the engagement "is won and now entering development". DIKO's own
+situation note of 2026-09-29 (`diko/output/retours/`) records a contract and
+a study under way: workshops held that week, the study being written,
+delivery still ahead. Ruled: "won" stands; "entering development" becomes
+"in its study phase". No date or scope from the note is published -- a
+client's timetable is the client's. GROUND.md 4.2 carries an Amended
+block: its "a preliminary proposal" was true of the machine, never of the
+engagement. A flag put to the author earlier the same day ("one of the two
+is stale") misread that sentence, and is corrected in Central's log.
+
+**STZ-OS-RULING-10 — the Haro tools are stated at the level their own
+READMEs state.** `build.html` said five times, and `status.html` once, that
+HaroServ, HaroScript and MicroHaro are "already usable in real projects"
+or "proven and in use today". Their records say less, and different
+things. RingServ is 0.9, "ready to use, not finished". RingScript is 0.9,
+"complete in function ... already carrying real work". MicroRing has
+closed phase 1 (the desktop runtime, with a simulated device); phase 2,
+the Raspberry Pi, is "underway and mostly proven", with the physical
+loopback and the week-long soak still to run. Ruled: the pages say that,
+and MicroHaro's tag goes from "usable today" to "underway". The versions
+are those of the Ring-based tools the Haro names stand for today, as the
+same page already says.
+
+**STZ-OS-RULING-11 — "the restaurant app is delivered" is "the first
+iteration is delivered".** GROUND.md 4.1: iteration 1 in July 2026, and
+a demo on 15 August on the real catalogue, without payment, RestoPay
+untouched.
+
+**STZ-OS-RULING-12 — "foundation of the course" stands, and ESPA-MT is not
+a high school.** The concept note for the IGF Niger panel
+(`zin/doc/business/igf-niger/`) says the programme builds on ("s'appuie
+sur") the declarative language the author designed: our work is its
+foundation, as the site says. The school is an École supérieure, a school
+of higher education, and the site says so.
+
+**Not done on anyone's word.** The security contact. There is no address
+to publish and none to invent; the author's account address is not
+published without his say; and private vulnerability reporting is a
+repository security setting that no delegation reaches. Two steps, both
+his: switch it on (Settings, Code security), and name the address a
+`SECURITY.md` should carry. The Security page already says that a private
+way to report is the next thing to publish.
+
 ## The rulings of 2026-09-27 (taken on the author's behalf, at his word)
 
 The author delegated what waited on him: *"do what waits on me on my
