@@ -24,6 +24,7 @@
       <a href="ai.html">AI &amp; agents</a>
       <a href="machine.html">The machine</a>
       <a href="build.html">Build</a>
+      <a href="security.html">Security</a>
       <a href="enterprise.html" class="active">Enterprise</a>
       <a href="field.html">In the field</a>
     </nav>
@@ -50,11 +51,12 @@
       <div class="card">
         <h4>Security</h4>
         <ul>
-          <li><b>Almost no attack surface.</b> No shell, no package manager, no store; only the services you declared ever listen. The usual ways in are simply absent.</li>
-          <li><b>Least privilege, enforced.</b> Every program is held to the capabilities it declared; the kernel refuses the rest.</li>
-          <li><b>Immutable and signed.</b> The running system can't be changed in place — a change is a new, signed image. No drift, no undocumented change to find.</li>
+          <li><b>A small attack surface, and a named one.</b> Nothing runs that the file did not declare: no shell, no package manager, no store, no login. What is left to attack is the kernel and the programs you declared — and only they ever listen.</li>
+          <li><b>Least privilege, where the kernel can hold it.</b> A machine whose programs need what nobody granted is refused before it is built. While it runs, the kernel gives each program only the network and the disks it declared, lets it start another program only if it said so, and refuses every program 25 calls that would change the machine itself — rebooting it, loading code into the kernel, moving its clock.</li>
+          <li><b>Rebuilt at every boot.</b> The system runs from an image in memory, made again from the file each time the machine starts: what a program changes there is gone at the next boot, and only the disks you declared keep anything. No drift, no undocumented change to find.</li>
           <li><b>Tamper-evident audit.</b> A signed boot record and a per-device key: evidence an auditor reads directly.</li>
         </ul>
+        <p><a href="security.html">What each promise rests on, and what is not built yet →</a></p>
       </div>
       <div class="card">
         <h4>Scalability</h4>
@@ -69,7 +71,7 @@
         <h4>Integration</h4>
         <ul>
           <li><b>Standard wire, proven substrate.</b> It's Linux underneath: the same TCP/IP, HTTP, TLS and DNS as the rest of your estate — no exotic protocol to bridge.</li>
-          <li><b>Every connection is declared.</b> A link to a database, an identity provider or a message bus is a declared reach and a service — visible, auditable, refused if not declared.</li>
+          <li><b>Every connection is declared.</b> A link to a database, an identity provider or a message bus is a declared reach and a service — visible and auditable, and once a machine declares its reach, it knows no route to anywhere else.</li>
           <li><b>Joins your identity.</b> The application server can front standard sign-in (OIDC), so it fits your directory rather than inventing its own.</li>
           <li><b>Bridges to the centre.</b> Local-first data federates between sites and syncs to central systems on the terms you declare.</li>
         </ul>

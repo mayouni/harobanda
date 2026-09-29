@@ -250,6 +250,15 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .ground-row .prob b{color:var(--laterite);font-weight:500;}
 .ground-row .fix{font-size:18px;color:var(--ink);line-height:1.5;}
 .ground-row .fix b{color:var(--river);font-weight:600;}
+/* security.html's ten threats. The machine's answer is the longest cell,
+   so it takes the widest column; the evidence and what stays open sit under
+   it at the SAME size, told apart by colour and never by shrinking -- the
+   open part in laterite, which on this site marks what is not held. */
+.grounds.threats .ground-row{grid-template-columns:.7fr 1fr 1.6fr;}
+@media(max-width:880px){.grounds.threats .ground-row{grid-template-columns:1fr;}}
+.ground-row .fix .seen,.ground-row .fix .open{display:block;margin-top:9px;color:var(--muted);}
+.ground-row .fix .seen b{color:var(--ink);font-weight:600;}
+.ground-row .fix .open b{color:var(--laterite);font-weight:500;}
 
 .diagram-img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--line-strong);}
 .figure{margin:0 0 clamp(28px,4vw,44px);}
