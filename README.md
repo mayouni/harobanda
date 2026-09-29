@@ -264,10 +264,24 @@ to patch. The auditor, who can read the whole machine in one file and check a
 signed record of every boot. And whoever puts an AI agent to work, and has to
 answer for what it can reach.
 
-Two real engagements shaped the design: a restaurant in Lyon whose whole
-service runs on one box behind the counter, and a national NGO in Niger whose
-offline hub must never let its data leave the building. Neither runs on
-Harobanda yet; both are why it is built the way it is.
+**None of this came from a lab.** It came from real work, in Niamey and in
+France:
+
+- **Sonibank**, a bank in Niamey, demands provable changes, for the new
+  version of our Organizium software.
+- **ESPA-MT**, a higher-education school in Niamey, teaches its students to
+  design and govern their own AI. Our work is the foundation of its AI &
+  Computational Thinking course.
+- **DIKO**, a national NGO in Niamey, keeps its sensitive data in-house: the
+  host server for its Diko AI agent.
+- **Cousbox**, a restaurant in Lyon, France, needed a box server for
+  RestoLean, our platform for neighbourhood commerce: customers order from
+  their phone, with no account, and the order reaches the kitchen. On its
+  first trial, on 15 August 2026, a fridge tripped the breaker and the router
+  rebooted: the server's address changed, and two hours of observations were
+  lost.
+
+Not one of them runs on Harobanda yet. They are where it comes from.
 
 ## Try it
 
