@@ -74,7 +74,11 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .menu-btn{display:none;background:none;border:1px solid var(--line-strong);border-radius:7px;
   padding:7px 10px;cursor:pointer;color:var(--ink);margin-left:auto;}
 .menu-btn svg{display:block;width:18px;height:14px;stroke:currentColor;stroke-width:1.9;fill:none;}
-@media(max-width:900px){
+/* 960, not 900: with seven items the full menu has no room to spare between
+   901 and about 935px (measured: 0px of slack at 920, 20 at 960), so a font a
+   little wider than the site's own would push the bar past the page. The
+   compact menu starts where the slack is still 20px. */
+@media(max-width:960px){
   /* DOM order is brand, button, nav, mark -- but the mark reads better
      beside the wordmark's end than past the button, so it is ordered. */
   .menu-btn{display:inline-flex;order:2;margin-left:12px;}
