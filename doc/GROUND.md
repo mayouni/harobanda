@@ -291,11 +291,10 @@ egress seam this section waits for has existed since EGR-1
 (2026-09-14): `EGRESS` writes the routing table, so the box knows no
 way out; the packet filter behind it is still not built (§6).*
 
-*Amended 2026-09-29, later, from DIKO's own situation note of that day
-(`diko/output/retours/`): the engagement is under contract and in its
-study phase. "A preliminary proposal" above is true of the MACHINE -- no
-machine file exists for DIKO -- and was never a statement about the
-engagement itself.*
+*Amended 2026-09-29, later, from DIKO's own situation note of that day:
+the engagement is under contract and in its study phase. "A preliminary
+proposal" above is true of the MACHINE -- no machine file exists for
+DIKO -- and was never a statement about the engagement itself.*
 
 ### 4.3 Sonibank (Niamey; BCEAO and WAEMU supervision, OHADA law)
 

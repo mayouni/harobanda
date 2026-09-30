@@ -13,3 +13,10 @@ __pycache__/
 # editor and tool configuration, machine-specific: launch.json carries
 # an absolute path to this working copy, which is true on one machine
 .claude/
+
+# Central's files for this desk -- WHATS-NEXT.md and .central/ -- are written by
+# the coordinating session and read from this working copy. They carry absolute
+# paths on one machine and the estate's internal coordination, and this
+# repository is public, so they are never tracked (STZ-OS-RULING-13).
+WHATS-NEXT.md
+.central/

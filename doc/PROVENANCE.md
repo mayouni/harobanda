@@ -72,6 +72,34 @@ ruling can be one-meaning-per-word:
 - **Device** — the L2 language (ex-MicroRing's seam); PIN here is its
   first seat, and the two must converge or one must yield.
 
+## The ruling of 2026-09-30 (taken on the author's behalf, at his word)
+
+The author asked whether committing an internal file with paths on his
+machine to a public repository was an infraction, and delegated the remedy:
+*"make what you think necessary."*
+
+**STZ-OS-RULING-13 — Central's files are not published.** `WHATS-NEXT.md`
+and `.central/` (the inbox, the outbox and a status page) were committed on
+2026-09-28, a day after the repository went public, at Central's request and
+with nobody raising that it was public. They hold absolute paths on one
+machine and the estate's internal coordination. A scan of the 193 tracked
+files found no Windows profile name, no e-mail address but the noreply one
+and nothing shaped like a key; the only machine root is `D:\GitHub`, which
+the tour prints by design. So it broke no rule of the platform and exposed
+nothing secret, but it broke this repository's own line in `.gitignore`:
+machine-specific files stay out. Ruled: the four files are untracked and
+ignored, and stay on disk, where Central and the sessions read them, and
+`harb docs --check` no longer judges them. Three things are NOT done, each
+open to his reversal. **History is not rewritten**: six commits (f31dd8e to
+6ade3a0) still hold the files, and a rewrite would change every hash after
+them and could not recall a copy already taken, for files with nothing
+secret in them. **`CLAUDE.md` keeps Central's block**, which is generated
+and cannot be made public-safe from here; Central is asked for a version
+that is. **Other public repositories** that carry the same files are not
+touched: they are other desks', and Central is told. The two citations of a
+private client folder that ruling 09 and GROUND.md 4.2 carried were cut to
+the fact they were written for.
+
 ## The rulings of 2026-09-29 (taken on the author's behalf, at his word)
 
 The author delegated again: *"do what is open for me on my behalf."* What
@@ -81,11 +109,10 @@ open to his reversal, and each was settled from a record, not from memory.
 
 **STZ-OS-RULING-09 — DIKO is won, and in its study phase.** The status
 page said the engagement "is won and now entering development". DIKO's own
-situation note of 2026-09-29 (`diko/output/retours/`) records a contract and
-a study under way: workshops held that week, the study being written,
-delivery still ahead. Ruled: "won" stands; "entering development" becomes
-"in its study phase". No date or scope from the note is published -- a
-client's timetable is the client's. GROUND.md 4.2 carries an Amended
+situation note of 2026-09-29 records a contract and a study phase under
+way. Ruled: "won" stands; "entering development" becomes "in its study
+phase". Nothing else from the note is published -- a client's timetable
+and scope are the client's. GROUND.md 4.2 carries an Amended
 block: its "a preliminary proposal" was true of the machine, never of the
 engagement. A flag put to the author earlier the same day ("one of the two
 is stale") misread that sentence, and is corrected in Central's log.

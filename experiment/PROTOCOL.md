@@ -123,6 +123,48 @@ of a line; a reader sees whatever GitHub draws. And **a number carried
 from an estimate is not a measurement**: it reads the same in a commit
 message, and it was two characters wrong.
 
+## Amended 2026-09-30: the page it was found in is not the repository's
+
+Everything above stands as it was written. What changed is which files
+the judge reads. The page this entry was found in, WHATS-NEXT.md, and
+the `.central/` folder are Central's files for this desk: the
+coordinating session writes them into this working copy. They were
+tracked here from f31dd8e (2026-09-28) on, in a repository that had
+been public since 2026-09-27; they carry absolute paths on one machine
+and the estate's own coordination. On 2026-09-30 the author asked
+whether publishing them was an infraction, and they do not belong in a
+public repository: they are untracked and ignored now, and
+STZ-OS-RULING-13 in `doc/PROVENANCE.md` records the ruling and what it
+left alone.
+
+The judge walks the FOLDER, not git, so untracked files in the working
+copy would still have been judged: a wide line in a page the repository
+does not hold turns the court red on this machine and never in a clean
+clone. Two skips, both in `collect`, both held by
+`Central's files are not judged, and a page of the same name elsewhere
+is`: `.central` joins the folders never entered, and the ROOT's
+WHATS-NEXT.md is not collected. Only the root's -- a WHATS-NEXT.md in a
+folder is somebody's own page, and the test says so.
+
+- **The count moved from 21 Markdown files to 18**, and the three that
+  left are Central's. Measured two ways: the judge says 18, an
+  independent walk with the judge's own skip rules says 18, and so does
+  the index.
+- **Five mutations, each in a scratch copy of the source and never the
+  working tree**, after the unmutated copy was seen green (a mutation
+  proves nothing over a baseline that is red): `.central` dropped from
+  the folders; the file check never true; the file check matching at
+  any depth; `collect` never asking it; the file check matching any name
+  that ends in `NEXT.md`. Each was caught by the one new test.
+
+**Named, not closed.** The judge still answers "what is in this
+folder", and the claim it serves is "what the repository holds". Where
+the two differ -- a file that is untracked and NOT ignored, or ignored
+and not Central's -- the folder wins. Asking git closes it, at the cost
+of needing git where `harb docs --check` runs, and a stranger's copy of
+the tour may have none. Left open until a file that is not Central's
+shows the gap.
+
 ---
 
 # CON-1 — a console is where the kernel speaks, and PID 1 asks it

@@ -39,6 +39,15 @@
 //! LIST leaves its code -- a block in a list is measured as written, its
 //! indent counted as characters, and GitHub's padding for a list was
 //! never measured, because no page here has one.
+//!
+//! Nor does it judge Central's own files, `.central/` and the root
+//! `WHATS-NEXT.md`. The coordinating session writes them into this working
+//! copy, but they are not the repository's: they carry paths on one machine
+//! and the estate's internal coordination, and the repository is public, so
+//! they are untracked (STZ-OS-RULING-13). This judge walks the folder and
+//! not git, so it is told to leave them: a wide line in a page the
+//! repository does not hold would turn its court red on one machine and
+//! never in a clean clone.
 
 const std = @import("std");
 const machine = @import("machine.zig");
@@ -62,14 +71,21 @@ pub fn allowedWidth(depth: usize) usize {
     return max_code_width -| depth * quote_cost;
 }
 
-/// never descended into: build output, caches, the VCS, the harness
-const skip_dirs = [_][]const u8{ "zig-out", ".zig-cache", "zig-cache", ".git", "__pycache__", ".claude", "node_modules" };
+/// never descended into: build output, caches, the VCS, the harness, and
+/// Central's mirror (`.central`), which is not the repository's
+const skip_dirs = [_][]const u8{ "zig-out", ".zig-cache", "zig-cache", ".git", "__pycache__", ".claude", ".central", "node_modules" };
 
 fn skipped(name: []const u8) bool {
     for (skip_dirs) |s| {
         if (std.mem.eql(u8, s, name)) return true;
     }
     return false;
+}
+
+/// Central's page for this desk, written into the ROOT of the working copy.
+/// Only the root's: a WHATS-NEXT.md anywhere else is somebody's own page.
+fn centralsFile(prefix: []const u8, name: []const u8) bool {
+    return prefix.len == 0 and std.mem.eql(u8, name, "WHATS-NEXT.md");
 }
 
 const Found = struct {
@@ -93,6 +109,7 @@ fn collect(alloc: std.mem.Allocator, dir: std.fs.Dir, prefix: []const u8, out: *
                 try collect(alloc, sub, rel, out);
             },
             .file => {
+                if (centralsFile(prefix, e.name)) continue;
                 if (std.mem.endsWith(u8, e.name, ".md")) try out.md.append(alloc, rel);
                 if (std.mem.endsWith(u8, e.name, ".html")) try out.html.append(alloc, rel);
             },
@@ -638,4 +655,43 @@ test "a fence is closed by its own kind, and a page that ends closes it" {
     // a block the page never closes runs to the end, and its machine is judged
     const refused = "DEFINE MACHINE hello AS (\n  ARCH x86_64,\n  KERNEL linux\n) RATIONALE \"x\"\n";
     try t.expectEqual(@as(usize, 1), (try run("```\n" ++ refused, false)).bad);
+}
+
+// ---- STZ-OS-RULING-13: Central's files are not the repository's ----
+
+fn listed(paths: []const []const u8, want: []const u8) bool {
+    for (paths) |p| {
+        if (std.mem.eql(u8, p, want)) return true;
+    }
+    return false;
+}
+
+test "Central's files are not judged, and a page of the same name elsewhere is" {
+    const t = std.testing;
+    var tmp = t.tmpDir(.{ .iterate = true });
+    defer tmp.cleanup();
+    try tmp.dir.makeDir(".central");
+    try tmp.dir.makeDir("doc");
+    const page = "# a page\n";
+    const made = [_][]const u8{
+        ".central/inbox.md", ".central/status.html", "WHATS-NEXT.md",
+        "doc/WHATS-NEXT.md", "doc/a.md",             "README.md",
+    };
+    for (made) |p| try tmp.dir.writeFile(.{ .sub_path = p, .data = page });
+
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    var found = Found{};
+    try collect(arena_state.allocator(), tmp.dir, "", &found);
+
+    // the walk did walk: an assertion of absence over an empty walk proves nothing
+    try t.expect(listed(found.md.items, "README.md"));
+    try t.expect(listed(found.md.items, "doc/a.md"));
+    // only the ROOT's WHATS-NEXT.md is Central's; a page of that name in a folder is not
+    try t.expect(listed(found.md.items, "doc/WHATS-NEXT.md"));
+    try t.expect(!listed(found.md.items, "WHATS-NEXT.md"));
+    // and nothing under .central, of either kind
+    try t.expect(!listed(found.md.items, ".central/inbox.md"));
+    try t.expectEqual(@as(usize, 0), found.html.items.len);
+    try t.expectEqual(@as(usize, 3), found.md.items.len);
 }
