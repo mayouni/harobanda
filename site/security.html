@@ -47,6 +47,12 @@
     <p class="lead">An AI agent will be talked into something sooner or later. Harobanda does not bet on catching every bad sentence. It decides, before the agent starts, what the agent's program can reach — and the kernel, the core of the operating system, holds it there whatever the agent is told. These four pages show what that covers today, where you can see each part for yourself, and what it does not do yet.</p>
   </section>
   <section class="wrap block">
+    <div class="figure">
+      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-11.png" alt="The file declares what each program may use. An arrow leads to the kernel, which applies it to every request and does not read prompts. Beneath them, what the kernel says when a request is not granted, in its own words: for the network, “no such interface from here”; for disks, “nothing mounted on it”; for programs, “cannot start another process”; and for 25 calls that change the machine, “cannot change the machine”. A last band lists what is not there yet: no packet filter behind the routes, no signed record of each agent action, and no board yet, the boot is emulated." width="1376" height="768">
+      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-11-narrow.png" alt="The file declares what each program may use. An arrow leads to the kernel, which applies it to every request and does not read prompts. Beneath them, what the kernel says when a request is not granted, in its own words: for the network, “no such interface from here”; for disks, “nothing mounted on it”; for programs, “cannot start another process”; and for 25 calls that change the machine, “cannot change the machine”. A last band lists what is not there yet: no packet filter behind the routes, no signed record of each agent action, and no board yet, the boot is emulated." width="640" height="1674">
+    </div>
+  </section>
+  <section class="wrap block">
     <div class="sec-head prose">
       <p class="eyebrow">What changed</p>
       <h2>An agent reads its orders and its data through the same door.</h2>

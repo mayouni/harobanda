@@ -114,7 +114,8 @@ no change. Diagram 3 is drawn here at both widths.
 | 7 | `harobanda-diagram-7.png` | why | *difference one*, 46% | **live** |
 | 8 | `harobanda-diagram-8.png` | enterprise | before the three cards, 35% | **live** |
 | 9 | `harobanda-diagram-9.png` | index | *what just happened*, 31% | **live** (1376 × 500) |
-| 10 | `harobanda-diagram-10.png` | field | before the two cases, 40% | **live** |
+| 10 | `harobanda-diagram-10.png` | field | before the two cases, 40% | **retired** 2026-09-29 (page dissolved; files removed) |
+| 11 | `harobanda-diagram-11.png` | security | after the page's opening, 21% | **live** (added 2026-09-29) |
 
 **The register is complete: ten diagrams, and every page's first diagram is
 inside its first third.** The site has since grown to nine pages. Two of them
@@ -403,3 +404,17 @@ check it: the page's first diagram must sit in the first third.
 ```
 grep -rn "DIAGRAM SLOT" site/*.html
 ```
+
+*Amended 2026-09-29: diagram 10 is retired and diagram 11 joins the register.
+`field.html` was dissolved that day, because the author would not overestimate the
+project's real-world use, and diagram 10 -- two topologies, Cousbox and Diko, saying
+"the app is delivered" -- was left behind: no page showed it, but it was still
+deployed at its own URL. A picture cannot be edited, only replaced, and the site's
+rule since diagram 3 is that no picture claims what its page stopped claiming, so
+its two files were removed. `diagram10.py` and `narrow10.py` stay as the record and
+must not be run into `site/` again. Diagram 11 (`diagram11.py`, `narrow11.py`) opens
+`security.html`, at 21% of a page of 4.1 screens (the centre of the picture at 26%):
+the file, the kernel, and the kernel's own words, each quoted from
+`machines/qemu_confine.expected` -- the script refuses to draw one that is not in it
+-- with what is not there yet on the same picture. Its phone drawing is 640 x 1674,
+the tallest of the narrow variants, because it is a sequence with nothing to drop.*
