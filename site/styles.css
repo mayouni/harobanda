@@ -14,6 +14,11 @@
   --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
   --gutter:clamp(20px,5vw,64px);
   --measure:66ch;
+  /* the top bar is the logo plus its padding (11 + 11) and its 1px rule; the
+     home page pulls its photograph up by exactly this much, so the two read
+     one number (app.js makes it exact if the bar is ever taller) */
+  --logo-h:57px;
+  --bar-h:calc(var(--logo-h) + 23px);
   color-scheme:light;
 }
 *{box-sizing:border-box}
@@ -53,10 +58,10 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 .brand svg{width:22px;height:14px;color:var(--river);flex:none;}
 .brand .brandtag{color:var(--muted);font-family:var(--mono);font-size:13px;
   letter-spacing:.1em;text-transform:uppercase;font-weight:400;}
-.brandmark{display:block;height:57px;width:auto;flex:none;}
+.brandmark{display:block;height:var(--logo-h);width:auto;flex:none;}
 @media(max-width:560px){
   .brand .brandtag{display:none;}
-  .brandmark{height:48px;}
+  :root{--logo-h:48px;}
 }
 .nav{margin-left:auto;display:flex;gap:clamp(15px,2vw,30px);align-items:center;}
 .nav a{font-size:16.5px;color:var(--muted);text-decoration:none;font-weight:500;
@@ -147,17 +152,84 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
    widens its whole track and pushes the page sideways -- even though the
    terminal itself scrolls. Measured at 375px: index 412, machine 628. */
 .hero-grid>*,.grid2>*,.stack-gap>*{min-width:0;}
-.hero h1{font-size:clamp(40px,5.6vw,72px);font-weight:500;letter-spacing:-.025em;line-height:1;}
-.hero h1 .l1{white-space:nowrap;}
-.hero h1 em{font-style:italic;color:var(--river);font-weight:400;}
-.hero-sub{margin-top:22px;font-family:var(--serif);font-size:clamp(18px,2.3vw,22px);
-  line-height:1.42;color:var(--ink);max-width:38ch;}
-.hero-meta{margin-top:26px;display:flex;flex-wrap:wrap;gap:10px 8px;}
+.hero-meta{margin:0 0 clamp(20px,3vw,32px);display:flex;flex-wrap:wrap;gap:10px 8px;}
+.hero#declare{scroll-margin-top:var(--bar-h);}
 .chip{font-family:var(--mono);font-size:13px;letter-spacing:.04em;
   border:1px solid var(--line-strong);color:var(--muted);padding:5px 10px;border-radius:100px;}
 .chip b{color:var(--river);font-weight:500;}
 .cap{font-family:var(--sans);font-size:18px;color:var(--muted);margin-top:9px;line-height:1.5;}
 .cap b{color:var(--river);font-weight:600;}
+
+/* ---------- the home page: a photograph, full screen, the menu over it ----------
+   The recipe is the Softanza site's home page (stzsite, assets/css/site.css),
+   applied to this photograph. The picture starts at the top of the browser,
+   under the menu, and fills the screen; a quiet panel on the water holds the
+   sentence and one way to go on. The menu floats over the picture as white
+   letters, each with its own dark halo, because no single colour reads over a
+   sky that runs from gold to blue; once the reader has scrolled past the
+   picture it is the ordinary bar again (app.js says when). On a phone the
+   picture is a block of its own and the panel sits under it, on the page's
+   own paper. */
+.hero-photo{position:relative;z-index:0;height:100vh;height:100svh;min-height:520px;
+  margin-top:calc(-1 * var(--bar-h));overflow:hidden;background:#15110D;}
+.hero-img{position:absolute;inset:0;width:100%;height:100%;max-width:none;
+  object-fit:cover;object-position:50% 40%;border:0;border-radius:0;}
+/* A screen taller than wide shows under half of the picture's width. Centred,
+   that slices the sun in two at the edge; the bridge is what the site is named
+   for, so a portrait crop keeps the bridge and the water in front of it. */
+@media(max-aspect-ratio:9/10){.hero-img{object-position:72% 40%;}}
+.hero-panel{position:absolute;bottom:40px;
+  left:max(var(--gutter),calc((100% - 1080px) / 2 + var(--gutter)));
+  width:min(600px,calc(100% - 2 * var(--gutter)));
+  background:rgba(20,24,29,.62);color:#fff;border-radius:14px;padding:24px 28px;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+.hero-panel .eyebrow{color:#fff;}
+.hero-panel h1{margin-top:10px;font-size:clamp(34px,3.6vw,48px);font-weight:500;
+  letter-spacing:-.02em;line-height:1.05;color:#fff;}
+.hero-panel h1 .l1{white-space:nowrap;}
+.hero-panel h1 em{font-style:italic;font-weight:400;color:var(--panel-river);}
+.hero-sub{margin-top:14px;font-family:var(--serif);font-size:clamp(18px,1.5vw,20px);
+  line-height:1.42;color:#fff;}
+.down{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;
+  margin-top:18px;border:2px solid #fff;border-radius:50%;color:#fff;text-decoration:none;
+  font-size:1.5rem;line-height:1;}
+/* The arrow nudges downward, gently, so a reader who thinks the page ends at
+   the picture knows it goes on. It is the one motion on the site, and it stays
+   still for a reader whose system asks for reduced motion (the rule at the
+   foot of this file). */
+.down:hover{background:rgba(255,255,255,.16);}
+.down span{display:inline-block;animation:nudge 2.6s ease-in-out infinite;}
+@keyframes nudge{0%,55%,100%{transform:translateY(0);}27%{transform:translateY(7px);}}
+/* The menu over the picture. Gated on .js, which the page sets in its head, so
+   that a reader without script keeps the ordinary frosted bar over the picture
+   instead of white letters that nothing ever turns back. */
+.js .home-body.over-hero .bar{background:rgba(12,14,13,.40);border-bottom-color:transparent;
+  -webkit-backdrop-filter:none;backdrop-filter:none;}
+.js .home-body.over-hero .brandmark{filter:brightness(0) invert(1)
+  drop-shadow(0 0 1px rgba(0,0,0,.95)) drop-shadow(0 0 4px rgba(0,0,0,.7));}
+.js .home-body.over-hero .ghlink{color:#fff;}
+.js .home-body.over-hero .menu-btn{color:#fff;border-color:rgba(255,255,255,.85);}
+.js .home-body.over-hero .ghlink svg,.js .home-body.over-hero .menu-btn svg{
+  filter:drop-shadow(0 0 1px rgba(0,0,0,.95)) drop-shadow(0 0 4px rgba(0,0,0,.7));}
+.js .home-body.over-hero :focus-visible{outline-color:#fff;}
+/* Only where the links sit on the bar itself: below 900px they are in a
+   dropdown with a paper of its own, and white on paper would not be read. */
+@media(min-width:901px){
+  .js .home-body.over-hero .nav a{color:#fff;
+    text-shadow:0 0 1px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.85),0 0 10px rgba(0,0,0,.6);}
+}
+@media(max-width:760px){
+  .hero-photo{height:auto;min-height:0;background:var(--bg);}
+  .hero-img{position:static;display:block;width:100%;height:58svh;min-height:320px;
+    object-position:72% 50%;}
+  .hero-panel{position:static;width:auto;background:none;color:var(--ink);
+    padding:24px var(--gutter) 8px;border-radius:0;}
+  .hero-panel .eyebrow,.hero-panel h1 em{color:var(--river);}
+  .hero-panel h1{font-size:40px;color:var(--ink);}
+  .hero-sub{color:var(--ink);}
+  .down{border-color:var(--river);color:var(--river);}
+  .down:hover{background:var(--river-wash);}
+}
 
 /* transcript panel */
 .term{background:var(--panel);border-radius:12px;overflow:hidden;

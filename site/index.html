@@ -9,8 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="styles.css">
+<script>document.documentElement.classList.add('js')</script>
 </head>
-<body>
+<body class="home-body over-hero">
 <a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
 
 <header class="bar">
@@ -32,22 +33,26 @@
 </header>
 
 <main id="main">
-  <section class="wrap hero">
+  <section class="hero-photo" aria-label="Harobanda">
+    <img class="hero-img" src="harobanda-bridge.jpg" width="1373" height="769" fetchpriority="high" alt="A long bridge on round orange piers crosses a wide river. The low sun, over the far bank, turns the water gold and lights the bridge's green railing, and the water reflects the bridge. Clumps of floating plants dot the calm surface in the foreground.">
+    <div class="hero-panel">
+      <p class="eyebrow">A sovereign operating system</p>
+      <h1><span class="l1">The machine,</span> <em>declared.</em></h1>
+      <p class="hero-sub">Built on proven Linux, for AI agents you must be able to govern, and for critical work that must keep running — and stay its owner's — when everything else stops.</p>
+      <a class="down" href="#declare" aria-label="Read on"><span aria-hidden="true">&darr;</span></a>
+    </div>
+  </section>
+
+  <section class="wrap hero" id="declare">
+    <div class="hero-meta">
+      <span class="chip"><b>declare</b> · judge · plan · boot · narrate</span>
+      <span class="chip">one file, <b>one job</b></span>
+      <span class="chip">no account · <b>no store</b> · no drift</span>
+    </div>
     <div class="hero-grid">
       <div>
-        <p class="eyebrow">A sovereign operating system</p>
-        <h1 style="margin-top:16px;"><span class="l1">The machine,</span><br><em>declared.</em></h1>
-        <p class="hero-sub">Built on proven Linux, for AI agents you must be able to govern, and for critical work that must keep running — and stay its owner's — when everything else stops.</p>
-        <div class="hero-meta">
-          <span class="chip"><b>declare</b> · judge · plan · boot · narrate</span>
-          <span class="chip">one file, <b>one job</b></span>
-          <span class="chip">no account · <b>no store</b> · no drift</span>
-        </div>
-      </div>
-      <div class="stack-gap">
-        <div>
-          <div class="term" aria-label="The smallest machine, written as a text file">
-            <div class="term-bar"><i></i><i></i><i></i><b>hello.machine — you write this</b></div>
+        <div class="term" aria-label="The smallest machine, written as a text file">
+          <div class="term-bar"><i></i><i></i><i></i><b>hello.machine — you write this</b></div>
 <pre><span class="kw">DEFINE MACHINE</span> hello <span class="kw">AS</span> (
   PROFILE hosted,
   ARCH x86_64,
@@ -57,12 +62,12 @@
 <span class="kw">DEFINE SERVICE</span> greet <span class="kw">AS</span> (
   RUN [<span class="c">"/app/greet"</span>]
 ) <span class="kw">RATIONALE</span> <span class="d">"say hello, then exit"</span></pre>
-          </div>
-          <p class="cap">A whole machine, in nine lines. Each part must say <b>why</b> it is there.</p>
         </div>
-        <div>
-          <div class="term" aria-label="Checking the machine, then booting a reference machine in the console">
-            <div class="term-bar"><i></i><i></i><i></i><b>your laptop — check it, then boot one</b></div>
+        <p class="cap">A whole machine, in nine lines. Each part must say <b>why</b> it is there.</p>
+      </div>
+      <div>
+        <div class="term" aria-label="Checking the machine, then booting a reference machine in the console">
+          <div class="term-bar"><i></i><i></i><i></i><b>your laptop — check it, then boot one</b></div>
 <pre><span class="d">$</span> <span class="b">harb</span> check hello.machine
 machine hello <span class="d">--</span> hosted / x86_64 / kernel linux <span class="d">-- ... --</span> <span class="k">judged, no refusal</span>
 
@@ -73,9 +78,8 @@ machine hello <span class="d">--</span> hosted / x86_64 / kernel linux <span cla
 <span class="d">...</span>
 reach 8.8.8.8 <span class="d">--</span> <span class="k">no route: this machine knows no way there</span>
 <span class="d">boot: judge --</span> the boot <span class="k">matches its expectation</span> (/etc/expected, 14 lines)</pre>
-          </div>
-          <p class="cap"><b>check</b> reads the file and rules on it. The script builds a reference machine into an image and boots it in QEMU, a program that imitates a whole computer. Its first line is <code>harb</code> itself, started by the kernel as the machine's first program (PID 1); its last compares the boot with the file — here, that it knows no way to the open internet. No hardware needed.</p>
         </div>
+        <p class="cap"><b>check</b> reads the file and rules on it. The script builds a reference machine into an image and boots it in QEMU, a program that imitates a whole computer. Its first line is <code>harb</code> itself, started by the kernel as the machine's first program (PID 1); its last compares the boot with the file — here, that it knows no way to the open internet. No hardware needed.</p>
       </div>
     </div>
   </section>
