@@ -1,3 +1,126 @@
+# PLC-1 — a pack asks, and the machine grants
+
+Rung 1 of the cloud ladder (`doc/CLOUD.md`) is the Commons as the first
+declared server world, and its first half needs nobody else: the
+solution's services written apart from any machine, and placed on one.
+Taken on the author's "go" (2026-10-04), in one session.
+
+## What exists now
+
+- **The pack**: a third file of the machine language, judged by the kinds
+  it may carry -- SERVICE and USER -- as the fleet file is (FLT-1's rule
+  again). `src/pack.zig`, `declarative/pack/{GRAMMAR,PINNING}.md` and
+  `fixtures.json`.
+- **`harb place <machine> <pack>... [--out <file>]`**: judges the machine
+  alone, reads each pack, composes ONE machine text, hands it to the one
+  court, and reports a refusal at the file and the line that wrote it.
+  Without `--out` it is a rehearsal. The written file is a machine like
+  any other: `check`, `plan`, `image` and `judge` take it, and `plan`
+  was seen to start the pack's service as its own identity, seeing only
+  the mount it named.
+- **The pack court**: `harb court --pack`, the third court in `zig build
+  court`: **30/30**, 6 accepts and 24 rejects, pinned.
+
+## The decision that mattered: one reading of the rules
+
+A pack's SERVICE has `NEEDS`, and a need is granted by a CAPABILITY that
+lives in a machine, so a pack cannot be judged alone: the code map found
+that `machine.declare` is the only place the service rules run, and that
+a file of services and users is refused there as "exactly one MACHINE
+(found 0)". Two ways out. A second copy of the rules for packs would be
+a reading that has to agree with the first -- EGR-3's trap, one layer
+over. The other: compose the machine file and the packs into one text
+and hand it to the court that already exists (PRJ-2: a generated
+artifact is judged by what CONSUMES it). That is what `place` does, and
+it is why the pack alone is judged only for what a pack IS (its kinds,
+its names) and why no rule of the machine court was copied.
+
+Two consequences that cost thought. A refusal from the composed text
+counts lines in a text nobody wrote, so `place` keeps where each file's
+lines sit and says `commons.pack (line 9)`; the one rule that embeds
+ANOTHER line number in its message (R7, the one namespace) would have
+named a line of the composed text, so the names are checked in pack
+terms first, kind-blind as R7 is, and the refusal names the file and
+line that took the name. And the machine is judged alone first, so a
+refusal that arrives with the placement is known to come from it.
+
+## It contradicted the plan's own document
+
+`doc/CLOUD.md` said, in §6 and an hour old, "no second grammar ... never
+a third file". The plan the author approved named a pack file. The code
+map by the session's reader made the contradiction plain (a pack is a
+third file TYPE of one language, never a second grammar), and CLOUD.md is
+amended beside the sentence, dated, not rewritten.
+
+## Probed
+
+- **Twelve mutations, each in a scratch copy of the sources and never the
+  working tree**, each judged by the unit tests and by the court in fresh
+  processes, after the unmutated copy was seen green on both: the kinds
+  open to everything; a fleet kind refused as a machine kind; the names
+  blind to the machine and to earlier packs; blind inside one pack; a
+  pack of identities alone accepted; the machine's own refusal not said
+  to come first; a line counted from the file's start minus one; the
+  last line of a file not the file's; no note that a refusal in the
+  machine's own lines came with the placement; the banner naming the
+  digest of something else; a path written with backslashes keeping its
+  directories; a machine file with no final newline running into the
+  banner. **12 of 12 caught**, each by the case or the test named for
+  its rule, five of them by the unit tests alone because the court does
+  not read a banner's digest or a path's separator.
+- **The first run of the court was green at once, which is when a court
+  deserves doubt.** Reading the verdicts, not the count, found one case
+  wrong: PR24 carried a fragment that was a guess and a line that was
+  the wrong quote (the language reports an unterminated string at the
+  line of the quote that never closes). It was rewritten so its meaning
+  is plain, and every other `line` was checked against its source.
+- **A branch no case reaches** -- a refusal landing in the machine's own
+  lines after the machine passed alone -- exists for rules not yet
+  written. It is judged beside the code, through the pure functions that
+  map a line and word a refusal, so the first such rule does not mislead.
+- **The prober repeated DOC-3's lesson.** It looked for `FAIL` straight
+  after a test's `...`, and Zig prints a failed assertion there and
+  `FAIL` on a later line: every unit detector read as "crashed" until it
+  read what follows the `...`. The verdicts were right; the labels were
+  not.
+- **And the repository's own warning was ignored once and cost three
+  minutes.** The fixture generator was patched by a program written
+  inline in a shell argument; its `\n` became real newlines and the file
+  no longer parsed. The scratchpad file and the edit tool were the fix,
+  as CLAUDE.md says to reach for first.
+
+`zig build -j2`, `test`, `court` (machine 120/120, fleet 32/32, pack
+30/30, the tour, the pages) and `cross`, each with `-j2` and one at a
+time: green. Not run: the WSL boot judges, which nothing here touches --
+no image, no machine file with a pin and no boot changed.
+
+## Named, not closed
+
+- **A solution's own declaration does not project into a pack.** The
+  projection stzp's server target would make is not written; packs are
+  hand-written, and the real Commons has not been placed on anything.
+- **A service has no port and no reach of its own**, so a pack cannot
+  say either: a world has the machine's network when it NEEDS it, and
+  reach is per NETWORK until it is per world (CLOUD.md, rung 6).
+- **A fleet does not name packs.** `MEMBER ... PACKS` is fleet v0.2, with
+  the routes of rung 2; today `harb place` is run by hand.
+- **The tour does not teach `place`, and "a pack" is not one of its
+  words** (`learn.words`, which README and `site/words.html` carry
+  verbatim). When a lesson uses it, the word joins the three places at
+  once.
+- **A pack's own digest is recorded, not the programs it names**; staging
+  them is `harb image`'s, as for any machine.
+
+## The law this pays for
+
+**A pack asks, and the machine grants**, and a second file of the same
+language is judged by ONE reading of the rules, never a copy of them that
+has to agree. And **a refusal that names a line in a text the reader did
+not write is not an answer**: it is said at the file and the line that
+wrote it.
+
+---
+
 # DOC-3 — a code block is what the page renders, not a line that begins with three backticks
 
 `harb docs --check` (DOC-1) knew a fence by one test: a line that, its

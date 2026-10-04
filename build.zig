@@ -45,7 +45,7 @@ pub fn build(b: *std.Build) void {
     court_cmd.addArg("court");
     court_cmd.addArg("declarative/machine/fixtures.json");
     court_cmd.setCwd(b.path("."));
-    const court_step = b.step("court", "Judge the machine grammar and the fleet grammar by their pinned fixtures, the guided tour, and the pages");
+    const court_step = b.step("court", "Judge the machine, fleet and pack grammars by their pinned fixtures, the guided tour, and the pages");
     court_step.dependOn(&court_cmd.step);
 
     // the fleet court: the checks no single machine can be wrong about
@@ -55,6 +55,16 @@ pub fn build(b: *std.Build) void {
     fleet_cmd.addArg("declarative/fleet/fixtures.json");
     fleet_cmd.setCwd(b.path("."));
     court_step.dependOn(&fleet_cmd.step);
+
+    // the pack court: what a solution asks, placed on a machine that grants
+    // it -- the refusals no pack alone and no machine alone can be wrong
+    // about, each at the file and the line that wrote it (PLC-1)
+    const pack_cmd = b.addRunArtifact(exe);
+    pack_cmd.addArg("court");
+    pack_cmd.addArg("--pack");
+    pack_cmd.addArg("declarative/pack/fixtures.json");
+    pack_cmd.setCwd(b.path("."));
+    court_step.dependOn(&pack_cmd.step);
 
     // the guided tour is judged too: a lesson that points at a machine
     // somebody renamed is a tutorial that lies, and this turns the court

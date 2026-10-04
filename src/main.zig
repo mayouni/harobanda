@@ -28,12 +28,14 @@ const journal = @import("journal.zig");
 const learn = @import("learn.zig");
 const docs = @import("docs.zig");
 const fleet = @import("fleet.zig");
+const pack = @import("pack.zig");
 const confine = @import("confine.zig");
 const expect = @import("expect.zig");
 
 pub const version = "0.1.0";
 const default_fixtures = "declarative/machine/fixtures.json";
 const default_fleet_fixtures = "declarative/fleet/fixtures.json";
+const default_pack_fixtures = "declarative/pack/fixtures.json";
 
 fn usage(out: *std.Io.Writer) !void {
     try out.print(
@@ -57,6 +59,8 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
+        \\  harb place  <file.machine> <file.pack>... [--out <file>]   (a solution's services, placed on a machine and judged as one)
+        \\  harb court  --pack [declarative/pack/fixtures.json]
         \\  harb learn  [n] [--all] [--words] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
         \\  harb docs   --check                         (every page's code fits its column, and every machine it shows is accepted)
         \\  harb version
@@ -834,9 +838,68 @@ pub fn main() !u8 {
             const failures = try court.runFleet(gpa, path, out);
             return if (failures == 0) 0 else 1;
         }
+        // and a third, for what a solution asks (PLC-1): each case is a
+        // machine and the packs placed on it, carried inside the case
+        if (args.len > 2 and std.mem.eql(u8, args[2], "--pack")) {
+            const path = if (args.len > 3) args[3] else default_pack_fixtures;
+            const failures = try court.runPack(gpa, path, out);
+            return if (failures == 0) 0 else 1;
+        }
         const path = if (args.len > 2) args[2] else default_fixtures;
         const failures = try court.run(gpa, path, out);
         return if (failures == 0) 0 else 1;
+    }
+    if (std.mem.eql(u8, verb, "place")) {
+        // What a solution asks, placed on the machine that grants it
+        // (PLC-1). Without --out it is a rehearsal: judged, nothing written.
+        var out_path: ?[]const u8 = null;
+        var paths: std.ArrayList([]const u8) = .{};
+        var j: usize = 2;
+        while (j < args.len) : (j += 1) {
+            if (std.mem.eql(u8, args[j], "--out")) {
+                j += 1;
+                if (j >= args.len) {
+                    try out.print("harb: --out needs a file to write\n", .{});
+                    return 1;
+                }
+                out_path = args[j];
+            } else try paths.append(arena, args[j]);
+        }
+        if (paths.items.len < 2) {
+            try out.print("harb: place needs a <file.machine> and at least one <file.pack>\n", .{});
+            return 1;
+        }
+        var inputs: std.ArrayList(pack.Input) = .{};
+        for (paths.items) |p| {
+            const bytes = std.fs.cwd().readFileAlloc(arena, p, 1 << 20) catch |e| {
+                try out.print("harb: cannot read {s}: {s}\n", .{ p, @errorName(e) });
+                return 1;
+            };
+            try inputs.append(arena, .{ .name = pack.fileName(p), .source = bytes });
+        }
+        var refusal = pack.Refusal{};
+        const placed = pack.place(arena, inputs.items[0], inputs.items[1..], &refusal) catch |e| switch (e) {
+            error.Refused => {
+                try out.print("place: {s} (line {d}): {s}\n", .{ refusal.file, refusal.line, refusal.message });
+                return 1;
+            },
+            else => return e,
+        };
+        for (placed.packs) |p| {
+            try out.print("place {s} (sha256 {s}) -- {d} service(s), {d} user(s)\n", .{ p.name, p.digest[0..16], p.services.len, p.users.len });
+        }
+        const m = placed.machine;
+        try out.print("on machine {s} -- {s} / {s} / kernel {s} -- {d} service(s) in all -- judged, no refusal\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.kernel), m.services.len });
+        if (out_path) |op| {
+            if (std.fs.path.dirname(op)) |dir| try std.fs.cwd().makePath(dir);
+            try std.fs.cwd().writeFile(.{ .sub_path = op, .data = placed.text });
+            var digest: [32]u8 = undefined;
+            std.crypto.hash.sha2.Sha256.hash(placed.text, &digest, .{});
+            var hex: [64]u8 = undefined;
+            _ = std.fmt.bufPrint(&hex, "{x}", .{&digest}) catch unreachable;
+            try out.print("written {s} (sha256 {s}): harb check, plan, image and judge take it as any machine\n", .{ op, hex[0..16] });
+        }
+        return 0;
     }
     if (std.mem.eql(u8, verb, "judge")) {
         if (args.len < 4) {
@@ -960,6 +1023,7 @@ test {
     _ = confine;
     _ = names;
     _ = fleet;
+    _ = pack;
     _ = learn;
     _ = docs;
 }

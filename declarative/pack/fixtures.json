@@ -1,0 +1,472 @@
+{
+  "grammar": "pack",
+  "version": "0.1",
+  "comment": "Conformance for the pack: what a solution asks, placed on a machine that grants it (PLC-1). Every case is a machine file and the packs placed on it, carried inside the case; the machine is host.machine in the court. An accept names the services and users the placed machine must declare, in order. A reject names WHERE its refusal must land -- the file and the line, in that file's own numbering -- and the fragment it must contain, so refusing for the wrong reason or at the wrong place fails. The pin is declarative/pack/PINNING.md.",
+  "accepts": [
+    {
+      "id": "PA1",
+      "name": "a pack with an identity, a budget and a health window, placed on a machine that grants what it asks",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "commons.pack",
+          "source": "-- commons.pack -- the Commons, asked for.\nDEFINE USER commons_user AS (\n  UID 2001\n) RATIONALE \"The Commons runs as itself and owns nothing of the machine\"\n\nDEFINE SERVICE commons AS (\n  RUN [\"/stzr\", \"/app/commons.luau\"],\n  RESTART always,\n  READY \"/run/commons.ready\",\n  HEALTH 5,\n  AFTER [front],\n  NEEDS [network, filesystem],\n  SEES [data],\n  USER commons_user,\n  MEMORY 256,\n  CPU 100,\n  TASKS 64\n) RATIONALE \"Catalogue, orders and payments; it serves once the machine's door is up\"\n"
+        }
+      ],
+      "expect": {
+        "services": [
+          "front",
+          "commons"
+        ],
+        "users": [
+          "commons_user"
+        ],
+        "packs": 1
+      }
+    },
+    {
+      "id": "PA2",
+      "name": "the smallest solution: one service, asking only for the network",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "echo.pack",
+          "source": "DEFINE SERVICE echo AS (\n  RUN [\"/echo\"],\n  RESTART always,\n  NEEDS [network]\n) RATIONALE \"The smallest solution: it answers on the network and asks for nothing else\"\n"
+        }
+      ],
+      "expect": {
+        "services": [
+          "front",
+          "echo"
+        ],
+        "users": [],
+        "packs": 1
+      }
+    },
+    {
+      "id": "PA3",
+      "name": "two packs in one placement: the second comes AFTER a service of the first",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "ledger.pack",
+          "source": "DEFINE SERVICE ledger AS (\n  RUN [\"/ledger\"],\n  RESTART always,\n  READY \"/run/ledger.ready\",\n  NEEDS [network, filesystem],\n  SEES [data]\n) RATIONALE \"Keeps the books on the data mount\"\n"
+        },
+        {
+          "path": "printer.pack",
+          "source": "DEFINE SERVICE printer AS (\n  RUN [\"/printer\"],\n  RESTART always,\n  AFTER [ledger],\n  NEEDS [network]\n) RATIONALE \"Prints once the ledger is serving\"\n"
+        }
+      ],
+      "expect": {
+        "services": [
+          "front",
+          "ledger",
+          "printer"
+        ],
+        "users": [],
+        "packs": 2
+      }
+    },
+    {
+      "id": "PA4",
+      "name": "a machine that declares only itself is a host too: a pack that asks for nothing needs nothing granted",
+      "machine": "DEFINE MACHINE bare AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"A machine that grants nothing yet\"\n",
+      "packs": [
+        {
+          "path": "echo.pack",
+          "source": "DEFINE SERVICE echo AS (RUN [\"/echo\"], RESTART always) RATIONALE \"Asks for nothing, so nothing needs granting\"\n"
+        }
+      ],
+      "expect": {
+        "services": [
+          "echo"
+        ],
+        "users": [],
+        "packs": 1
+      }
+    },
+    {
+      "id": "PA5",
+      "name": "the pack's identity is placed beside the machine's own, and each keeps its number",
+      "machine": "DEFINE MACHINE owned AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE USER door AS (UID 2000) RATIONALE \"The machine's own identity for its own door\"\nDEFINE SERVICE front AS (RUN [\"/front\"], USER door, NEEDS [network]) RATIONALE \"x\"\n",
+      "packs": [
+        {
+          "path": "commons.pack",
+          "source": "-- commons.pack -- the Commons, asked for.\nDEFINE USER commons_user AS (\n  UID 2001\n) RATIONALE \"The Commons runs as itself and owns nothing of the machine\"\n\nDEFINE SERVICE commons AS (\n  RUN [\"/stzr\", \"/app/commons.luau\"],\n  RESTART always,\n  READY \"/run/commons.ready\",\n  HEALTH 5,\n  AFTER [front],\n  NEEDS [network],\n  USER commons_user,\n  MEMORY 256,\n  CPU 100,\n  TASKS 64\n) RATIONALE \"Catalogue, orders and payments; it serves once the machine's door is up\"\n"
+        }
+      ],
+      "expect": {
+        "services": [
+          "front",
+          "commons"
+        ],
+        "users": [
+          "door",
+          "commons_user"
+        ],
+        "packs": 1
+      }
+    },
+    {
+      "id": "PA6",
+      "name": "the packs are placed in the order given, and AFTER, not position, is what orders a boot",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "printer.pack",
+          "source": "DEFINE SERVICE printer AS (\n  RUN [\"/printer\"],\n  RESTART always,\n  AFTER [ledger],\n  NEEDS [network]\n) RATIONALE \"Prints once the ledger is serving\"\n"
+        },
+        {
+          "path": "ledger.pack",
+          "source": "DEFINE SERVICE ledger AS (\n  RUN [\"/ledger\"],\n  RESTART always,\n  READY \"/run/ledger.ready\",\n  NEEDS [network, filesystem],\n  SEES [data]\n) RATIONALE \"Keeps the books on the data mount\"\n"
+        }
+      ],
+      "expect": {
+        "services": [
+          "front",
+          "printer",
+          "ledger"
+        ],
+        "users": [],
+        "packs": 2
+      }
+    }
+  ],
+  "rejects": [
+    {
+      "id": "PR1",
+      "name": "a pack that declares nothing places nothing",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "empty.pack",
+          "source": "-- nothing here, yet\n"
+        }
+      ],
+      "in": "empty.pack",
+      "line": 1,
+      "refusal": "declares nothing"
+    },
+    {
+      "id": "PR2",
+      "name": "a pack may not declare a MACHINE: the machine it is placed on is the machine",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "m.pack",
+          "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "m.pack",
+      "line": 1,
+      "refusal": "MACHINE is the machine's to declare"
+    },
+    {
+      "id": "PR3",
+      "name": "a pack asks and the machine grants: a pack may not declare a CAPABILITY, which would grant itself what it asks for",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "grant.pack",
+          "source": "DEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  NEEDS [network]\n) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "grant.pack",
+      "line": 5,
+      "refusal": "CAPABILITY is the machine's to declare"
+    },
+    {
+      "id": "PR4",
+      "name": "a pack may not declare a MOUNT: which storage exists is the machine's to say",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "mount.pack",
+          "source": "DEFINE SERVICE s AS (RUN [\"/s\"]) RATIONALE \"x\"\nDEFINE MOUNT scratch AS (AT \"/scratch\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "mount.pack",
+      "line": 2,
+      "refusal": "MOUNT is the machine's to declare"
+    },
+    {
+      "id": "PR5",
+      "name": "a pack may not declare a NETWORK: how a machine reaches the wire is the machine's",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "net.pack",
+          "source": "DEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "net.pack",
+      "line": 1,
+      "refusal": "NETWORK is the machine's to declare"
+    },
+    {
+      "id": "PR6",
+      "name": "a pack may not declare a FLEET: no pack can say who else is in an estate",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "fleet.pack",
+          "source": "DEFINE FLEET f AS (LINK salle) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "fleet.pack",
+      "line": 1,
+      "refusal": "belongs to a fleet file, not a pack"
+    },
+    {
+      "id": "PR7",
+      "name": "a pack of identities alone places nothing",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "users.pack",
+          "source": "DEFINE USER u AS (UID 3000) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "users.pack",
+      "line": 1,
+      "refusal": "places nothing"
+    },
+    {
+      "id": "PR8",
+      "name": "a pack declares each name once, in one namespace",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "twice.pack",
+          "source": "DEFINE SERVICE s AS (RUN [\"/s\"]) RATIONALE \"x\"\n\nDEFINE SERVICE s AS (RUN [\"/t\"]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "twice.pack",
+      "line": 3,
+      "refusal": "'s' is already declared (line 1)"
+    },
+    {
+      "id": "PR9",
+      "name": "a pack service may not take the name of one of the machine's own services",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "front.pack",
+          "source": "DEFINE SERVICE front AS (RUN [\"/other\"], NEEDS [network]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "front.pack",
+      "line": 1,
+      "refusal": "(line 5 of host.machine)"
+    },
+    {
+      "id": "PR10",
+      "name": "the namespace is one across every kind: a pack's identity may not take the name of a capability",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "net.pack",
+          "source": "DEFINE USER network AS (UID 3000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "net.pack",
+      "line": 1,
+      "refusal": "(line 2 of host.machine)"
+    },
+    {
+      "id": "PR11",
+      "name": "two packs may not declare the same name: the second is refused and names the first",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "a.pack",
+          "source": "DEFINE SERVICE commons AS (RUN [\"/a\"], NEEDS [network]) RATIONALE \"x\"\n"
+        },
+        {
+          "path": "b.pack",
+          "source": "-- b\nDEFINE SERVICE commons AS (RUN [\"/b\"], NEEDS [network]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "b.pack",
+      "line": 2,
+      "refusal": "(line 1 of a.pack)"
+    },
+    {
+      "id": "PR12",
+      "name": "a machine refused on its own is refused as the machine, before anything is placed on it",
+      "machine": "DEFINE MACHINE broken AS (ARCH x86_64, KERNEL linux) RATIONALE \"No PROFILE: refused on its own\"\n",
+      "packs": [
+        {
+          "path": "echo.pack",
+          "source": "DEFINE SERVICE echo AS (\n  RUN [\"/echo\"],\n  RESTART always,\n  NEEDS [network]\n) RATIONALE \"The smallest solution: it answers on the network and asks for nothing else\"\n"
+        }
+      ],
+      "in": "host.machine",
+      "line": 1,
+      "refusal": "refused before anything is placed on it"
+    },
+    {
+      "id": "PR13",
+      "name": "placing nothing is refused: a rehearsal of no pack judges no pack",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [],
+      "in": "host.machine",
+      "line": 0,
+      "refusal": "Nothing to place"
+    },
+    {
+      "id": "PR14",
+      "name": "a need the machine does not grant is refused at the NEEDS line of the pack that asked",
+      "machine": "DEFINE MACHINE closed AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"A machine that grants no network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\n",
+      "packs": [
+        {
+          "path": "echo.pack",
+          "source": "DEFINE SERVICE echo AS (\n  RUN [\"/echo\"],\n  RESTART always,\n  NEEDS [network]\n) RATIONALE \"The smallest solution: it answers on the network and asks for nothing else\"\n"
+        }
+      ],
+      "in": "echo.pack",
+      "line": 4,
+      "refusal": "which no declaration grants"
+    },
+    {
+      "id": "PR15",
+      "name": "a need the machine declared and refused is refused as such",
+      "machine": "DEFINE MACHINE sealed AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"A machine that says no to the network\"\nDEFINE CAPABILITY network AS (GRANT no) RATIONALE \"No network, declared\"\n",
+      "packs": [
+        {
+          "path": "echo.pack",
+          "source": "DEFINE SERVICE echo AS (\n  RUN [\"/echo\"],\n  RESTART always,\n  NEEDS [network]\n) RATIONALE \"The smallest solution: it answers on the network and asks for nothing else\"\n"
+        }
+      ],
+      "in": "echo.pack",
+      "line": 4,
+      "refusal": "declared and refused"
+    },
+    {
+      "id": "PR16",
+      "name": "a mount the pack SEES and the machine never declared is refused",
+      "machine": "DEFINE MACHINE small AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\n",
+      "packs": [
+        {
+          "path": "logs.pack",
+          "source": "DEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  NEEDS [filesystem],\n  SEES [logs]\n) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "logs.pack",
+      "line": 1,
+      "refusal": "no such MOUNT"
+    },
+    {
+      "id": "PR17",
+      "name": "an AFTER that names a service nobody declared is refused",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "late.pack",
+          "source": "DEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  AFTER [ghost],\n  NEEDS [network]\n) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "late.pack",
+      "line": 1,
+      "refusal": "resolves to nothing"
+    },
+    {
+      "id": "PR18",
+      "name": "a USER the pack never declared and the machine does not have is refused",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "who.pack",
+          "source": "DEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  USER ghost,\n  NEEDS [network]\n) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "who.pack",
+      "line": 3,
+      "refusal": "no such USER"
+    },
+    {
+      "id": "PR19",
+      "name": "a pack's identity may not take a number the machine already gave out",
+      "machine": "DEFINE MACHINE owned AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE USER door AS (UID 2000) RATIONALE \"The machine's own identity for its own door\"\nDEFINE SERVICE front AS (RUN [\"/front\"], USER door, NEEDS [network]) RATIONALE \"x\"\n",
+      "packs": [
+        {
+          "path": "clash.pack",
+          "source": "DEFINE USER other AS (\n  UID 2000\n) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], NEEDS [network]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "clash.pack",
+      "line": 1,
+      "refusal": "one number, one identity"
+    },
+    {
+      "id": "PR20",
+      "name": "a READY path the machine's own service already signals on is refused",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "ready.pack",
+          "source": "DEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "ready.pack",
+      "line": 4,
+      "refusal": "one path signals for one service"
+    },
+    {
+      "id": "PR21",
+      "name": "a pack cannot smuggle a shell onto the boot path: the closed grammar has no host escape",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "shell.pack",
+          "source": "DEFINE SERVICE s AS (\n  RUN [\"/bin/sh\", \"-c\", \"serve\"],\n  NEEDS [network]\n) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "shell.pack",
+      "line": 2,
+      "refusal": "never a shell line"
+    },
+    {
+      "id": "PR22",
+      "name": "two services of one pack that come after each other are a cycle, refused at a line of the pack",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "cycle.pack",
+          "source": "DEFINE SERVICE a AS (RUN [\"/a\"], AFTER [b], NEEDS [network]) RATIONALE \"x\"\nDEFINE SERVICE b AS (RUN [\"/b\"], AFTER [a], NEEDS [network]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "cycle.pack",
+      "line": 1,
+      "refusal": "cycle"
+    },
+    {
+      "id": "PR23",
+      "name": "the machine's own name is a name too: a pack service may not take it",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "core.pack",
+          "source": "DEFINE SERVICE core AS (RUN [\"/core\"], NEEDS [network]) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "core.pack",
+      "line": 1,
+      "refusal": "(line 1 of host.machine)"
+    },
+    {
+      "id": "PR24",
+      "name": "a pack the language cannot read is refused at its own line, in its own numbering",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "broken.pack",
+          "source": "-- one\n-- two\nDEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  NEEDS [network]\n) RATIONALE \"never closed\n"
+        }
+      ],
+      "in": "broken.pack",
+      "line": 6,
+      "refusal": "Unterminated string"
+    }
+  ]
+}

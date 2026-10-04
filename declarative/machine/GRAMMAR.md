@@ -387,6 +387,11 @@ act — stzlib's rehearse-plan-commit law carried down to the boot.
   filesystem), and `harb init` refuses it by name.
 - **Touch** — declarable, judged; the AOSP profile is ZinOS Touch's
   design, unbuilt.
+- **A solution's services** — since PLC-1 they can be written apart from
+  any machine, in a pack, and placed on one by `harb place`, which hands
+  the composed text to THIS court: a pack's `NEEDS`, `SEES`, `USER` and
+  `AFTER` are judged by the rules above and by nothing else. A pack is a
+  third file of this language; see `declarative/pack/GRAMMAR.md`.
 - **The image** — `harb image` (kernel + this binary + the declared
   services into one bootable artifact) is the next act; see
   `doc/ARCHITECTURE.md`.

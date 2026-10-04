@@ -400,6 +400,11 @@ wsl -d Ubuntu -- bash `
 # the roll: who is in the set, and who nobody can speak for yet
 zig-out\bin\harb.exe fleet machines\salle_makeen.fleet
 
+# a solution's services (a pack) placed on a machine and judged
+# as one; --out writes the placed machine, a machine like any
+zig-out\bin\harb.exe place machines\<name>.machine <name>.pack
+zig-out\bin\harb.exe court --pack
+
 # the guided tour: 18 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -436,6 +441,22 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A pack asks, and the machine grants** (PLC-1): a solution's services
+  are written apart from any machine, in a pack, and placed on one by
+  `harb place`. A pack may carry SERVICE and USER and nothing else,
+  because a pack that could declare a CAPABILITY would grant itself what
+  it asks for. It is the same language and ONE reading of the rules: the
+  pack alone is judged only for what a pack IS, and what its services DO
+  is the machine court's, on the composed text -- never a copy of a rule
+  that has to agree (EGR-3). A refusal is reported at the file and the
+  line, in that file's own numbering, that wrote it: a line number in a
+  text the reader did not write is not an answer. Placement is
+  reproducible -- names and never paths, and the pack's sha256 in the
+  text -- so the journal's declaration digest names the pack that ran.
+  Probed with twelve mutations, each in a scratch copy and each caught by
+  the case named for its rule; the first run was green at once, which is
+  when a court deserves doubt, and its one wrong case (a fragment that was
+  a guess) was found by reading the verdicts and not by the count.
 - **A check that asks how a claim is SPELLED is narrower than one that
   asks what it COVERS** (EGR-3): EGR-2 recognised "everywhere" by a
   prefix of 0, and `EGRESS ["0.0.0.0/1", "128.0.0.0/1"]` walked past it
@@ -927,6 +948,17 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
      speaking on `/dev/ttyS1`); the watchdog's real countdown and the tryboot
      flag (a vendored patch to `bcm2835_wdt.c`) are the two things only
      a board can show.
+- **The cloud ladder (`doc/CLOUD.md`, rulings 14-15) -- ordered by the
+  author 2026-10-04 ("go"), beside the parked OS-5.** Six rungs in
+  dependency order, none built whole. Rung 1's placement half is done
+  (PLC-1: the pack file, `harb place`, the pack court). Next, in order:
+  the first REAL server declared as a pack and booted on a QEMU machine
+  -- it needs the server's program and its own statement of what it
+  needs from its desk (RingServ and RestoLean's Commons are the
+  candidates; the author names which, and this desk never edits a
+  sibling) -- then rung 2, two links (`FORWARD`, fleet v0.2). The
+  Enterprise page's cloud sentence stays by his word: the ladder makes
+  it true, and CLOUD.md's status lines are where the distance is read.
 - **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
   attempt: behind `HARB_CC=zigcc` the kernel builds with `make CC="zig
   cc"` and the image does NOT boot (it dies in the 16-bit setup code).
@@ -968,7 +1000,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

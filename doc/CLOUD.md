@@ -107,8 +107,13 @@ manifest is judged against the SERVICE: a need the manifest states
 and the machine does not grant is refused before the image is built.
 *Judge:* a QEMU machine boots it, the trial commits, and `harb
 guarantees` reads the promises off its own transcript. *Buys:*
-everything after this serves something real. *Status:* not built; the
-box's worlds are stand-ins (`machines/makeen_box.machine`).
+everything after this serves something real. *Status:* the placement
+half is BUILT (PLC-1, 2026-10-04): the pack file and `harb place`, judged
+by `declarative/pack/` at 30 of 30 -- a need the machine does not grant
+is refused at the line of the pack that asked, before any image is
+built. The server half is not: the box's worlds are stand-ins
+(`machines/makeen_box.machine`), and no real server has been placed or
+booted.
 
 **Rung 2 -- two links.** `FORWARD` on a machine with two `NETWORK`s
 makes it the way from one link to the other; in the fleet file a
@@ -179,6 +184,15 @@ secret; stzn renders the verdicts as the page an auditor reads.
 - **No second grammar.** A cloud is fleet v0.2 -- routes, placement,
   rollout added to the kinds a fleet file may contain -- never a third
   file. A file is judged by which kinds it may contain.
+  *Amended 2026-10-04, the day it was written, when rung 1's first
+  session read the code (PLC-1): the sentence is true of the SET and
+  false of the solution. A pack -- the solution's own file, the thing a
+  fleet places -- is a third file TYPE of the same language, judged by
+  the kinds it may carry (SERVICE and USER), as the fleet file is; it is
+  not a second grammar, and the set's routes, placement and rollout
+  still belong to one fleet file. The plan the author approved named
+  the pack file; this paragraph said otherwise, and the code is the
+  tie-break.*
 
 A sketch of the fleet file rung 2 and rung 5 would ask for, proposed
 and refused by today's court:
@@ -227,8 +241,10 @@ ladder makes the same act.
 
 ## 8. Honest boundaries
 
-- No rung is built. Today a fleet has one link, no machine forwards,
-  no server is a declared service, there is no front and no clock.
+- No rung is built whole. Rung 1's placement half is (PLC-1, 2026-10-04:
+  the pack file, `harb place`, the pack court at 30 of 30); its server
+  half is not. Today a fleet has one link, no machine forwards, no
+  server is a declared service, there is no front and no clock.
 - `site/enterprise.html` says *"the same declared machine can run the
   cloud too. Enterprise-cloud, made easy."* By the author's word
   (ruling 14) the sentence stays and this ladder makes it true; until
@@ -253,3 +269,13 @@ mismatch to see the refusal, the boot pinned, and `harb guarantees`
 read off it. What it needs from outside this repository: the Commons
 binary or its stzr program, which is RestoLean's and RingServ's to
 hand over; what they state they need is the manifest, in their words.
+
+*Amended 2026-10-04: the first part is done.* The session that took the
+placement half (PLC-1) found that the "pack manifest" is a SERVICE and
+the identities it runs as, in the machine language, because a SERVICE
+already says what it needs (`NEEDS`), which mounts it sees (`SEES`), when
+it is serving (`READY`, `HEALTH`) and its budget; so the manifest is the
+pack, hand-written, and `harb place` is the judge. A manifest has no
+port and no reach per world because a SERVICE has neither (rung 6). What
+is left of rung 1 is what the paragraph above says needs somebody
+else: the server's program and its own statement of what it needs.

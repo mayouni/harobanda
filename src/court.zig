@@ -10,6 +10,7 @@ const std = @import("std");
 const machine = @import("machine.zig");
 const plan = @import("plan.zig");
 const fleet = @import("fleet.zig");
+const pack = @import("pack.zig");
 
 fn str(v: ?std.json.Value) ?[]const u8 {
     if (v) |x| return switch (x) {
@@ -325,6 +326,135 @@ pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.
             } else {
                 failures += 1;
                 try out.print("  FAIL {s} {s} -- refused for the wrong reason: line {d}: {s} (expected '{s}')\n", .{ id, name, refusal.line, refusal.message, fragment });
+            }
+        }
+    }
+
+    try out.print("{d}/{d} -- {d} accepts, {d} rejects, {d} failures\n", .{ total - failures, total, accepts.items.len, rejects.items.len, failures });
+    if (!pin_ok) try out.print("and the pin does not hold: these verdicts are about a file the pin does not name\n", .{});
+    return failures + @intFromBool(!pin_ok);
+}
+
+// ---- the pack court (PLC-1) ----------------------------------------------
+//
+// Same shape as the two above, and the same discipline: accepts carry what
+// must be true of the placement, rejects carry the fragment their refusal
+// must contain -- and, because a refusal that points at the wrong FILE or the
+// wrong LINE sends a person to the wrong place, the file and the line it must
+// name. A case is a machine and the packs placed on it, all inside the case:
+// the machine is always `host.machine`, and each pack carries its own file
+// name, so a fixture is self-contained and the court needs no scratch
+// directory. Every accept is also judged for three things that must hold of
+// ANY placement and would be tedious to write into each case: the placed
+// text starts with the machine file as written, placing again gives the same
+// bytes, and the placed machine has a boot plan.
+
+const host_name = "host.machine";
+
+fn packInputs(arena: std.mem.Allocator, case: std.json.ObjectMap) ![]pack.Input {
+    const arr = case.get("packs").?.array;
+    const list = try arena.alloc(pack.Input, arr.items.len);
+    for (arr.items, 0..) |v, i| {
+        const o = v.object;
+        list[i] = .{ .name = str(o.get("path")).?, .source = str(o.get("source")).? };
+    }
+    return list;
+}
+
+pub fn runPack(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Writer) !usize {
+    const bytes = try std.fs.cwd().readFileAlloc(gpa, fixtures_path, 1 << 22);
+    defer gpa.free(bytes);
+    var parsed = try std.json.parseFromSlice(std.json.Value, gpa, bytes, .{});
+    defer parsed.deinit();
+    const root = parsed.value.object;
+
+    const grammar = str(root.get("grammar")) orelse return error.BadFixtureFile;
+    const version = str(root.get("version")) orelse return error.BadFixtureFile;
+    if (!std.mem.eql(u8, grammar, "pack")) return error.BadFixtureFile;
+    try out.print("pack conformance -- grammar {s} v{s}, judged by {s}\n", .{ grammar, version, fixtures_path });
+    const pin_ok = try pinHolds(gpa, fixtures_path, bytes, out);
+
+    var failures: usize = 0;
+    var total: usize = 0;
+
+    const accepts = root.get("accepts").?.array;
+    for (accepts.items) |case_v| {
+        total += 1;
+        const case = case_v.object;
+        const id = str(case.get("id")).?;
+        const name = str(case.get("name")).?;
+        const host = str(case.get("machine")).?;
+
+        var arena_state = std.heap.ArenaAllocator.init(gpa);
+        defer arena_state.deinit();
+        const arena = arena_state.allocator();
+        const inputs = try packInputs(arena, case);
+        var refusal = pack.Refusal{};
+        const placed = pack.place(arena, .{ .name = host_name, .source = host }, inputs, &refusal) catch {
+            failures += 1;
+            try out.print("  FAIL {s} {s} -- refused: {s} (line {d}): {s}\n", .{ id, name, refusal.file, refusal.line, refusal.message });
+            continue;
+        };
+
+        var why: ?[]const u8 = null;
+        const expect = case.get("expect").?.object;
+        const m = placed.machine;
+        if (expect.get("services")) |sv| {
+            const got = try arena.alloc([]const u8, m.services.len);
+            for (m.services, 0..) |s, i| got[i] = s.name;
+            if (!sameList(got, sv.array)) why = "services: not the machine's own then the packs', in the order placed";
+        }
+        if (expect.get("users")) |uv| {
+            const got = try arena.alloc([]const u8, m.users.len);
+            for (m.users, 0..) |u, i| got[i] = u.name;
+            if (!sameList(got, uv.array)) why = "users: not the machine's own then the packs'";
+        }
+        if (int(expect.get("packs"))) |w| if (@as(i64, @intCast(placed.packs.len)) != w) {
+            why = try std.fmt.allocPrint(arena, "packs: expected {d} got {d}", .{ w, placed.packs.len });
+        };
+        if (!std.mem.startsWith(u8, placed.text, host)) why = "the placed text does not start with the machine file as written";
+        var again = pack.Refusal{};
+        if (pack.place(arena, .{ .name = host_name, .source = host }, inputs, &again)) |second| {
+            if (!std.mem.eql(u8, second.text, placed.text)) why = "placing again gave different bytes";
+        } else |_| why = "placing again was refused";
+        _ = plan.derive(arena, &placed.machine) catch {
+            why = "the placed machine has no boot plan";
+        };
+        if (why) |w| {
+            failures += 1;
+            try out.print("  FAIL {s} {s} -- {s}\n", .{ id, name, w });
+        } else {
+            try out.print("  ok   {s} {s}\n", .{ id, name });
+        }
+    }
+
+    const rejects = root.get("rejects").?.array;
+    for (rejects.items) |case_v| {
+        total += 1;
+        const case = case_v.object;
+        const id = str(case.get("id")).?;
+        const name = str(case.get("name")).?;
+        const host = str(case.get("machine")).?;
+        const fragment = str(case.get("refusal")).?;
+        const want_in = str(case.get("in")).?;
+        const want_line = int(case.get("line")).?;
+
+        var arena_state = std.heap.ArenaAllocator.init(gpa);
+        defer arena_state.deinit();
+        const arena = arena_state.allocator();
+        const inputs = try packInputs(arena, case);
+        var refusal = pack.Refusal{};
+        if (pack.place(arena, .{ .name = host_name, .source = host }, inputs, &refusal)) |p| {
+            failures += 1;
+            try out.print("  FAIL {s} {s} -- placed ({d} service(s)), expected a refusal containing '{s}'\n", .{ id, name, p.machine.services.len, fragment });
+        } else |_| {
+            const in_ok = std.mem.eql(u8, refusal.file, want_in) and @as(i64, @intCast(refusal.line)) == want_line;
+            const msg_ok = std.mem.indexOf(u8, refusal.message, fragment) != null;
+            if (in_ok and msg_ok) {
+                try out.print("  ok   {s} {s} -- {s} line {d}: {s}\n", .{ id, name, refusal.file, refusal.line, refusal.message });
+            } else {
+                failures += 1;
+                try out.print("  FAIL {s} {s} -- refused as {s} line {d}: {s} (expected {s} line {d} containing '{s}')\n", .{ id, name, refusal.file, refusal.line, refusal.message, want_in, want_line, fragment });
             }
         }
     }
