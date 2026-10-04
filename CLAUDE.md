@@ -474,7 +474,17 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   that count networks (FORWARD, the image's NICs, the guarantee sheet, the
   names server) needed one answer, and `machine.isLoopback` is it -- a
   declaration that adds a species of something the judges count is a new
-  question for every one of them (SRV-2, again). **A transcript whose
+  question for every one of them (SRV-2, again). **A server promises the
+  way only once the kernel has said there is one**: the first version
+  started each link's server from the DECLARATION and read the switch
+  back afterwards, so a switch that failed would still have leased the
+  box as the router and answered the far names (CON-1 broken by the line
+  beside it); a machine that forwards now starts its servers AFTER the
+  forward step. **A perimeter that touches a link is a way, however
+  narrow** (a `/32` to the one server), and **two links that share
+  addresses are not two links**. **A review by a reader with no stake
+  found six real things in work that had passed every gate**: have one
+  read the diff, read-only, before the push. **A transcript whose
   pin depends on how fast an emulator booted is a margin**: the till
   finished inside the core's health window and the core was killed before
   it had judged itself, so the script waits for the machine's OWN verdict

@@ -545,23 +545,31 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
 // ---- the ways between links (FWD-1) ------------------------------------
 
 /// A prefix: the network address and how many bits of it are the network's
-const Prefix = struct { net: u32, bits: u6, text: []const u8 };
+const Prefix = struct {
+    net: u32,
+    bits: u6,
+    /// a member's own words for its address on the link (10.20.0.1/24): what that member said
+    text: []const u8,
+    /// the link's own prefix (10.20.0.0/24): what a message about the LINK, and not about one
+    /// machine's address on it, prints
+    net_text: []const u8,
+};
 
 fn maskOf(bits: u6) u32 {
     return if (bits == 0) 0 else ~@as(u32, 0) << @intCast(32 - @as(u6, bits));
 }
 
-/// Whether the destination D contains the whole of the prefix P: a route to D
-/// is a route to everything on P's link
-fn covers(d: machine.Destination, p: Prefix) bool {
-    return d.prefix <= p.bits and (p.net & maskOf(d.prefix)) == (d.ip & maskOf(d.prefix));
-}
-
 /// Whether the destination D and the prefix P share an address: D names the
-/// link, or a part of it, or the link is a part of D
+/// link, or a part of it (a /32 to the one server), or the link is a part of D
 fn overlaps(d: machine.Destination, p: Prefix) bool {
     const bits = @min(d.prefix, p.bits);
     return (p.net & maskOf(bits)) == (d.ip & maskOf(bits));
+}
+
+/// Whether two links' prefixes share an address
+fn sharePrefix(a: Prefix, b: Prefix) bool {
+    const bits = @min(a.bits, b.bits);
+    return (a.net & maskOf(bits)) == (b.net & maskOf(bits));
 }
 
 /// What a link's prefix is: read off every member's STATIC address on it, and
@@ -576,7 +584,13 @@ fn prefixOf(ctx: *machine.Ctx, f: Fleet, wire: []const u8) machine.Error!?Prefix
             .static => |s| s,
             .dhcp => continue,
         };
-        const here = Prefix{ .net = st.ip & maskOf(st.prefix), .bits = st.prefix, .text = st.text };
+        const net = st.ip & maskOf(st.prefix);
+        const here = Prefix{
+            .net = net,
+            .bits = st.prefix,
+            .text = st.text,
+            .net_text = try std.fmt.allocPrint(ctx.arena, "{d}.{d}.{d}.{d}/{d}", .{ net >> 24, (net >> 16) & 255, (net >> 8) & 255, net & 255, st.prefix }),
+        };
         if (got) |g| {
             if (g.net != here.net or g.bits != here.bits) return ctx.refuse(m.line, "{s} says {s} is {s} and {s} says it is {s}: one wire has one prefix, or two machines on it do not agree where it ends", .{ first, wire, g.text, m.name, here.text });
         } else {
@@ -603,6 +617,16 @@ fn checkRoutes(ctx: *machine.Ctx, f: Fleet) machine.Error!void {
             return null;
         }
     }.of;
+
+    // TWO LINKS, TWO PREFIXES. A wire has one prefix (above); two wires that share
+    // addresses are one address space with two ends, and a machine on both has two
+    // connected routes for it: the court would call them joined and reachable, and no
+    // packet could use the way.
+    for (f.links, 0..) |a, i| for (f.links[i + 1 ..], i + 1..) |b, j| {
+        const pa = prefixes[i] orelse continue;
+        const pb = prefixes[j] orelse continue;
+        if (sharePrefix(pa, pb)) return ctx.refuse(f.line, "{s} is {s} and {s} is {s}, and the two share addresses: one address would be on either wire, and a machine on both has two connected routes for it", .{ a, pa.net_text, b, pb.net_text });
+    };
 
     // THE DOOR. A machine that forwards joins every one of its links, whether
     // or not anybody meant it to: so the fleet must have said it was meant to,
@@ -654,10 +678,10 @@ fn checkRoutes(ctx: *machine.Ctx, f: Fleet) machine.Error!void {
                         if (std.mem.eql(u8, other, n.name)) continue;
                         const pf = prefixFor(f.links, prefixes, other) orelse continue;
                         var seen = false;
-                        for (dests) |d| if (covers(d, pf)) {
+                        for (dests) |d| if (overlaps(d, pf)) {
                             seen = true;
                         };
-                        if (!seen) return ctx.refuse(m.line, "{s}'s EGRESS for {s} does not reach {s} ({s}), which the route {s} joins to it: the question would have a way there and the answer none, or the reverse", .{ m.name, n.name, other, pf.text, r.name });
+                        if (!seen) return ctx.refuse(m.line, "{s}'s EGRESS for {s} does not reach {s} ({s}), which the route {s} joins to it: a perimeter that touches nothing on the other link has a way there and no way back, or the reverse", .{ m.name, n.name, other, pf.net_text, r.name });
                     },
                 }
             }

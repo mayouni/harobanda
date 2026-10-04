@@ -5,12 +5,12 @@
 `fixtures.json` sha256:
 
 ```
-aeea0175e8c39dd833c74130bd16b41cd6fc3a71467a60ba4e9f01cb30980739
+5920f74c1f0fd971179ae6addc856a15fd793034a12a9856221b6ba83cfb2e91
 ```
 
 (Before the ROUTE seat of 2026-10-04 (FWD-1, fleet v0.2):
 `9c5e200f0167bdbb61cf0894580fe919f56b13398ceac0c45535b75576c3ac6b`,
-32/32; the widening added FA7-FA10 and FR27-FR48, gave the fleet its
+32/32; the widening added FA7-FA11 and FR27-FR49, gave the fleet its
 fourth kind and `FLEET` its `LINKS`, and took FA7 verbatim from the real
 files of the smallest cloud. Before the RETIREMENT seat of 2026-09-26 (RET-1):
 `bb1f8349ec64fc458b5a4c6a80dbd30a8ab400cf853640080ae134c4730e4c3b`,
@@ -29,7 +29,7 @@ grammar's own `PINNING.md` requires of itself.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **58/58** — 10 accepts, 48 rejects (32/32 before ROUTE; the first run of the widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
+| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **60/60** — 11 accepts, 49 rejects (32/32 before ROUTE; the first run of the widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
 
 `zig build court` runs BOTH grammars: the machine fixtures first, the
 fleet fixtures after. One step, two courts, because a fleet is no better
@@ -74,8 +74,8 @@ supplies exactly what the constants did, and now the court can check it.
 ## The ways between links: ROUTE (FWD-1, fleet v0.2)
 
 `LINKS [front, core]` names several wires where `LINK` named one, and
-`ROUTE` says two of them are joined and through whom. Twenty-two cases
-hold it (FA7-FA10, FR27-FR48), and the interesting ones are the ones no
+`ROUTE` says two of them are joined and through whom. Twenty-four cases
+hold it (FA7-FA11, FR27-FR49), and the interesting ones are the ones no
 single machine can fail:
 
 - **the door** (FR39, FR40): a machine that says `FORWARD` joins every one

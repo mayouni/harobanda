@@ -138,16 +138,17 @@ asking from a link it was never declared on, getting nothing. *Buys:*
 a front link and a back link, the smallest cloud. *Status:* BUILT
 (FWD-1, 2026-10-04), with one limit named below. `FORWARD yes` on a
 machine (the kernel's own switch, read back before the boot says so);
-fleet v0.2, `LINKS` and `ROUTE` (58 of 58, 22 of them new); the box's
+fleet v0.2, `LINKS` and `ROUTE` (60 of 60, 24 of them new); the box's
 lease names it the router and its resolver answers for the full names on
 the links it is the way to; and `experiment/os8_links.sh` boots the
 smallest cloud on two wires, pinned at 146 lines and identical on two
 runs. **A till on the front link asks for `commons.core.cloud`, is told
 `10.20.0.2`, connects to it through the box, and RingServ on the core link
 answers `/health` with 200.** The two negatives are the same till: a
-device nobody declared gets no lease and so no router and no resolver (a
-box that now forwards admits no more devices than before), and a box
-without its one clause is silent about the far link. What is NOT shown,
+device nobody declared gets no lease and so no router and no resolver (the
+register's reach, and no more: a device that chose its own address and
+set the box as its gateway would be carried, because forwarding filters
+nothing), and a box without its one clause is silent about the far link. What is NOT shown,
 and why: a name that resolves while the way is closed cannot be declared,
 because the names follow the way and not the other way round, so the
 closed round shows the silence and no round shows a packet dropped by a

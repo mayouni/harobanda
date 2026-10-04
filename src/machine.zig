@@ -1130,6 +1130,12 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             if (address == .dhcp) return ctx.refuse(c.line, "{s} asks for its own address by dhcp, and a machine that asks for its own address is not the one that hands them out: a serving link declares a static ADDRESS", .{d.name});
             const s = try wantString(&ctx, c);
             if (!isDomain(s)) return ctx.refuse(c.line, "'{s}' cannot be a domain: a name on the wire is lowercase letters, digits and the hyphen, in labels separated by dots", .{s});
+            // A domain names ONE link. Two links of one machine that answer to the same
+            // one would make a name on either a name on both, and a machine that is the
+            // way between them (FWD-1) could never be asked for the far one by its full name.
+            for (nets.items) |e| if (e.domain) |ed| if (std.mem.eql(u8, ed, s)) {
+                return ctx.refuse(c.line, "{s} serves {s}, which {s} already serves: one machine answers for a domain once, or a name on one link would be a name on both", .{ d.name, s, e.name });
+            };
             domain = s;
         }
         try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .domain = domain, .rationale = d.rationale });

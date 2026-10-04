@@ -238,6 +238,14 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     // several networks that declares them in another order would be wired to
     // the wrong ends of its links, so it is refused here, in words, and not
     // found out as a boot that never sees its own link (FWD-1).
+    // The order the emulator numbers its NICs in was OBSERVED on qemu_pc (virtio-net-pci) and nowhere
+    // else. qemu_virt's virtio-net-device sits on a memory-mapped bus whose enumeration order is the
+    // kernel's and the board's, and nothing here has seen it: a wiring that looked right could be
+    // swapped, so a machine of several links is imaged only where the order has been seen (FWD-1).
+    if (t.net_device != null and machine.countLinks(m.networks) > 1 and m.board != .qemu_pc) {
+        try out.print("image: refused -- a machine of several links is imaged only for qemu_pc, where the order the emulator numbers its NICs in was observed; on {s} it has not been, and a wiring that looked right could be swapped\n", .{@tagName(m.board)});
+        return 2;
+    }
     // (A loopback is declared and is no NIC: it is not counted.)
     if (t.net_device != null and machine.countLinks(m.networks) > 1) {
         var k: usize = 0;

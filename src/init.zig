@@ -406,28 +406,32 @@ fn linkOf(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machine.N
 /// RESTART, and it is not waited on -- it is this machine being what it
 /// said it was. If it dies, the reaper below says so by pid and the
 /// boot no longer matches what was expected, which is the truth.
-fn serveNames(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machine.Network, led: *Ledger) !bool {
+///
+/// `forwarding` is whether this machine IS the way between its links: the kernel's switch has been
+/// read back as on (FWD-1). Only then does the server offer the router and answer for the far
+/// links, and only for `others`, the links it serves that are UP: a promise about the way is made
+/// once the kernel has said there is one, never from the declaration alone.
+fn serveNames(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machine.Network, led: *Ledger, forwarding: bool, others: []const *const machine.Network) !bool {
     const iface = try gpa.dupe(u8, n.interface);
     const srv = names.open(iface) catch |e| {
         try led.say("boot: names {s} -- {s} could not be served: {s} (the ports a server needs are 67 and 53)\n", .{ n.name, n.interface, @errorName(e) });
         return false;
     };
     var link = (try linkOf(gpa, m, n)) orelse return false;
-    // A machine that is the way between its networks (FWD-1) offers itself as
-    // the router to those it serves, and answers for the full names on the
-    // other links it serves: the front link's server knows what is behind it.
-    if (m.forward) {
+    // A machine that is the way between its networks offers itself as the router to
+    // those it serves, and answers for the full names on the other links it serves: the
+    // front link's server knows what is behind it.
+    if (forwarding) {
         link.router = link.self_ip;
-        var others: std.ArrayList(names.Link) = .{};
-        for (m.networks) |*o| {
-            if (std.mem.eql(u8, o.name, n.name) or machine.isLoopback(o.*)) continue;
-            if (try linkOf(gpa, m, o)) |ol| try others.append(gpa, ol);
+        var far: std.ArrayList(names.Link) = .{};
+        for (others) |o| {
+            if (try linkOf(gpa, m, o)) |ol| try far.append(gpa, ol);
         }
-        link.reach = try others.toOwnedSlice(gpa);
+        link.reach = try far.toOwnedSlice(gpa);
     }
     // everything this machine will say about the link is said BEFORE the
     // fork, so the two processes never contend for the console
-    _ = try expect.namesLines(led.w(), m, n, "boot: ");
+    _ = try expect.namesLines(led.w(), m, n, "boot: ", forwarding, others);
     try led.echo();
     const pid = std.posix.fork() catch |e| {
         try led.say("boot: names {s} -- the server could not be started: {s}\n", .{ n.name, @errorName(e) });
@@ -449,29 +453,30 @@ fn serveNames(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machi
 /// Forwarding is one switch for the whole machine, so the line names every
 /// network it joined and not a pair; what that means for a reader is in the
 /// line itself (`expect.forwardLine`).
-fn forwardOn(m: *const machine.Machine, led: *Ledger) !void {
+fn forwardOn(m: *const machine.Machine, led: *Ledger) !bool {
     const path = "/proc/sys/net/ipv4/ip_forward";
     writeKernelFile(path, "1") catch |e| {
         try led.say("boot: forward -- the kernel would not be the way between networks: {s} ({s})\n", .{ @errorName(e), path });
-        return;
+        return false;
     };
     var held: [8]u8 = undefined;
     const got = blk: {
         const f = std.fs.cwd().openFile(path, .{}) catch |e| {
             try led.say("boot: forward -- the switch cannot be read back: {s} ({s})\n", .{ @errorName(e), path });
-            return;
+            return false;
         };
         defer f.close();
         break :blk f.read(&held) catch |e| {
             try led.say("boot: forward -- the switch cannot be read back: {s} ({s})\n", .{ @errorName(e), path });
-            return;
+            return false;
         };
     };
     if (got == 0 or held[0] != '1') {
         try led.say("boot: forward -- the kernel holds {s}, not 1: this machine is not the way between networks\n", .{std.mem.trim(u8, held[0..got], " \n")});
-        return;
+        return false;
     }
     _ = try expect.forwardLine(led.w(), m);
+    return true;
 }
 
 /// Delegate the controllers and make one group per budgeted world. A
@@ -779,6 +784,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     // nothing left to do (NAM-1).
     var serving: ?[]const u8 = null;
     var serving_buf: std.ArrayList(u8) = .{};
+    // the links a machine that forwards will serve, up and waiting for the way (FWD-1)
+    var await_way: std.ArrayList(*const machine.Network) = .{};
     var said_serving = false;
     if (opts.hold and ab != null) try out.print("boot: --hold: a trial will not be committed and the watchdog will not be fed -- the rollback instrument\n", .{});
 
@@ -842,7 +849,11 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             // it declared itself" is said in order in the transcript that
             // is judged; only the loop is forked.
             if (up and n.domain != null) {
-                if (try serveNames(gpa, m, n, &led)) {
+                if (m.forward) {
+                    // a machine that is the way between its links starts its servers once
+                    // the kernel has said it is one (the forward step, below)
+                    try await_way.append(gpa, n);
+                } else if (try serveNames(gpa, m, n, &led, false, &.{})) {
                     // every link it serves, for the line it says at the end
                     if (serving_buf.items.len > 0) try serving_buf.appendSlice(gpa, " and ");
                     try serving_buf.appendSlice(gpa, n.domain.?);
@@ -855,8 +866,22 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         .forward => if (opts.rehearse) {
             try out.print("boot: forward -- rehearsed, not executed\n", .{});
         } else {
-            try forwardOn(m, &led);
+            const on = try forwardOn(m, &led);
             try led.echo();
+            // The servers speak for the way only now, and only if the switch read back as on
+            // (CON-1, NS-1): a lease that names this machine the router, or a name answered
+            // across a link, over a switch that did not turn on would be a promise made before
+            // it could be kept. A box whose switch failed still serves each link its own names.
+            for (await_way.items) |n| {
+                var up_others: std.ArrayList(*const machine.Network) = .{};
+                if (on) for (await_way.items) |o| if (o != n) try up_others.append(gpa, o);
+                if (try serveNames(gpa, m, n, &led, on, up_others.items)) {
+                    if (serving_buf.items.len > 0) try serving_buf.appendSlice(gpa, " and ");
+                    try serving_buf.appendSlice(gpa, n.domain.?);
+                    serving = serving_buf.items;
+                }
+                try led.echo();
+            }
         },
         .service => {}, // started below, when what it comes AFTER is ready
     };

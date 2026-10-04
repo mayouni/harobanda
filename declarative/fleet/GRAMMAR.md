@@ -70,12 +70,17 @@ the others or sits on a link that is not joined.
   only machine that can offer it is the link's own server (FR45), which
   sends a router option exactly when it forwards (`names.zig`);
 - it does not say `EGRESS none` for a joined link (FR46), and where it
-  lists destinations they cover every other link the route joins (FR47);
+  lists destinations they TOUCH every other link the route joins
+  (FR47): a wider prefix does, and so does a `/32` to the one server,
+  which is the least privilege a perimeter can ask;
 - and a destination that is a declared link no route joins to this one is
   a route to nowhere (FR48).
 
 One wire has one prefix (FR41): members that disagree where it ends are
-each faultless alone.
+each faultless alone. And two wires have two (FR49): links that share
+addresses are one address space with two ends, and a machine on both has
+two connected routes for it, so the court would call them joined and no
+packet could use the way.
 
 **Names follow the way, never the other way round.** The server of a link
 answers for the full names on the other links it serves only when its own
@@ -185,8 +190,9 @@ checks the members it has, and says nothing about the rest of the wire.
 | FR44 | a link with two ways on it: the member's one gateway is the way for one of them only |
 | FR45 | a dhcp member of a joined link whose server is not the way: its lease names no router |
 | FR46 | a member of a joined link that says `EGRESS none` |
-| FR47 | a member whose `EGRESS` does not reach another link the route joins to its own |
+| FR47 | a member whose `EGRESS` touches nothing on another link the route joins to its own |
 | FR48 | a route to a declared link that no route joins to the member's own: a route to nowhere |
+| FR49 | two declared links whose prefixes share addresses |
 
 ## Attribution: one machine verifying another's record
 

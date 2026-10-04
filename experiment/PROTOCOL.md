@@ -9,7 +9,7 @@ them, and a fleet file says the box was meant to be.
 ## What exists now
 
 - **`FORWARD yes`** on a hosted machine with at least two links
-  (`src/machine.zig`; machine fixtures A27-A29 and R95-R102, **131/131**):
+  (`src/machine.zig`; machine fixtures A27-A29 and R95-R103, **132/132**):
   PID 1 switches the kernel's own forwarding on once every network is up
   and says so only after READING THE SWITCH BACK (CON-1's rule). It is a
   plan step, so `harb plan`, the derived expectation and PID 1 read one
@@ -28,7 +28,7 @@ them, and a fleet file says the box was meant to be.
   about where a name goes (`ask`'s output is byte-identical: the names pair
   matched its 68-line pin unchanged).
 - **Fleet v0.2** (`src/fleet.zig`): `LINKS` where `LINK` named one wire, and
-  the `ROUTE` kind. **58/58**, 22 of them new (FA7-FA10, FR27-FR48).
+  the `ROUTE` kind. **60/60**, 24 of them new (FA7-FA11, FR27-FR49).
 - **The smallest cloud**: `machines/cloud_front.machine` (the box),
   `cloud_till.machine`, `cloud_core.machine` (RingServ placed on it by the
   pack of SRV-2, with an application that listens where another machine can
@@ -94,6 +94,20 @@ everyone it serves, and the box that does not still sends none (a box that
 named itself the way out without being one would lie to every device on the
 link).
 
+**The servers promise the way only once the kernel has said there is one.**
+The first version started each link's server as its network came up, with the
+router and the far names taken from the DECLARATION, and read the switch back
+afterwards. If the switch had failed, leases would still have named the box the
+router and the resolver would still have answered `commons.core.cloud`: the name
+that resolves over a closed way that this entry says cannot be declared, and
+CON-1's rule (a line says where the machine is only after asking) broken by the
+line beside it. Found by the independent review below, not by a boot. A machine
+that forwards now starts its servers AFTER the forward step, with the router and
+the far names only if the switch read back as on and only for the links that are
+up; a box whose switch failed still serves each link its own names, says why,
+and its boot differs from its expectation. A machine that does not forward is
+unchanged, line for line (the names pair matched its pin).
+
 **A loopback is not a link.** SRV-2 made the machine declare its loopback so a
 readiness probe could ask 127.0.0.1; this rung found four judges that count
 networks and needed the same answer: FORWARD's "two networks", the image's NICs
@@ -110,9 +124,11 @@ forwarder is a way off every link it joins.
 
 - **Three rounds**, the second and third are what make the first mean
   something: the declared till crosses; the same till with a hardware address
-  nobody declared gets no lease and so no router and no resolver ("a box that
-  now forwards admits no more devices than before"); the same set with a box
-  less its one clause is silent about the far link and the till reaches nothing.
+  nobody declared gets no lease and so no router and no resolver -- which is
+  the register's reach and no more: it does NOT stop a device that chose its
+  own address and set the box as its gateway, because forwarding filters
+  nothing; the same set with a box less its one clause is silent about the
+  far link and the till reaches nothing.
 - **A margin, not a fixture (BDG-1, again).** The first run of the script
   started the till as soon as the core said `ready`; the till finished within
   the core's ten-second health window, the script killed the core, and the
@@ -140,6 +156,26 @@ forwarder is a way off every link it joins.
 - **FA7 is the real set, verbatim**: `machines/cloud_links.fleet` and the three
   machine files it names, taken mechanically by the fixture generator, so the
   court judges what the boot boots.
+- **An independent read-only review found six things, and every one held up
+  against the code.** A fresh agent with no stake in the design read the diff
+  after the commit and could not run anything. (1) Two links with overlapping
+  prefixes were accepted by both courts, and no packet could use the way: now
+  FR49. (2) The servers announced the way before the switch was read back
+  (above). (3) Two links of one machine could answer to the same DOMAIN, so the
+  far one could never be asked for by its full name: now R103. (4) FR47 asked a
+  single destination to swallow the other link's whole prefix, which refused the
+  least-privilege perimeter (`10.20.0.2/32`, the one server) and printed a
+  member's host address as if it were the link's prefix: the test is now
+  whether the perimeter TOUCHES the other link, FA11 holds a /32 each, and the
+  message prints the link's own prefix. (5) One over-claim of mine: "a box that
+  now forwards admits no more devices than before" is true of leases and names
+  and false of the way, since forwarding filters nothing and a device that chose
+  its own address and set the box as its gateway would be carried; the three
+  places that said it now say what is true. (6) The emulator's NIC order was
+  observed on `qemu_pc` and was assumed for `qemu_virt`'s memory-mapped NICs:
+  a machine of several links is now imaged only where the order has been seen.
+  The commit that carried the work had passed every gate I own; none of the six
+  was a failing test, which is what a review is for.
 - **The repository's own warning about inline programs was ignored once more**:
   a Zig test appended through a heredoc lost one backslash of every multi-line
   string, and the compiler caught it. The edit tool and a scratchpad file are
@@ -168,6 +204,14 @@ forwarder is a way off every link it joins.
   front exists it is the application's word, and what is TRUE is the extent the
   boot shows: reachable from the front link through the box, and from nowhere
   else.
+- **Being admitted to a lease is not being admitted to the way.** The register
+  decides who is given an address, a router and a resolver; it does not decide
+  who is carried. A device that chose its own address and set the box as its
+  gateway reaches the core, because forwarding filters nothing. That is rung 6's
+  packet filter, and the boot line says so.
+- **The emulator's NIC order is known for `qemu_pc` only.** `qemu_virt`'s
+  virtio-net-device sits on a memory-mapped bus; a machine of several links is
+  refused there in words until somebody observes the order.
 - **A stranger cannot boot it**: the server is built by a PowerShell script from
   RingServ's source, so `stranger_walk.sh` does not walk this boot, and the tour
   teaches neither `FORWARD`, `ROUTE` nor `get` (their words are not in

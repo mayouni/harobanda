@@ -153,6 +153,24 @@
         ],
         "routes": 0
       }
+    },
+    {
+      "id": "FA11",
+      "name": "least privilege is a way: a perimeter of one /32 each, the one server and the one device that asks",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.2/32\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.40/32\"]) RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 3,
+        "links": [
+          "front",
+          "core"
+        ],
+        "routes": 1
+      }
     }
   ],
   "rejects": [
@@ -621,7 +639,7 @@
         "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.99.0.0/24\"]) RATIONALE \"x\"\n",
         "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
       },
-      "refusal": "EGRESS for front does not reach core (10.20.0.1/24)"
+      "refusal": "EGRESS for front does not reach core (10.20.0.0/24)"
     },
     {
       "id": "FR48",
@@ -634,6 +652,15 @@
         "lone.machine": "DEFINE MACHINE lone AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK side AS (INTERFACE \"eth0\", ADDRESS \"172.16.0.5/24\") RATIONALE \"x\"\n"
       },
       "refusal": "and that is the side link, which no ROUTE joins to front: a route to nowhere"
+    },
+    {
+      "id": "FR49",
+      "name": "two links, one prefix: one address would be on either wire, and the box has two connected routes for it",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"10.0.0.1/24\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.0.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "front is 10.0.0.0/24 and core is 10.0.0.0/24, and the two share addresses"
     }
   ]
 }

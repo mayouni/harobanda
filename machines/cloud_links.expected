@@ -6,18 +6,18 @@ box: boot: mount sysfs at /sys -- done
 box: boot: mount devtmpfs at /dev -- done
 box: boot: grant network (effectful)
 box: boot: network front -- eth0 up 192.168.20.1/24
+box: boot: network core -- eth1 up 10.20.0.1/24
+box: boot: forward -- between front and core: a packet that arrives on one may leave by another, and nothing here filters it
 box: boot: names front -- front.cloud: this machine is 192.168.20.1/24, 1 declared peer, and no address for anyone else
 box: boot: names front -- till.front.cloud is 192.168.20.40 for 52:54:00:12:35:61
 box: boot: names front -- this machine forwards, so it is offered as the router to everyone it serves here
 box: boot: names front -- and for core.cloud, which this machine is the way to: core.cloud is 10.20.0.1
 box: boot: names front -- commons.core.cloud is 10.20.0.2, through this machine
-box: boot: network core -- eth1 up 10.20.0.1/24
 box: boot: names core -- core.cloud: this machine is 10.20.0.1/24, 1 declared peer, and no address for anyone else
 box: boot: names core -- commons.core.cloud is 10.20.0.2 for 52:54:00:12:35:62
 box: boot: names core -- this machine forwards, so it is offered as the router to everyone it serves here
 box: boot: names core -- and for front.cloud, which this machine is the way to: front.cloud is 192.168.20.1
 box: boot: names core -- till.front.cloud is 192.168.20.40, through this machine
-box: boot: forward -- between front and core: a packet that arrives on one may leave by another, and nothing here filters it
 box: boot: judge -- the boot matches its expectation (/etc/expected, 19 lines)
 box: boot: every service has ended -- and this machine is still front.cloud and core.cloud: a server stops when the machine stops, not when the asking does
 core: the server, behind the box:

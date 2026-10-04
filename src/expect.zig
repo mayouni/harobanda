@@ -207,7 +207,14 @@ pub fn budgetLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
 /// reboot; here it is in the DECLARATION, so the boot can read it out in
 /// full and the transcript that is judged carries it. An auditor reading
 /// this file knows every device the network will admit.
-pub fn namesLines(w: *std.Io.Writer, m: *const machine.Machine, n: *const machine.Network, prefix: []const u8) !bool {
+///
+/// `forwarding` is whether this machine IS the way between its links right now (FWD-1):
+/// the switch has been read back as on, and `others` are the other links it serves that
+/// are up. A server says it offers the router and answers for the far links only then:
+/// a promise about the way is made once the kernel has said there is one, never before,
+/// or a lease and a name would go out over a switch that did not turn on. A boot that
+/// is expected to succeed passes what the declaration says (`servedOthers`).
+pub fn namesLines(w: *std.Io.Writer, m: *const machine.Machine, n: *const machine.Network, prefix: []const u8, forwarding: bool, others: []const *const machine.Network) !bool {
     const dom = n.domain orelse return false;
     const self = switch (n.address) {
         .static => |s| s.text,
@@ -228,10 +235,9 @@ pub fn namesLines(w: *std.Io.Writer, m: *const machine.Machine, n: *const machin
     // serves too -- by their full names, through itself, and for nothing else.
     // Said here, beside the server's own lines, because it is the server that
     // does it and a reader of this transcript has to be able to see the extent.
-    if (m.forward) {
+    if (forwarding) {
         try w.print("{s}names {s} -- this machine forwards, so it is offered as the router to everyone it serves here\n", .{ prefix, n.name });
-        for (m.networks) |o| {
-            if (std.mem.eql(u8, o.name, n.name) or machine.isLoopback(o)) continue;
+        for (others) |o| {
             const odom = o.domain orelse continue;
             const oself: u32 = switch (o.address) {
                 .static => |s| s.ip,
@@ -245,6 +251,18 @@ pub fn namesLines(w: *std.Io.Writer, m: *const machine.Machine, n: *const machin
         }
     }
     return true;
+}
+
+/// The other links this machine serves, as its declaration says: what a boot
+/// that succeeds says it answers for beside the link `n`.
+pub fn servedOthers(arena: std.mem.Allocator, m: *const machine.Machine, n: *const machine.Network) ![]const *const machine.Network {
+    var list: std.ArrayList(*const machine.Network) = .{};
+    for (m.networks) |*o| {
+        if (o == n or machine.isLoopback(o.*)) continue;
+        if (o.domain == null or o.address != .static) continue;
+        try list.append(arena, o);
+    }
+    return list.toOwnedSlice(arena);
 }
 
 pub fn egressLine(w: *std.Io.Writer, n: *const machine.Network, prefix: []const u8) !bool {
@@ -366,10 +384,17 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
             // a machine with no NIC behind the declared interface cannot
             // be that link's server: under the emulator's lens it says
             // nothing here, and that difference is the emulator's lack
-            if (!lens.network_absent) _ = try namesLines(w, m, n, "boot: ");
+            // (a machine that forwards starts its servers after the way is on, below)
+            if (!lens.network_absent and !m.forward) _ = try namesLines(w, m, n, "boot: ", false, &.{});
         },
-        // the way between the networks, once every one of them is up
-        .forward => _ = try forwardLine(w, m),
+        // the way between the networks, once every one of them is up -- and then
+        // the servers, which promise the way only once the kernel has said there is one
+        .forward => {
+            _ = try forwardLine(w, m);
+            if (!lens.network_absent) for (m.networks) |*n| {
+                _ = try namesLines(w, m, n, "boot: ", true, try servedOthers(arena, m, n));
+            };
+        },
         .service => {},
     };
     // the slot's own state (a trial, or steady) is the CARD's to say, not
@@ -745,4 +770,51 @@ test "a machine that is the way between networks names them all, once, after the
     try std.testing.expectEqual(@as(usize, 0), aw2.written().len);
     const qtext = try derive(arena, try plan.derive(arena, quiet), .{});
     try std.testing.expect(std.mem.indexOf(u8, qtext, "boot: forward") == null);
+}
+
+const two_served =
+    \\DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE "x"
+    \\DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "x"
+    \\DEFINE NETWORK front AS (INTERFACE "eth0", ADDRESS "192.168.20.1/24", DOMAIN "front.cloud") RATIONALE "x"
+    \\DEFINE NETWORK core AS (INTERFACE "eth1", ADDRESS "10.20.0.1/24", DOMAIN "core.cloud") RATIONALE "x"
+    \\DEFINE PEER till AS (NETWORK front, HARDWARE "52:54:00:12:35:61", ADDRESS "192.168.20.40") RATIONALE "x"
+    \\DEFINE PEER commons AS (NETWORK core, HARDWARE "52:54:00:12:35:62", ADDRESS "10.20.0.2") RATIONALE "x"
+    \\
+;
+
+test "a machine that forwards starts its servers after the way is on, and promises the way only when it is" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const m = try arena.create(machine.Machine);
+    var refusal = machine.Refusal{};
+    m.* = try machine.declare(arena, two_served, &refusal);
+
+    // a boot that succeeds: both links up, THEN the way, THEN what each server says it will do
+    const text = try derive(arena, try plan.derive(arena, m), .{});
+    const net_core = std.mem.indexOf(u8, text, "boot: network core -- eth1 up 10.20.0.1/24\n").?;
+    const fwd = std.mem.indexOf(u8, text, "boot: forward --").?;
+    const names_front = std.mem.indexOf(u8, text, "boot: names front -- front.cloud:").?;
+    const names_core = std.mem.indexOf(u8, text, "boot: names core -- core.cloud:").?;
+    try std.testing.expect(net_core < fwd and fwd < names_front and names_front < names_core);
+    try std.testing.expect(std.mem.indexOf(u8, text, "boot: names front -- and for core.cloud, which this machine is the way to: core.cloud is 10.20.0.1\n") != null);
+    try std.testing.expect(std.mem.indexOf(u8, text, "boot: names front -- commons.core.cloud is 10.20.0.2, through this machine\n") != null);
+
+    // the same server when the switch did NOT turn on: its own link, and not a word about the way
+    var aw = std.Io.Writer.Allocating.init(arena);
+    try std.testing.expect(try namesLines(&aw.writer, m, &m.networks[0], "boot: ", false, &.{}));
+    try std.testing.expect(std.mem.indexOf(u8, aw.written(), "till.front.cloud is 192.168.20.40 for 52:54:00:12:35:61") != null);
+    try std.testing.expect(std.mem.indexOf(u8, aw.written(), "forwards") == null);
+    try std.testing.expect(std.mem.indexOf(u8, aw.written(), "core.cloud") == null);
+
+    // and a machine that does not forward serves each link as it always did, line by line after its network
+    const quiet_src = try std.mem.replaceOwned(u8, arena, two_served, ", FORWARD yes", "");
+    const quiet = try arena.create(machine.Machine);
+    quiet.* = try machine.declare(arena, quiet_src, &refusal);
+    const qtext = try derive(arena, try plan.derive(arena, quiet), .{});
+    const q_front = std.mem.indexOf(u8, qtext, "boot: network front -- eth0 up 192.168.20.1/24\n").?;
+    const q_names_front = std.mem.indexOf(u8, qtext, "boot: names front -- front.cloud:").?;
+    const q_core = std.mem.indexOf(u8, qtext, "boot: network core -- eth1 up 10.20.0.1/24\n").?;
+    try std.testing.expect(q_front < q_names_front and q_names_front < q_core);
+    try std.testing.expect(std.mem.indexOf(u8, qtext, "forwards") == null);
 }

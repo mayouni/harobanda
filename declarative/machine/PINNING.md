@@ -5,17 +5,18 @@
 `fixtures.json` sha256:
 
 ```
-ee90b8f4b617d0720fc30277022ecee74ffe0ee1e44495b3171d4b0b8e1487ff
+0c3bde455a1dc04c516359371344fdc918924055da8ad96217fcf5e0574fa785
 ```
 
 (Before the FORWARD seat of 2026-10-04 (FWD-1):
 `197fb6ee952b45e9249802bd060fe6e72e2a49a8f55661f998a478d6e8e66492`,
-120/120; the widening added A27-A29 and R95-R102 -- a machine says it
+120/120; the widening added A27-A29 and R95-R103 -- a machine says it
 is the way between its networks, never assumes it, and is refused it
 where there is nothing to be the way between (an edge machine, one
 network, none, a loopback beside one wire), and a machine that
 forwards cannot say EGRESS none for a link it joins; a ROUTE is the fleet's
-kind and is refused in a machine file by name (R102). Before the CONSOLE seat of 2026-09-28 (CON-1):
+kind and is refused in a machine file by name (R102); and one machine
+answers for a domain once (R103). Before the CONSOLE seat of 2026-09-28 (CON-1):
 `03b94b47d81cf13b119df0c8bd47e74840d402531451a568e3fe70f20a7a5741`,
 114/114; the widening added A25, A26 and R91-R94 -- a hosted machine's
 CONSOLE is a port its board HAS, because the boot line now follows it:
@@ -101,7 +102,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **131/131** — 29 accepts with structural expectations, 102 rejects with expected refusal fragments (120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **132/132** — 29 accepts with structural expectations, 103 rejects with expected refusal fragments (120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):

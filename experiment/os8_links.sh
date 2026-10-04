@@ -20,8 +20,11 @@
 #
 #   crossing   the declared till. A packet crosses, and comes back.
 #   stranger   the same till image with a hardware address nobody declared. It gets no lease, so
-#              it learns no router and no resolver, and reaches nothing: a box that now forwards
-#              admits no more devices than before.
+#              it learns no router and no resolver, and reaches nothing. That is the register's
+#              reach and no more: the box leases an address, a router and a resolver to the devices
+#              it declared and to nobody else. It does NOT stop a device that chose its own address
+#              and set the box as its gateway -- forwarding filters nothing, and being admitted to a
+#              lease is not being admitted to the way (a filter is rung 6).
 #   closed     the same set with a box that does NOT forward (its declaration, less one clause).
 #              It is silent about the far link -- the name does not exist for the till -- and the
 #              till reaches nothing: forwarding is what makes the way, and names follow the way,
@@ -119,7 +122,9 @@ make_closed() {
 
   # one round: the box and the core are machines that wait, and the till is a machine that asks
   # and ends. $1 = label, $2 = the box's image dir, $3 = the till's hardware address, $4 = the
-  # line that says the box is serving, $5 = the first port (two wires: this and the next)
+  # line that says the box is up -- its own verdict, which it gives once both its servers are
+  # serving (a box that forwards starts them after the kernel has said it is the way), $5 = the
+  # first port (two wires: this and the next)
   round() {
     local label=$1 obox=$2 mac=$3 boxline=$4 pa=$5 pb=$(( $5 + 1 ))
     rm -f "$obox/transcript_$label.txt" "$OT/transcript_$label.txt" "$OC/transcript_$label.txt"
@@ -154,11 +159,11 @@ make_closed() {
   }
 
   echo "=== round 1: the declared till ==="
-  round declared "$OF" "$TILL_MAC" "boot: forward -- between front and core" "$PORT"
+  round declared "$OF" "$TILL_MAC" "boot: judge --" "$PORT"
   echo "=== round 2: a device nobody declared ==="
-  round stranger "$OF" "$STRANGER_MAC" "boot: forward -- between front and core" "$((PORT+2))"
+  round stranger "$OF" "$STRANGER_MAC" "boot: judge --" "$((PORT+2))"
   echo "=== round 3: a box that does not forward ==="
-  round closed "$OX" "$TILL_MAC" "boot: names core -- core.cloud" "$((PORT+4))"
+  round closed "$OX" "$TILL_MAC" "boot: judge --" "$((PORT+4))"
 
   # Assemble one text from the boots. Each section is cut at ITS OWN first `boot: harb init` and
   # the firmware noise before it dropped -- on the first line only, or a later section's banner
