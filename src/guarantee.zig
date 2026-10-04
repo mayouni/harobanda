@@ -76,22 +76,41 @@ fn find(ls: []const []const u8, needle: []const u8) ?usize {
     return null;
 }
 
+/// A network only the machine itself can reach: its loopback. A promise to be
+/// FOUND, or about an address others LEARN, is not kept by one -- a sentence
+/// written for a wire and printed for an interface that goes nowhere is a lie
+/// in the second case (EGR-2). It was, until SRV-2 declared one: a machine whose
+/// only network was `lo` read "always reachable: KEPT".
+fn isLoopback(n: machine.Network) bool {
+    if (std.mem.eql(u8, n.interface, "lo")) return true;
+    return switch (n.address) {
+        .static => |s| (s.ip >> 24) == 127,
+        .dhcp => false,
+    };
+}
+
+/// the first network somebody else could reach the box by
+fn firstReachable(m: *const machine.Machine) ?machine.Network {
+    for (m.networks) |n| if (!isLoopback(n)) return n;
+    return null;
+}
+
 pub fn judge(arena: std.mem.Allocator, m: *const machine.Machine, text: []const u8, label: []const u8, out: *std.Io.Writer) !u8 {
     const ls = try lines(arena, text);
     const start = firstStart(ls);
     var f: std.ArrayList(Finding) = .{};
 
     // ---- 1. always reachable ------------------------------------------
-    if (m.networks.len == 0) {
+    if (firstReachable(m) == null) {
         try f.append(arena, .{
             .name = "always reachable",
             .promise = "whoever needs the box finds it, without being told where it went",
             .verdict = .not_claimed,
-            .claim = "the machine declares no NETWORK",
+            .claim = if (m.networks.len == 0) "the machine declares no NETWORK" else "the machine's only NETWORK is its own loopback, which nothing outside it can reach",
             .evidence = "",
         });
     } else {
-        const n = m.networks[0];
+        const n = firstReachable(m).?;
         const up = try std.fmt.allocPrint(arena, "network {s} -- {s} up ", .{ n.name, n.interface });
         if (find(ls, up)) |i| {
             if (i < start) {
@@ -127,7 +146,7 @@ pub fn judge(arena: std.mem.Allocator, m: *const machine.Machine, text: []const 
     {
         var static: ?machine.Network = null;
         for (m.networks) |n| {
-            if (n.address == .static and static == null) static = n;
+            if (n.address == .static and static == null and !isLoopback(n)) static = n;
         }
         if (static) |n| {
             const addr = n.address.static.text;
@@ -148,12 +167,20 @@ pub fn judge(arena: std.mem.Allocator, m: *const machine.Machine, text: []const 
                     .evidence = try std.fmt.allocPrint(arena, "no line carries {s}", .{addr}),
                 });
             }
-        } else if (m.networks.len > 0) {
+        } else if (firstReachable(m) != null) {
             try f.append(arena, .{
                 .name = "a stable name",
                 .promise = "the address the phones learned yesterday is the address today",
                 .verdict = .not_claimed,
                 .claim = "every declared NETWORK takes a lease (ADDRESS dhcp): the box is found at whatever address it was given",
+                .evidence = "",
+            });
+        } else if (m.networks.len > 0) {
+            try f.append(arena, .{
+                .name = "a stable name",
+                .promise = "the address the phones learned yesterday is the address today",
+                .verdict = .not_claimed,
+                .claim = "the machine's only NETWORK is its own loopback: there is no address anyone else learns",
                 .evidence = "",
             });
         } else {
@@ -279,4 +306,63 @@ pub fn judge(arena: std.mem.Allocator, m: *const machine.Machine, text: []const 
     }
     try out.print("\n{d} of 4 promised, {d} kept\n", .{ claimed, kept });
     return if (claimed == kept) 0 else 1;
+}
+
+// ---- judged beside the code ----------------------------------------------
+
+const loopback_only =
+    \\DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+    \\DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "x"
+    \\DEFINE NETWORK lo AS (INTERFACE "lo", ADDRESS "127.0.0.1/8") RATIONALE "x"
+    \\
+;
+
+const on_a_wire =
+    \\DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+    \\DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "x"
+    \\DEFINE NETWORK lan AS (INTERFACE "eth0", ADDRESS "192.168.10.1/24") RATIONALE "x"
+    \\
+;
+
+const both =
+    \\DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+    \\DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "x"
+    \\DEFINE NETWORK lo AS (INTERFACE "lo", ADDRESS "127.0.0.1/8") RATIONALE "x"
+    \\DEFINE NETWORK lan AS (INTERFACE "eth0", ADDRESS "192.168.10.1/24") RATIONALE "x"
+    \\
+;
+
+fn sheet(arena: std.mem.Allocator, src: []const u8, transcript: []const u8) ![]const u8 {
+    var refusal = machine.Refusal{};
+    const m = try machine.declare(arena, src, &refusal);
+    var aw = std.Io.Writer.Allocating.init(arena);
+    _ = try judge(arena, &m, transcript, "t", &aw.writer);
+    return aw.written();
+}
+
+test "a machine whose only network is its own loopback promises nothing to anyone outside it" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const said = "boot: network lo -- lo up 127.0.0.1/8\nboot: start s -- pid 2 -- /s\n";
+    const s = try sheet(arena, loopback_only, said);
+    try t.expect(std.mem.indexOf(u8, s, "the machine's only NETWORK is its own loopback, which nothing outside it can reach") != null);
+    try t.expect(std.mem.indexOf(u8, s, "there is no address anyone else learns") != null);
+    // and the line that said the interface was up is not offered as evidence of either promise
+    try t.expect(std.mem.indexOf(u8, s, "KEPT -- boot: network lo") == null);
+    try t.expect(std.mem.indexOf(u8, s, "0 of 4 promised, 0 kept") != null);
+}
+
+test "a machine on a wire still keeps both, and a loopback beside it is not the one judged" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const said = "boot: network lan -- eth0 up 192.168.10.1/24\nboot: start s -- pid 2 -- /s\n";
+    for ([_][]const u8{ on_a_wire, both }) |src| {
+        const s = try sheet(arena, src, said);
+        try t.expect(std.mem.indexOf(u8, s, "promised by: NETWORK lan on eth0\n    KEPT -- boot: network lan -- eth0 up 192.168.10.1/24") != null);
+        try t.expect(std.mem.indexOf(u8, s, "promised by: ADDRESS 192.168.10.1/24, declared, not leased\n    KEPT") != null);
+    }
 }
