@@ -5,10 +5,15 @@
 `fixtures.json` sha256:
 
 ```
-197fb6ee952b45e9249802bd060fe6e72e2a49a8f55661f998a478d6e8e66492
+700c70b514ce453e51ca9498aa27400d970fa6409032fac25399591e28a54f26
 ```
 
-(Before the CONSOLE seat of 2026-09-28 (CON-1):
+(Before the FORWARD seat of 2026-10-04 (FWD-1):
+`197fb6ee952b45e9249802bd060fe6e72e2a49a8f55661f998a478d6e8e66492`,
+120/120; the widening added A27, A28 and R95-R99 -- a machine says it
+is the way between its networks, never assumes it, and is refused it
+where there is nothing to be the way between (an edge machine, one
+network, none). Before the CONSOLE seat of 2026-09-28 (CON-1):
 `03b94b47d81cf13b119df0c8bd47e74840d402531451a568e3fe70f20a7a5741`,
 114/114; the widening added A25, A26 and R91-R94 -- a hosted machine's
 CONSOLE is a port its board HAS, because the boot line now follows it:
@@ -94,7 +99,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **120/120** — 26 accepts with structural expectations, 94 rejects with expected refusal fragments (39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **127/127** — 28 accepts with structural expectations, 99 rejects with expected refusal fragments (120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):

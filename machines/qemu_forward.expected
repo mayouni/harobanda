@@ -1,0 +1,18 @@
+boot: harb init -- machine qemu_forward (hosted / x86_64 / qemu_pc) -- pid 1
+boot: console /dev/ttyS0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: grant process (effectful)
+boot: grant network (effectful)
+boot: network front -- eth0 up 192.168.20.1/24
+boot: network core -- eth1 up 10.20.0.1/24
+boot: forward -- between front and core: a packet that arrives on one may leave by another, and nothing here filters it
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+boot: start witness -- pid N -- /harb reach 10.20.0.7
+reach 10.20.0.7 -- a route exists: this machine knows a way there
+boot: witness (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 13 lines)
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)
+reboot: Restarting system

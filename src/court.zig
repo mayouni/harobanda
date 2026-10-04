@@ -154,6 +154,9 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
         if (str(expect.get("slots"))) |w| if (m.slots == null or !std.mem.eql(u8, m.slots.?, w)) {
             why = try std.fmt.allocPrint(arena, "slots: expected {s} got {s}", .{ w, m.slots orelse "none" });
         };
+        if (expect.get("forward")) |fv| if (fv == .bool and fv.bool != m.forward) {
+            why = try std.fmt.allocPrint(arena, "forward: expected {} got {}", .{ fv.bool, m.forward });
+        };
         if (str(expect.get("console"))) |w| if (!std.mem.eql(u8, m.console, w)) {
             why = try std.fmt.allocPrint(arena, "console: expected {s} got {s}", .{ w, m.console });
         };

@@ -424,6 +424,40 @@ fn serveNames(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machi
     return true;
 }
 
+/// Make this machine the way between its networks (FWD-1): the kernel's own
+/// forwarding, switched on once every network is up and READ BACK before
+/// anything is said. A line that says where the machine is, is said only after
+/// asking (CON-1): a write the kernel ignored would otherwise announce a
+/// machine that drops every packet it is asked to carry.
+///
+/// Forwarding is one switch for the whole machine, so the line names every
+/// network it joined and not a pair; what that means for a reader is in the
+/// line itself (`expect.forwardLine`).
+fn forwardOn(m: *const machine.Machine, led: *Ledger) !void {
+    const path = "/proc/sys/net/ipv4/ip_forward";
+    writeKernelFile(path, "1") catch |e| {
+        try led.say("boot: forward -- the kernel would not be the way between networks: {s} ({s})\n", .{ @errorName(e), path });
+        return;
+    };
+    var held: [8]u8 = undefined;
+    const got = blk: {
+        const f = std.fs.cwd().openFile(path, .{}) catch |e| {
+            try led.say("boot: forward -- the switch cannot be read back: {s} ({s})\n", .{ @errorName(e), path });
+            return;
+        };
+        defer f.close();
+        break :blk f.read(&held) catch |e| {
+            try led.say("boot: forward -- the switch cannot be read back: {s} ({s})\n", .{ @errorName(e), path });
+            return;
+        };
+    };
+    if (got == 0 or held[0] != '1') {
+        try led.say("boot: forward -- the kernel holds {s}, not 1: this machine is not the way between networks\n", .{std.mem.trim(u8, held[0..got], " \n")});
+        return;
+    }
+    _ = try expect.forwardLine(led.w(), m);
+}
+
 fn cgroupPrepare(m: *const machine.Machine, out: *std.Io.Writer) BudgetState {
     var any = false;
     for (m.services) |s| {
@@ -790,6 +824,13 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             if (up and n.domain != null) {
                 if (try serveNames(gpa, m, n, &led)) serving = n.domain;
             }
+            try led.echo();
+        },
+        // the way between the networks, once every one of them is up (FWD-1)
+        .forward => if (opts.rehearse) {
+            try out.print("boot: forward -- rehearsed, not executed\n", .{});
+        } else {
+            try forwardOn(m, &led);
             try led.echo();
         },
         .service => {}, // started below, when what it comes AFTER is ready

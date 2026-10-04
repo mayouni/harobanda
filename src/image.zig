@@ -233,6 +233,21 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         try out.print("image: refused -- CONSOLE {s} is not a port BOARD {s} has\n", .{ m.console, @tagName(m.board) });
         return 2;
     };
+    // The emulator's NICs are numbered by the order it is given them: the Nth
+    // network is the Nth NIC, which the kernel calls eth(N-1). A machine of
+    // several networks that declares them in another order would be wired to
+    // the wrong ends of its links, so it is refused here, in words, and not
+    // found out as a boot that never sees its own link (FWD-1).
+    if (t.net_device != null and m.networks.len > 1) {
+        for (m.networks, 0..) |n, k| {
+            var want: [16]u8 = undefined;
+            const name = std.fmt.bufPrint(&want, "eth{d}", .{k}) catch unreachable;
+            if (!std.mem.eql(u8, n.interface, name)) {
+                try out.print("image: refused -- network {s} is declared number {d} and the emulator's NIC number {d} is {s}, not {s}: declare the networks in the order the kernel numbers them\n", .{ n.name, k + 1, k + 1, name, n.interface });
+                return 2;
+            }
+        }
+    }
 
     // image.env first: it derives from the declaration alone, so the build
     // can learn the target before anything is staged
@@ -397,6 +412,8 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             // the wire: the IP stack, and the emulator's NIC when the board
             // has none of its own (a real board's NIC is in platform_cfg)
             try w.print("CONFIG_NET=y\nCONFIG_INET=y\nCONFIG_NETDEVICES=y\n", .{});
+            // the way between networks is a switch under /proc/sys (FWD-1)
+            if (m.forward) try w.print("CONFIG_SYSCTL=y\nCONFIG_PROC_SYSCTL=y\n", .{});
             if (t.net_device != null) {
                 try w.print("CONFIG_VIRTIO_MENU=y\nCONFIG_VIRTIO=y\nCONFIG_VIRTIO_NET=y\n", .{});
                 for (t.net_cfg) |l| try w.print("{s}\n", .{l});
@@ -593,7 +610,13 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         }
         // QEMU's user-mode network: a built-in DHCP server (router 10.0.2.2,
         // lease 10.0.2.15, dns 10.0.2.3) -- the oracle for a dhcp NETWORK
-        if (m.networks.len > 0) if (t.net_device) |nd| try w.print(" -netdev user,id=n0 -device {s},netdev=n0", .{nd});
+        // One NIC per declared network, in declaration order: the kernel names
+        // the virtio NICs eth0, eth1, ... by the order QEMU is given them, so
+        // the Nth network is the Nth NIC and its INTERFACE must say so (the
+        // refusal above). A machine of one network keeps the one NIC it always had.
+        if (m.networks.len > 0) if (t.net_device) |nd| {
+            for (m.networks, 0..) |_, k| try w.print(" -netdev user,id=n{d} -device {s},netdev=n{d}", .{ k, nd, k });
+        };
         // rdinit=, not init=: the root IS the initramfs. With init= the
         // kernel first looks for /init, finds none, and goes to mount a
         // root DEVICE -- which panics as soon as CONFIG_BLOCK exists. The

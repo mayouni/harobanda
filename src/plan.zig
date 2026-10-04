@@ -16,6 +16,9 @@ pub const Step = union(enum) {
     capability: struct { name: machine.Capability, granted: bool },
     pin: struct { name: []const u8, gpio: u32, mode: machine.PinMode },
     network: *const machine.Network,
+    /// the machine is the way between its networks (FWD-1): after the last of
+    /// them is up and before any world runs
+    forward,
     service: *const machine.Service,
 };
 
@@ -71,6 +74,7 @@ pub fn derive(arena: std.mem.Allocator, m: *const Machine) !Plan {
     for (m.mounts) |mt| try steps.append(arena, .{ .mount = .{ .at = mt.at, .fs = mt.fs, .device = mt.device, .options = mt.options, .implicit = false } });
     for (m.capabilities) |c| try steps.append(arena, .{ .capability = .{ .name = c.name, .granted = c.granted } });
     for (m.networks) |*n| try steps.append(arena, .{ .network = n });
+    if (m.forward) try steps.append(arena, .forward);
     for (m.pins) |p| try steps.append(arena, .{ .pin = .{ .name = p.name, .gpio = p.gpio, .mode = p.mode } });
 
     const started = try arena.alloc(bool, m.services.len);
@@ -153,6 +157,14 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
                     try out.print("  peer {s}.{s} -- {s} for {s}\n", .{ pr.name, dom, pr.address, pr.hardware_text });
                 };
             } else try out.print("\n", .{});
+        },
+        .forward => {
+            try out.print("forward -- the way between ", .{});
+            for (m.networks, 0..) |n, i| {
+                const sep = if (i == 0) "" else if (i + 1 == m.networks.len) " and " else ", ";
+                try out.print("{s}{s}", .{ sep, n.name });
+            }
+            try out.print(": the kernel's own switch, on once every network is up\n", .{});
         },
         .service => |svc| {
             try out.print("start {s} --", .{svc.name});

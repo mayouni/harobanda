@@ -450,6 +450,15 @@ pub const Machine = struct {
     /// did, which is the world's to keep. Needs an IDENTITY to sign
     /// with and a persistent mount to survive on (JRN-1).
     journal: ?[]const u8,
+    /// whether this machine is the way from one of its networks to
+    /// another (FWD-1): the kernel's own forwarding, switched on once
+    /// every network is up. It forwards among ALL its networks and
+    /// filters nothing -- a per-network list would name a perimeter the
+    /// kernel does not keep, because forwarding is decided by the
+    /// interface a packet ARRIVES on and not by the one it leaves
+    /// from. Needs at least two networks. Which links such a machine may
+    /// join is a fact about a set, and a fleet declares it (ROUTE).
+    forward: bool = false,
     /// the boot partition that holds config.txt and the two slots, when
     /// the machine updates A/B (SLOTS "/dev/mmcblk0p1"); null: single boot
     slots: ?[]const u8,
@@ -683,7 +692,7 @@ pub const Decl = struct {
 
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
-        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL" },
+        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD" },
         .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
@@ -973,6 +982,17 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         if (path.len == 0 or path[0] != '/') return ctx.refuse(c.line, "JOURNAL is the absolute path of this machine's record, not '{s}'", .{path});
         journal = path;
     }
+    // FORWARD -- this machine is the way from one network to another
+    // (FWD-1). The count of networks is checked once they are known.
+    var forward = false;
+    var forward_line: usize = md.line;
+    if (find(md, "FORWARD")) |c| {
+        if (profile != .hosted) return ctx.refuse(c.line, "FORWARD is a hosted machine's declaration; a machine of PROFILE {s} is the way between networks, if it is one, in its own substrate", .{@tagName(profile)});
+        const word = try wantIdent(&ctx, c);
+        if (!std.mem.eql(u8, word, "yes")) return ctx.refuse(c.line, "FORWARD is the word yes -- a machine that is not the way between networks declares nothing -- and '{s}' is not it", .{word});
+        forward = true;
+        forward_line = c.line;
+    }
     var slots: ?[]const u8 = null;
     if (find(md, "SLOTS")) |c| {
         const dev = try wantString(&ctx, c);
@@ -1089,6 +1109,8 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         }
         try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .domain = domain, .rationale = d.rationale });
     };
+
+    if (forward and nets.items.len < 2) return ctx.refuse(forward_line, "FORWARD says this machine is the way from one network to another, and it declares {d}: a machine with fewer than two networks has nothing to forward between", .{nets.items.len});
 
     // peers: who else is on a link this machine serves. Read after the
     // networks, because every check a peer needs is a fact about its link.
@@ -1365,6 +1387,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .slots = slots,
         .identity = identity,
         .journal = journal,
+        .forward = forward,
         .rationale = md.rationale,
         .services = svc_slice,
         .capabilities = cap_slice,

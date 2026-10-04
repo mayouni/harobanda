@@ -84,6 +84,27 @@ pub fn healthLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// The standing FORWARD line (FWD-1): which networks this machine is the
+/// way between, and what it does not do. Worded ONCE here, like every
+/// judged line -- init prints it once the kernel has been asked, and
+/// derive() writes it. A machine that does not forward says nothing, and
+/// its transcript is what it always was.
+///
+/// "Nothing here filters it" is the half of the claim a reader would
+/// otherwise assume the other way: forwarding is decided by the interface
+/// a packet ARRIVES on, so the kernel keeps no perimeter between the
+/// networks a machine joins, and this machine does not keep one for it.
+pub fn forwardLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    if (!m.forward) return false;
+    try w.print("boot: forward -- between ", .{});
+    for (m.networks, 0..) |n, i| {
+        const sep = if (i == 0) "" else if (i + 1 == m.networks.len) " and " else ", ";
+        try w.print("{s}{s}", .{ sep, n.name });
+    }
+    try w.print(": a packet that arrives on one may leave by another, and nothing here filters it\n", .{});
+    return true;
+}
+
 /// This device's own name, said once. The FINGERPRINT is the one thing
 /// a declaration cannot know -- it is made on the device, from the
 /// device's own randomness, and a machine that could derive it from its
@@ -321,6 +342,8 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
             // nothing here, and that difference is the emulator's lack
             if (!lens.network_absent) _ = try namesLines(w, m, n, "boot: ");
         },
+        // the way between the networks, once every one of them is up
+        .forward => _ = try forwardLine(w, m),
         .service => {},
     };
     // the slot's own state (a trial, or steady) is the CARD's to say, not
@@ -652,4 +675,48 @@ test "a dhcp lease matches by prefix; pid 1 is never normalised away" {
     try std.testing.expect(same("boot: harb init -- pid 1", "boot: harb init -- pid 1"));
     var buf: [64]u8 = undefined;
     try std.testing.expectEqualStrings("a (pid N) and pid 1 and pid N.", normalisePids("a (pid 12) and pid 1 and pid 100.", &buf));
+}
+
+const two_links =
+    \\DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE "x"
+    \\DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "x"
+    \\DEFINE NETWORK front AS (INTERFACE "eth0", ADDRESS "192.168.20.1/24") RATIONALE "x"
+    \\DEFINE NETWORK core AS (INTERFACE "eth1", ADDRESS "10.20.0.1/24") RATIONALE "x"
+    \\
+;
+
+test "a machine that is the way between networks names them all, once, after the last is up; one that is not says nothing" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    const forwards = try arena.create(machine.Machine);
+    var refusal = machine.Refusal{};
+    forwards.* = try machine.declare(arena, two_links, &refusal);
+    const text = try derive(arena, try plan.derive(arena, forwards), .{});
+    const n_front = std.mem.indexOf(u8, text, "boot: network front -- eth0 up 192.168.20.1/24\n").?;
+    const n_core = std.mem.indexOf(u8, text, "boot: network core -- eth1 up 10.20.0.1/24\n").?;
+    const fwd = std.mem.indexOf(u8, text, "boot: forward -- between front and core: a packet that arrives on one may leave by another, and nothing here filters it\n").?;
+    try std.testing.expect(n_front < n_core and n_core < fwd);
+    // once, however many networks
+    try std.testing.expectEqual(std.mem.indexOf(u8, text, "boot: forward --").?, std.mem.lastIndexOf(u8, text, "boot: forward --").?);
+
+    // three networks are joined with commas and an "and", the way every
+    // other list in a boot line is
+    const src3 = try std.fmt.allocPrint(arena, "{s}DEFINE NETWORK mgmt AS (INTERFACE \"eth2\", ADDRESS \"172.16.0.1/24\") RATIONALE \"x\"\n", .{two_links});
+    const m3 = try arena.create(machine.Machine);
+    m3.* = try machine.declare(arena, src3, &refusal);
+    var aw = std.Io.Writer.Allocating.init(arena);
+    try std.testing.expect(try forwardLine(&aw.writer, m3));
+    try std.testing.expect(std.mem.startsWith(u8, aw.written(), "boot: forward -- between front, core and mgmt: "));
+
+    // two networks and no FORWARD: nothing is said, and nothing is claimed
+    const quiet_src = try std.mem.replaceOwned(u8, arena, two_links, ", FORWARD yes", "");
+    const quiet = try arena.create(machine.Machine);
+    quiet.* = try machine.declare(arena, quiet_src, &refusal);
+    var aw2 = std.Io.Writer.Allocating.init(arena);
+    try std.testing.expect(!try forwardLine(&aw2.writer, quiet));
+    try std.testing.expectEqual(@as(usize, 0), aw2.written().len);
+    const qtext = try derive(arena, try plan.derive(arena, quiet), .{});
+    try std.testing.expect(std.mem.indexOf(u8, qtext, "boot: forward") == null);
 }

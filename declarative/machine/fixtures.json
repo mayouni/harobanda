@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27, A28, R95-R99; a machine says it forwards, never assumes it, and one network has nothing to forward between.",
   "accepts": [
     {
       "id": "A1",
@@ -468,6 +468,46 @@
           "users": 0
         },
         "order": []
+      }
+    },
+    {
+      "id": "A27",
+      "name": "a machine that is the way between two networks says so, and says it once",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "gw",
+        "forward": true,
+        "counts": {
+          "services": 0,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 2,
+          "users": 0
+        },
+        "granted": [
+          "network"
+        ]
+      }
+    },
+    {
+      "id": "A28",
+      "name": "two networks and no FORWARD: a machine on two links is not the way between them until it says so",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "gw",
+        "forward": false,
+        "counts": {
+          "services": 0,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 2,
+          "users": 0
+        },
+        "granted": [
+          "network"
+        ]
       }
     }
   ],
@@ -1035,6 +1075,36 @@
       "name": "the kernel's name for a port is not its device: CONSOLE names the device PID 1 speaks on",
       "source": "DEFINE MACHINE m AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux,\n  CONSOLE \"ttyS0\"\n) RATIONALE \"x\"\n",
       "refusal": "is not a console of BOARD qemu_pc"
+    },
+    {
+      "id": "R95",
+      "name": "forwarding between networks is a hosted machine's declaration: an edge machine is the way between nothing",
+      "source": "DEFINE MACHINE s AS (PROFILE edge, ARCH thumbv7em, KERNEL none, FORWARD yes) RATIONALE \"x\"\n",
+      "refusal": "FORWARD is a hosted machine's declaration"
+    },
+    {
+      "id": "R96",
+      "name": "a machine that is not the way between networks declares nothing, never `FORWARD no`",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD no) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "FORWARD is the word yes"
+    },
+    {
+      "id": "R97",
+      "name": "FORWARD takes a word, not a string",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD \"yes\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "Clause FORWARD takes a word"
+    },
+    {
+      "id": "R98",
+      "name": "one network has nothing to forward between",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\") RATIONALE \"x\"\n",
+      "refusal": "and it declares 1: a machine with fewer than two networks has nothing to forward between"
+    },
+    {
+      "id": "R99",
+      "name": "no network at all has nothing to forward between either",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\n",
+      "refusal": "and it declares 0: a machine with fewer than two networks has nothing to forward between"
     }
   ]
 }

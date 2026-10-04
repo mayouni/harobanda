@@ -1,0 +1,53 @@
+-- qemu_forward.machine -- the smallest machine that is the way between
+-- two networks (FWD-1, the first act of rung 2 of the cloud ladder,
+-- doc/CLOUD.md).
+--
+-- It declares two networks and FORWARD, and the boot says three things
+-- about it: that both interfaces came up (the emulator was given two
+-- NICs, one per declared network), that the kernel was asked to forward
+-- and answered yes (the switch is READ BACK before the line is said), and
+-- that a destination on the second network has a route (the witness).
+--
+-- What it does NOT prove is that a packet crosses. Nothing is on the other
+-- side of either NIC here: the emulator's user-mode networks are a network
+-- of one each. A packet crossing is the consumer's proof, and it is
+-- experiment/os8_links.sh's: three machines on two wires, a till asking
+-- for a name on the far link and reaching the thing it names through the
+-- box.
+--
+-- FORWARD is one switch for the whole machine, so this one forwards among
+-- both networks and filters nothing. That is the sentence the boot line
+-- carries, because it is the half of the claim a reader would otherwise
+-- assume the other way.
+
+DEFINE MACHINE qemu_forward AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  FORWARD yes
+) RATIONALE "A machine on two links that says it is the way between them: the smallest cloud has a front link and a core link, and something on both"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The witness is a process"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "A machine that is the way between two networks speaks on both"
+
+DEFINE NETWORK front AS (
+  INTERFACE "eth0",
+  ADDRESS "192.168.20.1/24"
+) RATIONALE "The link the clients are on: the first address on it, as the box that serves a link holds it"
+
+DEFINE NETWORK core AS (
+  INTERFACE "eth1",
+  ADDRESS "10.20.0.1/24"
+) RATIONALE "The link the servers are on, behind the box: a second NIC, a second prefix, and nothing on it that the front link can reach unless this machine is the way"
+
+DEFINE SERVICE witness AS (
+  RUN ["/harb", "reach", "10.20.0.7"],
+  RESTART never,
+  NEEDS [process, network]
+) RATIONALE "An address on the core link: the second interface is up if the kernel knows a way to it, and a route lookup sends nothing"
