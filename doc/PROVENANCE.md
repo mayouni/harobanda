@@ -72,6 +72,39 @@ ruling can be one-meaning-per-word:
 - **Device** — the L2 language (ex-MicroRing's seam); PIN here is its
   first seat, and the two must converge or one must yield.
 
+## The rulings of 2026-10-04 (the author's own words)
+
+Asked how the declared machine could be composed into an industry-grade
+cloud for solutions built on the Softanza platform, this desk answered with
+a ladder (`doc/CLOUD.md`) and two open points. The author ruled on both.
+
+**STZ-OS-RULING-14 — the Enterprise page's cloud sentence stays, and the
+ladder makes it true.** `site/enterprise.html` says *"the same declared
+machine can run the cloud too. Enterprise-cloud, made easy."* Today no
+server is a declared service, a fleet has one link, no machine forwards,
+there is no front and no clock; the page's own opening covers it as a
+direction. The author's word: *"this ladder makes it true."* So the
+sentence is not softened; `doc/CLOUD.md` is the plan that pays for it, in
+the order its dependencies allow, and the doc carries a status per rung so
+that the sentence and the code can be read against each other at any
+time. The first rung is the Commons as the first declared server world.
+
+**STZ-OS-RULING-15 — two names for two things: Harobanda Cloud, Softanza
+Cloud.** *Harobanda Cloud* is what this repository composes: a fleet that
+spans several links and places solutions' server packs on its members,
+judged by the court, with no control-plane service. *Softanza Cloud* is
+that cloud with Haro, Softanza, Aïcha and the customer's own solution
+stack enabled: the whole stack, from the operating system to the
+application, ready for a solution maker to deploy a solution on as an
+industry-grade cloud platform. The author's words: *"like we helped
+solution makers to get each component ready, from OS to application, we
+offer him the full stack ready to deploy his solution."* The first name is
+this repository's; the second is an offer at the estate's altitude, which
+belongs in the Vision Corpus's product chapter (`03-PRODUCTS.md`), a file
+this desk never edits: it is recorded here from his word and routed by a
+log line. Both names are provisional, like every name here (ruling 01),
+and they are recorded so that they never coexist silently with a third.
+
 ## The ruling of 2026-09-30 (taken on the author's behalf, at his word)
 
 The author asked whether committing an internal file with paths on his

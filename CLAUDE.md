@@ -321,7 +321,11 @@ strategic claim**, `doc/GROUND.md` for what the machine is FOR (the
 solutions it is the floor of, and the tools that meet at that floor),
 and `doc/DIVIDEND.md` for what owning the floor gives each layer above
 it (the servers, the runtime, the intelligence modules, the pages, the
-flagships) and what each owes it, didactic, one example per layer; the
+flagships) and what each owes it, didactic, one example per layer, and
+`doc/CLOUD.md` for how many machines compose into a cloud that serves
+one solution (a fleet spanning links, placing packs; the six rungs in
+dependency order, none built; the two names, Harobanda Cloud and
+Softanza Cloud, rulings 14-15 of 2026-10-04); the
 estate-wide reflection that places the floor in the author's 2020
 diagram is `softanza/vision/08-NORTH-STAR.md` (ratified 2026-09-27), and the story of
 the two days that built the floor and read the diagram again is

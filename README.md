@@ -410,7 +410,10 @@ same for all three.
 
 Design documents live in `doc/`: `VISION.md` for what this is for,
 `ARCHITECTURE.md` for how it is put together, `GROUND.md` for the solutions it
-is the floor of, and `PROVENANCE.md` for the rulings that shaped it.
+is the floor of, `DIVIDEND.md` for what owning the floor gives each layer
+above it, `CLOUD.md` for how many machines compose into a cloud that serves
+one solution (none of its six rungs is built), and `PROVENANCE.md` for the
+rulings that shaped it.
 
 ## For contributors
 
