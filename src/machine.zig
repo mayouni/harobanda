@@ -402,6 +402,30 @@ pub fn isDomain(s: []const u8) bool {
     return true;
 }
 
+/// A network only the machine itself can reach: its loopback, the interface `lo`
+/// or an address in 127/8. It is a network the machine DECLARES, because the
+/// floor builds only what a declaration asks for (BDG-1) and a readiness probe
+/// that asks 127.0.0.1 needs it up -- but it is not a way to anywhere: it is no
+/// NIC, no link another machine can be on, and no side of a forwarder. ONE
+/// reading, asked by the judges that count networks (the guarantee sheet, the
+/// image's NICs, FORWARD), so no two of them disagree about what a wire is.
+pub fn isLoopback(n: Network) bool {
+    if (std.mem.eql(u8, n.interface, "lo")) return true;
+    return switch (n.address) {
+        .static => |s| (s.ip >> 24) == 127,
+        .dhcp => false,
+    };
+}
+
+/// How many of these networks are links somebody else can be on
+pub fn countLinks(nets: []const Network) usize {
+    var n: usize = 0;
+    for (nets) |x| if (!isLoopback(x)) {
+        n += 1;
+    };
+    return n;
+}
+
 pub fn parseIpv4(s: []const u8) ?u32 {
     var ip: u32 = 0;
     var it = std.mem.splitScalar(u8, s, '.');
@@ -664,7 +688,7 @@ pub const Clause = struct {
     value: Value,
 };
 
-pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER, RETIREMENT };
+pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER, RETIREMENT, ROUTE };
 
 /// Which file a kind belongs in -- one language, two files (FLT-1).
 ///
@@ -678,7 +702,7 @@ pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER,
 pub fn belongsToFleet(kind: Kind) bool {
     return switch (kind) {
         .MACHINE, .SERVICE, .CAPABILITY, .MOUNT, .PIN, .NETWORK, .USER, .PEER => false,
-        .FLEET, .MEMBER, .RETIREMENT => true,
+        .FLEET, .MEMBER, .RETIREMENT, .ROUTE => true,
     };
 }
 
@@ -700,9 +724,10 @@ fn allowedClauses(kind: Kind) []const []const u8 {
         .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS", "EGRESS", "DOMAIN" },
         .USER => &.{ "UID", "GID" },
         .PEER => &.{ "NETWORK", "HARDWARE", "ADDRESS" },
-        .FLEET => &.{"LINK"},
+        .FLEET => &.{ "LINK", "LINKS" },
         .MEMBER => &.{ "DECLARATION", "KEY", "HARDWARE" },
         .RETIREMENT => &.{ "MEMBER", "KEY", "THROUGH" },
+        .ROUTE => &.{ "BETWEEN", "THROUGH" },
     };
 }
 
@@ -831,7 +856,7 @@ fn wantNumber(ctx: *Ctx, c: Clause) Error!u64 {
         else => ctx.refuse(c.line, "Clause {s} takes a number", .{c.name}),
     };
 }
-fn wantNames(ctx: *Ctx, c: Clause) Error![]const []const u8 {
+pub fn wantNames(ctx: *Ctx, c: Clause) Error![]const []const u8 {
     return switch (c.value) {
         .name_list => |l| l,
         .string_list => |l| if (l.len == 0) l else ctx.refuse(c.line, "Clause {s} takes a list of words", .{c.name}),
@@ -1110,7 +1135,12 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .domain = domain, .rationale = d.rationale });
     };
 
-    if (forward and nets.items.len < 2) return ctx.refuse(forward_line, "FORWARD says this machine is the way from one network to another, and it declares {d}: a machine with fewer than two networks has nothing to forward between", .{nets.items.len});
+    // a loopback is a network the machine declares and not a way to anywhere:
+    // it is not counted, and not one side of a forwarder
+    if (forward and countLinks(nets.items) < 2) return ctx.refuse(forward_line, "FORWARD says this machine is the way from one network to another, and it declares {d}: a machine with fewer than two networks has nothing to forward between (a loopback is not a way to anywhere)", .{countLinks(nets.items)});
+    if (forward) for (nets.items) |n| if (n.egress == .none and !isLoopback(n)) {
+        return ctx.refuse(n.line, "EGRESS none says {s} knows no way off its own link, and FORWARD makes this machine the way between its networks: a machine that forwards is a way off every link it joins, so it cannot say there is none", .{n.name});
+    };
 
     // peers: who else is on a link this machine serves. Read after the
     // networks, because every check a peer needs is a fact about its link.

@@ -84,7 +84,7 @@ file says where it runs, and the court says whether the two agree.
 | a cloud needs | today | missing |
 |---|---|---|
 | a server world | worlds serve and signal (SRV-1) but stand in for the real ones | the Commons, RingServ or stzAppServer as a declared `SERVICE` reading `/etc/machine` |
-| machines reaching each other | one `LINK` per fleet; a box serves its link and forwards nothing | `FORWARD` on a machine, a route between links in the fleet, names across links |
+| machines reaching each other | **built (FWD-1):** `FORWARD` on a machine, `LINKS` and `ROUTE` in the fleet, names across the links a box is the way between; two links, one forwarder, plain HTTP | a chain of forwarders (transit), a way that is one-way (needs the packet filter of rung 6), a forwarder's own hardware addresses |
 | a front | TLS is ruled to a proxy in front; no clause | a front pack: the names it fronts, its key on a declared mount |
 | time | the journal carries no timestamp; ruling 07: attested, never assumed | a `TIME` clause naming a declared authority; the journal carrying attested time |
 | rollout | an A/B trial per box, self-judged | waves over the set, and the set's own commit |
@@ -135,8 +135,27 @@ speaks for its links and is silent about the rest of the world.
 front box, a core box, a till on the front link asking for the
 Commons by name and reaching it through the box; and a fourth machine
 asking from a link it was never declared on, getting nothing. *Buys:*
-a front link and a back link, the smallest cloud. *Status:* not
-built; `src/names.zig` says so by name.
+a front link and a back link, the smallest cloud. *Status:* BUILT
+(FWD-1, 2026-10-04), with one limit named below. `FORWARD yes` on a
+machine (the kernel's own switch, read back before the boot says so);
+fleet v0.2, `LINKS` and `ROUTE` (58 of 58, 22 of them new); the box's
+lease names it the router and its resolver answers for the full names on
+the links it is the way to; and `experiment/os8_links.sh` boots the
+smallest cloud on two wires, pinned at 146 lines and identical on two
+runs. **A till on the front link asks for `commons.core.cloud`, is told
+`10.20.0.2`, connects to it through the box, and RingServ on the core link
+answers `/health` with 200.** The two negatives are the same till: a
+device nobody declared gets no lease and so no router and no resolver (a
+box that now forwards admits no more devices than before), and a box
+without its one clause is silent about the far link. What is NOT shown,
+and why: a name that resolves while the way is closed cannot be declared,
+because the names follow the way and not the other way round, so the
+closed round shows the silence and no round shows a packet dropped by a
+box that forwards nothing; the route is a way both ways, since no packet
+filter exists to make it one-way (rung 6); a link is joined through ONE
+machine, so a chain of two forwarders is not declared; and the server
+is reached over plain HTTP between members of one cloud, behind a TLS
+front that is rung 3 and is not built.
 
 **Rung 3 -- time, then the front.** `TIME` first, because a
 certificate is a dated claim and the floor has no date: a declared
@@ -252,13 +271,15 @@ ladder makes the same act.
 
 ## 8. Honest boundaries
 
-- Rung 1 is built for one server on an emulated machine (PLC-1 and
-  SRV-2, 2026-10-04: the pack file, `harb place`, the pack court at 30 of
-  30; RingServ placed, booted and pinned), and for no customer's: the
+- Rungs 1 and 2 are built, for one server and one forwarder on emulated
+  machines (PLC-1 and SRV-2, then FWD-1, 2026-10-04: the pack file,
+  `harb place`, RingServ placed and booted; `FORWARD`, fleet v0.2 and a
+  till reaching it across two links), and for no customer's: the
   Commons is not placed, and RingServ is the stand-in. No other rung is
-  built. Today a fleet has one link, no machine forwards, there is no
-  front and no clock, and a placed server can be asked only from inside
-  its own machine.
+  built. Today there is no front and no clock, a placed server is reached
+  over plain HTTP from the links of its own cloud and from nowhere else,
+  a route is a way both ways, and the packet filter that would say
+  otherwise does not exist.
 - `site/enterprise.html` says *"the same declared machine can run the
   cloud too. Enterprise-cloud, made easy."* By the author's word
   (ruling 14) the sentence stays and this ladder makes it true; until
@@ -302,3 +323,12 @@ itself is that it is serving, so a program says it (`harb ready`); the
 read, the adapter, the pack, the machine and the pinned boot are in
 `experiment/PROTOCOL.md` under SRV-2. The Commons, when its desk hands it
 over, is placed the same way, and the pack changes.
+
+*And the second rung, taken the same day, after it (FWD-1).* It needed
+a grammar change, as this section said rung 2 would: a clause on the
+machine, a kind in the fleet, and a bound on what a boot may call a
+link (a loopback is declared and is not one). It is the first rung whose
+judge is a set of machines and not one: `experiment/os8_links.sh`, three
+machines on two wires, where a till reaches the server it names through
+a box that is the way between its link and the server's. The pack of
+rung 1 is unchanged and is placed on the core machine as it was.

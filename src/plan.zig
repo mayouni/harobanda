@@ -160,9 +160,13 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
         },
         .forward => {
             try out.print("forward -- the way between ", .{});
-            for (m.networks, 0..) |n, i| {
-                const sep = if (i == 0) "" else if (i + 1 == m.networks.len) " and " else ", ";
+            const links = machine.countLinks(m.networks);
+            var i: usize = 0;
+            for (m.networks) |n| {
+                if (machine.isLoopback(n)) continue;
+                const sep = if (i == 0) "" else if (i + 1 == links) " and " else ", ";
                 try out.print("{s}{s}", .{ sep, n.name });
+                i += 1;
             }
             try out.print(": the kernel's own switch, on once every network is up\n", .{});
         },

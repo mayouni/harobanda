@@ -1,3 +1,194 @@
+# FWD-1 — a machine says it is the way between links, and a fleet says it was meant
+
+Rung 2 of the cloud ladder (`doc/CLOUD.md`), taken on the author's "after
+that do rung 2" (2026-10-04), after SRV-2 and in the same day. It is the
+first rung whose judge is a set of machines and not one: a till on one
+link reaches a server on another, through a box that is the way between
+them, and a fleet file says the box was meant to be.
+
+## What exists now
+
+- **`FORWARD yes`** on a hosted machine with at least two links
+  (`src/machine.zig`; machine fixtures A27-A29 and R95-R102, **131/131**):
+  PID 1 switches the kernel's own forwarding on once every network is up
+  and says so only after READING THE SWITCH BACK (CON-1's rule). It is a
+  plan step, so `harb plan`, the derived expectation and PID 1 read one
+  list. `machines/qemu_forward.machine`: two networks, FORWARD, one
+  witness, pinned at 18 lines.
+- **The image gives one emulated NIC per LINK**, in declaration order, and
+  refuses in words a machine whose interfaces are not numbered the way the
+  kernel numbers them (eth0, eth1, ...). A loopback is declared and is no NIC.
+- **The server of names and addresses** (`src/names.zig`): a box that
+  forwards offers itself as the ROUTER (option 3) to everyone it serves, and
+  answers for the FULL names on the other links it serves. A bare word is a
+  name on THIS link: the same word on the far link is another device.
+- **`harb get <host> <port> [path]`** (`src/get.zig`): a world asks a server
+  one question and says what came back. `names.lookup` is the one reading of
+  `/etc/resolv.conf`, shared by `ask` and `get`, so the two cannot disagree
+  about where a name goes (`ask`'s output is byte-identical: the names pair
+  matched its 68-line pin unchanged).
+- **Fleet v0.2** (`src/fleet.zig`): `LINKS` where `LINK` named one wire, and
+  the `ROUTE` kind. **58/58**, 22 of them new (FA7-FA10, FR27-FR48).
+- **The smallest cloud**: `machines/cloud_front.machine` (the box),
+  `cloud_till.machine`, `cloud_core.machine` (RingServ placed on it by the
+  pack of SRV-2, with an application that listens where another machine can
+  ask), `cloud_links.fleet`, and `experiment/os8_links.sh`, which boots the
+  three on two wires. Pinned at **146 lines**, identical on two runs and
+  then judged against its pin.
+
+## The result, in the transcript's own words
+
+```
+till: ask commons.core.cloud -- 10.20.0.2 (from 192.168.20.1)
+till: get http://commons.core.cloud:8210/health -- 200
+    {"code":0,"message":"OK","data":{"up":true}}
+```
+
+A device that was told nothing but its own address learned the router, the
+resolver and the name of its link from the box that serves it, asked for a
+server on ANOTHER link by its full name, and connected to it through the box.
+RingServ, on the core link, answered. The same till then asks for a bare
+`commons` and for `www.example.com` and is told, correctly, that neither
+exists on this network.
+
+## The decisions that mattered
+
+**FORWARD is one switch for the whole machine, not a list.** The kernel
+decides whether to forward by the interface a packet ARRIVES on, and not by
+the one it leaves from, so `FORWARD [front, core]` on a machine with a third
+network would name a perimeter nothing keeps: a packet from front could still
+leave by the third. A per-network clause would be a claim the machine cannot
+make. So the clause is `yes`, the machine forwards among ALL its networks,
+the boot line says "between front and core" and says "nothing here filters
+it", and the fleet (below) is where "which links, through whom" is said.
+
+**A forwarder is a door, and the fleet must have said it was meant.** A
+machine that says FORWARD joins every one of its links whether or not anybody
+meant it to. FR39: a forwarder no route goes through. FR40: a forwarder some
+pair of whose links no route through it joins. This is the check no machine
+can fail: the box is right to forward, the till is right to ask, and the set
+is wrong if nobody agreed.
+
+**A route is a way both ways, and everyone on a joined link takes it.** No
+packet filter exists to make a route one-way, and an answer needs a way back
+as much as a question needs a way there. So a member of a joined link has a
+gateway that IS the way (FR42-FR44), or is told the way by a lease from the
+one machine that can offer it, the link's own server (FR45), and does not say
+there is none (FR46), and its perimeter reaches the other links (FR47). A till
+whose route is right and a server with no way back are each faultless alone.
+A destination that is a declared link no route joins is a route to nowhere
+(FR48). One wire has one prefix (FR41).
+
+**Names follow the way, never the other way round.** The server answers for
+the far link's names only when its own machine forwards. The alternative, a
+fleet-level "answer these names", would have let "a name that resolves and a
+way that is closed" be declared; as built, it cannot. The cost is honest: the
+closed round of the boot shows the box's SILENCE about the far link, and no
+round shows a packet dropped by a box that forwards nothing.
+
+**The router option, not static gateways.** The lease already carries a router
+(`netcfg.zig` has always read it), and a client's own EGRESS is its perimeter:
+the till writes one route, to the core's prefix, through the router it was
+told, and no default route. A box that forwards offers itself as the router to
+everyone it serves, and the box that does not still sends none (a box that
+named itself the way out without being one would lie to every device on the
+link).
+
+**A loopback is not a link.** SRV-2 made the machine declare its loopback so a
+readiness probe could ask 127.0.0.1; this rung found four judges that count
+networks and needed the same answer: FORWARD's "two networks", the image's NICs
+(a loopback is no NIC), the guarantee sheet (SRV-2's own fix) and the names
+server's other links. `machine.isLoopback` and `countLinks` are ONE reading,
+and the sheet's private copy was deleted. R100 holds it: one wire and a
+loopback is one link.
+
+**`EGRESS none` is refused on a machine that forwards (R101).** The line it
+prints, "the machine knows no way off its own link", is EGR-2's lie: a
+forwarder is a way off every link it joins.
+
+## Probed, and what the boots found
+
+- **Three rounds**, the second and third are what make the first mean
+  something: the declared till crosses; the same till with a hardware address
+  nobody declared gets no lease and so no router and no resolver ("a box that
+  now forwards admits no more devices than before"); the same set with a box
+  less its one clause is silent about the far link and the till reaches nothing.
+- **A margin, not a fixture (BDG-1, again).** The first run of the script
+  started the till as soon as the core said `ready`; the till finished within
+  the core's ten-second health window, the script killed the core, and the
+  core's own verdict ("the boot matches its expectation") never reached the
+  transcript. It would have been present on a slower emulator. The script now
+  waits for the core's own judge line, which is what "serving, and proven so"
+  is.
+- **The closed round found a bad message.** The till declares a route through a
+  router the lease never named, and the kernel refused it as "no such device",
+  which says nothing of the cause. `netcfg` now says "no way written: this
+  network has no gateway, and a route to another network goes through one".
+  Nothing pinned before carried the old words.
+- **The fleet court convicted its own author three times.** The first run of
+  the widening was 40/58: a fixture machine named `core` beside a network named
+  `core` is one namespace twice, and eighteen cases refused for a reason that
+  was not theirs. Renamed, 56/58: the two left (FR44, FR45) each tripped an
+  EARLIER rule that was true (a forwarder on a link is itself a member that
+  must take the other route; a server of a joined link is itself a member that
+  must declare its gateway). The cases were rewritten so the refusal is the
+  rule they are named for. A court that refuses for the wrong reason is not a
+  court of that rule.
+- **The tour convicted a scoreboard.** Lesson 3 quotes `zig build court`'s
+  counts, and `learn --check` refused them at every widening (127, 130, then 131
+  and 58). `site/threats.html` carried the machine court's count too.
+- **FA7 is the real set, verbatim**: `machines/cloud_links.fleet` and the three
+  machine files it names, taken mechanically by the fixture generator, so the
+  court judges what the boot boots.
+- **The repository's own warning about inline programs was ignored once more**:
+  a Zig test appended through a heredoc lost one backslash of every multi-line
+  string, and the compiler caught it. The edit tool and a scratchpad file are
+  the fix this file already names.
+- **A regression run that read a stale log.** The first batch of regression
+  boots passed `os2_image.sh qemu_forward` as ONE argument, bash answered 127 in
+  two seconds, and the loop printed the previous run's `JUDGED: ... matches`
+  line from a log nothing had rewritten. The exit code and the seconds sat
+  beside it and gave it away. The batch was re-run with the arguments split and
+  the logs removed first; the three entries without arguments had run for real.
+
+## Named, not closed
+
+- **Transit.** A route joins links on ONE machine. The chain front, box, core,
+  box, far is not declared, and a link with two ways on it is refused (FR44):
+  a member has one gateway.
+- **A way that is one-way**, and a forwarder that filters. Both need the packet
+  filter of rung 6; this rung's boot line says "nothing here filters it" because
+  it is true.
+- **A forwarder's own hardware addresses.** A member declares one `HARDWARE`
+  and a box on two links has two NICs; the emulator gives them its defaults and
+  no declaration can yet say them.
+- **The server is reached over plain HTTP.** RingServ refuses to bind an address
+  a network can reach without `:behindproxy`, which is an acknowledgement and
+  checks nothing (`machines/ringserv/app_core.ring` says so). Until rung 3's
+  front exists it is the application's word, and what is TRUE is the extent the
+  boot shows: reachable from the front link through the box, and from nowhere
+  else.
+- **A stranger cannot boot it**: the server is built by a PowerShell script from
+  RingServ's source, so `stranger_walk.sh` does not walk this boot, and the tour
+  teaches neither `FORWARD`, `ROUTE` nor `get` (their words are not in
+  `learn.words`). A stranger can run `harb fleet machines/cloud_links.fleet`,
+  `harb plan` and `harb check`, which need nothing.
+- **`machine.stzu` lags further.** The language's declaration in stz's own
+  format is already 13 clauses behind (HF-31, ringpp's finding); `FORWARD`,
+  `LINKS` and `ROUTE` widen it, and it is that desk's to bring up.
+- **Lease renewal, IPv6, a DNS referral, a pool**: still not built, still by
+  design or by seam as NAM-1 named them.
+
+## The law this pays for
+
+**A set of machines is judged by what its members do to each other**, and the
+checks that matter are the ones a single machine cannot fail: the door nobody
+declared, the way there with no way back, the route to nowhere. And **a claim
+about reach is the sentence the boot prints, so it says what the kernel keeps
+and nothing more**: "between front and core", "and nothing here filters it".
+
+---
+
 # SRV-2 — a real server is a world on the floor: RingServ, placed and booted
 
 Rung 1 of the cloud ladder (`doc/CLOUD.md`) has two halves. PLC-1 built

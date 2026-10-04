@@ -27,11 +27,13 @@
 //! ## What it does not claim
 //!
 //! The box answers for its own link. It offers itself as the resolver
-//! (option 6) and gives the domain (option 15), and it does **not** send
-//! a router option: this machine does not forward, and a box that named
+//! (option 6) and gives the domain (option 15), and it sends a router
+//! option **only if it forwards** (`FORWARD`, FWD-1): a box that named
 //! itself the way out without being one would be lying to every device
-//! on the network. Forwarding is an act, and an act is declared; there
-//! is no clause for it yet and so there is no forwarding.
+//! on the network. Forwarding is an act, and an act is declared; a
+//! machine that declares it is the way to the other links it serves, is
+//! offered as such, and answers for the full names on them -- and for
+//! nothing else, so it stays silent about the rest of the world.
 //!
 //! A name that is not declared is answered `NXDOMAIN` -- a true
 //! statement about this network -- never forwarded upstream. The box
@@ -46,6 +48,7 @@ const linux = std.os.linux;
 
 const dhcp_magic = [4]u8{ 99, 130, 83, 99 };
 const OPT_MASK = 1;
+const OPT_ROUTER = 3;
 const OPT_DNS = 6;
 const OPT_HOSTNAME = 12;
 const OPT_DOMAIN = 15;
@@ -110,6 +113,18 @@ pub const Link = struct {
     mask: u32,
     domain: []const u8,
     peers: []const machine.Peer,
+    /// The way out of this link, when this machine IS the way between links
+    /// (FWD-1): offered as the router (option 3) to every device it leases an
+    /// address to, and to nobody else. A machine that does not forward sends
+    /// none: a box that named itself the way out without being one would be
+    /// lying to every device on the link.
+    router: ?u32 = null,
+    /// The other links this machine serves and is the way to (FWD-1). Their
+    /// names are answered here too, by the FULL name only: a bare `commons`
+    /// is a name on THIS link, and the same word on another link is another
+    /// device. Empty on a machine that does not forward, whose server speaks
+    /// for its own link and is silent about every other.
+    reach: []const Link = &.{},
 
     fn byMac(self: Link, mac: [6]u8) ?machine.Peer {
         for (self.peers) |p| if (std.mem.eql(u8, &p.hardware, &mac)) return p;
@@ -118,16 +133,30 @@ pub const Link = struct {
 
     /// `imprimante.makeen` and `imprimante` both name the printer;
     /// `makeen` names the box itself, which is the whole point of the
-    /// clause -- the box IS the network's address.
+    /// clause -- the box IS the network's address. Beyond this link, only
+    /// the links this machine is the way to, and only by their full names.
     fn byName(self: Link, q: []const u8) ?u32 {
         if (eqFold(q, self.domain)) return self.self_ip;
         for (self.peers) |p| {
             if (eqFold(q, p.name)) return p.ip;
-            if (q.len == p.name.len + 1 + self.domain.len and
-                eqFold(q[0..p.name.len], p.name) and
-                q[p.name.len] == '.' and
-                eqFold(q[p.name.len + 1 ..], self.domain)) return p.ip;
+            if (self.qualified(p, q)) return p.ip;
         }
+        for (self.reach) |o| if (o.byFullName(q)) |ip| return ip;
+        return null;
+    }
+
+    fn qualified(self: Link, p: machine.Peer, q: []const u8) bool {
+        return q.len == p.name.len + 1 + self.domain.len and
+            eqFold(q[0..p.name.len], p.name) and
+            q[p.name.len] == '.' and
+            eqFold(q[p.name.len + 1 ..], self.domain);
+    }
+
+    /// A name as another link's server would spell it: the link's domain, which
+    /// is the machine itself on that link, or `peer.domain`.
+    fn byFullName(self: Link, q: []const u8) ?u32 {
+        if (eqFold(q, self.domain)) return self.self_ip;
+        for (self.peers) |p| if (self.qualified(p, q)) return p.ip;
         return null;
     }
 };
@@ -227,9 +256,11 @@ fn reply(out: *[576]u8, req: []const u8, link: Link) ?usize {
     var life: [4]u8 = undefined;
     std.mem.writeInt(u32, &life, forever, .big);
     putOpt(out, &j, OPT_LEASE, &life);
-    // deliberately no OPT_ROUTER: this machine does not forward, and a
-    // box that named itself the way out without being one would be
-    // lying to every device on the link
+    // a router only when this machine IS one: a box that named itself the
+    // way out without being one would be lying to every device on the link
+    // (and one that forwards names itself the way to the links it joins; a
+    // device that wants only some of them says so in its own EGRESS)
+    if (link.router) |r| putIp(out, &j, OPT_ROUTER, r);
     out[j] = OPT_END;
     j += 1;
     return if (j < 300) 300 else j;
@@ -265,8 +296,8 @@ fn question(pkt: []const u8, buf: []u8) ?struct { name: []const u8, end: usize }
 }
 
 /// Build the answer to one query. A name this machine does not serve is
-/// NXDOMAIN, never a referral: the box speaks for its own link and is
-/// silent about the rest of the world.
+/// NXDOMAIN, never a referral: the box speaks for its own link, and for
+/// the links it is the way to, and is silent about the rest of the world.
 fn answer(out: []u8, req: []const u8, link: Link) ?usize {
     if (req.len < 12) return null;
     if (req[2] & 0x80 != 0) return null; // already a response
@@ -360,6 +391,70 @@ pub fn readAnswer(pkt: []const u8, id: u16) Answer {
         i += rdlen;
     }
     return .no_such_name;
+}
+
+/// What one question to this machine's own resolver came to: the reading of
+/// /etc/resolv.conf and the query in ONE place, so that `ask` (which says what
+/// a name means) and `get` (which then goes there) can never disagree about
+/// where a name is asked. Linux only, like every act that opens a socket.
+pub const Looked = union(enum) {
+    /// the name's address, and the server that gave it
+    address: struct { ip: u32, server: u32 },
+    /// the server that said there is no such name
+    no_such_name: u32,
+    /// the server that never answered, in three tries
+    silent: u32,
+    /// /etc/resolv.conf does not exist: nobody told this machine where to ask
+    never_told,
+    /// /etc/resolv.conf exists and names no server
+    names_none,
+    /// the kernel would not give a socket (the errno's name)
+    no_socket: []const u8,
+    /// not a name a question can be asked for
+    not_a_name,
+};
+
+pub fn lookup(arena: std.mem.Allocator, want: []const u8) Looked {
+    const conf = std.fs.cwd().readFileAlloc(arena, "/etc/resolv.conf", 1 << 16) catch return .never_told;
+    var server: ?u32 = null;
+    var lines = std.mem.splitScalar(u8, conf, '\n');
+    while (lines.next()) |line| {
+        const t = std.mem.trim(u8, line, " \t\r");
+        if (!std.mem.startsWith(u8, t, "nameserver ")) continue;
+        if (machine.parseIpv4(std.mem.trim(u8, t["nameserver ".len..], " \t\r"))) |ip| {
+            server = ip;
+            break;
+        }
+    }
+    const sip = server orelse return .names_none;
+    const rc_sock = linux.socket(linux.AF.INET, linux.SOCK.DGRAM, 0);
+    if (errOf(rc_sock) != .SUCCESS) return .{ .no_socket = @tagName(errOf(rc_sock)) };
+    const fd: i32 = @intCast(rc_sock);
+    defer _ = linux.close(fd);
+    const tv: linux.timeval = .{ .sec = 3, .usec = 0 };
+    _ = linux.setsockopt(fd, linux.SOL.SOCKET, linux.SO.RCVTIMEO, @ptrCast(&tv), @sizeOf(linux.timeval));
+    var sa = std.posix.sockaddr.in{
+        .family = linux.AF.INET,
+        .port = std.mem.nativeToBig(u16, 53),
+        .addr = std.mem.nativeToBig(u32, sip),
+        .zero = [_]u8{0} ** 8,
+    };
+    var qbuf: [512]u8 = undefined;
+    const id: u16 = 0x5A5A;
+    const qn = query(&qbuf, id, want) orelse return .not_a_name;
+    var rbuf: [1500]u8 = undefined;
+    var tries: u8 = 0;
+    while (tries < 3) : (tries += 1) {
+        _ = linux.sendto(fd, &qbuf, qn, 0, @ptrCast(&sa), @sizeOf(@TypeOf(sa)));
+        const r = linux.recvfrom(fd, &rbuf, rbuf.len, 0, null, null);
+        if (errOf(r) != .SUCCESS) continue;
+        switch (readAnswer(rbuf[0..r], id)) {
+            .address => |ip| return .{ .address = .{ .ip = ip, .server = sip } },
+            .no_such_name => return .{ .no_such_name = sip },
+            .malformed => continue,
+        }
+    }
+    return .{ .silent = sip };
 }
 
 // ---- the loop --------------------------------------------------------------
@@ -524,4 +619,93 @@ test "an answer to another question is not an answer" {
     const qn = query(&q, 0x1234, "imprimante.makeen").?;
     const an = answer(&a, q[0..qn], link).?;
     try testing.expectEqual(Answer.malformed, readAnswer(a[0..an], 0x9999));
+}
+
+// ---- a box that is the way between two links (FWD-1) ----------------------
+
+fn farLink() Link {
+    const peers = &[_]machine.Peer{
+        .{ .name = "commons", .line = 0, .network = "core", .hardware = .{ 0x52, 0x54, 0x00, 0x12, 0x35, 0x62 }, .hardware_text = "52:54:00:12:35:62", .ip = 0x0A140002, .address = "10.20.0.2", .rationale = "" },
+    };
+    return .{ .self_ip = 0x0A140001, .mask = 0xFFFFFF00, .domain = "core.makeen", .peers = peers };
+}
+
+fn asked(link: Link, name: []const u8) !Answer {
+    var q: [512]u8 = undefined;
+    var a: [512]u8 = undefined;
+    const qn = query(&q, 0x4321, name).?;
+    const an = answer(&a, q[0..qn], link).?;
+    return readAnswer(a[0..an], 0x4321);
+}
+
+test "a box that forwards offers itself as the router, and one that does not offers none" {
+    var req: [576]u8 = undefined;
+    @memset(&req, 0);
+    req[0] = 1;
+    req[1] = 1;
+    req[2] = 6;
+    @memcpy(req[28..34], &[_]u8{ 0xb8, 0x27, 0xeb, 0x44, 0x55, 0x66 });
+    @memcpy(req[236..240], &dhcp_magic);
+    req[240] = OPT_MSG_TYPE;
+    req[241] = 1;
+    req[242] = DISCOVER;
+    req[243] = OPT_END;
+
+    var plain = testLink();
+    var out: [576]u8 = undefined;
+    var n = reply(&out, req[0..300], plain) orelse return error.NoOffer;
+    try testing.expect(routerOf(out[0..n]) == null);
+
+    plain.router = plain.self_ip;
+    n = reply(&out, req[0..300], plain) orelse return error.NoOffer;
+    try testing.expectEqual(@as(?u32, 0xC0A80A01), routerOf(out[0..n]));
+    // and an undeclared device is still told nothing, router or no router
+    @memcpy(req[28..34], &[_]u8{ 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 });
+    try testing.expect(reply(&out, req[0..300], plain) == null);
+}
+
+fn routerOf(offer: []const u8) ?u32 {
+    var i: usize = 240;
+    while (i + 1 < offer.len and offer[i] != OPT_END) {
+        const code = offer[i];
+        const len = offer[i + 1];
+        if (code == OPT_ROUTER and len >= 4) return std.mem.readInt(u32, offer[i + 2 ..][0..4], .big);
+        i += 2 + @as(usize, len);
+    }
+    return null;
+}
+
+test "a box that forwards answers for the full names on the links it is the way to, and for nothing else" {
+    const far = farLink();
+    var near = testLink();
+    near.reach = &[_]Link{far};
+
+    // its own link, as before
+    switch (try asked(near, "imprimante.makeen")) {
+        .address => |ip| try testing.expectEqual(@as(u32, 0xC0A80A32), ip),
+        else => return error.NotAnswered,
+    }
+    // the other link's server is the box on that link, and its peer is its peer
+    switch (try asked(near, "core.makeen")) {
+        .address => |ip| try testing.expectEqual(@as(u32, 0x0A140001), ip),
+        else => return error.NotAnswered,
+    }
+    switch (try asked(near, "commons.core.makeen")) {
+        .address => |ip| try testing.expectEqual(@as(u32, 0x0A140002), ip),
+        else => return error.NotAnswered,
+    }
+    switch (try asked(near, "COMMONS.Core.Makeen")) {
+        .address => |ip| try testing.expectEqual(@as(u32, 0x0A140002), ip),
+        else => return error.NotAnswered,
+    }
+    // a bare word is a name on THIS link: the same word on the far link is
+    // another device, and is not answered here
+    try testing.expectEqual(Answer.no_such_name, try asked(near, "commons"));
+    // and a name nobody declared on either link is still no such name
+    try testing.expectEqual(Answer.no_such_name, try asked(near, "ghost.core.makeen"));
+    try testing.expectEqual(Answer.no_such_name, try asked(near, "www.example.com"));
+
+    // a box that does not forward knows nothing of the far link, and says so
+    try testing.expectEqual(Answer.no_such_name, try asked(testLink(), "commons.core.makeen"));
+    try testing.expectEqual(Answer.no_such_name, try asked(testLink(), "core.makeen"));
 }

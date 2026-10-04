@@ -144,18 +144,40 @@ pub const Retirement = struct {
     rationale: []const u8,
 };
 
+/// A way between links (FWD-1, fleet v0.2): the links it joins and the member
+/// that is the way.
+///
+/// It is a declaration of its own, as RETIREMENT is, because every declaration
+/// must say WHY it is there, and why two links are joined -- the front link
+/// reaches the servers behind it -- is the fact an auditor reading this file
+/// will need. And it is the fleet's, because "which links may be joined" is a
+/// fact about a SET: the machine that forwards says it can (FORWARD), and only
+/// the fleet can say it was meant to.
+pub const Route = struct {
+    name: []const u8,
+    line: usize,
+    /// the links it joins: at least two, each declared by the fleet
+    between: []const []const u8,
+    /// the member that is the way: on every one of those links, and it forwards
+    through: []const u8,
+    rationale: []const u8,
+};
+
 pub const Fleet = struct {
     name: []const u8,
     line: usize,
-    /// the wire these machines share. Saying it is what turns a list of
-    /// machines into a NETWORK whose coherence can be judged: within one
+    /// the wires these machines share. Saying them is what turns a list of
+    /// machines into NETWORKS whose coherence can be judged: within one
     /// fleet, every member's network of this name is the same link.
-    /// Without it a fleet is an estate and not a wire, and only the
-    /// identity checks apply.
-    link: ?[]const u8,
+    /// Without any a fleet is an estate and not a wire, and only the
+    /// identity checks apply. One (`LINK`) is fleet v0.1; several (`LINKS`)
+    /// are what a way between them is declared over.
+    links: []const []const u8,
     members: []const Member,
     /// the keys members USED to have, each trusted through one entry
     retirements: []const Retirement,
+    /// the ways between links, each through one member
+    routes: []const Route,
     rationale: []const u8,
 
     pub fn member(self: Fleet, name: []const u8) ?Member {
@@ -163,19 +185,43 @@ pub const Fleet = struct {
         return null;
     }
 
-    /// The link's server of names, if the fleet declares a link and a
-    /// member serves it.
-    pub fn server(self: Fleet) ?Member {
-        const link = self.link orelse return null;
+    /// The fleet's one link, when it declares exactly one: fleet v0.1's `LINK`
+    pub fn link(self: Fleet) ?[]const u8 {
+        return if (self.links.len == 1) self.links[0] else null;
+    }
+
+    /// The server of names on a link, if a member serves it.
+    pub fn serverOf(self: Fleet, link_name: []const u8) ?Member {
         for (self.members) |m| {
             for (m.machine.networks) |n| {
-                if (!std.mem.eql(u8, n.name, link)) continue;
+                if (!std.mem.eql(u8, n.name, link_name)) continue;
                 if (n.domain != null) return m;
             }
         }
         return null;
     }
+
+    /// The server of the fleet's one link (v0.1).
+    pub fn server(self: Fleet) ?Member {
+        return self.serverOf(self.link() orelse return null);
+    }
+
+    /// Whether some route joins these two links
+    pub fn joined(self: Fleet, a: []const u8, b: []const u8) bool {
+        for (self.routes) |r| if (has(r.between, a) and has(r.between, b)) return true;
+        return false;
+    }
 };
+
+fn has(list: []const []const u8, name: []const u8) bool {
+    for (list) |x| if (std.mem.eql(u8, x, name)) return true;
+    return false;
+}
+
+/// whether this name is one of those names (a link, in the roll)
+pub fn hasName(list: []const []const u8, name: []const u8) bool {
+    return has(list, name);
+}
 
 fn hexKey(text: []const u8) ?Ed25519.PublicKey {
     if (text.len != 64) return null;
@@ -238,8 +284,19 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
     }
 
     const fd = decls.items[0];
-    var link: ?[]const u8 = null;
-    if (machine.find(fd, "LINK")) |c| link = try machine.wantIdent(&ctx, c);
+    // the wires: `LINK x` is the one wire of fleet v0.1, `LINKS [x, y]` several
+    var links: std.ArrayList([]const u8) = .{};
+    if (machine.find(fd, "LINK")) |c| {
+        if (machine.find(fd, "LINKS")) |c2| return ctx.refuse(c2.line, "LINK and LINKS say the same thing twice: LINK names the one wire these machines share and LINKS names several, and a fleet declares one or the other", .{});
+        try links.append(arena, try machine.wantIdent(&ctx, c));
+    } else if (machine.find(fd, "LINKS")) |c| {
+        const names = try machine.wantNames(&ctx, c);
+        if (names.len == 0) return ctx.refuse(c.line, "an empty LINKS is not a declaration: a fleet that names no wire says nothing about wires, by declaring neither LINK nor LINKS", .{});
+        for (names, 0..) |nm, i| {
+            for (names[0..i]) |e| if (std.mem.eql(u8, e, nm)) return ctx.refuse(c.line, "LINKS names {s} twice: one link, one name", .{nm});
+            try links.append(arena, nm);
+        }
+    }
 
     var members: std.ArrayList(Member) = .{};
     for (decls.items) |d| if (d.kind == .MEMBER) {
@@ -349,17 +406,50 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         });
     };
 
+    // ---- the ways between links (FWD-1) ------------------------------
+    var routes: std.ArrayList(Route) = .{};
+    for (decls.items) |d| if (d.kind == .ROUTE) {
+        if (links.items.len == 0) return ctx.refuse(d.line, "ROUTE {s} joins links, and this fleet declares none: a route is between wires, and a fleet that declares no wire has nothing to join", .{d.name});
+        const bc = try machine.required(&ctx, d, "BETWEEN");
+        const between = try machine.wantNames(&ctx, bc);
+        for (between, 0..) |b, i| {
+            if (!has(links.items, b)) return ctx.refuse(bc.line, "ROUTE {s} joins {s}, and this fleet declares no link of that name: only a link the fleet declares can be joined to another", .{ d.name, b });
+            for (between[0..i]) |e| if (std.mem.eql(u8, e, b)) return ctx.refuse(bc.line, "ROUTE {s} names {s} twice: a link is joined to another, never to itself", .{ d.name, b });
+        }
+        if (between.len < 2) return ctx.refuse(bc.line, "ROUTE {s} joins {d} link{s}: a route is between at least two", .{ d.name, between.len, if (between.len == 1) "" else "s" });
+        const tc = try machine.required(&ctx, d, "THROUGH");
+        const via = try machine.wantIdent(&ctx, tc);
+        var way: ?Member = null;
+        for (members.items) |m| if (std.mem.eql(u8, m.name, via)) {
+            way = m;
+        };
+        const p = way orelse return ctx.refuse(tc.line, "ROUTE {s} goes THROUGH {s}, and no MEMBER {s} is declared: a way is a machine of this fleet", .{ d.name, via, via });
+        // the way is ON every link it joins, with an address the others can send to
+        for (between) |b| {
+            const n = linkOf(p.machine, b) orelse return ctx.refuse(tc.line, "ROUTE {s} goes THROUGH {s}, which has no network on {s}: a way that is not on a link is not a way to it", .{ d.name, via, b });
+            if (n.address != .static) return ctx.refuse(tc.line, "ROUTE {s} goes THROUGH {s}, which asks for its address on {s} by dhcp: a way is an address somebody else sends to, so it declares one", .{ d.name, via, b });
+        }
+        if (!p.machine.forward) return ctx.refuse(tc.line, "ROUTE {s} goes THROUGH {s}, and {s} does not FORWARD: a way that does not forward is a wall, and a route over it is a promise nothing keeps", .{ d.name, via, via });
+        // one way between two links: a second would give a member two
+        // gateways for one wire, and its one GATEWAY cannot be both
+        for (routes.items) |r| for (between, 0..) |a, i| for (between[i + 1 ..]) |b| {
+            if (has(r.between, a) and has(r.between, b)) return ctx.refuse(d.line, "{s} and {s} are already joined by the route {s}: one way between two links, because a member on either has one gateway and cannot be sent through two", .{ a, b, r.name });
+        };
+        try routes.append(arena, .{ .name = d.name, .line = d.line, .between = between, .through = via, .rationale = d.rationale });
+    };
+
     const f = Fleet{
         .name = fd.name,
         .line = fd.line,
-        .link = link,
+        .links = try links.toOwnedSlice(arena),
         .members = try members.toOwnedSlice(arena),
         .retirements = try retirements.toOwnedSlice(arena),
+        .routes = try routes.toOwnedSlice(arena),
         .rationale = fd.rationale,
     };
 
     // ---- the checks no single machine can make ----------------------
-    if (link) |wire| {
+    for (f.links) |wire| {
         // one link, one server of names
         var serves: ?Member = null;
         for (f.members) |m| {
@@ -447,7 +537,151 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         }
     }
 
+    try checkRoutes(&ctx, f);
+
     return f;
+}
+
+// ---- the ways between links (FWD-1) ------------------------------------
+
+/// A prefix: the network address and how many bits of it are the network's
+const Prefix = struct { net: u32, bits: u6, text: []const u8 };
+
+fn maskOf(bits: u6) u32 {
+    return if (bits == 0) 0 else ~@as(u32, 0) << @intCast(32 - @as(u6, bits));
+}
+
+/// Whether the destination D contains the whole of the prefix P: a route to D
+/// is a route to everything on P's link
+fn covers(d: machine.Destination, p: Prefix) bool {
+    return d.prefix <= p.bits and (p.net & maskOf(d.prefix)) == (d.ip & maskOf(d.prefix));
+}
+
+/// Whether the destination D and the prefix P share an address: D names the
+/// link, or a part of it, or the link is a part of D
+fn overlaps(d: machine.Destination, p: Prefix) bool {
+    const bits = @min(d.prefix, p.bits);
+    return (p.net & maskOf(bits)) == (d.ip & maskOf(bits));
+}
+
+/// What a link's prefix is: read off every member's STATIC address on it, and
+/// the members must agree where it ends. A wire has one prefix, and a pair of
+/// machines that each think it ends in another place are each faultless alone.
+fn prefixOf(ctx: *machine.Ctx, f: Fleet, wire: []const u8) machine.Error!?Prefix {
+    var got: ?Prefix = null;
+    var first: []const u8 = "";
+    for (f.members) |m| {
+        const n = linkOf(m.machine, wire) orelse continue;
+        const st = switch (n.address) {
+            .static => |s| s,
+            .dhcp => continue,
+        };
+        const here = Prefix{ .net = st.ip & maskOf(st.prefix), .bits = st.prefix, .text = st.text };
+        if (got) |g| {
+            if (g.net != here.net or g.bits != here.bits) return ctx.refuse(m.line, "{s} says {s} is {s} and {s} says it is {s}: one wire has one prefix, or two machines on it do not agree where it ends", .{ first, wire, g.text, m.name, here.text });
+        } else {
+            got = here;
+            first = m.name;
+        }
+    }
+    return got;
+}
+
+/// The checks a way between links makes possible, and that no single machine
+/// can fail (FWD-1): that the door is declared, that everyone on a joined link
+/// takes the way, and that nothing is routed to a link nobody joins. Each is a
+/// fact about two machines at once -- a till whose route is right and a server
+/// with no way back are each faultless alone -- which is what a fleet is for.
+fn checkRoutes(ctx: *machine.Ctx, f: Fleet) machine.Error!void {
+    // every link's prefix, once, and the members agreeing on it
+    const arena = ctx.arena;
+    const prefixes = try arena.alloc(?Prefix, f.links.len);
+    for (f.links, 0..) |wire, i| prefixes[i] = try prefixOf(ctx, f, wire);
+    const prefixFor = struct {
+        fn of(links: []const []const u8, ps: []const ?Prefix, wire: []const u8) ?Prefix {
+            for (links, 0..) |l, i| if (std.mem.eql(u8, l, wire)) return ps[i];
+            return null;
+        }
+    }.of;
+
+    // THE DOOR. A machine that forwards joins every one of its links, whether
+    // or not anybody meant it to: so the fleet must have said it was meant to,
+    // for every pair, and a forwarder no route goes through is a door nobody
+    // agreed to.
+    for (f.members) |p| {
+        if (!p.machine.forward) continue;
+        var through: usize = 0;
+        for (f.routes) |r| if (std.mem.eql(u8, r.through, p.name)) {
+            through += 1;
+        };
+        if (through == 0) return ctx.refuse(p.line, "{s} forwards between its networks, and no ROUTE goes through it: a machine that is the way between links is a door, and a door nobody declared is one nobody agreed to", .{p.name});
+        var names: std.ArrayList([]const u8) = .{};
+        for (p.machine.networks) |n| if (!machine.isLoopback(n)) try names.append(arena, n.name);
+        for (names.items, 0..) |a, i| for (names.items[i + 1 ..]) |b| {
+            var said = false;
+            for (f.routes) |r| if (std.mem.eql(u8, r.through, p.name) and has(r.between, a) and has(r.between, b)) {
+                said = true;
+            };
+            if (!said) return ctx.refuse(p.line, "{s} forwards among all its networks, and no ROUTE through it joins {s} and {s}: the machine joins them whether or not the fleet says so", .{ p.name, a, b });
+        };
+    }
+
+    // EVERYONE ON A JOINED LINK TAKES THE WAY. A route is a way both ways -- no
+    // filter exists to make it one-way, and an answer needs a way back as much
+    // as a question needs a way there -- so a member of a joined link either has
+    // the way to the others or has put itself on a link that is not joined.
+    for (f.routes) |r| {
+        const p = f.member(r.through).?;
+        for (f.members) |m| {
+            if (std.mem.eql(u8, m.name, p.name)) continue;
+            for (m.machine.networks) |n| {
+                if (machine.isLoopback(n) or !has(r.between, n.name)) continue;
+                const way = linkOf(p.machine, n.name).?.address.static;
+                switch (n.address) {
+                    .static => {
+                        const g = n.gateway orelse return ctx.refuse(m.line, "{s} is on {s}, which the route {s} joins to the others, and declares no GATEWAY: a member of a joined link needs the way {s} to reach the rest", .{ m.name, n.name, r.name, p.name });
+                        if (g.addr != way.ip) return ctx.refuse(m.line, "{s}'s gateway on {s} is {s}, and the way is {s} at {s}: a gateway that is not the way sends a packet where nothing forwards it", .{ m.name, n.name, g.text, p.name, way.text });
+                    },
+                    .dhcp => {
+                        const sv = f.serverOf(n.name);
+                        if (sv == null or !std.mem.eql(u8, sv.?.name, p.name)) return ctx.refuse(m.line, "{s} asks for its address on {s} by dhcp, and the way {s} does not serve {s}: only the link's own server can offer the way in a lease, so {s} would be told no router", .{ m.name, n.name, p.name, n.name, m.name });
+                    },
+                }
+                switch (n.egress) {
+                    .none => return ctx.refuse(m.line, "{s} says EGRESS none for {s}, which the route {s} joins to the others: a member of a joined link takes the way, or sits on a link that is not joined", .{ m.name, n.name, r.name }),
+                    .unrestricted => {},
+                    .to => |dests| for (r.between) |other| {
+                        if (std.mem.eql(u8, other, n.name)) continue;
+                        const pf = prefixFor(f.links, prefixes, other) orelse continue;
+                        var seen = false;
+                        for (dests) |d| if (covers(d, pf)) {
+                            seen = true;
+                        };
+                        if (!seen) return ctx.refuse(m.line, "{s}'s EGRESS for {s} does not reach {s} ({s}), which the route {s} joins to it: the question would have a way there and the answer none, or the reverse", .{ m.name, n.name, other, pf.text, r.name });
+                    },
+                }
+            }
+        }
+    }
+
+    // NOTHING IS ROUTED TO A LINK NOBODY JOINS. A destination that is a declared
+    // link, written in a machine's EGRESS, is a claim that the way to it exists:
+    // the fleet is the one place that knows whether it does.
+    for (f.members) |m| {
+        for (m.machine.networks) |n| {
+            if (machine.isLoopback(n)) continue;
+            const dests = switch (n.egress) {
+                .to => |d| d,
+                else => continue,
+            };
+            for (dests) |d| for (f.links, 0..) |other, i| {
+                if (std.mem.eql(u8, other, n.name)) continue;
+                const pf = prefixes[i] orelse continue;
+                if (!overlaps(d, pf)) continue;
+                if (!f.joined(n.name, other)) return ctx.refuse(m.line, "{s} routes {s} through {s}, and that is the {s} link, which no ROUTE joins to {s}: a route to nowhere", .{ m.name, d.text, n.name, other, n.name });
+            };
+        }
+    }
 }
 
 // ---- attribution: one machine verifying another's record ---------------
@@ -456,13 +690,16 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
 /// the member says which device it is and the server has it in its
 /// register. It is the join HDW-1 exists to make.
 pub fn promisedTo(f: Fleet, m: Member) ?machine.Peer {
-    const wire = f.link orelse return null;
     const hw = m.hardware orelse return null;
-    const sv = f.server() orelse return null;
-    if (std.mem.eql(u8, sv.name, m.name)) return null;
-    for (sv.machine.peers) |p| {
-        if (!std.mem.eql(u8, p.network, wire)) continue;
-        if (std.mem.eql(u8, &p.hardware, &hw)) return p;
+    // the first link whose server has this device in its register: a device
+    // is one device on every link it is on
+    for (f.links) |wire| {
+        const sv = f.serverOf(wire) orelse continue;
+        if (std.mem.eql(u8, sv.name, m.name)) continue;
+        for (sv.machine.peers) |p| {
+            if (!std.mem.eql(u8, p.network, wire)) continue;
+            if (std.mem.eql(u8, &p.hardware, &hw)) return p;
+        }
     }
     return null;
 }

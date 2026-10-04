@@ -88,6 +88,14 @@ sentence is not softened; `doc/CLOUD.md` is the plan that pays for it, in
 the order its dependencies allow, and the doc carries a status per rung so
 that the sentence and the code can be read against each other at any
 time. The first rung is the Commons as the first declared server world.
+*Amended 2026-10-04, the same day (SRV-2, FWD-1): the sentence "no server
+is a declared service, a fleet has one link, no machine forwards" is the
+state at the morning. A real server (RingServ, standing in for the
+Commons) is now a declared service, and a fleet can declare several links
+and the ways between them, judged by the court and booted on two wires;
+there is still no front and no clock, and a placed server can be asked
+only from the links of its own cloud. `doc/CLOUD.md` carries the status
+per rung.*
 
 **STZ-OS-RULING-15 — two names for two things: Harobanda Cloud, Softanza
 Cloud.** *Harobanda Cloud* is what this repository composes: a fleet that

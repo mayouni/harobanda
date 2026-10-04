@@ -97,9 +97,14 @@ pub fn healthLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
 pub fn forwardLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     if (!m.forward) return false;
     try w.print("boot: forward -- between ", .{});
-    for (m.networks, 0..) |n, i| {
-        const sep = if (i == 0) "" else if (i + 1 == m.networks.len) " and " else ", ";
+    // the links, not a loopback: it is declared and it is not a way to anywhere
+    const links = machine.countLinks(m.networks);
+    var i: usize = 0;
+    for (m.networks) |n| {
+        if (machine.isLoopback(n)) continue;
+        const sep = if (i == 0) "" else if (i + 1 == links) " and " else ", ";
         try w.print("{s}{s}", .{ sep, n.name });
+        i += 1;
     }
     try w.print(": a packet that arrives on one may leave by another, and nothing here filters it\n", .{});
     return true;
@@ -218,6 +223,27 @@ pub fn namesLines(w: *std.Io.Writer, m: *const machine.Machine, n: *const machin
     for (m.peers) |p| if (std.mem.eql(u8, p.network, n.name)) {
         try w.print("{s}names {s} -- {s}.{s} is {s} for {s}\n", .{ prefix, n.name, p.name, dom, p.address, p.hardware_text });
     };
+    // A machine that is the way between its networks (FWD-1) is offered to
+    // everyone it serves as the router, and speaks for the other links it
+    // serves too -- by their full names, through itself, and for nothing else.
+    // Said here, beside the server's own lines, because it is the server that
+    // does it and a reader of this transcript has to be able to see the extent.
+    if (m.forward) {
+        try w.print("{s}names {s} -- this machine forwards, so it is offered as the router to everyone it serves here\n", .{ prefix, n.name });
+        for (m.networks) |o| {
+            if (std.mem.eql(u8, o.name, n.name) or machine.isLoopback(o)) continue;
+            const odom = o.domain orelse continue;
+            const oself: u32 = switch (o.address) {
+                .static => |s| s.ip,
+                .dhcp => continue,
+            };
+            var ob: [16]u8 = undefined;
+            try w.print("{s}names {s} -- and for {s}, which this machine is the way to: {s} is {s}\n", .{ prefix, n.name, odom, odom, fmtIp(&ob, oself) });
+            for (m.peers) |p| if (std.mem.eql(u8, p.network, o.name)) {
+                try w.print("{s}names {s} -- {s}.{s} is {s}, through this machine\n", .{ prefix, n.name, p.name, odom, p.address });
+            };
+        }
+    }
     return true;
 }
 

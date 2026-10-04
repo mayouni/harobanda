@@ -1,14 +1,18 @@
-# fleet v0.1 — pinning and the conformance scoreboard
+# fleet v0.2 — pinning and the conformance scoreboard
 
 ## The pin
 
 `fixtures.json` sha256:
 
 ```
-9c5e200f0167bdbb61cf0894580fe919f56b13398ceac0c45535b75576c3ac6b
+aeea0175e8c39dd833c74130bd16b41cd6fc3a71467a60ba4e9f01cb30980739
 ```
 
-(Before the RETIREMENT seat of 2026-09-26 (RET-1):
+(Before the ROUTE seat of 2026-10-04 (FWD-1, fleet v0.2):
+`9c5e200f0167bdbb61cf0894580fe919f56b13398ceac0c45535b75576c3ac6b`,
+32/32; the widening added FA7-FA10 and FR27-FR48, gave the fleet its
+fourth kind and `FLEET` its `LINKS`, and took FA7 verbatim from the real
+files of the smallest cloud. Before the RETIREMENT seat of 2026-09-26 (RET-1):
 `bb1f8349ec64fc458b5a4c6a80dbd30a8ab400cf853640080ae134c4730e4c3b`,
 22/22; the widening added FA5-FA6 and FR19-FR26, gave the fleet its
 third kind, and made FR5 compare keys rather than their spelling.
@@ -25,7 +29,7 @@ grammar's own `PINNING.md` requires of itself.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **32/32** — 6 accepts, 26 rejects |
+| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **58/58** — 10 accepts, 48 rejects (32/32 before ROUTE; the first run of the widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
 
 `zig build court` runs BOTH grammars: the machine fixtures first, the
 fleet fixtures after. One step, two courts, because a fleet is no better
@@ -66,6 +70,49 @@ That script now reads both addresses through `harb fleet <file>
 hardware <member>`, and the proof is that **the 66-line names pin
 matched unchanged** on the first run afterwards: the declaration
 supplies exactly what the constants did, and now the court can check it.
+
+## The ways between links: ROUTE (FWD-1, fleet v0.2)
+
+`LINKS [front, core]` names several wires where `LINK` named one, and
+`ROUTE` says two of them are joined and through whom. Twenty-two cases
+hold it (FA7-FA10, FR27-FR48), and the interesting ones are the ones no
+single machine can fail:
+
+- **the door** (FR39, FR40): a machine that says `FORWARD` joins every one
+  of its links, whether or not anybody meant it to. The fleet must say it
+  was meant, for EVERY pair, or the box is a door nobody agreed to;
+- **the way is a machine of the set** (FR34-FR38): on every link it joins,
+  with an address others can send to, and it forwards -- a way that does
+  not forward is a wall, and a route over it is a promise nothing keeps.
+  One way between two links (FR38): a member has one gateway, and cannot
+  be sent through two;
+- **everyone takes the way, or leaves the link** (FR42-FR47): a route is
+  a way BOTH ways, because no filter exists to make it one-way and an
+  answer needs a way back as much as a question needs a way there. So a
+  member of a joined link has a gateway that IS the way (FR42, FR43,
+  FR44), is told the way by a lease from the one machine that can offer it
+  -- the link's own server (FR45) -- and does not say there is none
+  (FR46), and its perimeter reaches the other links (FR47). A till whose
+  route is right and a server with no way back are each faultless alone;
+- **a route to nowhere** (FR48): a destination that is a declared link no
+  route joins to this one is a claim that a way exists, and the fleet is
+  the one place that knows it does not;
+- **one wire has one prefix** (FR41), because machines that disagree where
+  a wire ends are each faultless alone.
+
+FA7 is `machines/cloud_links.fleet` and the three machine files it names,
+VERBATIM, taken mechanically from the files: the court judges the real
+smallest cloud, and `experiment/os8_links.sh` boots it. FA9 is the
+other half: a link no route joins asks nothing of its members.
+
+The first run of this widening was 56/58, and the two cases the court
+refused were the fixtures' own -- FR44 and FR45 each tripped an EARLIER
+rule (a forwarder on the link is itself a member that must take the
+other route; a server of a joined link is itself a member that must
+declare its gateway), so each refused for a reason that was true and was
+not the one the case was written for. A court that refuses for the wrong
+reason is not a court of that rule, and its author is the first thing it
+convicts.
 
 ## The court judges this pin (PIN-1)
 

@@ -213,8 +213,11 @@ given, and `AFTER`, not position, ordering a boot (PA6).
   rung 6). So two packs whose servers listen on one port are judged
   fine and collide at boot (SRV-2).
 - **A fleet does not name packs yet.** A `MEMBER` that says which
-  packs it runs is the grammar's next widening; today `harb place` is
-  run by hand and its output is the machine file a member names.
+  packs it runs is still a widening not taken: fleet v0.2 (FWD-1) added
+  the links and the ways between them and left placement by hand, as
+  `experiment/os8_links.sh` does -- `harb place` on the core machine,
+  and the fleet names the HOST, which is the machine the fleet court
+  judges, while the boot judges the placed one.
 - **`place` judges the declaration and stages nothing.** The programs
   a pack's `RUN` names must be in the image's root when `harb image`
   runs, as for any machine. For the first real server (SRV-2) a list of

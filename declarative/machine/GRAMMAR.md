@@ -76,11 +76,12 @@ clause outside its kind's table is refused naming the allowed set
 
 ## The kinds
 
-`FLEET`, `MEMBER` and `RETIREMENT` are kinds of this same language and
-are refused in a machine file by name (R85-R87): a machine declares what
-ONE machine is, and no machine can say who else is in its estate, or
-which keys it has held. They are the fleet grammar's,
-`declarative/fleet/GRAMMAR.md` (FLT-1, RET-1). Which file a kind belongs
+`FLEET`, `MEMBER`, `RETIREMENT` and `ROUTE` are kinds of this same
+language and are refused in a machine file by name (R85-R87, R102): a
+machine declares what ONE machine is, and no machine can say who else
+is in its estate, which keys it has held, or which links are joined.
+They are the fleet grammar's, `declarative/fleet/GRAMMAR.md` (FLT-1,
+RET-1, FWD-1). Which file a kind belongs
 in is one EXHAUSTIVE switch, `belongsToFleet`, asked by both parsers --
 never a condition that names the kinds, which is how a new one walks
 past it: with the old `.FLEET or .MEMBER`, a machine file carrying a
@@ -98,7 +99,7 @@ RETIREMENT was not refused for a wrong reason, it was ACCEPTED.
 | `BOARD` | hosted: `qemu_pc` \| `qemu_virt` \| `rpi4`; edge: `sim` \| `pico2` \| `pico2w` \| `esp32c6` | optional; each profile has its own menu and its own emulator board, and a board of the other profile is refused by name (R35, R51). A touch machine's device is the phone and declares none. Defaults: hosted by ARCH (`x86_64` → `qemu_pc`, else `qemu_virt`), edge → `sim` (A15). A board of another architecture is refused (R33, R52); an unknown board is refused (R34) |
 | `IDENTITY` | string | optional, hosted only — the absolute path where this device's own key lives. PID 1 makes an Ed25519 pair there the first time the machine boots and loads it every time after. It must sit inside a declared PERSISTENT mount (R65), be absolute (R64), and the edge profile is refused it (R66): an edge device's key is MicroRing's, and its custody is the hardware's |
 | `JOURNAL` | string | optional, hosted only — where this machine keeps its OWN record: one line per boot, hash-chained and signed by the device's key. Needs an `IDENTITY` to sign with (R67), must be absolute (R69) and must live on a declared persistent mount (R68). It records what the machine was and what it judged of itself, never what a world did |
-| `FORWARD` | the word `yes` | optional, hosted only (R95) — this machine is the way from one of its networks to another: the kernel's own forwarding (`/proc/sys/net/ipv4/ip_forward`), switched on once every network is up and READ BACK before the boot says so. It forwards among **all** its networks and filters nothing, because the kernel decides by the interface a packet ARRIVES on and a list of networks here would name a perimeter nothing keeps. Saying nothing is not being the way: a machine on two links that does not say it never was. The word is `yes` (R96, R97), and a machine with fewer than two networks has nothing to forward between (R98, R99). Which links such a machine may join is a fact about a SET, and the fleet declares it (`ROUTE`, `declarative/fleet/GRAMMAR.md`); the boot line is `boot: forward -- between lan and core: ...` |
+| `FORWARD` | the word `yes` | optional, hosted only (R95) — this machine is the way from one of its networks to another: the kernel's own forwarding (`/proc/sys/net/ipv4/ip_forward`), switched on once every network is up and READ BACK before the boot says so. It forwards among **all** its networks and filters nothing, because the kernel decides by the interface a packet ARRIVES on and a list of networks here would name a perimeter nothing keeps. Saying nothing is not being the way: a machine on two links that does not say it never was. The word is `yes` (R96, R97), and a machine with fewer than two networks has nothing to forward between (R98, R99; a loopback is a network a machine declares and is not a way to anywhere, so it is not counted, R100). A machine that forwards is a way off every link it joins, so it cannot say `EGRESS none` for one of them (R101). Which links such a machine may join is a fact about a SET, and the fleet declares it (`ROUTE`, `declarative/fleet/GRAMMAR.md`); the boot line is `boot: forward -- between lan and core: ...` |
 | `SLOTS` | string, the boot partition's device (`"/dev/mmcblk0p1"`) | optional — the machine updates A/B: two slots on that partition, `config.txt` naming the committed one and, under `[tryboot]`, the other; PID 1 reads which slot it booted (`harb.slot=` on the cmdline), arms the watchdog, and commits a trial only once every service has started. Needs a board whose firmware can try a slot (`rpi4`; R41); an absolute device path (R42) |
 | `CONSOLE` | string, a device | optional; defaults `/dev/console`, `uart0`, `logcat` by profile. **Hosted: a port the board HAS** (R91-R94) -- `qemu_pc` `/dev/ttyS0`..`/dev/ttyS3`, `qemu_virt` `/dev/ttyAMA0`, `rpi4` `/dev/ttyS1` (the mini-UART on the header pins; its PL011 goes to Bluetooth) -- or nothing, which is the kernel's own `/dev/console` and on the board is its first port (A25, A26). The kernel's boot line follows it: the card's `cmdline.txt` and the emulator's line both name the port, and the emulator listens on that port and no other. PID 1 then asks the kernel which device its console really is (`TIOCGDEV`) and says the declared line only when they agree; otherwise it says both, and the boot differs from its file (CON-1). Edge and touch: the substrate's; this repository neither boots nor narrates them, and does not check them |
 
@@ -262,11 +263,13 @@ the court before the image was built. The lease is offered as INFINITE
 device's because it was declared, not because a timer has not run out.
 
 The machine offers ITSELF as the resolver (option 6) and gives the
-domain (option 15), and deliberately sends **no router option**: it
-does not forward, and a box that named itself the way out without being
+domain (option 15), and sends a **router option only if it forwards**
+(`FORWARD`, FWD-1): a box that named itself the way out without being
 one would be lying to every device on the link. A name it does not
 serve is answered `NXDOMAIN`, never forwarded upstream — the box speaks
-for its own link and is silent about the rest of the world.
+for its own link, for the links it is the way to (by their FULL names
+only: a bare word is a name on THIS link), and is silent about the rest
+of the world.
 
 `harb ask <name>` is the witness, and `experiment/os6_names.sh` boots
 the pair that proves it: `machines/makeen_names.machine` serving,
@@ -380,9 +383,13 @@ act — stzlib's rehearse-plan-commit law carried down to the boot.
 - **Network declaration** — done (NET-1). What is still queued on it:
   wifi credentials by reference, IPv6, and lease RENEWAL (a served
   address is infinite by declaration, but a leased one is not).
-- **Forwarding** — a machine that serves a link does not route between
+- ~~**Forwarding** — a machine that serves a link does not route between
   links. A `FORWARD` clause would be an act and would be declared; none
-  exists, so no machine forwards.
+  exists, so no machine forwards.~~ **Closed (FWD-1)** by `FORWARD`:
+  declared, read back, and judged by a boot of three machines on two
+  wires. What is still open: **a packet filter** (a machine that
+  forwards filters nothing, and says so in its boot line), and a
+  forwarder's per-NIC hardware addresses, which no declaration can say.
 - **Edge boot** — the edge profile is declarable and judged, not yet
   bootable: its substrate is MicroRing's (MicroZig, the flash
   filesystem), and `harb init` refuses it by name.

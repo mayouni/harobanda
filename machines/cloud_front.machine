@@ -1,0 +1,66 @@
+-- cloud_front.machine -- the box of the smallest cloud: the way between
+-- its front link and its core link (FWD-1, rung 2 of the cloud ladder,
+-- doc/CLOUD.md).
+--
+--      till ---- front link ---- [ this box ] ---- core link ---- commons
+--      (asks)    192.168.20.0/24                    10.20.0.0/24   (RingServ)
+--
+-- It does four things, each one a declaration and none an accident:
+--
+--   serves both links      a DOMAIN on each makes it the link's own server of
+--                          addresses and names (NAM-1). There is no pool: it
+--                          admits the two peers declared below and nobody else
+--   is the way             FORWARD, so a packet that arrives on one link may
+--                          leave by the other, and nothing here filters it
+--   offers itself          because it forwards, the lease it gives carries it as
+--                          the router, and every device it serves learns the way
+--   answers across links   because it is the way, it answers for the FULL names
+--                          on the other link too: `commons.core.cloud` on the
+--                          front link, and not the bare word `commons`, which is
+--                          a name on THIS link only
+--
+-- It declares no EGRESS and no GATEWAY: it knows the two links it is on and no
+-- way off them, and it says so by saying nothing (a machine that forwards
+-- cannot say `EGRESS none`: it is a way off every link it joins).
+--
+-- Which links such a box may join is a fact about a SET, and a fleet declares
+-- it: machines/cloud_links.fleet. experiment/os8_links.sh boots this box
+-- with the till and the core on two wires, and the till reaches the thing it
+-- named. The two hardware addresses below are the devices that will ask
+-- (HDW-1): the fleet holds them against the members that claim them.
+
+DEFINE MACHINE cloud_front AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  FORWARD yes
+) RATIONALE "The box of a front link and a core link: it is both links' own server of names, and the way between them"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "A machine that serves two links and is the way between them speaks on both"
+
+DEFINE NETWORK front AS (
+  INTERFACE "eth0",
+  ADDRESS "192.168.20.1/24",
+  DOMAIN "front.cloud"
+) RATIONALE "The link the clients are on: the first address on it, answering for every name on it"
+
+DEFINE NETWORK core AS (
+  INTERFACE "eth1",
+  ADDRESS "10.20.0.1/24",
+  DOMAIN "core.cloud"
+) RATIONALE "The link the servers are on, behind the box: nothing on it is reachable from the front link unless this machine is the way, and it is"
+
+DEFINE PEER till AS (
+  NETWORK front,
+  HARDWARE "52:54:00:12:35:61",
+  ADDRESS "192.168.20.40"
+) RATIONALE "The till, a client: the same address every day and a name it may be found by"
+
+DEFINE PEER commons AS (
+  NETWORK core,
+  HARDWARE "52:54:00:12:35:62",
+  ADDRESS "10.20.0.2"
+) RATIONALE "The server the solution runs on: the front link asks for it by the name commons.core.cloud and is told where it is"

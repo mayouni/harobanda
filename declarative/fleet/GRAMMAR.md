@@ -1,4 +1,4 @@
-# fleet v0.1 — the grammar of a set of machines
+# fleet v0.2 — the grammar of a set of machines
 
 ## Why there is a second file and not a bigger one
 
@@ -27,6 +27,7 @@ declares a `FLEET` is refused by name, and a fleet file that declares a
 | clause | value | obligation |
 |---|---|---|
 | `LINK` | ident | optional — the wire these machines share. Within one fleet, every member's `NETWORK` of this name is the same physical link, which is what makes the address checks mean anything. Without it a fleet is an estate and not a network, and only the identity checks apply |
+| `LINKS` | name list | optional (fleet v0.2, FWD-1) — several wires, where `LINK` names one: a `NETWORK` of any of these names, on any member, is that wire, and every per-link check below is made on each. `LINK x` and `LINKS [x]` mean one thing, and a fleet says it once (FR27); an empty list is not a declaration (FR28), and a link named twice is refused (FR29). A fleet that declares neither judges only the identity checks |
 
 ### DEFINE MEMBER — one machine of the set
 
@@ -43,6 +44,44 @@ declares a `FLEET` is refused by name, and a fleet file that declares a
 | `MEMBER` | ident | required — the member the key belonged to (FR19) |
 | `KEY` | string | required — the retired Ed25519 public key, 64 hex (FR20). One key, one place in a fleet, held or retired (FR23–FR26) |
 | `THROUGH` | string | required — the hash of the last entry the fleet trusts this key for: 64 lowercase hex, exactly as `harb fleet … verify` prints it once that record has verified (FR21). Its absence is refused in words that say why (FR22) |
+
+### DEFINE ROUTE — a way between links (FWD-1)
+
+| clause | value | obligation |
+|---|---|---|
+| `BETWEEN` | name list | required — the links it joins: at least two (FR33), each one the fleet declares (FR31), none twice (FR32). A route in a fleet that declares no link joins nothing (FR30) |
+| `THROUGH` | ident | required — the member that is the way: declared (FR34), with a network on every one of those links (FR35), a STATIC address on each, because a way is an address somebody else sends to (FR36), and a machine that says `FORWARD` (FR37) |
+
+A machine says `FORWARD` and the fleet says it was meant: **a machine that
+forwards is a door**, joins every one of its links whether or not anybody
+meant it to, and the fleet must have a route through it for every pair of
+them (FR39, FR40). One way between two links (FR38).
+
+**A route is a way both ways.** No packet filter exists to make it one-way,
+and an answer needs a way back as much as a question needs a way there, so
+a joined link is joined for everyone on it: a member either has the way to
+the others or sits on a link that is not joined.
+
+- a member with a **static** address declares a `GATEWAY`, and it is the
+  way (FR42, FR43, FR44: a gateway that is not the way sends a packet
+  where nothing forwards it, and a link with two ways on it gives a
+  member one gateway for both);
+- a member that **asks by dhcp** is told the way by the lease, and the
+  only machine that can offer it is the link's own server (FR45), which
+  sends a router option exactly when it forwards (`names.zig`);
+- it does not say `EGRESS none` for a joined link (FR46), and where it
+  lists destinations they cover every other link the route joins (FR47);
+- and a destination that is a declared link no route joins to this one is
+  a route to nowhere (FR48).
+
+One wire has one prefix (FR41): members that disagree where it ends are
+each faultless alone.
+
+**Names follow the way, never the other way round.** The server of a link
+answers for the full names on the other links it serves only when its own
+machine forwards (`names.zig`), so "a name that resolves and a way that
+is closed" cannot be declared: the box that is not the way is silent about
+the far link. `experiment/os8_links.sh` shows both.
 
 ## Enrolment is not prophecy
 
@@ -126,6 +165,28 @@ checks the members it has, and says nothing about the rest of the wire.
 | FR24 | a retired key that is another member's key — FR5's rule, which a retirement must not become a way around |
 | FR25 | a key retired twice |
 | FR26 | one key spelled two ways (`aa..`, `AA..`) on two members — FR5 corrected: it compared the TEXT, and hex is case-blind |
+| FR27 | `LINK` and `LINKS` together: one fact twice |
+| FR28 | an empty `LINKS` |
+| FR29 | a link named twice in `LINKS` |
+| FR30 | a `ROUTE` in a fleet that declares no link |
+| FR31 | a `ROUTE` between a link the fleet does not declare |
+| FR32 | a `ROUTE` that names one link twice: a link is joined to another, never to itself |
+| FR33 | a `ROUTE` between fewer than two links |
+| FR34 | a `ROUTE` through a member nobody declared |
+| FR35 | a `ROUTE` through a member with no network on one of its links |
+| FR36 | a `ROUTE` through a member that asks for its address by dhcp: a way is an address somebody sends to |
+| FR37 | a `ROUTE` through a machine that does not `FORWARD`: a way that does not forward is a wall |
+| FR38 | two routes joining the same pair of links: a member has one gateway |
+| FR39 | **a member that `FORWARD`s and no route goes through it: a door nobody agreed to** |
+| FR40 | a forwarder among whose networks some pair is joined by no route through it |
+| FR41 | one link, two prefixes: two members that disagree where the wire ends |
+| FR42 | a member of a joined link whose `GATEWAY` is not the way |
+| FR43 | a member of a joined link, static, that declares no `GATEWAY` |
+| FR44 | a link with two ways on it: the member's one gateway is the way for one of them only |
+| FR45 | a dhcp member of a joined link whose server is not the way: its lease names no router |
+| FR46 | a member of a joined link that says `EGRESS none` |
+| FR47 | a member whose `EGRESS` does not reach another link the route joins to its own |
+| FR48 | a route to a declared link that no route joins to the member's own: a route to nowhere |
 
 ## Attribution: one machine verifying another's record
 
@@ -218,8 +279,17 @@ stolen: fleet atelier -- 1 entry from there on verifies under
   still open: a member's hardware is declared, never OBSERVED, so a
   device plugged in with a different address is caught by the server
   refusing it a lease and not by the court.
-- **Forwarding between links** — a fleet declares one `LINK`. A machine
-  that routes between two is an act nothing declares yet.
+- ~~**Forwarding between links** — a fleet declares one `LINK`. A machine
+  that routes between two is an act nothing declares yet.~~ **Closed
+  (FWD-1)** by `FORWARD` on the machine and `LINKS`/`ROUTE` here. What
+  is still open beside it: **transit** (a link reached through two
+  forwarders in turn: a route joins links on ONE machine, and the chain
+  front -- box -- core -- box -- far is not declared), **one-way reach**
+  (a route is a way both ways until a packet filter exists to say
+  otherwise), **redundancy** (two ways between two links, FR38), and a
+  forwarder's own **hardware addresses**, which a member declares one of
+  (`HARDWARE`) and a box on two links has two of: the emulator gives
+  them, and no declaration can yet.
 - ~~**Revocation** — nothing records a key a device USED to have.~~
   **Closed (RET-1)** by `RETIREMENT`, trusted THROUGH one entry.
   Still open beside it: a fleet cannot say a retired card's records are

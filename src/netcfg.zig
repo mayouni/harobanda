@@ -176,6 +176,16 @@ fn bringUpLinux(n: *const machine.Network, out: *std.Io.Writer, prefix: []const 
         .none => {},
         .to => |dests| {
             for (dests) |dst| {
+                // A route to another network goes THROUGH something. A network
+                // with no gateway -- declared, or named by the lease -- has
+                // nothing to write it through, and the kernel would refuse it
+                // for a reason ("no such device") that says nothing of the cause
+                // (a dhcp server that is not the way sends no router: FWD-1).
+                if (lease.gateway == null) {
+                    egress_ok = false;
+                    try out.print("{s}egress {s} -- {s}: no way written: this network has no gateway, and a route to another network goes through one\n", .{ prefix, n.name, dst.text });
+                    continue;
+                }
                 const dmask: u32 = if (dst.prefix == 0) 0 else @as(u32, 0xFFFFFFFF) << @intCast(32 - @as(u6, dst.prefix));
                 var rt: rtentry = .{
                     .rt_dst = sockIn(dst.ip, 0),

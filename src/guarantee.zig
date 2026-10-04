@@ -76,18 +76,12 @@ fn find(ls: []const []const u8, needle: []const u8) ?usize {
     return null;
 }
 
-/// A network only the machine itself can reach: its loopback. A promise to be
-/// FOUND, or about an address others LEARN, is not kept by one -- a sentence
-/// written for a wire and printed for an interface that goes nowhere is a lie
-/// in the second case (EGR-2). It was, until SRV-2 declared one: a machine whose
-/// only network was `lo` read "always reachable: KEPT".
-fn isLoopback(n: machine.Network) bool {
-    if (std.mem.eql(u8, n.interface, "lo")) return true;
-    return switch (n.address) {
-        .static => |s| (s.ip >> 24) == 127,
-        .dhcp => false,
-    };
-}
+/// A network only the machine itself can reach: its loopback, which `machine.zig`
+/// defines once. A promise to be FOUND, or about an address others LEARN, is not
+/// kept by one -- a sentence written for a wire and printed for an interface that
+/// goes nowhere is a lie in the second case (EGR-2). It was, until SRV-2 declared
+/// one: a machine whose only network was `lo` read "always reachable: KEPT".
+const isLoopback = machine.isLoopback;
 
 /// the first network somebody else could reach the box by
 fn firstReachable(m: *const machine.Machine) ?machine.Network {

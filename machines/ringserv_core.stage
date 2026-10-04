@@ -1,0 +1,10 @@
+# ringserv_core.stage -- what the image of machines/cloud_core.machine + machines/ringserv.pack
+# carries beyond /harb: the server, and the application it serves on the core link
+# (machines/ringserv/app_core.ring, which listens where another machine can ask it).
+# One line each: <file in this repository's tree>  <where the image puts it>.
+#
+# The server is not in git (experiment/ringserv_build.ps1 makes it, from the source ref
+# vendor/PIN.md pins). machines/ringserv.stage is the same list for the loopback-only
+# machine of SRV-2, with the application that listens on loopback alone.
+zig-out/ringserv/ringserv        /ringserv
+machines/ringserv/app_core.ring  /app/app.ring

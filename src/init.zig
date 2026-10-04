@@ -374,9 +374,26 @@ fn writeKernelFile(path: []const u8, data: []const u8) !void {
     try f.writeAll(data);
 }
 
-/// Delegate the controllers and make one group per budgeted world. A
-/// machine that declares no budget touches none of this and says
-/// nothing: the plumbing a declaration did not ask for is not built.
+/// What one served link is, for the server that speaks on it: its own address,
+/// domain and declared peers. Null for a network that is not a served link.
+fn linkOf(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machine.Network) !?names.Link {
+    const dom = n.domain orelse return null;
+    const self = switch (n.address) {
+        .static => |s| s,
+        .dhcp => return null,
+    };
+    var mine: std.ArrayList(machine.Peer) = .{};
+    for (m.peers) |p| if (std.mem.eql(u8, p.network, n.name)) {
+        try mine.append(gpa, p);
+    };
+    return .{
+        .self_ip = self.ip,
+        .mask = if (self.prefix == 0) 0 else ~@as(u32, 0) << @intCast(32 - @as(u6, self.prefix)),
+        .domain = dom,
+        .peers = mine.items,
+    };
+}
+
 /// Become this link's own server of addresses and names (NAM-1).
 ///
 /// PID 1 takes the two ports itself and forks only the loop, so a port
@@ -395,20 +412,19 @@ fn serveNames(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machi
         try led.say("boot: names {s} -- {s} could not be served: {s} (the ports a server needs are 67 and 53)\n", .{ n.name, n.interface, @errorName(e) });
         return false;
     };
-    var mine: std.ArrayList(machine.Peer) = .{};
-    for (m.peers) |p| if (std.mem.eql(u8, p.network, n.name)) {
-        try mine.append(gpa, p);
-    };
-    const self = switch (n.address) {
-        .static => |s| s,
-        .dhcp => return false,
-    };
-    const link: names.Link = .{
-        .self_ip = self.ip,
-        .mask = if (self.prefix == 0) 0 else ~@as(u32, 0) << @intCast(32 - @as(u6, self.prefix)),
-        .domain = n.domain.?,
-        .peers = mine.items,
-    };
+    var link = (try linkOf(gpa, m, n)) orelse return false;
+    // A machine that is the way between its networks (FWD-1) offers itself as
+    // the router to those it serves, and answers for the full names on the
+    // other links it serves: the front link's server knows what is behind it.
+    if (m.forward) {
+        link.router = link.self_ip;
+        var others: std.ArrayList(names.Link) = .{};
+        for (m.networks) |*o| {
+            if (std.mem.eql(u8, o.name, n.name) or machine.isLoopback(o.*)) continue;
+            if (try linkOf(gpa, m, o)) |ol| try others.append(gpa, ol);
+        }
+        link.reach = try others.toOwnedSlice(gpa);
+    }
     // everything this machine will say about the link is said BEFORE the
     // fork, so the two processes never contend for the console
     _ = try expect.namesLines(led.w(), m, n, "boot: ");
@@ -458,6 +474,9 @@ fn forwardOn(m: *const machine.Machine, led: *Ledger) !void {
     _ = try expect.forwardLine(led.w(), m);
 }
 
+/// Delegate the controllers and make one group per budgeted world. A
+/// machine that declares no budget touches none of this and says
+/// nothing: the plumbing a declaration did not ask for is not built.
 fn cgroupPrepare(m: *const machine.Machine, out: *std.Io.Writer) BudgetState {
     var any = false;
     for (m.services) |s| {
@@ -759,6 +778,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     // It is the reason a box with no running world is not a box with
     // nothing left to do (NAM-1).
     var serving: ?[]const u8 = null;
+    var serving_buf: std.ArrayList(u8) = .{};
     var said_serving = false;
     if (opts.hold and ab != null) try out.print("boot: --hold: a trial will not be committed and the watchdog will not be fed -- the rollback instrument\n", .{});
 
@@ -822,7 +842,12 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             // it declared itself" is said in order in the transcript that
             // is judged; only the loop is forked.
             if (up and n.domain != null) {
-                if (try serveNames(gpa, m, n, &led)) serving = n.domain;
+                if (try serveNames(gpa, m, n, &led)) {
+                    // every link it serves, for the line it says at the end
+                    if (serving_buf.items.len > 0) try serving_buf.appendSlice(gpa, " and ");
+                    try serving_buf.appendSlice(gpa, n.domain.?);
+                    serving = serving_buf.items;
+                }
             }
             try led.echo();
         },

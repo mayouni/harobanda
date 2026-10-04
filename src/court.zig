@@ -291,13 +291,24 @@ pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.
         };
         if (expect.get("link")) |lv| switch (lv) {
             .string => |want| {
-                const got = f.link orelse "";
+                const got = f.link() orelse "";
                 if (!std.mem.eql(u8, got, want)) why = try std.fmt.allocPrint(arena, "link: expected {s} got '{s}'", .{ want, got });
             },
-            .null => if (f.link) |got| {
+            .null => if (f.link()) |got| {
                 why = try std.fmt.allocPrint(arena, "link: expected none, got {s}", .{got});
             },
             else => {},
+        };
+        // fleet v0.2 (FWD-1): the wires it declares, in order, and the ways between them
+        if (expect.get("links")) |lv| if (lv == .array) {
+            var same = lv.array.items.len == f.links.len;
+            if (same) for (lv.array.items, f.links) |w, g| {
+                if (w != .string or !std.mem.eql(u8, w.string, g)) same = false;
+            };
+            if (!same) why = try std.fmt.allocPrint(arena, "links: expected {d} named, got {d} (or another order)", .{ lv.array.items.len, f.links.len });
+        };
+        if (int(expect.get("routes"))) |w| if (@as(i64, @intCast(f.routes.len)) != w) {
+            why = try std.fmt.allocPrint(arena, "routes: expected {d} got {d}", .{ w, f.routes.len });
         };
         if (why) |w| {
             failures += 1;

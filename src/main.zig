@@ -30,6 +30,7 @@ const docs = @import("docs.zig");
 const fleet = @import("fleet.zig");
 const pack = @import("pack.zig");
 const ready = @import("ready.zig");
+const get = @import("get.zig");
 const confine = @import("confine.zig");
 const expect = @import("expect.zig");
 
@@ -56,6 +57,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb confined [iface] [path...]             (what can this WORLD see and do? from inside one)
         \\  harb swarm  [n]                             (ask for n tasks and say where the kernel stopped; from inside a world)
         \\  harb ask    <name>                          (what does a name mean on this network? from inside a device on it)
+        \\  harb get    <host> <port> [<path>]          (ask a server one question, by name or address: did the packet cross? from inside a device)
         \\  harb attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  harb journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
@@ -480,22 +482,39 @@ pub fn main() !u8 {
         }
 
         try out.print("fleet {s} -- {d} member{s}", .{ f.name, f.members.len, if (f.members.len == 1) "" else "s" });
-        if (f.link) |l| {
+        if (f.link()) |l| {
             try out.print(" on {s}", .{l});
             if (f.server()) |s| try out.print(", served by {s}", .{s.name}) else try out.print(", served by nobody in this fleet", .{});
+        } else if (f.links.len > 1) {
+            try out.print(" on", .{});
+            for (f.links, 0..) |l, i| try out.print("{s} {s}", .{ if (i == 0) "" else if (i + 1 == f.links.len) " and" else ",", l });
         } else try out.print(", no shared link declared", .{});
         try out.print(" -- judged, no refusal\n", .{});
+        // several links: who serves each, and the ways between them (FWD-1)
+        if (f.links.len > 1) {
+            for (f.links) |l| {
+                try out.print("  link {s} -- ", .{l});
+                if (f.serverOf(l)) |s| try out.print("served by {s}\n", .{s.name}) else try out.print("served by nobody in this fleet\n", .{});
+            }
+            for (f.routes) |r| {
+                try out.print("  route {s} -- ", .{r.name});
+                for (r.between, 0..) |l, i| try out.print("{s}{s}", .{ if (i == 0) "" else if (i + 1 == r.between.len) " and " else ", ", l });
+                try out.print(", through {s}\n", .{r.through});
+            }
+        }
         var unenrolled: usize = 0;
         for (f.members) |m| {
             try out.print("  {s} -- {s} ({s}", .{ m.name, m.machine.name, m.declaration });
-            if (f.link) |l| for (m.machine.networks) |n| {
-                if (!std.mem.eql(u8, n.name, l)) continue;
+            for (m.machine.networks) |n| {
+                if (!fleet.hasName(f.links, n.name)) continue;
+                // one link: the member's address, as ever; several: which link it is for
+                if (f.links.len > 1) try out.print(", {s}", .{n.name});
                 switch (n.address) {
-                    .static => |st| try out.print(", {s}", .{st.text}),
-                    .dhcp => try out.print(", asks", .{}),
+                    .static => |st| try out.print("{s}{s}", .{ if (f.links.len > 1) " " else ", ", st.text }),
+                    .dhcp => try out.print("{s}asks", .{if (f.links.len > 1) " " else ", "}),
                 }
                 if (n.domain) |d| try out.print(", serves {s}", .{d});
-            };
+            }
             try out.print(")", .{});
             // which physical unit, and which promise it answers to. The
             // join is the whole point of HARDWARE being here (HDW-1).
@@ -548,69 +567,33 @@ pub fn main() !u8 {
             return 1;
         }
         const want = args[2];
-        const conf = std.fs.cwd().readFileAlloc(arena, "/etc/resolv.conf", 1 << 16) catch {
-            try out.print("ask {s} -- no resolver: this machine was never told where to ask (/etc/resolv.conf)\n", .{want});
-            return 0;
-        };
-        var server: ?u32 = null;
-        var lines = std.mem.splitScalar(u8, conf, '\n');
-        while (lines.next()) |line| {
-            const t = std.mem.trim(u8, line, " \t\r");
-            if (!std.mem.startsWith(u8, t, "nameserver ")) continue;
-            if (machine.parseIpv4(std.mem.trim(u8, t["nameserver ".len..], " \t\r"))) |ip| {
-                server = ip;
-                break;
-            }
-        }
-        const sip = server orelse {
-            try out.print("ask {s} -- no resolver: /etc/resolv.conf names none\n", .{want});
-            return 0;
-        };
+        // The reading of /etc/resolv.conf and the query are names.lookup's,
+        // shared with `get`, so the two cannot disagree about where a name goes.
         var sbuf: [16]u8 = undefined;
-        const stext = netcfg.fmtIp(&sbuf, sip);
-        const l = std.os.linux;
-        const rc_sock = l.socket(l.AF.INET, l.SOCK.DGRAM, 0);
-        if (l.E.init(rc_sock) != .SUCCESS) {
-            try out.print("ask {s} -- no socket: {s}\n", .{ want, @tagName(l.E.init(rc_sock)) });
-            return 0;
+        switch (names.lookup(arena, want)) {
+            .never_told => try out.print("ask {s} -- no resolver: this machine was never told where to ask (/etc/resolv.conf)\n", .{want}),
+            .names_none => try out.print("ask {s} -- no resolver: /etc/resolv.conf names none\n", .{want}),
+            .no_socket => |why| try out.print("ask {s} -- no socket: {s}\n", .{ want, why }),
+            .not_a_name => {
+                try out.print("ask {s} -- that is not a name this machine can ask for\n", .{want});
+                return 1;
+            },
+            .address => |a| {
+                var ab: [16]u8 = undefined;
+                try out.print("ask {s} -- {s} (from {s})\n", .{ want, netcfg.fmtIp(&ab, a.ip), netcfg.fmtIp(&sbuf, a.server) });
+            },
+            .no_such_name => |s| try out.print("ask {s} -- no such name on this network (from {s})\n", .{ want, netcfg.fmtIp(&sbuf, s) }),
+            .silent => |s| try out.print("ask {s} -- {s} did not answer\n", .{ want, netcfg.fmtIp(&sbuf, s) }),
         }
-        const fd: i32 = @intCast(rc_sock);
-        defer _ = l.close(fd);
-        const tv: l.timeval = .{ .sec = 3, .usec = 0 };
-        _ = l.setsockopt(fd, l.SOL.SOCKET, l.SO.RCVTIMEO, @ptrCast(&tv), @sizeOf(l.timeval));
-        var sa = std.posix.sockaddr.in{
-            .family = l.AF.INET,
-            .port = std.mem.nativeToBig(u16, 53),
-            .addr = std.mem.nativeToBig(u32, sip),
-            .zero = [_]u8{0} ** 8,
-        };
-        var qbuf: [512]u8 = undefined;
-        const id: u16 = 0x5A5A;
-        const qn = names.query(&qbuf, id, want) orelse {
-            try out.print("ask {s} -- that is not a name this machine can ask for\n", .{want});
-            return 1;
-        };
-        var rbuf: [1500]u8 = undefined;
-        var tries: u8 = 0;
-        while (tries < 3) : (tries += 1) {
-            _ = l.sendto(fd, &qbuf, qn, 0, @ptrCast(&sa), @sizeOf(@TypeOf(sa)));
-            const r = l.recvfrom(fd, &rbuf, rbuf.len, 0, null, null);
-            if (l.E.init(r) != .SUCCESS) continue;
-            switch (names.readAnswer(rbuf[0..r], id)) {
-                .address => |ip| {
-                    var ab: [16]u8 = undefined;
-                    try out.print("ask {s} -- {s} (from {s})\n", .{ want, netcfg.fmtIp(&ab, ip), stext });
-                    return 0;
-                },
-                .no_such_name => {
-                    try out.print("ask {s} -- no such name on this network (from {s})\n", .{ want, stext });
-                    return 0;
-                },
-                .malformed => continue,
-            }
-        }
-        try out.print("ask {s} -- {s} did not answer\n", .{ want, stext });
         return 0;
+    }
+    if (std.mem.eql(u8, verb, "get")) {
+        // A world asks a server one question (FWD-1): the till, once `ask`
+        // has said what a name means, going there. src/get.zig says what it
+        // does and what each of its lines is.
+        const gargs = try arena.alloc([]const u8, args.len - 2);
+        for (args[2..], 0..) |a, i| gargs[i] = a;
+        return get.run(arena, gargs, out);
     }
     if (std.mem.eql(u8, verb, "swarm")) {
         // The witness of the TASKS seat: a world asking the kernel for
@@ -1036,6 +1019,7 @@ test {
     _ = fleet;
     _ = pack;
     _ = ready;
+    _ = get;
     _ = learn;
     _ = docs;
 }

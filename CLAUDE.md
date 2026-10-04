@@ -324,7 +324,7 @@ it (the servers, the runtime, the intelligence modules, the pages, the
 flagships) and what each owes it, didactic, one example per layer, and
 `doc/CLOUD.md` for how many machines compose into a cloud that serves
 one solution (a fleet spanning links, placing packs; the six rungs in
-dependency order, none built; the two names, Harobanda Cloud and
+dependency order, the first two built; the two names, Harobanda Cloud and
 Softanza Cloud, rulings 14-15 of 2026-10-04); the
 estate-wide reflection that places the floor in the author's 2020
 diagram is `softanza/vision/08-NORTH-STAR.md` (ratified 2026-09-27), and the story of
@@ -413,6 +413,13 @@ powershell -ExecutionPolicy Bypass -File `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/os9_cloud.sh
 
+# the smallest cloud (FWD-1): THREE machines on TWO wires, a
+# till that reaches a server on the other link through the box
+# (needs RingServ built, as above) -> zig-out/wsl/links.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os8_links.sh
+zig-out\bin\harb.exe fleet machines\cloud_links.fleet
+
 # the guided tour: 18 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -449,6 +456,31 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A machine says it is the way between links, and a fleet says it was
+  meant** (FWD-1): `FORWARD yes` switches the kernel's forwarding on once
+  every network is up and says so only after reading the switch back. It
+  is one switch for the whole machine and not a list, because the kernel
+  decides by the interface a packet ARRIVES on and a list would name a
+  perimeter nothing keeps; the boot line says "nothing here filters it",
+  which is true. The fleet's `LINKS` and `ROUTE` hold the set: **a
+  forwarder no route goes through is a door nobody agreed to**; a route
+  is a way BOTH ways (no filter exists to make it one-way), so everyone on
+  a joined link takes the way or sits on another link; and a destination
+  that is a declared link no route joins is a route to nowhere. Each
+  refusal is a case where every machine is faultless alone. **Names follow
+  the way, never the reverse**: a box answers for the far link's full
+  names only if it forwards, so "a name that resolves and a way that is
+  closed" cannot be declared. **A loopback is not a link**: four judges
+  that count networks (FORWARD, the image's NICs, the guarantee sheet, the
+  names server) needed one answer, and `machine.isLoopback` is it -- a
+  declaration that adds a species of something the judges count is a new
+  question for every one of them (SRV-2, again). **A transcript whose
+  pin depends on how fast an emulator booted is a margin**: the till
+  finished inside the core's health window and the core was killed before
+  it had judged itself, so the script waits for the machine's OWN verdict
+  and not for "ready". And **a court that refuses for the wrong reason is
+  not a court of that rule**: the fleet widening was 40/58 on its first
+  run and 56/58 on its second, and every failure was the author's fixture.
 - **Ready is what a question returned** (SRV-2): a server that writes no
   READY file is not made ready by PID 1 guessing, nor by a URL being a
   second reading of ready beside the path. A program in its world,
@@ -922,6 +954,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   its transcript for a week. Never put a literal control byte in a
   script -- write `\r` -- and edit a file you have not checked for CR in
   bytes (`read_bytes`), or open it with `newline=''`.
+- **A loop that runs `script arg` strings must split them, and delete the
+  log first** (FWD-1): `wsl -- bash "/mnt/.../os2_image.sh qemu_forward"`
+  is ONE argument, bash answers 127 in two seconds, and the loop printed the
+  previous run's `JUDGED: ... matches` line from a log nothing had rewritten
+  -- a green verdict for a run that did not happen. PIN-1's lesson again:
+  remove the log before the run, and print the exit code and the seconds
+  beside the verdict (a two-second boot is not a boot).
 - **Invoke WSL scripts from PowerShell, never from the Bash tool** —
   git-bash rewrites `/mnt/d/...` into `C:/Git/mnt/...`
   (`MSYS_NO_PATHCONV=1 wsl.exe ...` is the workaround if you must).
@@ -982,9 +1021,15 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   placed on `machines/qemu_cloud.machine` and booted under a pinned
   transcript through `harb ready`). It stands in for RestoLean's
   Commons, which is that desk's to hand over, runs as root, and listens
-  on its machine's own loopback only. Next, on the author's order: rung
-  2, two links (`FORWARD` on a machine, fleet v0.2 routes, names across
-  links, a boot with two wires). The Enterprise page's cloud sentence
+  on its machine's own loopback only. **Rung 2 is built (FWD-1): two
+  links, one forwarder.** `FORWARD` on a machine, fleet v0.2 (`LINKS`,
+  `ROUTE`), names across the links a box is the way between, and
+  `experiment/os8_links.sh`, three machines on two wires, where a till
+  reaches RingServ on the core link through the box, pinned at 146 lines.
+  It is reached over plain HTTP, between members of one cloud, behind a
+  front that is not built. Next, in the ladder's order and not yet
+  ordered by the author: rung 3, TIME (attested, ruling 07) and then the
+  front (TLS at a proxy, as ruled). The Enterprise page's cloud sentence
   stays by his word: the ladder makes it true, and CLOUD.md's status
   lines are where the distance is read.
 - **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
@@ -998,8 +1043,10 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   time authority, never assumed; the seat is not built). ~~REVOCATION in
   a fleet~~ -- built as RETIREMENT (RET-1);
   what remains is retiring the RECORDS a retired card signed. Hardware
-  DECLARED but never observed (in the OS-5 plan, step 4). Forwarding
-  between two links. A bounded window for the TRIAL itself. The Commons
+  DECLARED but never observed (in the OS-5 plan, step 4). ~~Forwarding
+  between two links~~ -- built (FWD-1); what remains is a chain of
+  forwarders (transit), a way that is one-way (the packet filter), and a
+  forwarder's own hardware addresses. A bounded window for the TRIAL itself. The Commons
   as the first declared server world. Haro's runtime as the image's
   second binary. `makeen_box` gets its own `DOMAIN` at OS-5, when there
   is a NIC to serve. ~~The tour's boot lessons that need `stzr`~~ --
@@ -1028,7 +1075,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

@@ -1,0 +1,146 @@
+box: the way between the links, before anyone has asked:
+box: boot: harb init -- machine cloud_front (hosted / x86_64 / qemu_pc) -- pid 1
+box: boot: console /dev/ttyS0
+box: boot: mount proc at /proc -- done
+box: boot: mount sysfs at /sys -- done
+box: boot: mount devtmpfs at /dev -- done
+box: boot: grant network (effectful)
+box: boot: network front -- eth0 up 192.168.20.1/24
+box: boot: names front -- front.cloud: this machine is 192.168.20.1/24, 1 declared peer, and no address for anyone else
+box: boot: names front -- till.front.cloud is 192.168.20.40 for 52:54:00:12:35:61
+box: boot: names front -- this machine forwards, so it is offered as the router to everyone it serves here
+box: boot: names front -- and for core.cloud, which this machine is the way to: core.cloud is 10.20.0.1
+box: boot: names front -- commons.core.cloud is 10.20.0.2, through this machine
+box: boot: network core -- eth1 up 10.20.0.1/24
+box: boot: names core -- core.cloud: this machine is 10.20.0.1/24, 1 declared peer, and no address for anyone else
+box: boot: names core -- commons.core.cloud is 10.20.0.2 for 52:54:00:12:35:62
+box: boot: names core -- this machine forwards, so it is offered as the router to everyone it serves here
+box: boot: names core -- and for front.cloud, which this machine is the way to: front.cloud is 192.168.20.1
+box: boot: names core -- till.front.cloud is 192.168.20.40, through this machine
+box: boot: forward -- between front and core: a packet that arrives on one may leave by another, and nothing here filters it
+box: boot: judge -- the boot matches its expectation (/etc/expected, 19 lines)
+box: boot: every service has ended -- and this machine is still front.cloud and core.cloud: a server stops when the machine stops, not when the asking does
+core: the server, behind the box:
+core: boot: harb init -- machine cloud_core (hosted / x86_64 / qemu_pc) -- pid 1
+core: boot: console /dev/ttyS0
+core: boot: mount proc at /proc -- done
+core: boot: mount sysfs at /sys -- done
+core: boot: mount devtmpfs at /dev -- done
+core: boot: mount cgroup2 at /sys/fs/cgroup -- done
+core: boot: mount ext4 at /data -- done
+core: boot: grant network (effectful)
+core: boot: grant filesystem (effectful)
+core: boot: grant process (effectful)
+core: boot: grant threads (compute)
+core: boot: grant clock (sensing)
+core: boot: network core -- eth0 up 10.20.0.2/24 (dhcp), dns [10.20.0.1], names on core.cloud (/etc/resolv.conf)
+core: boot: egress core -- 192.168.20.0/24 and nowhere else: no default route
+core: boot: network loopback -- lo up 127.0.0.1/8
+core: boot: budget -- ringserv 128 MiB and 100% of a core and 64 tasks; the kernel holds the ceiling, not the world
+core: boot: health -- ringserv every 10s; a world that stops refreshing stops the watchdog
+core: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+core: boot: start ringserv -- pid N -- /harb ready /run/ringserv.ready 127.0.0.1:8210 --every 2 -- /ringserv run /app/app.ring --data /data
+core: ringserv: serving plain HTTP on 0.0.0.0:8210 — :behindproxy is set, so TLS is the proxy's job.
+core: RingServ 0.9.0 — serving on http://0.0.0.0:8210/api/v1  (2 workers)
+core: boot: ringserv -- ready (/run/ringserv.ready)
+core: boot: judge -- the boot matches its expectation (/etc/expected, 20 lines)
+till: the declared device, which knows nothing and asks:
+till: boot: harb init -- machine cloud_till (hosted / x86_64 / qemu_pc) -- pid 1
+till: boot: console /dev/ttyS0
+till: boot: mount proc at /proc -- done
+till: boot: mount sysfs at /sys -- done
+till: boot: mount devtmpfs at /dev -- done
+till: boot: grant process (effectful)
+till: boot: grant network (effectful)
+till: boot: network front -- eth0 up 192.168.20.40/24 (dhcp), dns [192.168.20.1], names on front.cloud (/etc/resolv.conf)
+till: boot: egress front -- 10.20.0.0/24 and nowhere else: no default route
+till: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+till: boot: start where -- pid N -- /harb ask commons.core.cloud
+till: ask commons.core.cloud -- 10.20.0.2 (from 192.168.20.1)
+till: boot: where (pid N) exited 0
+till: boot: start reach -- pid N -- /harb get commons.core.cloud 8210 /health
+till: get http://commons.core.cloud:8210/health -- 200 {"code":0,"message":"OK","data":{"up":true}}
+till: boot: reach (pid N) exited 0
+till: boot: start bare -- pid N -- /harb ask commons
+till: ask commons -- no such name on this network (from 192.168.20.1)
+till: boot: bare (pid N) exited 0
+till: boot: start outside -- pid N -- /harb ask www.example.com
+till: ask www.example.com -- no such name on this network (from 192.168.20.1)
+till: boot: outside (pid N) exited 0
+till: boot: judge -- the boot matches its expectation (/etc/expected, 18 lines)
+till: boot: every service has ended -- init has nothing left to keep alive
+till: boot: init halts the machine -- reboot(RESTART)
+till: reboot: Restarting system
+stranger: the same till, with a hardware address nobody declared:
+stranger: boot: harb init -- machine cloud_till (hosted / x86_64 / qemu_pc) -- pid 1
+stranger: boot: console /dev/ttyS0
+stranger: boot: mount proc at /proc -- done
+stranger: boot: mount sysfs at /sys -- done
+stranger: boot: mount devtmpfs at /dev -- done
+stranger: boot: grant process (effectful)
+stranger: boot: grant network (effectful)
+stranger: boot: network front -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
+stranger: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+stranger: boot: start where -- pid N -- /harb ask commons.core.cloud
+stranger: ask commons.core.cloud -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
+stranger: boot: where (pid N) exited 0
+stranger: boot: start reach -- pid N -- /harb get commons.core.cloud 8210 /health
+stranger: get http://commons.core.cloud:8210/health -- no resolver was named, so the name is not an address
+stranger: boot: reach (pid N) exited 0
+stranger: boot: start bare -- pid N -- /harb ask commons
+stranger: ask commons -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
+stranger: boot: bare (pid N) exited 0
+stranger: boot: start outside -- pid N -- /harb ask www.example.com
+stranger: ask www.example.com -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
+stranger: boot: outside (pid N) exited 0
+stranger: boot: judge -- the boot differs from its expectation (/etc/expected): 2 line(s) expected and not said, 1 said and not expected
+stranger: boot: judge -- expected, not said: network front -- eth0 up *
+stranger: boot: judge -- expected, not said: egress front -- 10.20.0.0/24 and nowhere else: no default route
+stranger: boot: judge -- said, not expected: network front -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
+stranger: boot: every service has ended -- init has nothing left to keep alive
+stranger: boot: init halts the machine -- reboot(RESTART)
+stranger: reboot: Restarting system
+closed box: the same box less its one clause, which serves both links and is the way between neither:
+closedbox: boot: harb init -- machine cloud_front (hosted / x86_64 / qemu_pc) -- pid 1
+closedbox: boot: console /dev/ttyS0
+closedbox: boot: mount proc at /proc -- done
+closedbox: boot: mount sysfs at /sys -- done
+closedbox: boot: mount devtmpfs at /dev -- done
+closedbox: boot: grant network (effectful)
+closedbox: boot: network front -- eth0 up 192.168.20.1/24
+closedbox: boot: names front -- front.cloud: this machine is 192.168.20.1/24, 1 declared peer, and no address for anyone else
+closedbox: boot: names front -- till.front.cloud is 192.168.20.40 for 52:54:00:12:35:61
+closedbox: boot: network core -- eth1 up 10.20.0.1/24
+closedbox: boot: names core -- core.cloud: this machine is 10.20.0.1/24, 1 declared peer, and no address for anyone else
+closedbox: boot: names core -- commons.core.cloud is 10.20.0.2 for 52:54:00:12:35:62
+closedbox: boot: judge -- the boot matches its expectation (/etc/expected, 12 lines)
+closedbox: boot: every service has ended -- and this machine is still front.cloud and core.cloud: a server stops when the machine stops, not when the asking does
+closed: the same till, with that box:
+closed: boot: harb init -- machine cloud_till (hosted / x86_64 / qemu_pc) -- pid 1
+closed: boot: console /dev/ttyS0
+closed: boot: mount proc at /proc -- done
+closed: boot: mount sysfs at /sys -- done
+closed: boot: mount devtmpfs at /dev -- done
+closed: boot: grant process (effectful)
+closed: boot: grant network (effectful)
+closed: boot: egress front -- 10.20.0.0/24: no way written: this network has no gateway, and a route to another network goes through one
+closed: boot: network front -- eth0 up 192.168.20.40/24 (dhcp), dns [192.168.20.1], names on front.cloud (/etc/resolv.conf)
+closed: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+closed: boot: start where -- pid N -- /harb ask commons.core.cloud
+closed: ask commons.core.cloud -- no such name on this network (from 192.168.20.1)
+closed: boot: where (pid N) exited 0
+closed: boot: start reach -- pid N -- /harb get commons.core.cloud 8210 /health
+closed: get http://commons.core.cloud:8210/health -- the name does not exist on this network
+closed: boot: reach (pid N) exited 0
+closed: boot: start bare -- pid N -- /harb ask commons
+closed: ask commons -- no such name on this network (from 192.168.20.1)
+closed: boot: bare (pid N) exited 0
+closed: boot: start outside -- pid N -- /harb ask www.example.com
+closed: ask www.example.com -- no such name on this network (from 192.168.20.1)
+closed: boot: outside (pid N) exited 0
+closed: boot: judge -- the boot differs from its expectation (/etc/expected): 1 line(s) expected and not said, 1 said and not expected
+closed: boot: judge -- expected, not said: egress front -- 10.20.0.0/24 and nowhere else: no default route
+closed: boot: judge -- said, not expected: egress front -- 10.20.0.0/24: no way written: this network has no gateway, and a route to another network goes through one
+closed: boot: every service has ended -- init has nothing left to keep alive
+closed: boot: init halts the machine -- reboot(RESTART)
+closed: reboot: Restarting system

@@ -1,0 +1,73 @@
+-- cloud_till.machine -- the client of the smallest cloud: a device that is told
+-- nothing but its own address, asks for a server by name, and goes there
+-- (FWD-1, rung 2 of the cloud ladder, doc/CLOUD.md).
+--
+-- It declares no resolver, no gateway and no address of the server. It comes up,
+-- asks the front link who it is, and is told its address, the name of the link,
+-- where to ask about names, and -- because the box that answers is also the way
+-- between links -- the router. Then the four questions below, in order, which
+-- are the whole scene:
+--
+--   where    what does the name of the server on the OTHER link mean?
+--   reach    ask that server a question, and say what it answered. This is the
+--            line that proves a packet crossed: a name that resolves and a way
+--            that is closed look the same until somebody connects
+--   bare     the same word with no domain: a name on THIS link, which nobody
+--            declared, so the box says there is no such name and does not guess
+--   outside  a name in the rest of the world: the box speaks for its own links
+--            and for the links it is the way to, and is silent about the rest
+--
+-- Its EGRESS is the one thing here that is a fact about ANOTHER link, written
+-- in this file: the core's prefix. It is the perimeter, because a till that
+-- reaches everything through a box that is the way to two links claims more
+-- than the box can deliver; and it is the one place the fleet court holds
+-- against the set (machines/cloud_links.fleet): a prefix no link of the fleet
+-- has is a route to nowhere.
+
+DEFINE MACHINE cloud_till AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "A client that is told everything it needs by the link it is plugged into, and declares only how far it may reach"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The questions are processes"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "It has to ask, and then to connect"
+
+DEFINE NETWORK front AS (
+  INTERFACE "eth0",
+  ADDRESS dhcp,
+  EGRESS ["10.20.0.0/24"]
+) RATIONALE "It asks the link. The address, the domain, the resolver and the way are the box's to give; the perimeter -- the core link and nowhere else -- is this file's to say"
+
+DEFINE SERVICE where AS (
+  RUN ["/harb", "ask", "commons.core.cloud"],
+  RESTART never,
+  NEEDS [process, network]
+) RATIONALE "The server on the other link, asked for by its full name: the box that is the way answers for it"
+
+DEFINE SERVICE reach AS (
+  RUN ["/harb", "get", "commons.core.cloud", "8210", "/health"],
+  RESTART never,
+  AFTER [where],
+  NEEDS [process, network]
+) RATIONALE "Going there: the application's own answer to the question 'are you serving?', from a device on another link, through the box"
+
+DEFINE SERVICE bare AS (
+  RUN ["/harb", "ask", "commons"],
+  RESTART never,
+  AFTER [reach],
+  NEEDS [process, network]
+) RATIONALE "A bare word is a name on this link, and nobody declared it here: the same word on the far link is another device, and the box does not lend it"
+
+DEFINE SERVICE outside AS (
+  RUN ["/harb", "ask", "www.example.com"],
+  RESTART never,
+  AFTER [bare],
+  NEEDS [process, network]
+) RATIONALE "The rest of the world: the box speaks for its links and is silent about everything else, and does not go and ask on the till's behalf"

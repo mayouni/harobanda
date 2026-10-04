@@ -1,6 +1,6 @@
 {
   "grammar": "fleet",
-  "version": "0.1",
+  "version": "0.2",
   "accepts": [
     {
       "id": "FA1",
@@ -78,6 +78,80 @@
         "members": 1,
         "retirements": 1,
         "link": null
+      }
+    },
+    {
+      "id": "FA7",
+      "name": "the smallest cloud, machines/cloud_links.fleet verbatim: a box between a front link and a core link, a till that asks and a core that is asked",
+      "source": "-- cloud_links.fleet -- the smallest cloud, judged as one thing: a box that is the way between\n-- a front link and a core link, a client on the front, a server on the core (FWD-1, fleet v0.2).\n--\n-- Every check this file makes is one no single machine can fail. The box forwards, and is\n-- right to; the till's route to the core is right; the core's route back is right. A box that\n-- forwards between links nobody declared joined is a door nobody agreed to; a till whose route\n-- has a way there and a server with none back is a street that goes one way. Each of the\n-- machines is faultless alone, and the set is what is wrong. That is what a fleet is for.\n--\n-- LINKS names the wires these machines share: a network of one of these names, on any member,\n-- is that wire. ROUTE says two of them are joined, and through whom: the member must be on both,\n-- must say FORWARD, and every other member on either link must take the way -- by a gateway it\n-- declares, or by a lease from the one machine that can offer it. A route is a way BOTH ways,\n-- because no filter exists to make it one-way, and an answer needs a way back as much as a\n-- question needs a way there (a filter is a later seat of doc/CLOUD.md).\n--\n-- HARDWARE says which physical unit each member is, which is what lets the court hold the\n-- addresses the box PROMISES against the devices that will ask (HDW-1). The box has none: it\n-- is nobody's peer, and its two NICs are the emulator's business.\n--\n-- experiment/os8_links.sh boots the three machines on two wires and reads their hardware\n-- addresses from here.\n\nDEFINE FLEET cloud_links AS (\n  LINKS [front, core]\n) RATIONALE \"One front link, one core link, and a box that is both links' server and the way between\"\n\nDEFINE MEMBER gateway AS (\n  DECLARATION \"cloud_front.machine\"\n) RATIONALE \"The box: it serves both links and is the way between them. It is nobody's peer, so it says no hardware\"\n\nDEFINE MEMBER till AS (\n  DECLARATION \"cloud_till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"The client on the front link: the device the box promises 192.168.20.40 to\"\n\nDEFINE MEMBER core AS (\n  DECLARATION \"cloud_core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"The machine the server is placed on, on the core link: the device the box promises 10.20.0.2 to\"\n\nDEFINE ROUTE front_to_core AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"The clients on the front link reach the servers on the core link through the box, and the servers answer them the same way: the smallest cloud has a front link, a core link, and one way between\"\n",
+      "files": {
+        "cloud_front.machine": "-- cloud_front.machine -- the box of the smallest cloud: the way between\n-- its front link and its core link (FWD-1, rung 2 of the cloud ladder,\n-- doc/CLOUD.md).\n--\n--      till ---- front link ---- [ this box ] ---- core link ---- commons\n--      (asks)    192.168.20.0/24                    10.20.0.0/24   (RingServ)\n--\n-- It does four things, each one a declaration and none an accident:\n--\n--   serves both links      a DOMAIN on each makes it the link's own server of\n--                          addresses and names (NAM-1). There is no pool: it\n--                          admits the two peers declared below and nobody else\n--   is the way             FORWARD, so a packet that arrives on one link may\n--                          leave by the other, and nothing here filters it\n--   offers itself          because it forwards, the lease it gives carries it as\n--                          the router, and every device it serves learns the way\n--   answers across links   because it is the way, it answers for the FULL names\n--                          on the other link too: `commons.core.cloud` on the\n--                          front link, and not the bare word `commons`, which is\n--                          a name on THIS link only\n--\n-- It declares no EGRESS and no GATEWAY: it knows the two links it is on and no\n-- way off them, and it says so by saying nothing (a machine that forwards\n-- cannot say `EGRESS none`: it is a way off every link it joins).\n--\n-- Which links such a box may join is a fact about a SET, and a fleet declares\n-- it: machines/cloud_links.fleet. experiment/os8_links.sh boots this box\n-- with the till and the core on two wires, and the till reaches the thing it\n-- named. The two hardware addresses below are the devices that will ask\n-- (HDW-1): the fleet holds them against the members that claim them.\n\nDEFINE MACHINE cloud_front AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux,\n  CONSOLE \"/dev/ttyS0\",\n  FORWARD yes\n) RATIONALE \"The box of a front link and a core link: it is both links' own server of names, and the way between them\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"A machine that serves two links and is the way between them speaks on both\"\n\nDEFINE NETWORK front AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"192.168.20.1/24\",\n  DOMAIN \"front.cloud\"\n) RATIONALE \"The link the clients are on: the first address on it, answering for every name on it\"\n\nDEFINE NETWORK core AS (\n  INTERFACE \"eth1\",\n  ADDRESS \"10.20.0.1/24\",\n  DOMAIN \"core.cloud\"\n) RATIONALE \"The link the servers are on, behind the box: nothing on it is reachable from the front link unless this machine is the way, and it is\"\n\nDEFINE PEER till AS (\n  NETWORK front,\n  HARDWARE \"52:54:00:12:35:61\",\n  ADDRESS \"192.168.20.40\"\n) RATIONALE \"The till, a client: the same address every day and a name it may be found by\"\n\nDEFINE PEER commons AS (\n  NETWORK core,\n  HARDWARE \"52:54:00:12:35:62\",\n  ADDRESS \"10.20.0.2\"\n) RATIONALE \"The server the solution runs on: the front link asks for it by the name commons.core.cloud and is told where it is\"\n",
+        "cloud_till.machine": "-- cloud_till.machine -- the client of the smallest cloud: a device that is told\n-- nothing but its own address, asks for a server by name, and goes there\n-- (FWD-1, rung 2 of the cloud ladder, doc/CLOUD.md).\n--\n-- It declares no resolver, no gateway and no address of the server. It comes up,\n-- asks the front link who it is, and is told its address, the name of the link,\n-- where to ask about names, and -- because the box that answers is also the way\n-- between links -- the router. Then the four questions below, in order, which\n-- are the whole scene:\n--\n--   where    what does the name of the server on the OTHER link mean?\n--   reach    ask that server a question, and say what it answered. This is the\n--            line that proves a packet crossed: a name that resolves and a way\n--            that is closed look the same until somebody connects\n--   bare     the same word with no domain: a name on THIS link, which nobody\n--            declared, so the box says there is no such name and does not guess\n--   outside  a name in the rest of the world: the box speaks for its own links\n--            and for the links it is the way to, and is silent about the rest\n--\n-- Its EGRESS is the one thing here that is a fact about ANOTHER link, written\n-- in this file: the core's prefix. It is the perimeter, because a till that\n-- reaches everything through a box that is the way to two links claims more\n-- than the box can deliver; and it is the one place the fleet court holds\n-- against the set (machines/cloud_links.fleet): a prefix no link of the fleet\n-- has is a route to nowhere.\n\nDEFINE MACHINE cloud_till AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux,\n  CONSOLE \"/dev/ttyS0\"\n) RATIONALE \"A client that is told everything it needs by the link it is plugged into, and declares only how far it may reach\"\n\nDEFINE CAPABILITY process AS (\n  GRANT yes\n) RATIONALE \"The questions are processes\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"It has to ask, and then to connect\"\n\nDEFINE NETWORK front AS (\n  INTERFACE \"eth0\",\n  ADDRESS dhcp,\n  EGRESS [\"10.20.0.0/24\"]\n) RATIONALE \"It asks the link. The address, the domain, the resolver and the way are the box's to give; the perimeter -- the core link and nowhere else -- is this file's to say\"\n\nDEFINE SERVICE where AS (\n  RUN [\"/harb\", \"ask\", \"commons.core.cloud\"],\n  RESTART never,\n  NEEDS [process, network]\n) RATIONALE \"The server on the other link, asked for by its full name: the box that is the way answers for it\"\n\nDEFINE SERVICE reach AS (\n  RUN [\"/harb\", \"get\", \"commons.core.cloud\", \"8210\", \"/health\"],\n  RESTART never,\n  AFTER [where],\n  NEEDS [process, network]\n) RATIONALE \"Going there: the application's own answer to the question 'are you serving?', from a device on another link, through the box\"\n\nDEFINE SERVICE bare AS (\n  RUN [\"/harb\", \"ask\", \"commons\"],\n  RESTART never,\n  AFTER [reach],\n  NEEDS [process, network]\n) RATIONALE \"A bare word is a name on this link, and nobody declared it here: the same word on the far link is another device, and the box does not lend it\"\n\nDEFINE SERVICE outside AS (\n  RUN [\"/harb\", \"ask\", \"www.example.com\"],\n  RESTART never,\n  AFTER [bare],\n  NEEDS [process, network]\n) RATIONALE \"The rest of the world: the box speaks for its links and is silent about everything else, and does not go and ask on the till's behalf\"\n",
+        "cloud_core.machine": "-- cloud_core.machine -- a member of the core link of the smallest cloud: the\n-- machine a server is placed on, behind a box that is the way (FWD-1, rung 2\n-- of the cloud ladder, doc/CLOUD.md).\n--\n-- It carries no service of its own, as machines/qemu_cloud.machine does not:\n-- `harb place` puts machines/ringserv.pack on it (experiment/os8_links.sh does,\n-- and boots the result). What is new here is where it stands. It asks the core\n-- link for its address, and the box that serves that link has PROMISED it one\n-- (the peer `commons` in machines/cloud_front.machine), so the server that\n-- answers to commons.core.cloud is the one at that address and nobody else.\n--\n-- Its EGRESS is the way back: the front link's prefix, through the router the\n-- lease carries. A server that can be asked from the front link and cannot\n-- answer it is the street that goes one way, and the fleet court refuses it\n-- (machines/cloud_links.fleet): reachability is a fact about two machines at\n-- once, and each of them is faultless alone.\n--\n-- It declares its own loopback, like qemu_cloud, because the program that says\n-- the server is serving asks 127.0.0.1 (SRV-2). A loopback is declared and is\n-- not a link: it is no NIC and no side of a way.\n\nDEFINE MACHINE cloud_core AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux,\n  CONSOLE \"/dev/ttyS0\"\n) RATIONALE \"A machine that grants what a server world asks and stands on the core link of a cloud, behind the box\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"A server world listens on the machine's network\"\n\nDEFINE CAPABILITY filesystem AS (\n  GRANT yes\n) RATIONALE \"A server world keeps its data on a declared mount\"\n\nDEFINE CAPABILITY process AS (\n  GRANT yes\n) RATIONALE \"The program that says a server is serving starts the server, so a world here may start a program\"\n\nDEFINE CAPABILITY threads AS (\n  GRANT yes\n) RATIONALE \"A server world answers on several threads, and the machine sizes them with TASKS, not with this\"\n\nDEFINE CAPABILITY clock AS (\n  GRANT yes\n) RATIONALE \"A server world timestamps what it keeps; the machine has no trusted clock and says so elsewhere (STZ-OS-RULING-07)\"\n\nDEFINE MOUNT data AS (\n  AT \"/data\",\n  FS ext4,\n  DEVICE \"/dev/vda\",\n  OPTIONS [rw, noatime]\n) RATIONALE \"Where a server world keeps its database: a partition that survives the power\"\n\nDEFINE NETWORK core AS (\n  INTERFACE \"eth0\",\n  ADDRESS dhcp,\n  EGRESS [\"192.168.20.0/24\"]\n) RATIONALE \"It asks the core link. The box has promised it one address, and its lease carries the way to the front link: the answers to a question that came from there go back through the same box\"\n\nDEFINE NETWORK loopback AS (\n  INTERFACE \"lo\",\n  ADDRESS \"127.0.0.1/8\"\n) RATIONALE \"The machine's own loopback, so that the readiness probe can ask its own server a question; no route leaves the machine by it\"\n"
+      },
+      "expect": {
+        "members": 3,
+        "links": [
+          "front",
+          "core"
+        ],
+        "routes": 1
+      }
+    },
+    {
+      "id": "FA8",
+      "name": "a star: one box between three links, and each client takes the way by a declared gateway, with the other links listed, covered by a wider prefix, or reached by default",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [a, b, c]\n) RATIONALE \"x\"\nDEFINE MEMBER gw AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER x AS (\n  DECLARATION \"x.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER y AS (\n  DECLARATION \"y.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER z AS (\n  DECLARATION \"z.machine\"\n) RATIONALE \"x\"\nDEFINE ROUTE all AS (\n  BETWEEN [a, b, c],\n  THROUGH gw\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK a AS (INTERFACE \"eth0\", ADDRESS \"10.1.0.1/24\") RATIONALE \"x\"\nDEFINE NETWORK b AS (INTERFACE \"eth1\", ADDRESS \"10.2.0.1/24\") RATIONALE \"x\"\nDEFINE NETWORK c AS (INTERFACE \"eth2\", ADDRESS \"10.3.0.1/24\") RATIONALE \"x\"\n",
+        "x.machine": "DEFINE MACHINE x AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK a AS (INTERFACE \"eth0\", ADDRESS \"10.1.0.2/24\", GATEWAY \"10.1.0.1\", EGRESS [\"10.2.0.0/24\", \"10.3.0.0/24\"]) RATIONALE \"x\"\n",
+        "y.machine": "DEFINE MACHINE y AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK b AS (INTERFACE \"eth0\", ADDRESS \"10.2.0.2/24\", GATEWAY \"10.2.0.1\", EGRESS [\"10.0.0.0/8\"]) RATIONALE \"x\"\n",
+        "z.machine": "DEFINE MACHINE z AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK c AS (INTERFACE \"eth0\", ADDRESS \"10.3.0.2/24\", GATEWAY \"10.3.0.1\") RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 4,
+        "links": [
+          "a",
+          "b",
+          "c"
+        ],
+        "routes": 1
+      }
+    },
+    {
+      "id": "FA9",
+      "name": "a link no route joins: its members are asked nothing, and routing to it is nobody's claim",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core, side]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE MEMBER lone AS (\n  DECLARATION \"lone.machine\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n",
+        "lone.machine": "DEFINE MACHINE lone AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK side AS (INTERFACE \"eth0\", ADDRESS \"172.16.0.5/24\") RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 4,
+        "links": [
+          "front",
+          "core",
+          "side"
+        ],
+        "routes": 1
+      }
+    },
+    {
+      "id": "FA10",
+      "name": "one link by LINKS is one link: what LINK said in fleet v0.1",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front]\n) RATIONALE \"x\"\nDEFINE MEMBER only AS (\n  DECLARATION \"only.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "only.machine": "DEFINE MACHINE only AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.9/24\") RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 1,
+        "link": "front",
+        "links": [
+          "front"
+        ],
+        "routes": 0
       }
     }
   ],
@@ -325,6 +399,241 @@
         "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK salle AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n"
       },
       "refusal": "is already box's key: two members cannot be the same device"
+    },
+    {
+      "id": "FR27",
+      "name": "LINK and LINKS together say the same thing twice",
+      "source": "DEFINE FLEET nuage AS (\n  LINK front,\n  LINKS [front]\n) RATIONALE \"x\"\nDEFINE MEMBER only AS (\n  DECLARATION \"only.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "only.machine": "DEFINE MACHINE only AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.9/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "LINK and LINKS say the same thing twice"
+    },
+    {
+      "id": "FR28",
+      "name": "an empty LINKS names no wire, and says so by declaring none",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS []\n) RATIONALE \"x\"\nDEFINE MEMBER only AS (\n  DECLARATION \"only.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "only.machine": "DEFINE MACHINE only AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.9/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "an empty LINKS is not a declaration"
+    },
+    {
+      "id": "FR29",
+      "name": "a link named twice",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, front]\n) RATIONALE \"x\"\nDEFINE MEMBER only AS (\n  DECLARATION \"only.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "only.machine": "DEFINE MACHINE only AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.9/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "LINKS names front twice"
+    },
+    {
+      "id": "FR30",
+      "name": "a ROUTE in a fleet that declares no wire joins nothing",
+      "source": "DEFINE FLEET nuage AS () RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n"
+      },
+      "refusal": "joins links, and this fleet declares none"
+    },
+    {
+      "id": "FR31",
+      "name": "a route between a link the fleet does not declare",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, moon],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "joins moon, and this fleet declares no link of that name"
+    },
+    {
+      "id": "FR32",
+      "name": "a link is joined to another, never to itself",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, front],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "names front twice: a link is joined to another, never to itself"
+    },
+    {
+      "id": "FR33",
+      "name": "a route between one link joins nothing",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "joins 1 link: a route is between at least two"
+    },
+    {
+      "id": "FR34",
+      "name": "a way is a machine of the fleet",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH ghost\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "no MEMBER ghost is declared"
+    },
+    {
+      "id": "FR35",
+      "name": "a way that is not on a link is not a way to it",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core, side]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core, side],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "which has no network on side"
+    },
+    {
+      "id": "FR36",
+      "name": "a way is an address somebody else sends to, not one it asks for",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH till\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "which asks for its address on front by dhcp"
+    },
+    {
+      "id": "FR37",
+      "name": "a way that does not forward is a wall",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "and gateway does not FORWARD: a way that does not forward is a wall"
+    },
+    {
+      "id": "FR38",
+      "name": "one way between two links: a second would give a member two gateways for one wire",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\nDEFINE ROUTE again AS (\n  BETWEEN [core, front],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "are already joined by the route joined"
+    },
+    {
+      "id": "FR39",
+      "name": "a machine that forwards is a door, and a door nobody declared is one nobody agreed to",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "no ROUTE goes through it: a machine that is the way between links is a door"
+    },
+    {
+      "id": "FR40",
+      "name": "a machine forwards among all its networks, so every pair of them must be said to be joined",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core, mgmt]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\nDEFINE NETWORK mgmt AS (INTERFACE \"eth2\", ADDRESS \"172.16.0.1/24\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "no ROUTE through it joins front and mgmt"
+    },
+    {
+      "id": "FR41",
+      "name": "one wire has one prefix",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER other AS (\n  DECLARATION \"other.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "other.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.0.7/16\") RATIONALE \"x\"\n"
+      },
+      "refusal": "one wire has one prefix, or two machines on it do not agree where it ends"
+    },
+    {
+      "id": "FR42",
+      "name": "a gateway that is not the way sends a packet where nothing forwards it",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.7/24\", GATEWAY \"192.168.20.99\", EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS \"10.20.0.9/24\", GATEWAY \"10.20.0.1\", EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "'s gateway on front is 192.168.20.99, and the way is gateway at 192.168.20.1/24"
+    },
+    {
+      "id": "FR43",
+      "name": "a member of a joined link with no gateway has no way to the rest",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.7/24\", EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS \"10.20.0.9/24\", GATEWAY \"10.20.0.1\", EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "declares no GATEWAY: a member of a joined link needs the way gateway to reach the rest"
+    },
+    {
+      "id": "FR44",
+      "name": "a link with two ways on it: the one gateway a member declares is the way for one of them only",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core, far]\n) RATIONALE \"x\"\nDEFINE MEMBER a AS (\n  DECLARATION \"a.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER b AS (\n  DECLARATION \"b.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\"\n) RATIONALE \"x\"\nDEFINE ROUTE fc AS (\n  BETWEEN [front, core],\n  THROUGH a\n) RATIONALE \"x\"\nDEFINE ROUTE cf AS (\n  BETWEEN [core, far],\n  THROUGH b\n) RATIONALE \"x\"\n",
+      "files": {
+        "a.machine": "DEFINE MACHINE gw_a AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", GATEWAY \"10.20.0.254\", EGRESS [\"10.30.0.0/24\"]) RATIONALE \"x\"\n",
+        "b.machine": "DEFINE MACHINE gw_b AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS \"10.20.0.254/24\", GATEWAY \"10.20.0.1\", EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\nDEFINE NETWORK far AS (INTERFACE \"eth1\", ADDRESS \"10.30.0.254/24\") RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS \"10.20.0.9/24\", GATEWAY \"10.20.0.1\", EGRESS [\"192.168.20.0/24\", \"10.30.0.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "'s gateway on core is 10.20.0.1, and the way is b at 10.20.0.254/24"
+    },
+    {
+      "id": "FR45",
+      "name": "only the link's own server can offer the way in a lease: a dhcp member of a joined link whose server is not the way is told no router",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER srv AS (\n  DECLARATION \"srv.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "srv.machine": "DEFINE MACHINE srv AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.2/24\", DOMAIN \"front.cloud\", GATEWAY \"192.168.20.1\", EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "and the way gateway does not serve front"
+    },
+    {
+      "id": "FR46",
+      "name": "a member of a joined link says EGRESS none: it takes the way or sits on a link that is not joined",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS none) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "says EGRESS none for front, which the route joined joins to the others"
+    },
+    {
+      "id": "FR47",
+      "name": "a member of a joined link whose EGRESS does not reach the other link: the question has a way there and the answer none, or the reverse",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.99.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "EGRESS for front does not reach core (10.20.0.1/24)"
+    },
+    {
+      "id": "FR48",
+      "name": "a destination that is a declared link no route joins to this one: a route to nowhere",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [front, core, side]\n) RATIONALE \"x\"\nDEFINE MEMBER gateway AS (\n  DECLARATION \"gw.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"x\"\nDEFINE MEMBER core AS (\n  DECLARATION \"core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"x\"\nDEFINE MEMBER lone AS (\n  DECLARATION \"lone.machine\"\n) RATIONALE \"x\"\nDEFINE ROUTE joined AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"x\"\n",
+      "files": {
+        "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"front.cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"core.cloud\") RATIONALE \"x\"\nDEFINE PEER till AS (NETWORK front, HARDWARE \"52:54:00:12:35:61\", ADDRESS \"192.168.20.40\") RATIONALE \"x\"\nDEFINE PEER commons AS (NETWORK core, HARDWARE \"52:54:00:12:35:62\", ADDRESS \"10.20.0.2\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.20.0.0/24\", \"172.16.0.0/24\"]) RATIONALE \"x\"\n",
+        "core.machine": "DEFINE MACHINE core_m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"192.168.20.0/24\"]) RATIONALE \"x\"\n",
+        "lone.machine": "DEFINE MACHINE lone AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK side AS (INTERFACE \"eth0\", ADDRESS \"172.16.0.5/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "and that is the side link, which no ROUTE joins to front: a route to nowhere"
     }
   ]
 }

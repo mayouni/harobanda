@@ -1,0 +1,45 @@
+-- cloud_links.fleet -- the smallest cloud, judged as one thing: a box that is the way between
+-- a front link and a core link, a client on the front, a server on the core (FWD-1, fleet v0.2).
+--
+-- Every check this file makes is one no single machine can fail. The box forwards, and is
+-- right to; the till's route to the core is right; the core's route back is right. A box that
+-- forwards between links nobody declared joined is a door nobody agreed to; a till whose route
+-- has a way there and a server with none back is a street that goes one way. Each of the
+-- machines is faultless alone, and the set is what is wrong. That is what a fleet is for.
+--
+-- LINKS names the wires these machines share: a network of one of these names, on any member,
+-- is that wire. ROUTE says two of them are joined, and through whom: the member must be on both,
+-- must say FORWARD, and every other member on either link must take the way -- by a gateway it
+-- declares, or by a lease from the one machine that can offer it. A route is a way BOTH ways,
+-- because no filter exists to make it one-way, and an answer needs a way back as much as a
+-- question needs a way there (a filter is a later seat of doc/CLOUD.md).
+--
+-- HARDWARE says which physical unit each member is, which is what lets the court hold the
+-- addresses the box PROMISES against the devices that will ask (HDW-1). The box has none: it
+-- is nobody's peer, and its two NICs are the emulator's business.
+--
+-- experiment/os8_links.sh boots the three machines on two wires and reads their hardware
+-- addresses from here.
+
+DEFINE FLEET cloud_links AS (
+  LINKS [front, core]
+) RATIONALE "One front link, one core link, and a box that is both links' server and the way between"
+
+DEFINE MEMBER gateway AS (
+  DECLARATION "cloud_front.machine"
+) RATIONALE "The box: it serves both links and is the way between them. It is nobody's peer, so it says no hardware"
+
+DEFINE MEMBER till AS (
+  DECLARATION "cloud_till.machine",
+  HARDWARE "52:54:00:12:35:61"
+) RATIONALE "The client on the front link: the device the box promises 192.168.20.40 to"
+
+DEFINE MEMBER core AS (
+  DECLARATION "cloud_core.machine",
+  HARDWARE "52:54:00:12:35:62"
+) RATIONALE "The machine the server is placed on, on the core link: the device the box promises 10.20.0.2 to"
+
+DEFINE ROUTE front_to_core AS (
+  BETWEEN [front, core],
+  THROUGH gateway
+) RATIONALE "The clients on the front link reach the servers on the core link through the box, and the servers answer them the same way: the smallest cloud has a front link, a core link, and one way between"

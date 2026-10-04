@@ -1,0 +1,65 @@
+-- cloud_core.machine -- a member of the core link of the smallest cloud: the
+-- machine a server is placed on, behind a box that is the way (FWD-1, rung 2
+-- of the cloud ladder, doc/CLOUD.md).
+--
+-- It carries no service of its own, as machines/qemu_cloud.machine does not:
+-- `harb place` puts machines/ringserv.pack on it (experiment/os8_links.sh does,
+-- and boots the result). What is new here is where it stands. It asks the core
+-- link for its address, and the box that serves that link has PROMISED it one
+-- (the peer `commons` in machines/cloud_front.machine), so the server that
+-- answers to commons.core.cloud is the one at that address and nobody else.
+--
+-- Its EGRESS is the way back: the front link's prefix, through the router the
+-- lease carries. A server that can be asked from the front link and cannot
+-- answer it is the street that goes one way, and the fleet court refuses it
+-- (machines/cloud_links.fleet): reachability is a fact about two machines at
+-- once, and each of them is faultless alone.
+--
+-- It declares its own loopback, like qemu_cloud, because the program that says
+-- the server is serving asks 127.0.0.1 (SRV-2). A loopback is declared and is
+-- not a link: it is no NIC and no side of a way.
+
+DEFINE MACHINE cloud_core AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "A machine that grants what a server world asks and stands on the core link of a cloud, behind the box"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "A server world listens on the machine's network"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "A server world keeps its data on a declared mount"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The program that says a server is serving starts the server, so a world here may start a program"
+
+DEFINE CAPABILITY threads AS (
+  GRANT yes
+) RATIONALE "A server world answers on several threads, and the machine sizes them with TASKS, not with this"
+
+DEFINE CAPABILITY clock AS (
+  GRANT yes
+) RATIONALE "A server world timestamps what it keeps; the machine has no trusted clock and says so elsewhere (STZ-OS-RULING-07)"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where a server world keeps its database: a partition that survives the power"
+
+DEFINE NETWORK core AS (
+  INTERFACE "eth0",
+  ADDRESS dhcp,
+  EGRESS ["192.168.20.0/24"]
+) RATIONALE "It asks the core link. The box has promised it one address, and its lease carries the way to the front link: the answers to a question that came from there go back through the same box"
+
+DEFINE NETWORK loopback AS (
+  INTERFACE "lo",
+  ADDRESS "127.0.0.1/8"
+) RATIONALE "The machine's own loopback, so that the readiness probe can ask its own server a question; no route leaves the machine by it"
