@@ -1,0 +1,23 @@
+boot: harb init -- machine qemu_cloud (hosted / x86_64 / qemu_pc) -- pid 1
+boot: console /dev/ttyS0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: mount cgroup2 at /sys/fs/cgroup -- done
+boot: mount ext4 at /data -- done
+boot: grant network (effectful)
+boot: grant filesystem (effectful)
+boot: grant process (effectful)
+boot: grant threads (compute)
+boot: grant clock (sensing)
+boot: network loopback -- lo up 127.0.0.1/8
+boot: budget -- ringserv 128 MiB and 100% of a core and 64 tasks; the kernel holds the ceiling, not the world
+boot: health -- ringserv every 10s; a world that stops refreshing stops the watchdog
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+boot: start ringserv -- pid N -- /harb ready /run/ringserv.ready 127.0.0.1:8210 --every 2 -- /ringserv run /app/app.ring --data /data
+RingServ 0.9.0 — serving on http://127.0.0.1:8210/api/v1  (2 workers)
+boot: ringserv -- ready (/run/ringserv.ready)
+boot: judge -- the boot matches its expectation (/etc/expected, 18 lines)
+boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
+boot: init halts the machine -- reboot(RESTART)
+reboot: Restarting system

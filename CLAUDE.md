@@ -405,6 +405,14 @@ zig-out\bin\harb.exe fleet machines\salle_makeen.fleet
 zig-out\bin\harb.exe place machines\<name>.machine <name>.pack
 zig-out\bin\harb.exe court --pack
 
+# the first real server, RingServ, placed on a machine and
+# booted (SRV-2): build it from its pinned source, then boot
+#   -> zig-out/wsl/cloud.txt
+powershell -ExecutionPolicy Bypass -File `
+  experiment\ringserv_build.ps1
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os9_cloud.sh
+
 # the guided tour: 18 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -441,6 +449,24 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **Ready is what a question returned** (SRV-2): a server that writes no
+  READY file is not made ready by PID 1 guessing, nor by a URL being a
+  second reading of ready beside the path. A program in its world,
+  `harb ready`, starts it, asks its URL and creates the path only while
+  the answer is a 200, so the floor keeps ONE reading and measures the
+  word as it always did. It is silent on success (PID 1 says "ready", and
+  two writers would race for the console) and says why in one line when
+  it cannot start the program (127, with the reason: `Child.spawn` does
+  not report a failed exec, `waitForSpawn()` does). Proven outside the
+  floor first and by a boot second; a deaf probe (a port nothing listens
+  on) leaves the machine never saying `ready`. **A declaration that adds
+  a species of something the judges count is a new question for every
+  one of them**: the machine had to declare its loopback for the probe to
+  ask 127.0.0.1, and `harb guarantees` then read "always reachable:
+  KEPT" over an interface nothing outside can reach (EGR-2 again, found
+  by running the sheet over the new machine). A binary that is not
+  byte-reproducible across folders is pinned by its SOURCE ref, with the
+  digest printed for the record and not as the pin (`vendor/PIN.md`).
 - **A pack asks, and the machine grants** (PLC-1): a solution's services
   are written apart from any machine, in a pack, and placed on one by
   `harb place`. A pack may carry SERVICE and USER and nothing else,
@@ -950,15 +976,17 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
      a board can show.
 - **The cloud ladder (`doc/CLOUD.md`, rulings 14-15) -- ordered by the
   author 2026-10-04 ("go"), beside the parked OS-5.** Six rungs in
-  dependency order, none built whole. Rung 1's placement half is done
-  (PLC-1: the pack file, `harb place`, the pack court). Next, in order:
-  the first REAL server declared as a pack and booted on a QEMU machine
-  -- it needs the server's program and its own statement of what it
-  needs from its desk (RingServ and RestoLean's Commons are the
-  candidates; the author names which, and this desk never edits a
-  sibling) -- then rung 2, two links (`FORWARD`, fleet v0.2). The
-  Enterprise page's cloud sentence stays by his word: the ladder makes
-  it true, and CLOUD.md's status lines are where the distance is read.
+  dependency order. Rung 1 is built for one server on an emulated
+  machine: the placement half (PLC-1: the pack file, `harb place`, the
+  pack court) and the server half (SRV-2: RingServ, the author's choice,
+  placed on `machines/qemu_cloud.machine` and booted under a pinned
+  transcript through `harb ready`). It stands in for RestoLean's
+  Commons, which is that desk's to hand over, runs as root, and listens
+  on its machine's own loopback only. Next, on the author's order: rung
+  2, two links (`FORWARD` on a machine, fleet v0.2 routes, names across
+  links, a boot with two wires). The Enterprise page's cloud sentence
+  stays by his word: the ladder makes it true, and CLOUD.md's status
+  lines are where the distance is read.
 - **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
   attempt: behind `HARB_CC=zigcc` the kernel builds with `make CC="zig
   cc"` and the image does NOT boot (it dies in the 16-bit setup code).
@@ -1000,7 +1028,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

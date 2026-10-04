@@ -29,6 +29,7 @@ const learn = @import("learn.zig");
 const docs = @import("docs.zig");
 const fleet = @import("fleet.zig");
 const pack = @import("pack.zig");
+const ready = @import("ready.zig");
 const confine = @import("confine.zig");
 const expect = @import("expect.zig");
 
@@ -61,6 +62,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
         \\  harb place  <file.machine> <file.pack>... [--out <file>]   (a solution's services, placed on a machine and judged as one)
         \\  harb court  --pack [declarative/pack/fixtures.json]
+        \\  harb ready  <ready-path> <a.b.c.d:port> [--url /health] [--every N] -- <program> [args...]   (a program's word that it is serving, said for it; from inside a world)
         \\  harb learn  [n] [--all] [--words] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
         \\  harb docs   --check                         (every page's code fits its column, and every machine it shows is accepted)
         \\  harb version
@@ -849,6 +851,15 @@ pub fn main() !u8 {
         const failures = try court.run(gpa, path, out);
         return if (failures == 0) 0 else 1;
     }
+    if (std.mem.eql(u8, verb, "ready")) {
+        // A program's word that it is serving, said for it (SRV-2): the
+        // program a world runs when the server inside it answers a URL and
+        // writes no READY file of its own. src/ready.zig says what it does
+        // and what it will not.
+        const rargs = try arena.alloc([]const u8, args.len - 2);
+        for (args[2..], 0..) |a, i| rargs[i] = a;
+        return ready.run(gpa, rargs, out);
+    }
     if (std.mem.eql(u8, verb, "place")) {
         // What a solution asks, placed on the machine that grants it
         // (PLC-1). Without --out it is a rehearsal: judged, nothing written.
@@ -1024,6 +1035,7 @@ test {
     _ = names;
     _ = fleet;
     _ = pack;
+    _ = ready;
     _ = learn;
     _ = docs;
 }

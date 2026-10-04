@@ -12,10 +12,17 @@
 # One kernel tree per ARCH under $HOME (WSL-native: building on the Windows
 # mount is an order of magnitude slower). The tarball and its pin stay in
 # vendor/linux/ on the Windows side. Log: zig-out/wsl/image_<name>.txt
+#
+# Two environment variables, for a machine that is not a file under machines/
+# (SRV-2, experiment/os9_cloud.sh): HARB_MACHINE_FILE names the machine file when
+# `harb place` made it (the name still says which pin and which directories),
+# and HARB_STAGE names a list of `<source> <destination>` lines of extra files
+# the image carries beyond harb, stzr and app/*.luau. Neither is set for any
+# machine that was already here, and nothing below changes when they are not.
 set -u
 cd "$(dirname "$0")/.." || exit 1
 NAME=${1:-qemu_hello}
-M=machines/$NAME.machine
+M=${HARB_MACHINE_FILE:-machines/$NAME.machine}
 OUT=zig-out/image/$NAME
 LOG=zig-out/wsl/image_$NAME.txt
 K=$HOME/harb-kernel
@@ -34,6 +41,14 @@ mkdir -p "$OUT" zig-out/wsl
   cp "zig-out/cross/$TRIPLE/harb" "$ROOT/harb" || { echo "no harb for $TRIPLE (zig build cross)"; exit 1; }
   if [ -f "zig-out/stz-$TRIPLE/bin/stzr" ]; then cp "zig-out/stz-$TRIPLE/bin/stzr" "$ROOT/stzr"; echo "stzr staged ($TRIPLE)"; else echo "stzr NOT staged (no build of stz under zig-out/stz-$TRIPLE) -- only a machine with a world under /stzr needs it, and harb image refuses that one below"; fi
   cp app/*.luau "$ROOT/app/" 2>/dev/null && echo "app staged"
+  if [ -n "${HARB_STAGE:-}" ]; then
+    [ -f "$HARB_STAGE" ] || { echo "stage list $HARB_STAGE is missing"; exit 1; }
+    while read -r SRC DST; do
+      case "$SRC" in ''|'#'*) continue ;; esac
+      [ -f "$SRC" ] || { echo "stage: $SRC is missing, so $DST is not staged (see the list $HARB_STAGE)"; exit 1; }
+      mkdir -p "$ROOT$(dirname "$DST")" && cp "$SRC" "$ROOT$DST" && echo "staged $DST from $SRC"
+    done < "$HARB_STAGE"
+  fi
   echo "=== derive ==="
   "$HOST_HARB" image "$M" --root "$ROOT" --out "$OUT" || { echo "derive refused"; exit 1; }
   for f in image.env initramfs.list kernel.fragment disk.list sd.list config.txt cmdline.txt boot.cmd expected expected.emulator; do [ -f "$OUT/$f" ] && { echo "--- $f"; cat "$OUT/$f"; }; done

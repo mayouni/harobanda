@@ -1,0 +1,10 @@
+# ringserv.stage -- what the image of machines/qemu_cloud.machine + machines/ringserv.pack
+# carries beyond /harb: the server, and the application it serves. One line each:
+# <file in this repository's tree>  <where the image puts it>.
+#
+# The server is not in git (a binary built from RingServ's source at the ref
+# vendor/PIN.md pins; `experiment/ringserv_build.ps1` makes it). `harb image`
+# packs a file only if some service names it by absolute path, so a file listed
+# here that no SERVICE names is staged and never reaches the image.
+zig-out/ringserv/ringserv   /ringserv
+machines/ringserv/app.ring  /app/app.ring

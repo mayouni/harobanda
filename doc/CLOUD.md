@@ -111,9 +111,20 @@ everything after this serves something real. *Status:* the placement
 half is BUILT (PLC-1, 2026-10-04): the pack file and `harb place`, judged
 by `declarative/pack/` at 30 of 30 -- a need the machine does not grant
 is refused at the line of the pack that asked, before any image is
-built. The server half is not: the box's worlds are stand-ins
-(`machines/makeen_box.machine`), and no real server has been placed or
-booted.
+built. *Amended the same day (SRV-2):* the server half is built too, for
+the server the author named, RingServ (future HaroServ): RingServ 0.9,
+from its own source at a pinned ref, is placed on `machines/qemu_cloud.machine`
+by `machines/ringserv.pack`, boots under PID 1 as a confined world with
+a measured readiness, and its boot is pinned and stable
+(`experiment/os9_cloud.sh`, `machines/qemu_cloud_ringserv.expected`). What
+is NOT done: no customer's server (the Commons is RestoLean's to hand
+over, and RingServ here stands in for it, as the Luau worlds stand in for
+the box's); readiness is a stand-in program, `harb ready`, because
+RingServ writes no ready file (a native `--ready-file` is asked of its
+desk); the world runs as root; and nothing outside the machine can ask the
+server a question yet, since it listens on the machine's own loopback
+(rung 3 is its front). The box's own worlds are still stand-ins
+(`machines/makeen_box.machine`).
 
 **Rung 2 -- two links.** `FORWARD` on a machine with two `NETWORK`s
 makes it the way from one link to the other; in the fleet file a
@@ -241,10 +252,13 @@ ladder makes the same act.
 
 ## 8. Honest boundaries
 
-- No rung is built whole. Rung 1's placement half is (PLC-1, 2026-10-04:
-  the pack file, `harb place`, the pack court at 30 of 30); its server
-  half is not. Today a fleet has one link, no machine forwards, no
-  server is a declared service, there is no front and no clock.
+- Rung 1 is built for one server on an emulated machine (PLC-1 and
+  SRV-2, 2026-10-04: the pack file, `harb place`, the pack court at 30 of
+  30; RingServ placed, booted and pinned), and for no customer's: the
+  Commons is not placed, and RingServ is the stand-in. No other rung is
+  built. Today a fleet has one link, no machine forwards, there is no
+  front and no clock, and a placed server can be asked only from inside
+  its own machine.
 - `site/enterprise.html` says *"the same declared machine can run the
   cloud too. Enterprise-cloud, made easy."* By the author's word
   (ruling 14) the sentence stays and this ladder makes it true; until
@@ -279,3 +293,12 @@ pack, hand-written, and `harb place` is the judge. A manifest has no
 port and no reach per world because a SERVICE has neither (rung 6). What
 is left of rung 1 is what the paragraph above says needs somebody
 else: the server's program and its own statement of what it needs.
+
+*Amended again the same day, after the author named the server:* the
+second part is done for RingServ (SRV-2). Its needs were read from its
+repository at origin/main 002ba21 and not asked for: a listening socket,
+a store, threads, a clock, and no environment. What it could not say for
+itself is that it is serving, so a program says it (`harb ready`); the
+read, the adapter, the pack, the machine and the pinned boot are in
+`experiment/PROTOCOL.md` under SRV-2. The Commons, when its desk hands it
+over, is placed the same way, and the pack changes.

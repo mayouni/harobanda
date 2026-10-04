@@ -176,6 +176,24 @@ so the shape a server needs is proven — start, serve, signal, be waited
 for, halt only on the court's instrument. RestoLean's Commons world is
 the first candidate.
 
+*Amended 2026-10-04 (SRV-2): a real server is now a machine service, and
+the status above is no longer the whole of it.* RingServ 0.9, built from
+its own source at a pinned ref (`vendor/PIN.md`), runs as a world of
+`machines/qemu_cloud.machine` placed there by `harb place`: a confined
+world under PID 1 with its budget, its one mount, and a readiness that
+is measured. It boots to a pinned transcript, stable across two boots
+(`machines/qemu_cloud_ringserv.expected`, `experiment/os9_cloud.sh`), and a
+boot where its probe asks a port nobody listens on is refused: the server
+is alive, prints its banner, and the machine never calls it ready.
+What is still true of this section: no CUSTOMER's server is declared (the
+Commons is RestoLean's, and it is that desk's to hand over); RingServ
+writes no ready file of its own, so the world is `harb ready`, which
+starts it and says it is serving only while `/health` answers; the world
+runs as root, because a USER cannot create a path under the image's
+root-owned `/run`; and the machine's reach is its own loopback, so
+nothing outside it can ask the server anything until rung 3 puts a front
+before it (`doc/CLOUD.md`).
+
 ## 6. The runtime: stzr today, Ring++ and Haro tomorrow
 
 **Today.** stzr is stz's static binary, the only other program on the
@@ -507,8 +525,11 @@ diagram. This is where the floor pays each band of it:
 - The dividends the three machines already pay: the declared address,
   the mounts before worlds, the identities, the readiness signal, the
   trial, the machine's own verdict. Everything else here is a seam.
-- No application server is yet a machine service. The box's worlds
-  serve and signal (SRV-1), but they stand in for the real ones.
+- No CUSTOMER's application server is yet a machine service. The box's
+  worlds serve and signal (SRV-1), but they stand in for the real ones.
+  *Amended 2026-10-04 (SRV-2):* one real server, RingServ 0.9, is a
+  machine service on an emulated machine, through a readiness adapter,
+  with nothing outside the machine able to ask it anything yet.
 - Haro does not exist; Ring++'s Linux-class row is unmeasured.
 - The Pi 4 is a weak inference host; model placement is C3's.
 - TLS is ruled for the estate, not here.

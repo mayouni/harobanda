@@ -1,3 +1,202 @@
+# SRV-2 — a real server is a world on the floor: RingServ, placed and booted
+
+Rung 1 of the cloud ladder (`doc/CLOUD.md`) has two halves. PLC-1 built
+the one that needed nobody else, the pack and `harb place`. This is the
+other, a real server as a world, and it waited for the author to name
+the server: "RingServ (future HaroServ)", 2026-10-04, with rung 2 after
+it. The server the ladder was written around, RestoLean's Commons, is
+that desk's to hand over, so **RingServ stands in for it here, as the
+Luau worlds stand in for the box's** (SRV-1), and its application says so
+in its first lines. One session.
+
+## What exists now
+
+- **`harb ready`** (`src/ready.zig`), a verb of the one binary: the
+  program a world runs when its server answers a URL and writes no file.
+  It starts the server, asks the URL on a rhythm, creates the READY path
+  while the answer is a 200, and leaves the path to age when the answer
+  is anything else. The floor's own measuring does the rest: SRV-1 sees
+  the path appear, HLT-1 reads its age against the window.
+- **`machines/qemu_cloud.machine`**, a member of a cloud, the machine a
+  pack is placed on. It grants what a server world asks (network,
+  filesystem, process, threads, clock), declares one mount for the data
+  and its own loopback, and carries no service.
+- **`machines/ringserv.pack`**: the one SERVICE RingServ needs, with each
+  need and the place it was read in the pack's own header.
+- **`machines/ringserv.stage`** and two variables of `experiment/os2_image.sh`
+  (`HARB_MACHINE_FILE`, `HARB_STAGE`): the placed machine is a file
+  `harb place` wrote, and the image carries two files no machine names,
+  the server and the application, listed in one place. Neither variable
+  is set for a machine that was already here.
+- **`experiment/os9_cloud.sh`** places, images, boots and judges, and its
+  exit is the judge's (VDCT-1); **`experiment/ringserv_build.ps1`** builds
+  the pinned source.
+- **`machines/qemu_cloud_ringserv.expected`**: 23 lines. The machine
+  judges its own boot against the 18 that PID 1 says, and the pin judges
+  all 23, the server's own banner among them.
+
+## What the server asks, and where each need was read
+
+Read at RingServ's origin/main, `002ba21` (2026-08-29), through git
+objects only: its working tree holds the uncommitted work of its own desk
+and was neither read nor touched (CENTRAL-READONLYPIN-01). Then built
+from a clean checkout of that ref, run under WSL and measured.
+
+- **a listening socket**, on 127.0.0.1 unless told otherwise (`:host`);
+- **a store**: SQLite, in the directory it is given with `--data`;
+- **threads**: 38 at four workers, so a TASKS ceiling written from "a
+  handful" would have refused its own server (the pack says 64, at two
+  workers);
+- **memory**: 73 MB resident at rest, so 128;
+- **a clock**, no environment, no dynamic loading: one static x86-64 ELF,
+  24.3 MB, with no interpreter;
+- **a readiness that is not a file**: `GET /health` answers
+  `{"up":true}`, and nothing is written anywhere.
+
+## The two things the floor could not do for it
+
+**It cannot say that it is serving.** The floor's READY is a path a
+daemon creates. Three ways to close that, one chosen:
+
+- *a shell loop in the world* -- refused: RUN refuses a shell by name,
+  and the image has none;
+- *PID 1 asks the URL* -- refused: it would put an HTTP client in the init
+  and make "ready" two readings, a path for one world and a URL for
+  another, that have to agree (EGR-3's trap, one layer over);
+- *a program in the world* -- chosen. `harb ready` is the readiness probe
+  every other supervisor has, with the one difference that the floor
+  already measures the word, so it is said in the floor's own language
+  and PID 1 did not change. When RingServ grows a `--ready-file` of its
+  own the pack changes one line and the verb is unused, which is why it is
+  a verb and not a part of PID 1.
+
+**It cannot be asked a question on a machine whose network is nothing.**
+The probe asks 127.0.0.1, and the floor builds only what a declaration
+asks for (BDG-1), so `lo` is down until a NETWORK says it is up. A world
+that NEEDS the network shares the machine's, so the machine declares the
+loopback, and says why in its first lines.
+
+## The declaration that made a promise false
+
+Declaring the loopback broke the sheet that judges the four standing
+promises. `harb guarantees` took the first NETWORK a machine declares to
+be the one the box is found by, so a machine whose ONLY network was `lo`
+read "always reachable: KEPT, `boot: network loopback -- lo up`" -- a
+promise made to whoever needs the box, kept by an interface nothing
+outside the box can reach. EGR-2 again: a sentence worded for a wire and
+printed for an interface that goes nowhere, in the direction that
+reassures. Found by running the sheet over the new machine before
+writing a word about it.
+
+The sheet now skips a loopback when it asks which network the box is
+found by and which address the phones learn, and says so when it is the
+only one. The placed machine reads **1 of 4 promised, 1 kept** (the
+durable log; the other three said "not promised", with why). Two tests
+sit beside the code: a machine whose only network is `lo` promises
+nothing to anyone outside it; a machine on a wire keeps both, with or
+without a loopback beside it. **A declaration that adds a SPECIES of
+something the judges count is a new question for every judge that counted
+the kind** -- THR-1's grep, once more.
+
+## Pinned by source, because the binary is not the same twice
+
+The kernel is pinned by the digest of its tarball, and the first plan was
+the same for the server: build it, digest it, refuse a different build.
+Two builds of one ref in two folders differ by 160 bytes (24,313,280 and
+24,313,440), so a digest of the binary would convict an honest rebuild.
+In one fixed folder the digest repeats, and the build script uses it. What
+is pinned is the SOURCE ref; the digest is printed for the record.
+`vendor/PIN.md` says so, and says that changing the ref changes the
+pinned boot in the same commit, because the transcript quotes the
+server's banner.
+
+## The boot, and its negative
+
+`os9_cloud.sh` places the pack, images the result, boots it under QEMU
+and judges it against the pin. Between the `start` line and `ready` the
+pin carries the server's own banner, `serving on
+http://127.0.0.1:8210/api/v1  (2 workers)`, because a world's stdout is
+the console and a fixture is what the machine said. Two boots,
+byte-identical after normalisation.
+
+**The negative, run once and not pinned** (a failing boot is not a
+fixture; this one was read): the same machine and the same server with
+`harb ready` told to ask a port nothing listens on. The server starts and
+speaks. The machine never says `ready`, never judges, and the emulator
+ends at its timeout. Against the pinned boot the transcript lacks exactly
+the five lines from `ready` on, besides the port the probe changed. A
+server that is alive and does not answer is not serving, and the machine
+says so by not saying it is.
+
+## Probed
+
+- **The adapter, outside the floor, on seven questions, before any
+  boot** (WSL, scratch folders): the path appears when `/health` answers
+  and its mtime moves while the answers continue; SIGTERM to the adapter
+  reaches the server, which exits 143, and so does the adapter, leaving
+  the path where it was; a program that never answers leaves no path and
+  the adapter ends with it; a program that cannot start ends with 127 and
+  a sentence; a program that dies by itself ends with its own status; a
+  command line without `--` or without its two arguments is refused in
+  words; a server that answers 404 on the URL is up and not serving what
+  was asked, so there is no path.
+- **The probe found a bug before any boot did.** An unstartable program
+  returned 1 and said nothing: Zig 0.15's `Child.spawn` does not report a
+  failed exec, and the verdict arrives only at `waitForSpawn()`. Four ways
+  to fail to start are probed now (a missing absolute path, a bare name
+  off PATH, a file that is not executable, a directory), each 127 with the
+  reason in words.
+- **A readiness is judged by what CONSUMES it** (PRJ-2): the adapter was
+  proven outside the floor first, and only the boot shows PID 1 seeing
+  the path it makes, which is why the probe's answers were not the end.
+  The probe is what caught the silent exit.
+- **The regressions** -- `qemu_egress` against its pin, and the guarantee
+  sheet of `makeen_box` against its pin -- are unchanged by the loopback
+  fix and by the two variables of the image script.
+
+## Named, not closed
+
+- **The world runs as root**, inside the floor's closed deny list and its
+  cgroup. A world with a USER cannot create a path in `/run`, which the
+  image makes root's (`dir /run 0755 0 0`), so a placed server that
+  should not be root needs its READY path somewhere it can write, and no
+  clause says where.
+- **READY is a first-boot fact.** `signalled_ready` is set once and never
+  cleared (`pollReady`, `src/init.zig`), so a restarted server is not
+  waited for again and no line says it is serving again. HEALTH, which
+  reads the path's age, is what answers for it, and the adapter does not
+  delete the path when its child dies, for that reason.
+- **`/health` does not enter the server's VM** (RingServ's own
+  `docs/FUSION.md` gives 0.18 ms), so a worker wedged in the VM would
+  not be seen by the probe. That is the server's to grow; the probe asks
+  whatever URL it is told.
+- **A world has no port of its own.** NEEDS network gives the machine's
+  whole network, so two packs asking for 8210 are judged fine and
+  collide at boot. Per-world reach is rung 6; a PORT is no clause today.
+- **The stage list is a script's.** `HARB_STAGE` is read by `os2_image.sh`,
+  so what a placement carries beside its programs is a convention of a
+  shell script and not a part of the pack. A pack that names the files its
+  programs are is the cleaner seat, and it is another clause.
+- **A stranger cannot boot this yet**: the server is built by a PowerShell
+  script from RingServ's source, so `stranger_walk.sh` does not walk it
+  and the tour does not teach `ready` or `place` (their words are not in
+  `learn.words`). A stranger can rehearse a placement, which needs
+  nothing; the boot needs RingServ built first.
+- **The binary is not reproducible across folders**, so nobody else can
+  check a digest of "the" RingServ. A released static binary with a
+  digest is the ask that retires this, and it is already routed.
+
+## The law this pays for
+
+**Ready is what a question returned**, and the question is the world's to
+ask: a server that says nothing is probed, a probe that gets no 200
+leaves no path, and PID 1 keeps one reading of ready. And **a
+declaration that adds a species of something the judges count is a new
+question for every one of them** -- the interface that goes nowhere read
+as a way to be found.
+
+---
+
 # PLC-1 — a pack asks, and the machine grants
 
 Rung 1 of the cloud ladder (`doc/CLOUD.md`) is the Commons as the first

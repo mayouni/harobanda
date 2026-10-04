@@ -210,12 +210,20 @@ given, and `AFTER`, not position, ordering a boot (PA6).
   say which port a world serves on or which destinations it may
   reach: a world has the machine's network when it `NEEDS` it, and a
   machine's reach is per `NETWORK` until it is per world (`doc/CLOUD.md`,
-  rung 6).
+  rung 6). So two packs whose servers listen on one port are judged
+  fine and collide at boot (SRV-2).
 - **A fleet does not name packs yet.** A `MEMBER` that says which
   packs it runs is the grammar's next widening; today `harb place` is
   run by hand and its output is the machine file a member names.
 - **`place` judges the declaration and stages nothing.** The programs
-  a pack's `RUN` names are staged by `harb image`, as for any machine.
+  a pack's `RUN` names must be in the image's root when `harb image`
+  runs, as for any machine. For the first real server (SRV-2) a list of
+  `<file> <destination>` lines, read by `experiment/os2_image.sh`, puts
+  them there: a script's convention, and not a clause of the pack.
+- **A pack cannot say when its server is serving.** A program that
+  writes no READY path is run through `harb ready`, which the pack's
+  own `RUN` names (`machines/ringserv.pack`); a world with a `USER`
+  cannot create that path in `/run`, which is root's.
 - **The pack's own digest is recorded, not the programs it names.**
 - **The tour does not teach it yet**, and "a pack" is not one of its
   words.

@@ -1,0 +1,35 @@
+-- ringserv.pack -- RingServ, the first real server placed on a machine (SRV-2).
+--
+-- RingServ 0.9 (Ring 1.27, vendored SQLite and QuickJS, one static binary) is
+-- the application server of the Softanza estate and Haro's predecessor in that
+-- seat. It serves HTTP on the port its application declares, binds the loopback
+-- unless told otherwise (a front on another link is rung 3 of doc/CLOUD.md),
+-- answers GET /health, and writes no file that says so. So the world is the
+-- program that says it for it (`harb ready`, src/ready.zig), and the server is
+-- its child: when RingServ writes its own ready file the SERVICE changes one line.
+--
+-- What it asks, and where each need was read (RingServ at origin/main 002ba21):
+--   the network   a listening socket on 127.0.0.1:8210 (the application's :port)
+--   the filesystem and the mount `data`   its SQLite database, /data/ringserv.db
+--   threads       a worker per CPU up to four, here two, and the HTTP threads: 38 threads
+--                 measured at four workers, which is why TASKS is not 16
+--   a clock       it timestamps what it keeps
+--   process       the readiness program starts it
+-- and what it does not ask: no environment (the machine gives a world none), no
+-- dynamic loading (it is built without), no gpio.
+
+DEFINE SERVICE ringserv AS (
+  RUN [
+    "/harb", "ready", "/run/ringserv.ready", "127.0.0.1:8210",
+    "--every", "2", "--",
+    "/ringserv", "run", "/app/app.ring", "--data", "/data"
+  ],
+  RESTART always,
+  READY "/run/ringserv.ready",
+  HEALTH 10,
+  NEEDS [network, filesystem, process, threads, clock],
+  SEES [data],
+  MEMORY 128,
+  CPU 100,
+  TASKS 64
+) RATIONALE "The application server: it serves once /health answers and says so by the path PID 1 waits for, every 2 seconds for as long as it keeps answering; past 128 MiB it is stopped alone, past one core it waits, past 64 tasks it is refused more"

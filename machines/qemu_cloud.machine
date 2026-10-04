@@ -1,0 +1,53 @@
+-- qemu_cloud.machine -- a member of a cloud: the machine a solution is placed on.
+--
+-- It carries no solution of its own. It grants what a server world asks for
+-- (the network, a store that survives the power, threads, a clock, the right
+-- to start the program that says the server is serving), and it declares its
+-- own loopback: a server that answers a probe on 127.0.0.1 needs that
+-- interface up, and nothing brings it up but a declaration, because the
+-- floor builds only what a declaration asks for (BDG-1).
+--
+-- A pack is placed on it with `harb place`, and the court judges the two as
+-- one machine (PLC-1); `experiment/os9_cloud.sh` places machines/ringserv.pack
+-- on it and boots the result (SRV-2). On a real provider the disk is the
+-- provider's and the board is a generic virtual machine (doc/CLOUD.md, rung 4);
+-- here it is QEMU's.
+
+DEFINE MACHINE qemu_cloud AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "A machine that grants what a server world asks and carries nothing of its own, so that what runs on it is exactly what was placed on it"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "A server world listens on the machine's network"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "A server world keeps its data on a declared mount"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The program that says a server is serving starts the server, so a world here may start a program"
+
+DEFINE CAPABILITY threads AS (
+  GRANT yes
+) RATIONALE "A server world answers on several threads, and the machine sizes them with TASKS, not with this"
+
+DEFINE CAPABILITY clock AS (
+  GRANT yes
+) RATIONALE "A server world timestamps what it keeps; the machine has no trusted clock and says so elsewhere (STZ-OS-RULING-07)"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where a server world keeps its database: a partition that survives the power"
+
+DEFINE NETWORK loopback AS (
+  INTERFACE "lo",
+  ADDRESS "127.0.0.1/8"
+) RATIONALE "The machine's own loopback, so that a world can ask its own server a question; no route leaves the machine by it"

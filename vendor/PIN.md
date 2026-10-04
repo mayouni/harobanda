@@ -52,6 +52,30 @@ ZIGCC-1); nothing in the shipped images depends on it.
 | source of the digest | ziglang.org's own `download/index.json`, fetched 2026-09-12 |
 | version | 0.15.2, the same the Windows toolchain builds `harb` with; its C front end reports clang 20.1.2 |
 
+## RingServ, pinned by SOURCE (SRV-2)
+
+The first real server a pack places (`machines/ringserv.pack`) is RingServ,
+the application server of the estate, built from its own repository and
+staged by `machines/ringserv.stage`. Unlike the two above it is pinned by
+the git ref of its SOURCE and not by a digest of what is built, because the
+build is not byte-reproducible across folders: two builds of this ref in two
+folders differ by 160 bytes (24,313,280 and 24,313,440; measured 2026-10-04).
+In the same folder it is: `experiment/ringserv_build.ps1` builds in a fixed
+one, and a rebuild there gave the same digest.
+
+| what | value |
+|---|---|
+| source | `https://github.com/mayouni/ringserv.git` (public) |
+| ref | `002ba2126bb78681b2aae40e365dd19385ca4d9f`, origin/main on 2026-10-04, committed 2026-08-29: "Write down the data-and-compute position, and put it on the front page" |
+| what was read | that ref only, through git objects. The ringserv working tree holds uncommitted work of its own desk and was not read or touched (CENTRAL-READONLYPIN-01) |
+| built with | `zig build -j2 -Dtarget=x86_64-linux-musl`, Zig 0.15.2, ReleaseFast (RingServ's default): one static x86-64 ELF with no interpreter, 24,313,280 bytes, sha256 `d172da3e7471675ac8f2d4895bc7b017879606d6278480ae45ab0bce03829e69` in `zig-out/ringserv/src` (for the record, not the pin) |
+| reports itself as | `RingServ 0.9.0 (Ring 1.27, resident, ReleaseFast)`, vendored SQLite 3.53.4 |
+| licence | MIT (RingServ's own `LICENSE`); the binary is not committed here and not redistributed |
+
+Changing the pin means changing the `$Ref` in `experiment/ringserv_build.ps1`,
+this table, and the pinned boot `machines/qemu_cloud_ringserv.expected` in the
+same commit, because that transcript quotes the server's own banner line.
+
 ## What is NOT pinned: availability
 
 A digest makes a tarball's CONTENT sovereign, not its EXISTENCE. Both
