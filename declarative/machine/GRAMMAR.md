@@ -215,7 +215,9 @@ process is there, the kernel is content, and nothing is served. `HEALTH
 path, and it changes two things. PID 1 feeds the hardware watchdog only
 while every world with a window is fresh — the first that goes stale is
 named, the feed stops, and the board's reset into the committed slot is
-the answer. And an A/B trial commits only once every such world has
+the answer. The watchdog is PID 1's alone: it opens the device
+close-on-exec before it spawns the first world, so no world inherits it
+and none can keep the box fed or disarm it (WDG-1). And an A/B trial commits only once every such world has
 been ready THROUGH one full window: "serving" measured at the instant
 of the signal is not worth an update, "serving one window later" is.
 Staleness LATCHES: a world that recovers does not resume the feed,

@@ -223,6 +223,25 @@ fn watchdogOff(gpa: std.mem.Allocator) bool {
     return std.mem.indexOf(u8, cmdline, "harb.watchdog=off") != null;
 }
 
+/// How PID 1 opens the hardware watchdog: write-only and CLOSE-ON-EXEC (WDG-1).
+///
+/// The second flag is why this has a name. A world is PID 1's child -- fork,
+/// the envelope, `execve` -- and an exec keeps every descriptor that is not
+/// close-on-exec. The watchdog is opened BEFORE the first world is spawned, so
+/// one opened without the flag sits in every world's table, and a world that
+/// holds it can write to it and keep the hardware fed while PID 1 has stopped
+/// feeding it (HLT-1's rollback never comes), or write the magic `V` and close
+/// it, on a driver that honours that, and disarm the rollback for good. The
+/// floor refuses a world the calls that would change the machine (SYS-1); an
+/// inherited descriptor needs none of them. With the flag the world that execs
+/// holds nothing of PID 1's but its stdio, and the watchdog core lets one
+/// process hold the device at a time, so it cannot open a second beside PID 1's.
+const watchdog_flags: std.os.linux.O = .{ .ACCMODE = .WRONLY, .CLOEXEC = true };
+
+fn openWatchdog(path: [*:0]const u8) usize {
+    return std.os.linux.open(path, watchdog_flags, 0);
+}
+
 /// the committed slot: the first os_prefix=slots/X/ before [tryboot]
 fn committedSlot(text: []const u8) ?u8 {
     const head = if (std.mem.indexOf(u8, text, "[tryboot]")) |t| text[0..t] else text;
@@ -580,6 +599,52 @@ fn feedWatchdog(s: *Slots) void {
     if (s.wd_fd) |fd| _ = std.os.linux.write(fd, "\x00", 1);
 }
 
+/// What a child that has just exec'd holds open: `ls -l /proc/self/fd`, run as
+/// a child of this process, with its stdin and stderr thrown away, so the only
+/// things in its table are its stdio, the directory `ls` is reading, and
+/// whatever this process left open across the exec. Null when there is no `ls`.
+fn fdsAfterExec(gpa: std.mem.Allocator) !?[]u8 {
+    var child = std.process.Child.init(&.{ "ls", "-l", "/proc/self/fd" }, gpa);
+    child.stdin_behavior = .Ignore;
+    child.stdout_behavior = .Pipe;
+    child.stderr_behavior = .Ignore;
+    child.spawn() catch return null;
+    child.waitForSpawn() catch return null;
+    const listing = try child.stdout.?.readToEndAlloc(gpa, 1 << 16);
+    _ = try child.wait();
+    return listing;
+}
+
+test "the watchdog's open flags are close-on-exec (WDG-1)" {
+    // the declaration, on every host: write-only, and not inherited
+    try std.testing.expect(watchdog_flags.CLOEXEC);
+    try std.testing.expect(watchdog_flags.ACCMODE == .WRONLY);
+}
+
+test "a world that execs holds no watchdog descriptor (WDG-1)" {
+    // The question that DECIDES (MNT-1), where there is a kernel to ask: what does a child that
+    // exec's from here hold? The production open, on a device no stdio of the child will be. The
+    // declaration above can stay true while the open ignores it, which is the defect this guards
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    const sys = std.os.linux;
+    const gpa = std.testing.allocator;
+    const kept = openWatchdog("/dev/zero");
+    try std.testing.expectEqual(sys.E.SUCCESS, sys.E.init(kept));
+    defer _ = sys.close(@intCast(kept));
+    const after = (try fdsAfterExec(gpa)) orelse return error.SkipZigTest;
+    defer gpa.free(after);
+    try std.testing.expect(std.mem.indexOf(u8, after, "/dev/zero") == null);
+
+    // A judge that always convicts, or never does, is no judge (VDCT-1): the same descriptor opened
+    // WITHOUT the flag is the one a world inherits, and the same question must see it
+    const bare = sys.open("/dev/zero", .{ .ACCMODE = .WRONLY }, 0);
+    try std.testing.expectEqual(sys.E.SUCCESS, sys.E.init(bare));
+    defer _ = sys.close(@intCast(bare));
+    const leaked = (try fdsAfterExec(gpa)).?;
+    defer gpa.free(leaked);
+    try std.testing.expect(std.mem.indexOf(u8, leaked, "/dev/zero") != null);
+}
+
 test "the committed slot is read from config.txt and a commit swaps the two prefixes" {
     const cfg = "arm_64bit=1\nos_prefix=slots/A/\n[tryboot]\nos_prefix=slots/B/\n";
     try std.testing.expectEqual(@as(?u8, 'A'), committedSlot(cfg));
@@ -924,7 +989,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         if (watchdogOff(gpa)) {
             try led.say(expect.fmt_watchdog_off, .{});
         } else {
-            const wd = linux.open("/dev/watchdog", .{ .ACCMODE = .WRONLY }, 0);
+            const wd = openWatchdog("/dev/watchdog");
             switch (linux.E.init(wd)) {
                 .SUCCESS => {
                     s.wd_fd = @intCast(wd);

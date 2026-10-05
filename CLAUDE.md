@@ -420,6 +420,12 @@ wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/os8_links.sh
 zig-out\bin\harb.exe fleet machines\cloud_links.fleet
 
+# a world that execs holds no watchdog (WDG-1): the unit
+# tests on Linux, and two mutants that must be convicted
+#   -> zig-out/wsl/watchdog_probe.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/watchdog_probe.sh
+
 # the guided tour: 18 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -456,6 +462,24 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A world holds nothing of PID 1's but its stdio** (WDG-1): PID 1
+  opened `/dev/watchdog` before it spawned its first world and without
+  close-on-exec, and an exec keeps what is not, so on an A/B machine
+  every world held the hardware watchdog open and writable. It could
+  keep the box fed while PID 1 had stopped feeding it (HLT-1's rollback
+  never comes) or disarm it, with no call the floor refuses -- SYS-1's
+  deny list names calls, and an inherited descriptor needs none. It is
+  opened close-on-exec now (`openWatchdog`). No boot can see it: the
+  emulator never arms the watchdog, so the witness is a Linux unit test
+  that asks what an exec'd child holds, run by `experiment/watchdog_probe.sh`
+  against two mutants. The second is the one that matters: it keeps the
+  flag's DECLARATION and ignores it at the open, which is the original
+  defect, and only the exec question convicts it -- **a guard that reads
+  the declaration does not judge the act** (NAME-1, again). The audit
+  found the watchdog the only descriptor PID 1 held across a spawn that
+  was not stdio (Zig's own opens are close-on-exec, and the gate pipe's
+  ends are closed by hand); a sweep before every exec would make that
+  structural and is not done.
 - **A machine says it is the way between links, and a fleet says it was
   meant** (FWD-1): `FORWARD yes` switches the kernel's forwarding on once
   every network is up and says so only after reading the switch back. It
@@ -1085,7 +1109,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

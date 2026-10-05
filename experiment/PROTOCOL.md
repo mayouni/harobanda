@@ -1,3 +1,92 @@
+# WDG-1 — a world holds nothing of PID 1's but its stdio, starting with the watchdog
+
+A defect in the floor, found by reading `src/init.zig` for what a server world
+inherits (the survey SRV-2 made) and closed by one flag. Small to fix and
+worth writing down, because nothing in any boot could have seen it.
+
+## The defect
+
+PID 1 opened `/dev/watchdog` with `.{ .ACCMODE = .WRONLY }` and no
+close-on-exec. It does that before it spawns its first world, a world is a fork
+and an exec (`spawn`), and an exec keeps every descriptor that is not
+close-on-exec. So on a machine that updates A/B (`makeen_box`, on the board)
+EVERY world started with PID 1's watchdog open and writable. What a world could
+do with it needed no call the floor refuses (SYS-1's deny list names the calls
+that change the machine, and an inherited descriptor needs none):
+
+- write to it, and keep the hardware fed while PID 1 has stopped feeding it
+  because a world went stale -- HLT-1's rollback, the whole reason the
+  watchdog is armed, would never come;
+- or write the magic `V` and close it, on a driver that honours that, and
+  disarm it for good.
+
+## Why no boot could see it
+
+The emulator never arms the watchdog: QEMU's raspi4b resets the board the moment
+it is opened, so its boot line says `harb.watchdog=off` and PID 1 does not open
+it. The only machine that arms one is `makeen_box` on a real Pi, and that is
+OS-5, parked. Every pinned transcript was green over the defect and would have
+stayed green.
+
+## The change, and the audit behind it
+
+`watchdog_flags` (write-only, close-on-exec) and `openWatchdog`, which the one
+call site uses. The audit asked what ELSE PID 1 holds across a spawn that is not
+stdio, and found nothing: Zig's own `Dir.openFile` and `createFile` set
+close-on-exec (`std/fs/Dir.zig`) and PID 1 closes what it opens; the gate pipe of
+`spawn` is plain `pipe()`, but the child closes the write end and the read end
+by hand and PID 1 closes the write end in `release` before the next spawn; the
+names servers' sockets are closed in PID 1 after the fork. The watchdog was the
+one.
+
+## The witness
+
+Two unit tests beside the code:
+
+- *the watchdog's open flags are close-on-exec*: the declaration, true on every host;
+- *a world that execs holds no watchdog descriptor*: the question that decides
+  (MNT-1). It opens a device through the production `openWatchdog`, runs
+  `ls -l /proc/self/fd` as a child, and requires the device to be absent from the
+  child's table. The same descriptor opened WITHOUT the flag must be present, or
+  the question tells nothing apart.
+
+The second can only be asked on Linux, so `zig build test` on the Windows host
+passes the first and SKIPS the second (74 passed, 1 skipped there, by design).
+`experiment/watchdog_probe.sh` runs both on Linux and then runs them against two
+scratch mutants, each of which must be convicted by the test named for it:
+
+- *the flag constant loses CLOEXEC*: both tests fail;
+- *the open ignores the constant*: the declaration test STAYS green and only the
+  exec test fails. This is the original defect (the call site never passed the
+  flag), and it is the one that matters: a guard that reads the declaration does
+  not judge the act.
+
+Probed: the production source passes, both mutants are convicted for the right
+reason, 17 seconds.
+
+## Named, not closed
+
+- **No sweep.** A descriptor added to PID 1 tomorrow without close-on-exec leaks
+  the same way, and this witness covers the watchdog only. A `close_range` before
+  every exec in `spawn` would make "a world holds nothing but its stdio"
+  structural. It is a change to the start of every world and was not asked for.
+- **A world can open the device itself** on a machine where PID 1 holds none (no
+  SLOTS, or the emulator's `harb.watchdog=off`): `/dev` is visible to a world,
+  opening arms the watchdog, nobody feeds it, and the box resets -- a reboot by
+  proxy that the deny list, which names `reboot`, does not cover. Read from the
+  driver's behaviour; no boot has shown it. Where PID 1 holds the device the
+  watchdog core lets one process hold it at a time, so the world is refused.
+- **The board.** Whether the descriptor is gone from a world on a real Pi is
+  OS-5's to observe; here it is the kernel's flag and a Linux child that say so.
+
+## The law this pays for
+
+**A world holds nothing of PID 1's but its stdio**, and **a guard that reads the
+declaration does not judge the act**: the flags constant was true and the open
+ignored it, and only the question "what does an exec'd child hold?" could tell.
+
+---
+
 # FWD-1 — a machine says it is the way between links, and a fleet says it was meant
 
 Rung 2 of the cloud ladder (`doc/CLOUD.md`), taken on the author's "after
