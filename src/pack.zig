@@ -21,8 +21,9 @@
 //! mounts, its networks, its pins. A pack that could declare a CAPABILITY
 //! would grant itself what it asks for, and the grant would mean nothing. So
 //! a pack names what it NEEDS (`NEEDS [network]`), which mounts it SEES, which
-//! user it runs as, and the machine it is placed on either has those or
-//! refuses the placement, at the line of the pack that asked.
+//! user it runs as, which directories that user owns (`STATE`, OWN-1), and the
+//! machine it is placed on either has those or refuses the placement, at the
+//! line of the pack that asked.
 //!
 //! ## One reading of the rules
 //!

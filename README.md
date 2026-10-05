@@ -403,6 +403,7 @@ same for all three.
 | a fleet: facts about a set, the keys a device used to have, and the ways between its links | `src/fleet.zig` | `declarative/fleet/`, `experiment/os7_fleet.sh`, `experiment/os8_links.sh` |
 | a machine that is the way between two networks, and the names it answers across them | `src/machine.zig` (`FORWARD`), `src/names.zig`, `src/get.zig` | `machines/qemu_forward.expected`, `machines/cloud_links.expected` |
 | a solution's services, written apart from a machine and placed on one; and the program that says a server is serving | `src/pack.zig`, `src/ready.zig` | `harb court --pack`, `machines/qemu_cloud_ringserv.expected` |
+| a world that runs as an identity, and the directories it owns | `src/machine.zig` (`STATE`), `src/init.zig` | `machines/qemu_cloud_ringserv.expected` (the directory read back from the disk), `experiment/state_probe.sh` |
 | updates: two slots, and a trial before any commit | `src/update.zig` | the card read back after a trial |
 | the guided tour, judged like any other claim | `src/learn.zig` | `harb learn --check` |
 | the pages: every code line fits GitHub's column, every machine a page shows in full is one the court accepts, and the words are the tour's own | `src/docs.zig` | `harb docs --check`, in `zig build court` |
@@ -449,7 +450,9 @@ transcript:
   between them (the server is RingServ, built from its own source by
   `experiment/ringserv_build.ps1`);
 - `bash experiment/os9_cloud.sh` — a real server placed on a declared
-  machine and booted, with the program that says it is serving.
+  machine and booted, with the program that says it is serving. It runs as an
+  identity of its own, and the boot reads its directory back from the disk it
+  leaves.
 
 Every line of doctrine here was paid for by a mistake, and each is written up
 under its own tag in `experiment/PROTOCOL.md`, newest first. A few of them:

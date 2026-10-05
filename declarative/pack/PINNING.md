@@ -5,10 +5,21 @@
 `fixtures.json` sha256:
 
 ```
-6420fe4816c726eb09d546dfb1ef4d750d254670f2feadb1cc22aa8fdd2b3ff5
+f30bd423e00b5d42a100ad57efc1d0a9a4e2aa63568d789df5d8b7914247f05b
 ```
 
-Born at 30/30 with the pack court of 2026-10-04 (PLC-1). Re-pin this
+Born at 30/30 with the pack court of 2026-10-04 (PLC-1); 35/35 since the
+STATE seat of 2026-10-05 (OWN-1), from
+`6420fe4816c726eb09d546dfb1ef4d750d254670f2feadb1cc22aa8fdd2b3ff5`: the
+Commons pack (PA1, PA5) now signals inside a directory it owns, because a
+world that runs as an identity may no longer signal in root's /run, and
+the widening added PA7 (a world owns a directory on a mount the machine
+granted it) and PR25-PR28 (a STATE on storage the pack never asked for, a
+signal where no identity can write, a directory that is a piece of one the
+machine's own service owns, and one that holds the machine's own signal),
+each refused at the pack's own line: where two claims conflict, the court
+reports the LATER one, which is the pack's when a pack was placed on a
+machine that passed alone. Re-pin this
 digest in the same commit that changes `fixtures.json`, as the machine
 grammar's own `PINNING.md` requires of itself. The court judges the
 pin (PIN-1): a stale one fails even when every case passes.
@@ -17,7 +28,7 @@ pin (PIN-1): a stale one fails even when every case passes.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/pack.zig`) | `zig build court` / `harb court --pack` | **30/30** — 6 accepts, 24 rejects |
+| Zig (`src/pack.zig`) | `zig build court` / `harb court --pack` | **35/35** — 7 accepts, 28 rejects |
 
 `zig build court` runs ALL THREE grammars: the machine fixtures first,
 the fleet fixtures after, the pack fixtures last. One step, three

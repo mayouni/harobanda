@@ -588,11 +588,41 @@ fn nowMs() i64 {
     return std.time.milliTimestamp();
 }
 
+/// What a world's READY path is, if it is a SIGNAL: a regular file, and read WITHOUT following a
+/// link. PID 1 reads this path as root, in a directory the world may own, and a world that owns a
+/// directory can put a link there that points at a neighbour's heartbeat: it would be "ready" and
+/// "fresh" on somebody else's word, which PID 1 followed as root. A link, a directory or anything
+/// else at the path is no signal at all (OWN-1's review).
+fn signalStat(path: []const u8) ?std.os.linux.Stat {
+    const p = std.posix.toPosixPath(path) catch return null;
+    var st: std.os.linux.Stat = undefined;
+    // (`fstatat` with no-follow, not `lstat`: aarch64 has no such syscall, and the standard library's
+    // wrapper names it anyway -- which only the cross build for that architecture can tell)
+    if (std.os.linux.E.init(std.os.linux.fstatat(std.os.linux.AT.FDCWD, &p, &st, std.os.linux.AT.SYMLINK_NOFOLLOW)) != .SUCCESS) return null;
+    if (!std.os.linux.S.ISREG(st.mode)) return null;
+    return st;
+}
+
 /// When the world last touched its READY path, or null if the path is
 /// gone: a world that deleted its own signal is not fresh either.
 fn mtimeMs(path: []const u8) ?i64 {
-    const st = std.fs.cwd().statFile(path) catch return null;
-    return @intCast(@divTrunc(st.mtime, std.time.ns_per_ms));
+    const st = signalStat(path) orelse return null;
+    const t = st.mtime();
+    return @as(i64, @intCast(t.sec)) * 1000 + @divTrunc(@as(i64, @intCast(t.nsec)), 1_000_000);
+}
+
+/// Take away a signal an earlier boot left, before the world that would make it exists. A signal is
+/// THIS boot's word that the world serves: one left on a disk by the last boot would read as ready
+/// before the world has run (RDY-1 named the trap; PID 1 closes it, so no script has to). `unlink`
+/// removes what is there and never what a link points at.
+fn removeStaleSignal(path: []const u8) !void {
+    const p = try std.posix.toPosixPath(path);
+    const rc = std.os.linux.unlink(&p);
+    switch (std.os.linux.E.init(rc)) {
+        .NOENT => {}, // nothing left over: the usual case
+        .ISDIR => return error.IsADirectory,
+        else => try kernel(rc),
+    }
 }
 
 fn feedWatchdog(s: *Slots) void {
@@ -851,6 +881,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     var serving_buf: std.ArrayList(u8) = .{};
     // the links a machine that forwards will serve, up and waiting for the way (FWD-1)
     var await_way: std.ArrayList(*const machine.Network) = .{};
+    // the mounts the kernel refused: a world's own directory (STATE) is never made on one (OWN-1)
+    var unmounted: std.ArrayList([]const u8) = .{};
     var said_serving = false;
     if (opts.hold and ab != null) try out.print("boot: --hold: a trial will not be committed and the watchdog will not be fed -- the rollback instrument\n", .{});
 
@@ -896,7 +928,10 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             switch (linux.E.init(rc)) {
                 .SUCCESS => try led.say(expect.fmt_mount_done, .{ @tagName(mt.fs), mt.at }),
                 .BUSY => try led.say("boot: mount {s} at {s} -- already mounted (EBUSY), kept\n", .{ @tagName(mt.fs), mt.at }),
-                else => |e| try led.say("boot: mount {s} at {s} -- refused by the kernel: {s}\n", .{ @tagName(mt.fs), mt.at, @tagName(e) }),
+                else => |e| {
+                    try led.say("boot: mount {s} at {s} -- refused by the kernel: {s}\n", .{ @tagName(mt.fs), mt.at, @tagName(e) });
+                    try unmounted.append(gpa, mt.at); // a directory a world is to own is never made on its mount point
+                },
             }
         },
         .capability => |c| try led.say(expect.fmt_capability, .{ if (c.granted) "grant" else "refuse", @tagName(c.name), @tagName(machine.kindOf(c.name)) }),
@@ -1028,6 +1063,11 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     _ = try expect.confineLine(led.w(), m);
     _ = try expect.floorLine(led.w(), m);
     try led.echo();
+    // the directories the worlds own, made and handed over before any of them exists (OWN-1)
+    try prepareState(m, slots.items, unmounted.items, opts.rehearse, &led, out);
+    // ... and the signals an earlier boot left, which are not this boot's word (after the directories,
+    // so that nothing is removed through a path that was not verified)
+    try clearSignals(slots.items, opts.rehearse, out);
     try startReady(gpa, slots.items, &led);
     try out.flush();
 
@@ -1338,12 +1378,12 @@ fn pollReady(slots: []Slot, led: *Ledger) !struct { signalled: bool, awaiting: b
     for (slots) |*s| {
         if (!s.awaiting()) continue;
         const path = s.service.ready.?;
-        if (std.fs.cwd().access(path, .{})) |_| {
+        if (signalStat(path) != null) {
             s.signalled_ready = true;
             s.signalled_ms = nowMs();
             signalled = true;
             try led.say(expect.fmt_ready, .{ s.service.name, path });
-        } else |_| {
+        } else {
             awaiting = true;
         }
     }
@@ -1457,4 +1497,315 @@ fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Conf
 fn release(gate: std.posix.fd_t) void {
     _ = std.posix.write(gate, "\x00") catch {};
     std.posix.close(gate);
+}
+
+// ---- a world's own directory (OWN-1) ---------------------------------------
+//
+// A world that runs as a declared identity can write only where something was
+// handed to it, and `STATE` says what: directories PID 1 makes and gives to
+// that identity before the world exists. The machine's own directories stay the
+// machine's, so the first server runs as itself and keeps its database and its
+// signal in a place of its own instead of as root.
+
+/// What the kernel answered, as an error this file names. The raw calls are used and not
+/// the standard library's wrappers, which call EINVAL and EBADF `unreachable`: in the
+/// ReleaseSafe build this binary ships in that is a PANIC in PID 1, where a refusal in a
+/// line was owed. EINVAL is what a chown answers for an identity the caller's user
+/// namespace has no number for -- which the repository's own rehearsal harness
+/// (`unshare -Urpf`) is.
+fn kernel(rc: usize) !void {
+    return switch (std.os.linux.E.init(rc)) {
+        .SUCCESS => {},
+        .PERM, .ACCES => error.PermissionDenied,
+        .INVAL => error.NoSuchIdentity,
+        .ROFS => error.ReadOnlyFileSystem,
+        .IO => error.InputOutput,
+        .NOTDIR => error.NotADirectory,
+        else => error.Unexpected,
+    };
+}
+
+/// A directory ABOVE the one a world is to own must be the machine's: owned by whoever runs this
+/// act (PID 1), and not writable by anyone else unless the sticky bit stops them taking what is
+/// not theirs. The owner of a directory can replace what is in it, so a directory left on a disk
+/// by an earlier boot's identity would let that identity swap the new world's directory for its
+/// own. The ways down that this act made itself are root's; a mount's root is root's; a tmpfs's
+/// is 1777, and the sticky bit is what makes that safe.
+fn theMachinesOwn(fd: i32, me: u32) !void {
+    var st: std.os.linux.Stat = undefined;
+    try kernel(std.os.linux.fstat(fd, &st));
+    // PID 1 is root, so this is root's. (Whoever runs the act is let in beside root so that a test
+    // run by an ordinary user, whose own directories sit under other people's, can ask the question.)
+    if (st.uid != me and st.uid != 0) return error.AncestorNotTheMachines;
+    const open_to_others = st.mode & 0o022 != 0;
+    const sticky = st.mode & 0o1000 != 0;
+    if (open_to_others and !sticky) return error.AncestorNotTheMachines;
+}
+
+/// Give the directory the descriptor holds to `u`, close it to everyone else, and READ IT BACK:
+/// the owner and the mode as the kernel says them, not as this function asked for them.
+fn handOver(fd: i32, u: *const machine.User) !void {
+    try kernel(std.os.linux.fchown(fd, u.uid, u.gid));
+    try kernel(std.os.linux.fchmod(fd, 0o700));
+    var st: std.os.linux.Stat = undefined;
+    try kernel(std.os.linux.fstat(fd, &st));
+    if (!std.os.linux.S.ISDIR(st.mode)) return error.NotADirectory;
+    if (st.uid != u.uid or st.gid != u.gid) return error.NotOwnedAsDeclared;
+    if (st.mode & 0o7777 != 0o700) return error.ModeNotKept;
+}
+
+/// Make `dir` -- and every directory above it that is missing, as root's -- give it to `u`, close
+/// it to every other identity, and read it back. Returns an error for anything that is not exactly
+/// what was declared.
+///
+/// Walked from the root with no symlink followed. A directory on a disk that outlives the boot can
+/// hold whatever a world, or anyone who held the disk, once put there, and an owner given to
+/// whatever a link points at would be an owner given to somebody else's directory. `O_NOFOLLOW` on
+/// every step makes a link anywhere on the way a refusal and not a destination, and every
+/// directory above the last must be the machine's (`theMachinesOwn`).
+fn ownDir(dir: []const u8, u: *const machine.User, unmounted: []const []const u8) !void {
+    // a mount the kernel refused left its mount point behind, in RAM: a directory made
+    // there would hold what a world writes until the power goes, and say nothing. (Any refused
+    // mount the directory lies inside refuses it: a wider question than the court's innermost
+    // holder, so it can refuse more than the court passed and never less.)
+    for (unmounted) |at| if (machine.within(dir, at)) return error.MountRefused;
+    // whoever runs this act: the machine's identity, and the only owner the ways down may have
+    const me = std.os.linux.getuid();
+    // `iterate`: a directory opened without it is a path-only descriptor on Linux, and the kernel
+    // answers EBADF to a chown or a chmod on one
+    var cur = try std.fs.openDirAbsolute("/", .{ .no_follow = true, .iterate = true });
+    var parts = std.mem.tokenizeScalar(u8, dir, '/');
+    while (parts.next()) |name| {
+        cur.makeDir(name) catch |e| switch (e) {
+            error.PathAlreadyExists => {},
+            else => {
+                cur.close();
+                return e;
+            },
+        };
+        const next = cur.openDir(name, .{ .no_follow = true, .iterate = true }) catch |e| {
+            cur.close();
+            return e;
+        };
+        cur.close();
+        cur = next;
+        if (parts.peek() != null) theMachinesOwn(cur.fd, me) catch |e| {
+            cur.close();
+            return e;
+        };
+    }
+    defer cur.close();
+    try handOver(cur.fd, u);
+}
+
+/// What a person reads when a directory was not handed over: the kernel's reason where
+/// it gave one, and in words where the reason is this function's own.
+fn stateReason(e: anyerror) []const u8 {
+    return switch (e) {
+        error.MountRefused => "the mount it lies on was refused by the kernel",
+        error.NotADirectory => "what is there is not a directory",
+        error.NotOwnedAsDeclared => "the kernel reads it back as somebody else's",
+        error.ModeNotKept => "the kernel reads it back with another mode than 0700",
+        error.AncestorNotTheMachines => "a directory above it is not the machine's, and its owner could replace it",
+        error.NoSuchIdentity => "the kernel has no such identity here (a user namespace that maps none)",
+        error.PermissionDenied => "the kernel refused (permission denied)",
+        error.ReadOnlyFileSystem => "the filesystem is read-only",
+        else => @errorName(e),
+    };
+}
+
+/// What PID 1 owes the worlds that declared STATE, before any of them starts. The
+/// line the boot says (`expect.stateLine`) is said only if every directory was made
+/// and read back as declared. One that was not is said on the console alone, with the
+/// kernel's reason; the world that was to own it does not start (NS-1: a promise the
+/// machine cannot keep is refused, never announced), and the boot lacks the line its
+/// expectation has. Such a world is never READY, so the boot is never judged and a
+/// trial is never committed (RDY-1's safe outcome, which is no timer's): the console
+/// says why, and no verdict does.
+fn prepareState(m: *const machine.Machine, slots: []Slot, unmounted: []const []const u8, rehearse: bool, led: *Ledger, out: *std.Io.Writer) !void {
+    var any = false;
+    var ok = true;
+    for (slots) |*s| {
+        const svc = s.service;
+        if (svc.state.len == 0) continue;
+        any = true;
+        if (rehearse) continue;
+        const u = svc.user orelse continue; // the court refuses a STATE with no USER
+        for (svc.state) |dir| {
+            ownDir(dir, u, unmounted) catch |e| {
+                ok = false;
+                s.state = .never;
+                try out.print("boot: state -- {s} was not given {s}: {s}; a world that owns a directory it was not given does not start\n", .{ svc.name, dir, stateReason(e) });
+                break;
+            };
+        }
+    }
+    if (!any) return;
+    if (rehearse) {
+        try out.print("boot: state -- rehearsed, not executed\n", .{});
+    } else if (ok) {
+        _ = try expect.stateLine(led.w(), m);
+        try led.echo();
+    }
+    try out.flush();
+}
+
+/// A signal is THIS boot's word that a world serves, so what an earlier boot left at a READY path
+/// is taken away before any world starts: on a disk it would read as ready before the world has run,
+/// and a trial could commit on it. A world whose directory was not handed over (`.never`) is not
+/// started, and nothing is removed for it. One whose stale signal cannot be cleared is not started
+/// either, and the console says why.
+fn clearSignals(slots: []Slot, rehearse: bool, out: *std.Io.Writer) !void {
+    if (rehearse) return;
+    for (slots) |*s| {
+        if (s.state != .pending) continue;
+        const path = s.service.ready orelse continue;
+        removeStaleSignal(path) catch |e| {
+            s.state = .never;
+            try out.print("boot: {s} -- a signal left at {s} by an earlier boot could not be cleared: {s}; it would read as ready before the world has run, so the world does not start\n", .{ s.service.name, path, stateReason(e) });
+        };
+    }
+    try out.flush();
+}
+
+test "a signal an earlier boot left is cleared, a link is not followed, and only a regular file is a signal (OWN-1)" {
+    // The questions that decide, asked of a kernel: what does PID 1 read at a READY path, and what is
+    // left there after it clears one? Linux only, like the directory test, and run by the same probe.
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    const gpa = std.testing.allocator;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const base = try tmp.dir.realpathAlloc(gpa, ".");
+    defer gpa.free(base);
+    const ready = try std.fmt.allocPrint(gpa, "{s}/ready", .{base});
+    defer gpa.free(ready);
+
+    // nothing there is not a signal, and clearing nothing is not an error
+    try std.testing.expect(signalStat(ready) == null);
+    try removeStaleSignal(ready);
+
+    // a regular file is a signal, and clearing takes it away
+    try tmp.dir.writeFile(.{ .sub_path = "ready", .data = "serving\n" });
+    try std.testing.expect(signalStat(ready) != null);
+    try std.testing.expect(mtimeMs(ready) != null);
+    try removeStaleSignal(ready);
+    try std.testing.expect(signalStat(ready) == null);
+
+    // a link is no signal, whatever it points at: it would be "ready" on somebody else's word. Clearing
+    // removes the link and leaves what it points at
+    try tmp.dir.writeFile(.{ .sub_path = "neighbour", .data = "serving\n" });
+    const neighbour = try std.fmt.allocPrint(gpa, "{s}/neighbour", .{base});
+    defer gpa.free(neighbour);
+    try tmp.dir.symLink(neighbour, "ready", .{});
+    try std.testing.expect(signalStat(neighbour) != null);
+    try std.testing.expect(signalStat(ready) == null);
+    try std.testing.expect(mtimeMs(ready) == null);
+    try removeStaleSignal(ready);
+    try std.testing.expect(signalStat(neighbour) != null);
+
+    // a directory is no signal either, and it is not removed (a world cannot say it serves by making one)
+    try tmp.dir.makeDir("ready");
+    try std.testing.expect(signalStat(ready) == null);
+    try std.testing.expectError(error.IsADirectory, removeStaleSignal(ready));
+}
+
+test "a world's own directory is made, handed over and read back, and no link is followed (OWN-1)" {
+    // The question that decides (MNT-1), where there is a kernel to ask: what does the kernel say
+    // the directory IS, once it was made? Linux only; `zig build test` on another host skips it, and
+    // experiment/state_probe.sh runs it on Linux against mutants.
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    const gpa = std.testing.allocator;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const base = try tmp.dir.realpathAlloc(gpa, ".");
+    defer gpa.free(base);
+    // The identity the directory is handed to. As root (the Linux probe runs as root) it is a DIFFERENT
+    // one, 2000, so that a hand-over which did not chown is convicted by the kernel's readback. As anyone
+    // else it is the test's own: giving a directory to the identity that already owns it asks for no
+    // privilege, and the readback is the kernel's all the same; the different owner is then the boot's
+    // to show, in its transcript and on the disk it leaves behind.
+    const root = std.os.linux.getuid() == 0;
+    const me = machine.User{
+        .name = "me",
+        .line = 1,
+        .uid = if (root) 2000 else std.os.linux.getuid(),
+        .gid = if (root) 2000 else std.os.linux.getgid(),
+        .rationale = "x",
+    };
+
+    // made, with the directories above it that were missing
+    const dir = try std.fmt.allocPrint(gpa, "{s}/a/b/state", .{base});
+    defer gpa.free(dir);
+    try ownDir(dir, &me, &.{});
+    var d = try std.fs.openDirAbsolute(dir, .{ .iterate = true });
+    defer d.close();
+    // loosened, as a world that owns it could, then handed over again: closed again, and it is the SAME
+    // directory, so what a world kept in it before the reboot is kept
+    try d.writeFile(.{ .sub_path = "kept", .data = "x" });
+    try d.chmod(0o777);
+    try ownDir(dir, &me, &.{});
+    const st = try std.posix.fstat(d.fd);
+    try std.testing.expectEqual(@as(u32, 0o700), st.mode & 0o7777);
+    try std.testing.expectEqual(me.uid, st.uid);
+    _ = try d.statFile("kept");
+
+    // A link anywhere on the way is a refusal, not a destination: nothing is made, and nothing is
+    // given, behind it. This is the half a declaration cannot show (NAME-1: a guard that reads the
+    // declaration does not judge the act).
+    var other = std.testing.tmpDir(.{});
+    defer other.cleanup();
+    const elsewhere = try other.dir.realpathAlloc(gpa, ".");
+    defer gpa.free(elsewhere);
+    try tmp.dir.symLink(elsewhere, "link", .{ .is_directory = true });
+    const through = try std.fmt.allocPrint(gpa, "{s}/link/x", .{base});
+    defer gpa.free(through);
+    try std.testing.expect(std.meta.isError(ownDir(through, &me, &.{})));
+    try std.testing.expectError(error.FileNotFound, other.dir.openDir("x", .{}));
+    // ... also as the last name, where the directory itself should be
+    const last = try std.fmt.allocPrint(gpa, "{s}/link", .{base});
+    defer gpa.free(last);
+    try std.testing.expect(std.meta.isError(ownDir(last, &me, &.{})));
+    // ... and a file where a directory should be
+    try tmp.dir.writeFile(.{ .sub_path = "plain", .data = "x" });
+    const file = try std.fmt.allocPrint(gpa, "{s}/plain", .{base});
+    defer gpa.free(file);
+    try std.testing.expect(std.meta.isError(ownDir(file, &me, &.{})));
+    // ... and a directory on a mount the kernel refused: that is the mount point, in RAM. (Under the
+    // test's own directory, so a defect that lets it through makes a directory nobody has to clean up.)
+    const mnt = try std.fmt.allocPrint(gpa, "{s}/mnt", .{base});
+    defer gpa.free(mnt);
+    const on_mnt = try std.fmt.allocPrint(gpa, "{s}/mnt/x", .{base});
+    defer gpa.free(on_mnt);
+    try std.testing.expectError(error.MountRefused, ownDir(on_mnt, &me, &.{mnt}));
+    try std.testing.expectError(error.FileNotFound, tmp.dir.openDir("mnt", .{}));
+    // a mount point that only SHARES a prefix with the directory is not that mount
+    const near = try std.fmt.allocPrint(gpa, "{s}/mntx", .{base});
+    defer gpa.free(near);
+    try ownDir(near, &me, &.{mnt});
+
+    // Every directory ABOVE the last must be the machine's: one that others can write into, without
+    // the sticky bit that stops them taking what is not theirs, lets them replace the world's directory
+    try tmp.dir.makeDir("open");
+    var od = try tmp.dir.openDir("open", .{ .iterate = true });
+    defer od.close();
+    try od.chmod(0o777);
+    const under_open = try std.fmt.allocPrint(gpa, "{s}/open/x", .{base});
+    defer gpa.free(under_open);
+    try std.testing.expectError(error.AncestorNotTheMachines, ownDir(under_open, &me, &.{}));
+    try std.testing.expectError(error.FileNotFound, od.openDir("x", .{})); // and nothing was made under it
+    // ... and with the sticky bit it is the safe shape a tmpfs mount's root has
+    try od.chmod(0o1777);
+    try ownDir(under_open, &me, &.{});
+    // ... and one left by another identity -- here the one this world would be, standing for an earlier
+    // boot's -- is not the machine's: its owner could swap what is below it. Only root can make one
+    if (root) {
+        try tmp.dir.makeDir("theirs");
+        var td = try tmp.dir.openDir("theirs", .{ .iterate = true });
+        defer td.close();
+        try td.chown(2000, 2000);
+        try td.chmod(0o755);
+        const under_theirs = try std.fmt.allocPrint(gpa, "{s}/theirs/x", .{base});
+        defer gpa.free(under_theirs);
+        try std.testing.expectError(error.AncestorNotTheMachines, ownDir(under_theirs, &me, &.{}));
+    }
 }

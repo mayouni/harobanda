@@ -133,13 +133,14 @@ init; the launcher is the pack).
 | `RESTART` | `never` \| `always` \| `on_failure` | optional, default `never` (R25) |
 | `AFTER` | name list of services | optional; each resolves (R8), never itself (R27), never a cycle (R21) |
 | `NEEDS` | name list of capabilities | optional; each must be declared AND granted (R17, R18) |
-| `READY` | string | optional, daemons only — the absolute path the service creates when it is serving (R43, R44, R45); see the readiness rule below |
+| `READY` | string | optional, daemons only — the absolute path the service creates when it is serving (R43, R44, R45), a plain one (R128, R129: no trailing slash, no `..`); PID 1 reads it without following a link and clears one an earlier boot left; see the readiness rule below |
 | `HEALTH` | number (seconds) | optional — the window within which the daemon must REFRESH its READY path. Requires READY (R53); 0 is refused (R54), and so is a window longer than an hour. See the health rule below |
 | `MEMORY` | number (mebibytes) | optional — the ceiling the KERNEL holds this world to. 0 is refused (R56), and so is a number big enough to be bytes by mistake. See the budget rule below |
 | `CPU` | number (percent of ONE core) | optional — 50 is half a core, 200 is two of them. 0 is refused (R57), and so is more than sixteen cores' worth (R58) |
 | `TASKS` | number | optional — how many TASKS the machine will hold for this world: cgroup v2's `pids.max`, which counts processes and threads TOGETHER because that is the only number the kernel keeps. A fork or a thread past it gets EAGAIN; the world is not killed. `TASKS 0` is refused (R83) and so is a count beyond four thousand (R84). The runtime's own housekeeping threads count against it, which is right: the machine is sizing the world |
 | `SEES` | name list | optional — WHICH of the machine's declared mounts this world keeps sight of. `NEEDS [filesystem]` is the grant and this narrows it, so it is refused without that capability (R78); a mount this machine does not declare (R79), an empty list (R80), one named twice (R81), and a machine with no MOUNT at all (R82) are refused. Saying nothing keeps every declared mount, which is what every machine written before this clause did |
 | `USER` | name | optional — a declared USER this service runs as; PID 1 drops to that uid and gid between fork and exec. A name that resolves to nothing is refused at check time (R46). Saying nothing is how a service runs as the machine itself |
+| `STATE` | string list of absolute paths | optional — the directories this world OWNS (OWN-1): PID 1 makes each before the world starts, owned by the world's USER and closed to every other identity (mode 0700), and says so only after reading it back. Needs a USER (R104). Where each may be, and what sits near it, is the own-place rule below (R105-R138) |
 
 ### DEFINE USER — a declared identity
 
@@ -156,6 +157,94 @@ with `/nonexistent` as every shell, because there is none. **Root is
 what a service gets by saying nothing** — there is no way to declare a
 root identity, so a service that needs the machine's own powers is
 visibly the one with no USER line.
+
+#### A world's own place — `STATE` (OWN-1)
+
+An identity that is not root can write only in a directory it owns or one
+the machine made open to everyone, and until `STATE` the machine owned
+them all: every directory of the image is root's, so a server that wrote
+a database or its own readiness signal ran as root, and the first real
+one did. `STATE` names the directories a world owns. The court judges
+them on the composed text, so a pack's `STATE` is refused at the line of
+the pack that wrote it -- except an overlap with a directory the machine's
+own service owns, which is reported at the machine's line:
+
+- **only an identity owns anything** (R104): a world with no USER is the
+  machine itself and owns every place; a plain absolute path of letters,
+  digits, `.`, `_` and `-` between slashes, no name over 64 and the whole
+  under 200 (R105-R110, R137, R138), because the path is walked by PID 1
+  as root, printed into a transcript that is judged, and compared by the
+  court as text
+- **only where the machine can hand a directory over** (R111-R118, R133,
+  R136): strictly inside `/run` (RAM), or inside a MOUNT that the world
+  keeps (R114, R115: the same `Service.keeps` that decides what the
+  confinement hides) with every mount above it kept too (R133: detaching
+  a mount takes the mounts inside it along), ext4 or tmpfs (R117: vfat
+  keeps no owners), not read-only (R116), and the INNERMOST mount holding
+  the path (R118). `/run` itself, a mount's own root and the mounts the
+  machine makes for itself (`/proc`, `/sys`, `/dev`) are the machine's
+  (R112, R113, R136)
+- **mounts are what they seem** (R134, R135): two mounts do not share a
+  mount point, and a mount lying inside another is declared after it,
+  because the machine mounts in the order written and a mount made over
+  another hides it. The innermost mount holding a path is the one it lies
+  on only on those terms
+- **a directory has one owner** (R119-R121): no two STATE paths of one
+  machine overlap, in one world or in two
+- **a signal is a file, and who can write it decides whether it means
+  anything** (R122-R124, R128, R129, R132): `READY` is a plain path for
+  every service, since a spelling that reaches one file by two names (a
+  trailing slash that names the directory itself, a `..` that leaves it)
+  would be judged as one place and read as another; a USER world's sits
+  DIRECTLY in a directory it owns, because the image makes every
+  directory above a signal as root's and a world cannot create a file in
+  one it does not own; and nobody's sits inside a directory another world
+  owns, which could rewrite or delete it
+- **the floor's own records are in no world's directory** (R125, R126,
+  R130, R131): the owner of a directory can replace what is in it, so the
+  machine's IDENTITY key and JOURNAL are where no world owns the
+  directory (JRN-1), and are named in plain paths too, so that no
+  spelling hides one
+
+At boot, before any world starts, PID 1 walks each path from the root
+with no symlink followed (a link anywhere on the way is a refusal, since
+an owner given to whatever a link points at is an owner given to somebody
+else's directory) and asks of every directory above the last that it be
+the machine's: root's, and not writable by others unless the sticky bit
+stops them taking what is not theirs, because the owner of a directory
+can replace what is in it. It makes what is missing, gives the last
+directory to the identity, closes it, and READS IT BACK as the kernel
+says it, through the raw calls (the standard library's wrappers call
+EINVAL and EBADF `unreachable`, which in the ReleaseSafe build this
+binary ships in is a panic of PID 1 where a refusal in a line was owed).
+The boot line `boot: state -- <world> owns <dirs> as <user> (uid:gid);
+each made, then read back as that identity's, mode 0700` is said only if
+every one matched. One that did not (a mount the kernel refused, a
+read-only disk, a directory above it that is somebody else's) is said on
+the console alone with its reason, and the world that was to own it does
+not start (NS-1). Such a world is never READY, so the boot is never
+judged and a trial is never committed (RDY-1's safe outcome, which is no
+timer's): the console says why, and no verdict does.
+
+PID 1 also reads a world's signal as root, in a directory the world may
+own, so it reads it without following a link and takes a regular file
+only: a link there could point at a neighbour's heartbeat and make a
+world "ready" and "fresh" on somebody else's word. And it takes away a
+signal an earlier boot left before the world exists, because a signal is
+THIS boot's word; on a disk it would otherwise read as ready before the
+world has run.
+
+What it is not: it does not give a directory to two worlds (a hand-over
+between worlds, which a shared exchange disk needs, is not built); it
+does not change what is already inside a directory (a world whose
+identity number changed between boots finds its old files owned by the
+old number: no recursive chown); it makes the directory closed (0700) at
+the moment it hands it over, and the owner can change that, and a restart
+does not hand it over again; it does not make the machine's other
+directories unwritable (a tmpfs mount's root is mode 1777, and a world
+that keeps it can write there); and it grants nothing the world did not
+declare (`NEEDS`) -- it is where a world may write, not whether it may
+open a file.
 
 ### DEFINE NETWORK — one interface, one way to an address
 
@@ -379,9 +468,15 @@ act — stzlib's rehearse-plan-commit law carried down to the boot.
   declaration should ask. It is a named closed DENY list and not a claim
   that everything else is safe; a default-deny allowlist is the strong
   form and is not built.
-- **Users and identities** — every service runs as the machine today;
-  a USER seat with the machine's identity model (MicroRing's Ed25519
-  per device is the precedent) is a fixture-first widening.
+- **Users and identities** — a service runs as a declared `USER` since
+  USR-1, and since OWN-1 it owns the directories it names (`STATE`) and
+  signals from one. Still open: supplementary groups and a service's
+  umask; **a directory two worlds share** (a model world and the desk
+  that asks it questions, meeting on an exchange disk: each world's
+  directory is closed to the other today, and a hand-over between them
+  is a fixture-first widening); and what is already INSIDE a directory
+  when its owner's number changes. The per-DEVICE identity (MicroRing's
+  Ed25519 per device is the precedent) is `IDENTITY`, a different thing.
 - **Network declaration** — done (NET-1). What is still queued on it:
   wifi credentials by reference, IPv6, and lease RENEWAL (a served
   address is infinite by declaration, but a leased one is not).
@@ -408,9 +503,10 @@ act — stzlib's rehearse-plan-commit law carried down to the boot.
 
 ## Conformance
 
-`fixtures.json` beside this file is the judge: 8 accepts with structural
-expectations, 32 rejects with expected fragments. One runner exists
-today:
+`fixtures.json` beside this file is the judge: accepts with structural
+expectations, rejects with expected fragments, and how many of each is
+in the scoreboard of `PINNING.md` (a count written here would be a
+second place that has to agree). One runner exists today:
 
 - Zig: `zig build court` (parser: `src/machine.zig`, plan: `src/plan.zig`)
 

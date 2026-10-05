@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once. Widened again 2026-10-05 (STATE, a world's own directory): A30-A35, R104-R138; a world that runs as an identity owns the directories it names and nothing else of the machine's, only an identity can own one, only where the machine can hand one over (under /run, or inside an ext4 or tmpfs mount the world keeps and that is not read-only, with every mount above it kept too), no two worlds own overlapping directories, a world's signal sits directly in its own directory and never in a neighbour's, the floor's own key and record are in no directory a world owns, and the paths the court compares are plain names of bounded length, so that no spelling reaches one file by two names. Two rules about mounts came with it, because a directory's holder is the innermost mount only if the outer one is declared first and no two share a mount point.",
   "accepts": [
     {
       "id": "A1",
@@ -528,6 +528,136 @@
         "granted": [
           "network"
         ]
+      }
+    },
+    {
+      "id": "A30",
+      "name": "a world owns a directory in RAM and one on a disk it keeps, and signals inside the first",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/s/ready\", NEEDS [filesystem], USER srv, STATE [\"/run/s\", \"/data/s\"]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 1,
+          "capabilities": 1,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 0,
+          "users": 1
+        },
+        "state": {
+          "s": [
+            "/run/s",
+            "/data/s"
+          ]
+        }
+      }
+    },
+    {
+      "id": "A31",
+      "name": "a world with no storage of its own still owns a place in RAM, and the disk it does not keep is not its concern",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/s/ready\", USER srv, STATE [\"/run/s\"]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 1,
+          "capabilities": 0,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 0,
+          "users": 1
+        },
+        "state": {
+          "s": [
+            "/run/s"
+          ]
+        }
+      }
+    },
+    {
+      "id": "A32",
+      "name": "two worlds, each its own identity, its own directory and its own signal inside it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE USER oth AS (UID 2001) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/s/ready\", USER srv, STATE [\"/run/s\"]) RATIONALE \"x\"\nDEFINE SERVICE t AS (RUN [\"/t\"], RESTART always, READY \"/run/t/ready\", USER oth, STATE [\"/run/t\"]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 2,
+          "capabilities": 0,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 0,
+          "users": 2
+        },
+        "state": {
+          "s": [
+            "/run/s"
+          ],
+          "t": [
+            "/run/t"
+          ]
+        }
+      }
+    },
+    {
+      "id": "A33",
+      "name": "a world that narrows its sight owns a directory only where it still sees",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT scratch AS (AT \"/scratch\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, SEES [scratch], STATE [\"/scratch/s\"]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 1,
+          "capabilities": 1,
+          "mounts": 2,
+          "pins": 0,
+          "networks": 0,
+          "users": 1
+        },
+        "state": {
+          "s": [
+            "/scratch/s"
+          ]
+        }
+      }
+    },
+    {
+      "id": "A34",
+      "name": "a world whose only directory is on a disk signals directly in it: PID 1 clears a signal left by an earlier boot",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/data/s/ready\", NEEDS [filesystem], USER srv, STATE [\"/data/s\"]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 1,
+          "capabilities": 1,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 0,
+          "users": 1
+        },
+        "state": {
+          "s": [
+            "/data/s"
+          ]
+        }
+      }
+    },
+    {
+      "id": "A35",
+      "name": "a mount inside a mount, the outer declared first and both kept: a directory in the inner one is the inner one's",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT cache AS (AT \"/data/cache\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/data/cache/s\"]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 1,
+          "capabilities": 1,
+          "mounts": 2,
+          "pins": 0,
+          "networks": 0,
+          "users": 1
+        },
+        "state": {
+          "s": [
+            "/data/cache/s"
+          ]
+        }
       }
     }
   ],
@@ -1149,6 +1279,216 @@
       "name": "two networks of one machine answering to the same domain: a name on one link would be a name on both",
       "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"192.168.20.1/24\", DOMAIN \"cloud\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\", DOMAIN \"cloud\") RATIONALE \"x\"\n",
       "refusal": "core serves cloud, which front already serves"
+    },
+    {
+      "id": "R104",
+      "name": "a directory is owned by an identity: a world with no USER is the machine itself, and a place made for it is made for nobody",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, STATE [\"/run/s\"]) RATIONALE \"x\"\n",
+      "refusal": "declares STATE and no USER"
+    },
+    {
+      "id": "R105",
+      "name": "an empty STATE says nothing: a world that keeps nothing of its own declares none",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE []) RATIONALE \"x\"\n",
+      "refusal": "an empty STATE is not a declaration"
+    },
+    {
+      "id": "R106",
+      "name": "STATE takes paths in strings, not words",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [data]) RATIONALE \"x\"\n",
+      "refusal": "STATE takes a list of paths in strings"
+    },
+    {
+      "id": "R107",
+      "name": "a relative path is a place nobody can name",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"run/s\"]) RATIONALE \"x\"\n",
+      "refusal": "STATE is an absolute path of plain names"
+    },
+    {
+      "id": "R108",
+      "name": "a path that climbs is a path to somewhere else: .. is refused wherever it stands",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run/../etc/s\"]) RATIONALE \"x\"\n",
+      "refusal": "STATE is an absolute path of plain names"
+    },
+    {
+      "id": "R109",
+      "name": "a trailing slash names the same directory twice over",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run/s/\"]) RATIONALE \"x\"\n",
+      "refusal": "STATE is an absolute path of plain names"
+    },
+    {
+      "id": "R110",
+      "name": "an empty name between slashes is not a name",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run//s\"]) RATIONALE \"x\"\n",
+      "refusal": "STATE is an absolute path of plain names"
+    },
+    {
+      "id": "R111",
+      "name": "the image's own directories are the machine's: a world owns a place under /run or on a mount it keeps, nowhere else",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/etc/s\"]) RATIONALE \"x\"\n",
+      "refusal": "is in no place a world may own"
+    },
+    {
+      "id": "R112",
+      "name": "/run is the machine's scratch directory, and a world owns a directory INSIDE it, never it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run\"]) RATIONALE \"x\"\n",
+      "refusal": "is the place itself"
+    },
+    {
+      "id": "R113",
+      "name": "the root of a MOUNT is the machine's too: a world that owned it would own every other world's place on it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/data\"]) RATIONALE \"x\"\n",
+      "refusal": "is the place itself"
+    },
+    {
+      "id": "R114",
+      "name": "a world that did not declare the filesystem has none of the machine's storage in its tree, so it cannot own a place there",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/data/s\"]) RATIONALE \"x\"\n",
+      "refusal": "does not declare the filesystem"
+    },
+    {
+      "id": "R115",
+      "name": "a world that narrows its sight cannot own a place on the mount it narrowed away",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT scratch AS (AT \"/scratch\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, SEES [scratch], STATE [\"/data/s\"]) RATIONALE \"x\"\n",
+      "refusal": "which s does not keep"
+    },
+    {
+      "id": "R116",
+      "name": "nothing can be made on a mount that is read-only",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [ro]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/data/s\"]) RATIONALE \"x\"\n",
+      "refusal": "which is read-only"
+    },
+    {
+      "id": "R117",
+      "name": "a filesystem that keeps no owners cannot hand a directory to an identity",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT card AS (AT \"/card\", FS vfat, DEVICE \"/dev/mmcblk0p1\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/card/s\"]) RATIONALE \"x\"\n",
+      "refusal": "keeps no owners"
+    },
+    {
+      "id": "R118",
+      "name": "the mount that holds the place is the innermost one: a vfat mount inside an ext4 one keeps no owners, whatever is around it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT card AS (AT \"/data/card\", FS vfat, DEVICE \"/dev/mmcblk0p1\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/data/card/s\"]) RATIONALE \"x\"\n",
+      "refusal": "keeps no owners"
+    },
+    {
+      "id": "R119",
+      "name": "two worlds cannot own the same directory",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE USER oth AS (UID 2001) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run/x\"]) RATIONALE \"x\"\nDEFINE SERVICE t AS (RUN [\"/t\"], RESTART always, USER oth, STATE [\"/run/x\"]) RATIONALE \"x\"\n",
+      "refusal": "a directory has one owner"
+    },
+    {
+      "id": "R120",
+      "name": "nor one inside the other: the outer owner could rewrite what the inner one keeps",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE USER oth AS (UID 2001) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run/x\"]) RATIONALE \"x\"\nDEFINE SERVICE t AS (RUN [\"/t\"], RESTART always, USER oth, STATE [\"/run/x/y\"]) RATIONALE \"x\"\n",
+      "refusal": "a directory has one owner"
+    },
+    {
+      "id": "R121",
+      "name": "a world naming a directory twice says nothing the once did not, and the second is the first again",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run/x\", \"/run/x/y\"]) RATIONALE \"x\"\n",
+      "refusal": "a directory has one owner"
+    },
+    {
+      "id": "R122",
+      "name": "a world that runs as an identity cannot signal in root's /run: the signal sits where nothing it runs as can create it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/s.ready\", USER srv) RATIONALE \"x\"\n",
+      "refusal": "which is not directly in a directory it owns"
+    },
+    {
+      "id": "R123",
+      "name": "and a signal that is the directory itself would be true before the world had done anything",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/s\", USER srv, STATE [\"/run/s\"]) RATIONALE \"x\"\n",
+      "refusal": "which is not directly in a directory it owns"
+    },
+    {
+      "id": "R124",
+      "name": "a world cannot signal inside a place another world owns: the owner could write or delete its neighbour's word that it serves",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/s/ready\", USER srv, STATE [\"/run/s\"]) RATIONALE \"x\"\nDEFINE SERVICE t AS (RUN [\"/t\"], RESTART always, READY \"/run/s/t.ready\") RATIONALE \"x\"\n",
+      "refusal": "may sit in another's place"
+    },
+    {
+      "id": "R125",
+      "name": "the device's own key is the floor's: no directory a world owns may hold it, or the world could replace the key",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/s/device.key\") RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/data/s\"]) RATIONALE \"x\"\n",
+      "refusal": "are not a world's to replace"
+    },
+    {
+      "id": "R126",
+      "name": "nor the signed record of what the machine was: the journal is the floor's, never a world's (JRN-1)",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/s/journal\") RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/data/s\"]) RATIONALE \"x\"\n",
+      "refusal": "are not a world's to replace"
+    },
+    {
+      "id": "R127",
+      "name": "STATE is a clause of a service: a mount does not own a directory in itself",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, STATE [\"/data/s\"]) RATIONALE \"x\"\n",
+      "refusal": "Unknown clause 'STATE' for MOUNT"
+    },
+    {
+      "id": "R128",
+      "name": "a signal spelled with a trailing slash names the directory itself, which is there before the world has done anything",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/s/\", USER srv, STATE [\"/run/s\"]) RATIONALE \"x\"\n",
+      "refusal": "READY is an absolute path of plain names"
+    },
+    {
+      "id": "R129",
+      "name": "nor may a '..' climb out of a world's own directory into a neighbour's: the court would read the spelling and PID 1 the file",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE USER oth AS (UID 2001) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/s/ready\", USER srv, STATE [\"/run/s\"]) RATIONALE \"x\"\nDEFINE SERVICE t AS (RUN [\"/t\"], RESTART always, READY \"/run/t/../s/ready\", USER oth, STATE [\"/run/t\"]) RATIONALE \"x\"\n",
+      "refusal": "READY is an absolute path of plain names"
+    },
+    {
+      "id": "R130",
+      "name": "the device's key is named in plain names too: a '..' would hide a key in a world's directory from the question that asks",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/x/../s/device.key\") RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/data/s\"]) RATIONALE \"x\"\n",
+      "refusal": "IDENTITY is an absolute path of plain names"
+    },
+    {
+      "id": "R131",
+      "name": "and so is the signed record's",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/x/../s/journal\") RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/data/s\"]) RATIONALE \"x\"\n",
+      "refusal": "JOURNAL is an absolute path of plain names"
+    },
+    {
+      "id": "R132",
+      "name": "a signal below the directory a world owns is in a directory root made, which the world cannot create a file in",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/s/sub/ready\", USER srv, STATE [\"/run/s\"]) RATIONALE \"x\"\n",
+      "refusal": "which is not directly in a directory it owns"
+    },
+    {
+      "id": "R133",
+      "name": "a mount the world keeps inside one it does not is empty to it: detaching the outer mount takes the inner one along",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT cache AS (AT \"/data/cache\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, SEES [cache], STATE [\"/data/cache/s\"]) RATIONALE \"x\"\n",
+      "refusal": "detaching a mount takes the mounts inside it along"
+    },
+    {
+      "id": "R134",
+      "name": "a mount declared before the mount it lies inside is hidden by it: the machine mounts in the order written",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT cache AS (AT \"/data/cache\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n",
+      "refusal": "which is declared after it"
+    },
+    {
+      "id": "R135",
+      "name": "two mounts at one mount point: the second hides the first",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT again AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\n",
+      "refusal": "one mount point, one mount"
+    },
+    {
+      "id": "R136",
+      "name": "the machine's own mounts are not a world's place, whatever a MOUNT at / would seem to hold",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT top AS (AT \"/\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [filesystem], USER srv, STATE [\"/dev/s\"]) RATIONALE \"x\"\n",
+      "refusal": "which the machine mounts itself"
+    },
+    {
+      "id": "R137",
+      "name": "a name longer than 64 is refused by the court, not by the kernel at boot",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"]) RATIONALE \"x\"\n",
+      "refusal": "STATE is an absolute path of plain names"
+    },
+    {
+      "id": "R138",
+      "name": "nor a path longer than 200 whole, whatever its names",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"]) RATIONALE \"x\"\n",
+      "refusal": "STATE is an absolute path of plain names"
     }
   ]
 }

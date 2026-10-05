@@ -1,3 +1,222 @@
+# OWN-1 — a world owns a place of its own, and the first server stops being root
+
+The first server of the cloud (SRV-2) ran as the machine itself, and two
+documents said why: `doc/CLOUD.md` ("the world runs as root") and
+`doc/DIVIDEND.md` §5 ("a USER cannot create a path under the image's
+root-owned `/run`"). Taken on the author's delegation of 2026-10-05
+(STZ-OS-RULING-16) as the first work of the next stretch, because rung 3
+puts more worlds on a machine and each would copy the shape of the first.
+
+## The problem was two walls, not one
+
+Every directory of the image is root's, so an identity that is not root can
+write nowhere: not its readiness signal, which `harb ready` creates in
+`/run`, and not its database, on a disk whose root `mkfs` made root's. USR-1
+had named it as a seam ("everything is still owned by root, so an identity
+can read what it is given and write only where the machine made a writable
+place") and nothing had needed it until a real server did.
+
+## What was decided, and the four ways it was not done
+
+**`STATE`, a clause of a SERVICE: the directories this world owns.** PID 1
+makes each before the world starts, gives it to the world's USER, closes it
+(mode 0700), reads it back, and says so only then.
+
+- *Not `/run` made writable to everyone.* Any world could then create or
+  delete another's READY file: a forged word that something serves.
+- *Not the mount's root handed to the identity.* A MOUNT is the machine's
+  declaration and a pack may not carry one (PLC-1), so the identity would
+  have to be named in a file that cannot see it; and two identities on one
+  mount would own one root.
+- *Not derived from the READY path.* `/run` is shared by every world, and a
+  directory cannot be handed to one of several. SEE-1's own rule applies:
+  derive while the declaration already knows, add a clause when it does not,
+  and nothing in the declaration said which directories a world owns.
+- *Not made in the image.* `gen_init_cpio` can give a directory an owner, and
+  that reaches the RAM root and never a disk. PID 1 does one act for both,
+  and reads it back at boot, which a file list cannot.
+
+**The court judges where, and who is near** (machine fixtures A30-A35 and
+R104-R138, 173/173 from 132/132; pack 35/35 from 30/30): only an identity
+owns anything; a plain absolute path of bounded length; strictly inside `/run`
+or inside an ext4 or tmpfs mount the world keeps that is not read-only, with
+every mount above it kept too, the INNERMOST mount holding it
+(`machine.holderOf`, one reading shared with the image); no two overlapping
+directories in the whole machine; READY a plain path, a USER world's directly
+in a directory it owns and nobody's inside another's; and the floor's IDENTITY
+and JOURNAL, in plain paths too, in none (JRN-1: the owner of a directory can
+replace what is in it). What a world KEEPS is `Service.keeps`, and the
+confinement now asks the same function: the court and the kernel cannot
+disagree about what the world was built to see (EGR-3's law). Two rules about
+mounts came with it, because the innermost mount is the one a path lies on only
+if the outer one is declared first and no two share a mount point.
+
+## What was built
+
+- `STATE` (`src/machine.zig`), `Service.keeps` and `grantsFilesystem`,
+  `machine.within`, `plainPath` and `holderOf`; `confine.zig` hides what
+  `keeps` says the world does not keep.
+- `ownDir`, `handOver` and `prepareState` (`src/init.zig`): walk from `/`
+  with `O_NOFOLLOW` on every step (a link anywhere on the way is a refusal: an
+  owner given to whatever a link points at is an owner given to somebody
+  else's directory), ask of every directory above the last that it be the
+  machine's, make what is missing, `fchown`, `fchmod`, `fstat` -- through the
+  raw calls -- and refuse anything the kernel does not read back exactly. A
+  mount the kernel refused is remembered, and no directory is made on its
+  mount point, which is RAM that would hold the world's writes until the power
+  goes and say nothing.
+- the signal, which a world's directory made PID 1's business: it is read
+  WITHOUT following a link and only as a regular file (`signalStat`), and one an
+  earlier boot left is taken away before the world exists (`clearSignals`).
+- the boot line (`expect.stateLine`, worded once, derived and printed), the
+  plan's `-- owns [...]`, and `harb image`'s `state.list`.
+- the first server off root: `machines/ringserv.pack` declares `USER appserver`
+  and `STATE ["/run/ringserv", "/data/ringserv"]`, signals at
+  `/run/ringserv/ready`, and its application names a RELATIVE database, which
+  RingServ puts in the directory `--data` names (an absolute one it keeps where
+  it was written, so the first version's `--data /data` moved nothing).
+
+## What was measured
+
+- **Outside the machine first** (`experiment/ringserv_nonroot.sh`): the
+  pack's own command, as uid 2000, from `/`, with an empty environment, serves
+  `/health` and keeps `ringserv.db` with its `-wal` and `-shm` in the one
+  directory it was given, all 2000:2000, and the identity made nothing else in
+  the places the probe looks (its tree, `/tmp`, `/var/tmp`, `/dev/shm`). The
+  probe runs a second time with the server as root and must convict it, or it
+  measures nothing: four statements fail. It is not the machine's image, and
+  its copy of the application declares a table so that a file exists at all.
+- **The acts, on Linux, against mutants** (`experiment/state_probe.sh`): two unit
+  tests (the directory; the signal) and ten mutants, each convicted by the test
+  named for it. The two that remove the chown need root, because giving a
+  directory to the identity that already owns it asks for no privilege, so only
+  a root run hands over to a DIFFERENT owner; the probe says when it did not run
+  them. **The first run of the first version was red for a real reason**: the
+  standard library's `fchown` and `fchmod` on a directory opened without
+  `iterate` get EBADF from the kernel, which it calls `unreachable`. Windows
+  cannot see it: init is comptime-gated on Linux, and `zig build cross`
+  compiles it and says nothing about what it does. (The first account of this
+  said a release build would take it for permission. The shipped build is
+  ReleaseSafe, where `unreachable` is a panic of PID 1: see the review, below.)
+- **Booted, twice, identical** (`experiment/os9_cloud.sh`, 23 to 49 lines): the
+  machine says it made the directories and read them back, the server starts as
+  `appserver`, serves, and the machine's own judge matches (19 lines). Then the
+  witness that is not PID 1's word: the data disk the boot left behind, read with
+  `debugfs` after the journal is replayed on a copy and compared with what the
+  image derived, says `/data/ringserv` is 2000:2000 mode 0700 and the disk's root
+  is 0:0 mode 0755. Then the negative, the same image with no disk behind its
+  mount: the kernel refuses the mount, PID 1 says the directory was not given
+  and why, no `start` line follows, and the announcement is not made. The
+  smallest cloud (`os8_links.sh`, 146 to 148 lines) carries the same server on
+  two wires and a till still reaches it.
+
+## What the review found
+
+An independent, read-only agent read the whole uncommitted diff after the boots,
+the courts and the probes were green -- about 450,000 tokens and 23 minutes --
+and found things none of them could see. Each is verified against the code
+before it was acted on; the fix, and the case that now convicts it:
+
+- **A signal was judged by its spelling** (R128-R131, R137, R138). Only STATE
+  went through `plainPath`; `READY "/run/s/"` named the directory itself, was
+  "inside" it by a byte, and PID 1 read it as ready the moment it had made the
+  directory, before the world ran, with the machine's own judge matching because
+  it derives from the same string. A `..` slipped READY into a neighbour's
+  directory and IDENTITY out of the question that asks whether a world's
+  directory holds it. READY, IDENTITY and JOURNAL are plain paths now, of bounded
+  length.
+- **A signal on a disk was stale-ready from the second boot.** The new rule
+  steered a world whose only directory is on a disk to put its signal there, and
+  nothing removed one. PID 1 now clears a signal an earlier boot left, for every
+  machine (RDY-1 named the trap and left it to scripts). Test, and a mutant.
+- **PID 1 followed links in a world's directory**, as root, when it read a
+  signal. A world could point its READY at a neighbour's heartbeat and be
+  "ready" and "fresh" on it. (It could always forge its own word; the link let
+  it borrow another's.) A signal is a regular file read without following a link
+  now. Test, and two mutants.
+- **A signal below the world's directory** (R132): the image makes every
+  directory above a signal as root's, so the world could never create it. READY
+  must be directly in a directory the world owns.
+- **A mount the world keeps inside one it does not** (R133): MNT-1 detaches an
+  unkept mount with `MNT_DETACH`, which takes the mounts inside it along, so the
+  directory was accepted, handed over, announced and not in the world's tree. The
+  court refuses a STATE there. That `SEES` of such a mount is empty to the world is
+  older than this seat and is named below.
+- **`fchown` and `fchmod` map EINVAL to `unreachable`**, and EINVAL is what a
+  chown answers for an identity the caller's user namespace has no number for,
+  which the repository's own rehearsal harness (`unshare -Urpf`) is. The shipped
+  build is ReleaseSafe: PID 1 would have panicked where a line was owed. The act
+  uses the raw calls and names the kernel's answer.
+- **`holderOf` ignored the order mounts are made in** (R134, R135), implicit
+  mounts had no refusal (R136), and nothing bounded a name (R137, R138).
+- **Directories above the last were never checked.** One left on a disk by an
+  earlier identity would let that identity swap the new directory for its own.
+  Every directory above the last must be the machine's (root's, and not open to
+  others unless sticky).
+- **Claims stronger than the evidence**, each corrected where it stood: a
+  refusal "at the pack's own line" (an overlap with the machine's own service
+  landed on the machine's line: the court now reports the later claim, and
+  PR27, PR28 hold it); "a trial holds" (a world that does not start is never
+  ready, so the boot is never judged and a trial is never committed; nothing
+  rolls it back either); "a release build would take it for permission"; "an
+  identity can write only where it was handed" (a tmpfs mount's root is 1777); a
+  probe that said "convicted four ways" while the negative control was a scratch
+  copy that nothing kept (it is the probe's second run now); and a stale DIVIDEND
+  example that R122 refuses.
+- Nits: the witness compares the disk with what the image derived and fails
+  loudly without `debugfs` or when `e2fsck` cannot replay; `state.list` is
+  printed; `ownDir`'s refused-mount check is wider than the court's innermost
+  holder (it can refuse more, never less) and says so.
+
+## What did not work, kept because it says something
+
+**A table in the application's startup.** The first version of the app
+declared one so that a database FILE would exist for the witness. RingServ
+waits 2000 ms for a worker to come up and then refuses to serve, and creating
+the table took longer than that under QEMU's software emulation: `no worker came
+up after 2000 ms`, five restarts, no verdict. Booted again as ROOT with the same
+app, it failed the same way, so it is the emulator and the server's own wait and
+not the identity; and it is a margin, which is a defect in a pin. The
+application declares no table, the file is made by the first write, and the
+witness is the directory instead. The measurement is in the app's comment, and
+the 2000 ms is RingServ's to know (routed to Central).
+
+## Named, not closed
+
+- **A directory two worlds share.** Each world's directory is closed to the
+  other, so the model world and the desk of `site/secure-design.html` cannot meet
+  on an exchange disk; the page says so now. A hand-over between worlds is a
+  fixture-first widening of its own.
+- **What is inside.** PID 1 gives the directory away, not what a previous boot
+  put in it: change an identity's number and the old files are the old number's.
+  A recursive chown at every boot would be surprising and slow.
+- **Nested mounts under `SEES`.** A mount inside an unkept mount is detached with
+  it (MNT-1's `MNT_DETACH`), so a world that names only the inner one sees it
+  empty. The court refuses a STATE there and nothing refuses the `SEES`.
+- **No `/tmp` for an identity.** The image's `/tmp` is root's, mode 0755, so a
+  world that is not root has no temporary directory. SQLite spills to one only
+  for large temporary results, and RingServ served without it; the first world
+  that needs one declares it as STATE.
+- **The directory is closed when it is handed over.** A restart does not hand it
+  over again, and its owner can change its mode.
+- **Ports below 1024.** An identity cannot bind them. The front of rung 3
+  listens on 443, and giving it that one capability, or the port, is the first
+  thing it will have to declare.
+- **The boot of a real card.** The directory read back on a real Pi, on a real
+  ext4, is OS-5's.
+
+## The law this pays for
+
+**A world that is not root owns exactly the directories it names, and the
+machine says so only after the kernel has read each one back.** And:
+**the question that decides is what the kernel says**, not what the code asked
+(the `iterate` flag, the raw calls); **a test that can only be run where it is not
+written is not run until somebody runs it there**; and **a rule that compares
+spellings is a rule about the spelling**: every path the court compares is a
+plain one, or a second spelling of the same file gets past it.
+
+---
+
 # WDG-1 — a world holds nothing of PID 1's but its stdio, starting with the watchdog
 
 A defect in the floor, found by reading `src/init.zig` for what a server world

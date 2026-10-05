@@ -8,28 +8,47 @@
 -- program that says it for it (`harb ready`, src/ready.zig), and the server is
 -- its child: when RingServ writes its own ready file the SERVICE changes one line.
 --
+-- It runs as an identity of its own and not as the machine (OWN-1): the USER below,
+-- and the two directories PID 1 makes and hands to it before it starts, which are
+-- the places the machine gives it to write. Measured outside the machine first
+-- (experiment/ringserv_nonroot.sh, which also convicts the same server run as root):
+-- as an unprivileged user, from /, with an empty environment, it serves /health and
+-- keeps its database in its directory. That host is not the machine's image, so this
+-- shows the server and not the confinement; the boot shows the handover, from the
+-- disk it leaves (experiment/os9_cloud.sh).
+--
 -- What it asks, and where each need was read (RingServ at origin/main 002ba21):
 --   the network   a listening socket on 127.0.0.1:8210 (the application's :port)
---   the filesystem and the mount `data`   its SQLite database, /data/ringserv.db
+--   the filesystem and the mount `data`   its SQLite database, which the
+--                 application names `ringserv.db` and `--data` puts in /data/ringserv
+--   a place of its own   /data/ringserv for what it keeps, /run/ringserv for the
+--                 word that it serves
 --   threads       a worker per CPU up to four, here two, and the HTTP threads: 38 threads
 --                 measured at four workers, which is why TASKS is not 16
 --   a clock       it timestamps what it keeps
 --   process       the readiness program starts it
 -- and what it does not ask: no environment (the machine gives a world none), no
--- dynamic loading (it is built without), no gpio.
+-- dynamic loading (it is built without), no gpio, and no write to /tmp, which a
+-- world that is not root does not have.
+
+DEFINE USER appserver AS (
+  UID 2000
+) RATIONALE "The identity the application server runs as: it owns its own directories and nothing else of the machine"
 
 DEFINE SERVICE ringserv AS (
   RUN [
-    "/harb", "ready", "/run/ringserv.ready", "127.0.0.1:8210",
+    "/harb", "ready", "/run/ringserv/ready", "127.0.0.1:8210",
     "--every", "2", "--",
-    "/ringserv", "run", "/app/app.ring", "--data", "/data"
+    "/ringserv", "run", "/app/app.ring", "--data", "/data/ringserv"
   ],
   RESTART always,
-  READY "/run/ringserv.ready",
+  READY "/run/ringserv/ready",
   HEALTH 10,
   NEEDS [network, filesystem, process, threads, clock],
   SEES [data],
+  USER appserver,
+  STATE ["/run/ringserv", "/data/ringserv"],
   MEMORY 128,
   CPU 100,
   TASKS 64
-) RATIONALE "The application server: it serves once /health answers and says so by the path PID 1 waits for, every 2 seconds for as long as it keeps answering; past 128 MiB it is stopped alone, past one core it waits, past 64 tasks it is refused more"
+) RATIONALE "The application server, as an identity of its own: it serves once /health answers and says so by the path PID 1 waits for, every 2 seconds for as long as it keeps answering; past 128 MiB it is stopped alone, past one core it waits, past 64 tasks it is refused more"

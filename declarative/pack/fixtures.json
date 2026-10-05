@@ -10,7 +10,7 @@
       "packs": [
         {
           "path": "commons.pack",
-          "source": "-- commons.pack -- the Commons, asked for.\nDEFINE USER commons_user AS (\n  UID 2001\n) RATIONALE \"The Commons runs as itself and owns nothing of the machine\"\n\nDEFINE SERVICE commons AS (\n  RUN [\"/stzr\", \"/app/commons.luau\"],\n  RESTART always,\n  READY \"/run/commons.ready\",\n  HEALTH 5,\n  AFTER [front],\n  NEEDS [network, filesystem],\n  SEES [data],\n  USER commons_user,\n  MEMORY 256,\n  CPU 100,\n  TASKS 64\n) RATIONALE \"Catalogue, orders and payments; it serves once the machine's door is up\"\n"
+          "source": "-- commons.pack -- the Commons, asked for.\nDEFINE USER commons_user AS (\n  UID 2001\n) RATIONALE \"The Commons runs as itself and owns nothing of the machine\"\n\nDEFINE SERVICE commons AS (\n  RUN [\"/stzr\", \"/app/commons.luau\"],\n  RESTART always,\n  READY \"/run/commons/ready\",\n  HEALTH 5,\n  AFTER [front],\n  NEEDS [network, filesystem],\n  SEES [data],\n  USER commons_user,\n  STATE [\"/run/commons\"],\n  MEMORY 256,\n  CPU 100,\n  TASKS 64\n) RATIONALE \"Catalogue, orders and payments; it serves once the machine's door is up\"\n"
         }
       ],
       "expect": {
@@ -92,7 +92,7 @@
       "packs": [
         {
           "path": "commons.pack",
-          "source": "-- commons.pack -- the Commons, asked for.\nDEFINE USER commons_user AS (\n  UID 2001\n) RATIONALE \"The Commons runs as itself and owns nothing of the machine\"\n\nDEFINE SERVICE commons AS (\n  RUN [\"/stzr\", \"/app/commons.luau\"],\n  RESTART always,\n  READY \"/run/commons.ready\",\n  HEALTH 5,\n  AFTER [front],\n  NEEDS [network],\n  USER commons_user,\n  MEMORY 256,\n  CPU 100,\n  TASKS 64\n) RATIONALE \"Catalogue, orders and payments; it serves once the machine's door is up\"\n"
+          "source": "-- commons.pack -- the Commons, asked for.\nDEFINE USER commons_user AS (\n  UID 2001\n) RATIONALE \"The Commons runs as itself and owns nothing of the machine\"\n\nDEFINE SERVICE commons AS (\n  RUN [\"/stzr\", \"/app/commons.luau\"],\n  RESTART always,\n  READY \"/run/commons/ready\",\n  HEALTH 5,\n  AFTER [front],\n  NEEDS [network],\n  USER commons_user,\n  STATE [\"/run/commons\"],\n  MEMORY 256,\n  CPU 100,\n  TASKS 64\n) RATIONALE \"Catalogue, orders and payments; it serves once the machine's door is up\"\n"
         }
       ],
       "expect": {
@@ -129,6 +129,27 @@
         ],
         "users": [],
         "packs": 2
+      }
+    },
+    {
+      "id": "PA7",
+      "name": "a pack's world owns a directory on a mount the machine granted it, and one in RAM for its signal",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "books.pack",
+          "source": "DEFINE USER books_user AS (\n  UID 2002\n) RATIONALE \"The ledger runs as itself and owns its own directories, nothing else of the machine\"\nDEFINE SERVICE books AS (\n  RUN [\"/books\"],\n  RESTART always,\n  READY \"/run/books/ready\",\n  NEEDS [network, filesystem],\n  SEES [data],\n  USER books_user,\n  STATE [\"/run/books\", \"/data/books\"]\n) RATIONALE \"Keeps the books in a directory of its own on the data mount\"\n"
+        }
+      ],
+      "expect": {
+        "services": [
+          "front",
+          "books"
+        ],
+        "users": [
+          "books_user"
+        ],
+        "packs": 1
       }
     }
   ],
@@ -467,6 +488,62 @@
       "in": "broken.pack",
       "line": 6,
       "refusal": "Unterminated string"
+    },
+    {
+      "id": "PR25",
+      "name": "a world cannot own a directory on storage it never asked for: STATE on a mount, with no filesystem declared",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "own.pack",
+          "source": "DEFINE USER u AS (UID 3000) RATIONALE \"x\"\nDEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  USER u,\n  STATE [\"/data/s\"]\n) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "own.pack",
+      "line": 5,
+      "refusal": "does not declare the filesystem"
+    },
+    {
+      "id": "PR26",
+      "name": "a world that runs as an identity cannot signal in root's /run: refused at the READY line of the pack that wrote it",
+      "machine": "DEFINE MACHINE core AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"The machine a solution is placed on\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"A solution serves on the network\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"Its data lives on a declared mount\"\nDEFINE MOUNT data AS (AT \"/data\", FS tmpfs, OPTIONS [rw]) RATIONALE \"Where the solution keeps what it keeps\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front.ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "sig.pack",
+          "source": "DEFINE USER u AS (UID 3000) RATIONALE \"x\"\nDEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  RESTART always,\n  READY \"/run/s.ready\",\n  USER u\n) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "sig.pack",
+      "line": 5,
+      "refusal": "which is not directly in a directory it owns"
+    },
+    {
+      "id": "PR27",
+      "name": "a pack cannot take a piece of a directory the machine's own service owns: refused at the pack's STATE line, not the machine's",
+      "machine": "DEFINE MACHINE owner AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE USER door AS (UID 2000) RATIONALE \"The machine's own identity for its own door\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front/ready\",\n  NEEDS [network],\n  USER door,\n  STATE [\"/run/front\"]\n) RATIONALE \"The machine's own door, in a directory of its own\"\n",
+      "packs": [
+        {
+          "path": "inner.pack",
+          "source": "DEFINE USER u AS (UID 3000) RATIONALE \"x\"\nDEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  USER u,\n  STATE [\"/run/front/inner\"]\n) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "inner.pack",
+      "line": 5,
+      "refusal": "a directory has one owner"
+    },
+    {
+      "id": "PR28",
+      "name": "nor a directory the machine's own service signals in: its word that it serves would sit in the pack's place, refused at the pack's STATE line",
+      "machine": "DEFINE MACHINE sigs AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE front AS (\n  RUN [\"/front\"],\n  RESTART always,\n  READY \"/run/front/ready\",\n  NEEDS [network]\n) RATIONALE \"The machine's own door\"\n",
+      "packs": [
+        {
+          "path": "takes.pack",
+          "source": "DEFINE USER u AS (UID 3000) RATIONALE \"x\"\nDEFINE SERVICE s AS (\n  RUN [\"/s\"],\n  USER u,\n  STATE [\"/run/front\"]\n) RATIONALE \"x\"\n"
+        }
+      ],
+      "in": "takes.pack",
+      "line": 5,
+      "refusal": "may sit in another's place"
     }
   ]
 }

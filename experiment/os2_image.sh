@@ -51,7 +51,7 @@ mkdir -p "$OUT" zig-out/wsl
   fi
   echo "=== derive ==="
   "$HOST_HARB" image "$M" --root "$ROOT" --out "$OUT" || { echo "derive refused"; exit 1; }
-  for f in image.env initramfs.list kernel.fragment disk.list sd.list config.txt cmdline.txt boot.cmd expected expected.emulator; do [ -f "$OUT/$f" ] && { echo "--- $f"; cat "$OUT/$f"; }; done
+  for f in image.env initramfs.list kernel.fragment disk.list state.list sd.list config.txt cmdline.txt boot.cmd expected expected.emulator; do [ -f "$OUT/$f" ] && { echo "--- $f"; cat "$OUT/$f"; }; done
   # the boot, EXPECTED, rides in the image and is judged by PID 1 itself
   # (JDG-1). A board the court emulates carries a second text through the
   # emulator's lens; the diff of the two IS the list of the emulator's lacks,
@@ -227,6 +227,42 @@ mkdir -p "$OUT" zig-out/wsl
     ( cd "$OUT" && timeout --foreground 120 bash boot.cmd < /dev/null > transcript_again.txt 2>&1; echo "qemu exit $?" >> transcript_again.txt )
     echo "again: the same machine, booted again on the same disk:" >> "$OUT/transcript.txt"
     sed -e 's/\r$//' "$OUT/transcript_again.txt" | sed -n '/^.*boot: harb init/,$p' | sed -e 's/^.*boot: harb init/boot: harb init/' | grep -v '^qemu exit' | sed 's/^/again: /' >> "$OUT/transcript.txt"
+  fi
+  if [ "$SD" != yes ] && [ -f "$OUT/disk0.img" ] && grep -qv '^#' "$OUT/state.list" 2> /dev/null; then
+    # OWN-1: the directories a world owns, read back from the DISK the boot left behind -- not from PID 1's
+    # word that it handed them over. The guest synced and was cut, so the journal is replayed on a COPY before
+    # the question is asked. The root of the disk is asked too: a world was given its directory and not the
+    # disk, so the root stays the machine's (root, 0755), and a handover that took the disk with it shows here.
+    command -v debugfs > /dev/null && command -v e2fsck > /dev/null || { echo "disk: debugfs and e2fsck (e2fsprogs) are needed to read the disk back"; exit 1; }
+    cp "$OUT/disk0.img" "$OUT/disk0.witness.img"
+    e2fsck -fy "$OUT/disk0.witness.img" > /dev/null 2>&1
+    fsck_rc=$?
+    # 0 clean, 1 corrected (the journal replayed), 2 corrected and a reboot wanted: all a replay; the rest is a disk that was not read
+    if [ "$fsck_rc" -gt 2 ]; then echo "disk: the disk could not be replayed and checked (e2fsck exit $fsck_rc)"; exit 1; fi
+    echo "disk: what the boot left on the disk, read back from the disk itself:" >> "$OUT/transcript.txt"
+    witness() { # $1 = a path on the disk, $2 = the owner (uid:gid) it was declared to have, $3 = its mode
+      local info mode owner
+      info=$(debugfs -R "stat $1" "$OUT/disk0.witness.img" 2> /dev/null)
+      mode=$(echo "$info" | awk '/^Inode:/ { for (i = 1; i <= NF; i++) if ($i == "Mode:") print $(i + 1) }')
+      owner=$(echo "$info" | awk '/^User:/ { print $2 ":" $4 }')
+      if [ -z "$mode" ]; then echo "not on the disk"; return; fi
+      # the declaration is what harb image derived (state.list), so the witness convicts a disk that
+      # differs from it whatever a pinned text says; the pin then says what was seen
+      if [ "$owner" = "$2" ] && [ "$mode" = "$3" ]; then echo "owned by $owner, mode $mode"; else echo "owned by $owner, mode $mode -- DIFFERS from the declaration (wanted $2, mode $3)"; fi
+    }
+    echo "disk: / -- $(witness / 0:0 0755)" >> "$OUT/transcript.txt"
+    grep -v '^#' "$OUT/state.list" | while read -r _at dir ondisk uid gid; do
+      echo "disk: $dir -- $(witness "$ondisk" "$uid:$gid" 0700)" >> "$OUT/transcript.txt"
+    done
+    # ... and the SAME image with no disk behind its mount (OWN-1's negative): the kernel refuses the mount, so
+    # the directory a world was to own is not on the disk it was declared on, and a directory made at the mount
+    # point would be RAM that says nothing. The machine must say so, must not start that world, and must not
+    # announce the directory it could not hand over. A refusal never shown is a claim, not a guard (NS-1).
+    sed 's# -drive if=none,file=disk0.img,format=raw,id=d0 -device [a-z-]*,drive=d0##' "$OUT/boot.cmd" > "$OUT/boot_nodisk.cmd"
+    if cmp -s "$OUT/boot.cmd" "$OUT/boot_nodisk.cmd"; then echo "nodisk: the boot line carries no disk to take away"; exit 1; fi
+    ( cd "$OUT" && timeout --foreground 120 bash boot_nodisk.cmd < /dev/null > transcript_nodisk.txt 2>&1; echo "qemu exit $?" >> transcript_nodisk.txt )
+    echo "nodisk: the same image with no disk behind its mount:" >> "$OUT/transcript.txt"
+    sed -e 's/\r$//' "$OUT/transcript_nodisk.txt" | sed -n '/^.*boot: harb init/,$p' | sed -e 's/^.*boot: harb init/boot: harb init/' | grep -v '^qemu exit' | sed 's/^/nodisk: /' >> "$OUT/transcript.txt"
   fi
   if [ "$SD" = yes ] && [ -f "$OUT/boot_hold.cmd" ]; then
     # the second witness of an A/B machine: the card's config.txt after the

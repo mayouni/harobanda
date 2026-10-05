@@ -133,10 +133,11 @@ DEFINE USER commons_user AS (
 DEFINE SERVICE commons AS (
   RUN ["/stzr", "/app/commons.luau"],
   RESTART always,
-  READY "/run/commons.ready",
+  READY "/run/commons/ready",
   NEEDS [network, filesystem],
   SEES [data],
-  USER commons_user
+  USER commons_user,
+  STATE ["/run/commons"]
 ) RATIONALE "Catalogue, orders and payments"
 ```
 
@@ -145,11 +146,11 @@ placed, with the result written:
 ```
 zig-out\bin\harb.exe place core.machine commons.pack `
   --out placed\core.machine
-place commons.pack (sha256 7ab21f4b5a2a742f) -- 1 service(s),
+place commons.pack (sha256 fba182ab17b8fce1) -- 1 service(s),
     1 user(s)
 on machine core -- hosted / x86_64 / kernel linux -- 1
     service(s) in all -- judged, no refusal
-written placed\core.machine (sha256 1f20cbb045b6c552): harb
+written placed\core.machine (sha256 71d71ecb7f4f6163): harb
     check, plan, image and judge take it as any machine
 ```
 
@@ -193,13 +194,19 @@ name, and the fragment it must contain.
 | PR22 | services of one pack that come after each other: a cycle |
 | PR23 | a pack service with the machine's own name |
 | PR24 | a pack the language cannot read, refused in its own numbering |
+| PR25 | a `STATE` on a mount the pack never asked for, at the `STATE` line |
+| PR26 | a `READY` in root's `/run` for a world that runs as an identity, at the `READY` line |
+| PR27 | a `STATE` that is a piece of a directory the machine's own service owns, at the pack's `STATE` line |
+| PR28 | a `STATE` that holds the machine's own service's `READY`, at the pack's `STATE` line |
 
-PA1–PA6 are the accepts: an identity, a budget and a health window
+PA1–PA7 are the accepts: an identity, a budget and a health window
 placed on a machine that grants them (PA1); the smallest solution
 (PA2); two packs, the second after a service of the first (PA3); a
 machine that declares only itself (PA4); an identity beside the
 machine's own, each keeping its number (PA5); the order the packs are
-given, and `AFTER`, not position, ordering a boot (PA6).
+given, and `AFTER`, not position, ordering a boot (PA6); and a world that
+owns a directory in RAM for its signal and one on the mount the machine
+granted it (PA7, OWN-1).
 
 ## Named seams (stated, not hidden)
 

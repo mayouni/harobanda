@@ -426,6 +426,15 @@ zig-out\bin\harb.exe fleet machines\cloud_links.fleet
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/watchdog_probe.sh
 
+# a world owns a place of its own (OWN-1): the act's unit
+# tests on Linux and ten mutants, then the first server as
+# an unprivileged user, outside the machine
+#   -> zig-out/wsl/state_probe.txt, ringserv_nonroot.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/state_probe.sh
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/ringserv_nonroot.sh
+
 # the guided tour: 18 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -462,6 +471,42 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A world that is not root owns exactly the directories it names, and
+  the machine says so only after the kernel has read each one back**
+  (OWN-1): every directory of the image is root's, so an identity could
+  write nowhere, and the first real server ran as root because its
+  signal sat in root's `/run` and its database on a disk only root could
+  write. `STATE` on a SERVICE names the directories PID 1 makes, hands
+  to the world's USER and closes (0700) before the world exists. The
+  court judges where (under `/run`, or inside an ext4 or tmpfs mount the
+  world keeps with every mount above it kept, never the place itself),
+  that no two overlap, that a USER world's READY sits directly in its own
+  directory and nobody's inside another's, and that the floor's key and
+  record are in none -- all in plain paths, because **a rule that
+  compares spellings is a rule about the spelling**: `READY "/run/s/"`
+  named the directory itself and was "ready" the moment PID 1 made it.
+  PID 1 walks from the root with no link followed, asks of every
+  directory above the last that it be the machine's, uses the raw calls
+  (the standard library calls EINVAL and EBADF `unreachable`, which in the
+  ReleaseSafe build harb ships in panics PID 1 where a line was owed),
+  never builds on a refused mount, reads a signal as a regular file
+  without following a link, and clears one an earlier boot left. It is
+  judged three ways that are not the declaration: the directory as the
+  DISK the boot left behind says it (`disk: ... 2000:2000, mode 0700`,
+  with the disk's root still 0:0, compared with what the image derived),
+  the same image with no disk behind its mount (the world does not start
+  and nothing is announced; with no verdict, because a world that does
+  not start is never ready), and the acts' unit tests on Linux against
+  ten mutants. **The question that decides is what the kernel says, not
+  what the code asked**, and a test that can only run on Linux is not run
+  until somebody runs it there: the first Linux run was red. An
+  independent read-only review found eleven defects and six claims
+  stronger than the evidence in work that had passed every gate
+  (`experiment/PROTOCOL.md`, OWN-1); every fix has the case that now
+  convicts it, and every claim is corrected where it stood. A table in the server's startup took
+  longer than its own 2000 ms wait under the emulator, as root too, so
+  the witness is the directory and not a database file. A directory two
+  worlds share is not built.
 - **A world holds nothing of PID 1's but its stdio** (WDG-1): PID 1
   opened `/dev/watchdog` before it spawned its first world and without
   close-on-exec, and an exec keeps what is not, so on an A/B machine
@@ -1054,12 +1099,15 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   pack court) and the server half (SRV-2: RingServ, the author's choice,
   placed on `machines/qemu_cloud.machine` and booted under a pinned
   transcript through `harb ready`). It stands in for RestoLean's
-  Commons, which is that desk's to hand over, runs as root, and listens
-  on its machine's own loopback only. **Rung 2 is built (FWD-1): two
+  Commons, which is that desk's to hand over, and it runs as an identity
+  of its own since OWN-1 (`appserver`, owning `/run/ringserv` and
+  `/data/ringserv`; the pinned boot is 49 lines and reads the directory
+  back from the disk). It listens on its machine's own loopback only.
+  **Rung 2 is built (FWD-1): two
   links, one forwarder.** `FORWARD` on a machine, fleet v0.2 (`LINKS`,
   `ROUTE`), names across the links a box is the way between, and
   `experiment/os8_links.sh`, three machines on two wires, where a till
-  reaches RingServ on the core link through the box, pinned at 146 lines.
+  reaches RingServ on the core link through the box, pinned at 148 lines.
   It is reached over plain HTTP, between members of one cloud, behind a
   front that is not built. Next, in the ladder's order and not yet
   ordered by the author: rung 3, TIME (attested, ruling 07) and then the
@@ -1089,7 +1137,12 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   never acted on~~ -- done (CON-1): the boot line follows it and PID 1
   asks the kernel; what remains is observing the card's witness on a
   real Pi (OS-5), and an edge machine's CONSOLE, which `harb project`
-  does not carry to MicroRing.
+  does not carry to MicroRing. A directory TWO worlds share (OWN-1 gives
+  each world a directory closed to the others, so the exchange disk of
+  `site/secure-design.html` is a picture of an envelope and not yet a
+  hand-over); what is already INSIDE a directory when its owner's number
+  changes; a `/tmp` for an identity; and the one capability the front of
+  rung 3 will need, a port below 1024.
 - **Waiting on the author.** Delegated 2026-09-27 ("do what waits on me
   on my behalf") and ruled in `doc/PROVENANCE.md` as STZ-OS-RULING-03..08:
   retirement's three choices, the MIRROR (a private release, restored
@@ -1109,7 +1162,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

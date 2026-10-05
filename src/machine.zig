@@ -224,7 +224,44 @@ pub const Service = struct {
     /// capability is refused -- a world cannot choose sight of something
     /// it never asked to touch.
     sees: ?[]const []const u8,
+    /// the directories this world OWNS (OWN-1): PID 1 makes each before the
+    /// world starts, owned by the world's USER and closed to every other
+    /// identity (mode 0700, at the moment it hands it over; its owner can
+    /// change that), and says so only after reading it back. A world that
+    /// runs as an identity can write only in a directory it owns or one the
+    /// machine made open to everyone (a tmpfs mount's root is 1777), and this
+    /// is how it comes to own one: the first server runs as itself and keeps
+    /// its database and its signal in a place of its own, and the machine's
+    /// own directories stay the machine's. Empty is a world that owns nothing.
+    /// Only an identity can own a directory, so a service with a STATE has a
+    /// USER, and the court judges where each one may be (`declare`).
+    state: []const []const u8 = &.{},
+    /// the lines of the STATE and READY clauses, where the court's second pass
+    /// reports a refusal: at the line that wrote it, not at the declaration's
+    state_line: usize = 0,
+    ready_line: usize = 0,
     rationale: []const u8,
+
+    /// Whether this world has the machine's declared storage in its tree at
+    /// all: it declared `filesystem` (MNT-1). A world that did not has every
+    /// MOUNT detached from it.
+    pub fn grantsFilesystem(self: Service) bool {
+        for (self.needs) |n| if (n == .filesystem) return true;
+        return false;
+    }
+
+    /// Whether this world keeps sight of the MOUNT named `name`: it has the
+    /// filesystem, and either narrowed nothing or named that mount (SEE-1).
+    /// The ONE reading of the question -- the confinement hides what this
+    /// says the world does not keep, and the court judges a STATE against the
+    /// same answer, so a world is never given a directory on storage it was
+    /// built not to see (EGR-3: never a second reading that has to agree).
+    pub fn keeps(self: Service, name: []const u8) bool {
+        if (!self.grantsFilesystem()) return false;
+        const kept = self.sees orelse return true;
+        for (kept) |k| if (std.mem.eql(u8, k, name)) return true;
+        return false;
+    }
 };
 
 pub const CapDecl = struct {
@@ -717,7 +754,7 @@ pub const Decl = struct {
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
         .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES", "STATE" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
@@ -878,6 +915,67 @@ pub fn required(ctx: *Ctx, d: Decl, name: []const u8) Error!Clause {
     return find(d, name) orelse ctx.refuse(d.line, "{s} is required on {s} {s}", .{ name, @tagName(d.kind), d.name });
 }
 
+// ---- paths a declaration names (OWN-1) ------------------------------------
+
+/// The machine's own scratch directory, in RAM: where a world's signal lives
+/// (READY) and one of the two places a world may own a directory (STATE).
+pub const run_dir = "/run";
+
+/// The mounts the machine makes for itself, which no MOUNT declares and no world owns a
+/// directory in (the profile makes them: `plan.derive`).
+pub const implicit_mounts = [_][]const u8{ "/proc", "/sys", "/dev" };
+
+/// The longest name and the longest whole path a declaration may carry: far inside
+/// what a filesystem accepts (255 and 4096), so that a path the court passed is never
+/// one the kernel refuses for its length at boot.
+pub const max_name = 64;
+pub const max_path = 200;
+
+/// A path of plain names: absolute, not the root, no trailing slash, no empty
+/// name, no `.` or `..`, and in every name only letters, digits, `.`, `_` and
+/// `-`, none longer than `max_name` and the whole no longer than `max_path`.
+/// Plain on purpose: this path is walked by PID 1 as root, printed into the
+/// boot transcript that is judged, and read back by a person -- a name that needs
+/// quoting, or that a transcript cannot carry on one line, is not one.
+pub fn plainPath(p: []const u8) bool {
+    if (p.len < 2 or p.len > max_path or p[0] != '/' or p[p.len - 1] == '/') return false;
+    var it = std.mem.splitScalar(u8, p[1..], '/');
+    while (it.next()) |name| {
+        if (name.len == 0 or name.len > max_name or std.mem.eql(u8, name, ".") or std.mem.eql(u8, name, "..")) return false;
+        for (name) |c| {
+            const plain = (c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or (c >= '0' and c <= '9') or c == '.' or c == '_' or c == '-';
+            if (!plain) return false;
+        }
+    }
+    return true;
+}
+
+/// Whether `path` is `dir` or lies inside it, at a name boundary:
+/// /data/app is inside /data, and /database is not.
+pub fn within(path: []const u8, dir: []const u8) bool {
+    if (!std.mem.startsWith(u8, path, dir)) return false;
+    if (path.len == dir.len) return true;
+    return dir[dir.len - 1] == '/' or path[dir.len] == '/';
+}
+
+/// The declared mount that HOLDS `path`: the innermost one it lies inside, or null.
+/// A mount inside a mount holds what is under it, whatever is around it -- so a
+/// vfat mount inside an ext4 one keeps no owners, and a tmpfs inside a disk is RAM.
+/// The court judges a STATE against this answer and the image reads the disk's
+/// directories off it: one reading, never two that have to agree. It is the mount
+/// the path really lies on only because `declare` refuses two mounts at one mount
+/// point and a mount declared before the one it lies inside (a mount made over
+/// another hides it). (PID 1's own check that a refused mount is not built on asks a
+/// wider question -- any refused mount the directory lies inside -- and so can refuse
+/// more than this answers, never less.)
+pub fn holderOf(mounts: []const Mount, path: []const u8) ?Mount {
+    var holder: ?Mount = null;
+    for (mounts) |mt| if (within(path, mt.at)) {
+        if (holder == null or mt.at.len > holder.?.at.len) holder = mt;
+    };
+    return holder;
+}
+
 // ---- declare: parse, then judge -----------------------------------------
 
 /// Parse and check one `.machine` source. On refusal, `refusal` carries
@@ -997,6 +1095,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         if (profile != .hosted) return ctx.refuse(c.line, "IDENTITY is a hosted machine's declaration; a machine of PROFILE {s} keeps its key in its own substrate, whose custody is the hardware's (MicroRing's identity design)", .{@tagName(profile)});
         const path = try wantString(&ctx, c);
         if (path.len == 0 or path[0] != '/') return ctx.refuse(c.line, "IDENTITY is the absolute path of this device's key, not '{s}'", .{path});
+        if (!plainPath(path)) return ctx.refuse(c.line, "IDENTITY is an absolute path of plain names (\"/data/device.key\"), not '{s}': the court asks whether a world's directory holds it, and a spelling that reaches one file by two names (a '..', a trailing slash) would answer for the wrong one", .{path});
         identity = path;
     }
     var journal: ?[]const u8 = null;
@@ -1005,6 +1104,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         if (identity == null) return ctx.refuse(c.line, "a journal is signed by the device, and this machine declares no IDENTITY: an unsigned record is anybody's", .{});
         const path = try wantString(&ctx, c);
         if (path.len == 0 or path[0] != '/') return ctx.refuse(c.line, "JOURNAL is the absolute path of this machine's record, not '{s}'", .{path});
+        if (!plainPath(path)) return ctx.refuse(c.line, "JOURNAL is an absolute path of plain names (\"/data/journal\"), not '{s}': the court asks whether a world's directory holds it, and a spelling that reaches one file by two names (a '..', a trailing slash) would answer for the wrong one", .{path});
         journal = path;
     }
     // FORWARD -- this machine is the way from one network to another
@@ -1211,10 +1311,16 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             }
         }
         var ready: ?[]const u8 = null;
+        var ready_line: usize = 0;
         if (find(d, "READY")) |c| {
+            ready_line = c.line;
             if (restart == .never) return ctx.refuse(c.line, "READY is a daemon's signal; {s} is a one-shot (RESTART never) and its readiness is its exit 0", .{d.name});
             const path = try wantString(&ctx, c);
             if (path.len == 0 or path[0] != '/') return ctx.refuse(c.line, "READY is the absolute path the service creates when it is serving, not '{s}'", .{path});
+            // PID 1 reads this path as root, and the court asks whether it sits inside a directory a world
+            // owns: a spelling that reaches one file by two names (a trailing slash that names the directory
+            // itself, a '..' that leaves it) would be judged as the wrong place and read as the right one (OWN-1)
+            if (!plainPath(path)) return ctx.refuse(c.line, "READY is an absolute path of plain names (\"/run/app/ready\"), not '{s}': PID 1 reads it as root, and a spelling that reaches one file by two names (a trailing slash, a '..') is how a signal sits where no rule judged it", .{path});
             for (services.items) |e| if (e.ready) |other| if (std.mem.eql(u8, other, path)) {
                 return ctx.refuse(c.line, "{s} already signals on {s}; one path signals for one service", .{ e.name, path });
             };
@@ -1283,7 +1389,26 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             // cannot ask about something the parser has not read yet
             sees = names;
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .tasks = tasks, .user = user, .sees = sees, .rationale = d.rationale });
+
+        // STATE -- the directories this world owns (OWN-1). Read after USER, because a
+        // directory is owned by an identity or by nobody, and a world with no identity is
+        // the machine itself. Only the SHAPE of each path is judged here; where it IS
+        // (under /run, or on a mount the world keeps) is judged below, once the MOUNTs are read.
+        var state: []const []const u8 = &.{};
+        var state_line: usize = 0;
+        if (find(d, "STATE")) |c| {
+            state_line = c.line;
+            if (user == null) return ctx.refuse(c.line, "{s} declares STATE and no USER: a world with no declared identity is the machine itself and owns every place, so a directory made for it would be made for nobody; declare the USER that is to own it", .{d.name});
+            const paths = switch (c.value) {
+                .string_list => |l| l,
+                .name_list => |l| if (l.len == 0) l else return ctx.refuse(c.line, "STATE takes a list of paths in strings (\"/data/app\"), not words", .{}),
+                else => return ctx.refuse(c.line, "STATE takes a list of paths in strings (\"/data/app\")", .{}),
+            };
+            if (paths.len == 0) return ctx.refuse(c.line, "an empty STATE is not a declaration: a world that owns nothing of its own declares none", .{});
+            for (paths) |p| if (!plainPath(p)) return ctx.refuse(c.line, "STATE is an absolute path of plain names (\"/data/app\": letters, digits, '.', '_' and '-' between slashes), not '{s}': no relative path, no '.' or '..', no empty name and no trailing slash", .{p});
+            state = paths;
+        }
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .tasks = tasks, .user = user, .sees = sees, .state = state, .state_line = state_line, .ready_line = ready_line, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
 
@@ -1379,6 +1504,15 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
     // in three places is three chances to disagree (MNT-1)
     const mount_slice = try mounts.toOwnedSlice(arena);
 
+    // The machine mounts in the order it is written, and a mount made over another hides it: so two
+    // mounts do not share a mount point, and a mount that lies inside another is declared after it.
+    // Only on those terms is the INNERMOST mount holding a path the one it really lies on (`holderOf`,
+    // which STATE and the image's `state.list` both ask).
+    for (mount_slice, 0..) |a, i| for (mount_slice[i + 1 ..]) |b| {
+        if (std.mem.eql(u8, a.at, b.at)) return ctx.refuse(b.line, "MOUNT {s} is at {s}, where MOUNT {s} already is: one mount point, one mount, or the second hides the first", .{ b.name, b.at, a.name });
+        if (within(a.at, b.at)) return ctx.refuse(a.line, "MOUNT {s} lies inside MOUNT {s}, which is declared after it: the machine mounts in the order written, and a mount made over another hides it, so declare {s} first", .{ a.name, b.name, b.name });
+    };
+
     // SEE-1's other half: a world sees a mount this machine DECLARES, or
     // none. Here rather than in the service loop because the MOUNTs are
     // parsed after the SERVICEs, and a refusal must be able to name what
@@ -1392,6 +1526,74 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
                 if (std.mem.eql(u8, mt.name, name)) found = true;
             }
             if (!found) return ctx.refuse(sv.line, "{s} SEES {s}, and there is no such MOUNT in this declaration", .{ sv.name, name });
+        }
+    }
+
+    // OWN-1's other half: where each STATE directory IS, and who else is near it. Here
+    // and not in the service loop for the same reason as SEES above: the MOUNTs are read
+    // after the SERVICEs, and the pass needs every world's directories at once.
+    for (svc_slice, 0..) |sv, si| {
+        for (sv.state, 0..) |dir, di| {
+            // the machine's own mounts are not in `mount_slice` (the profile makes them), and a MOUNT
+            // declared at `/` would otherwise be taken for what holds them
+            for (implicit_mounts) |imp| if (within(dir, imp)) return ctx.refuse(sv.state_line, "STATE {s} is inside {s}, which the machine mounts itself: not a place a world may own", .{ dir, imp });
+            // The place a directory lies in is the INNERMOST mount that holds it
+            if (holderOf(mount_slice, dir)) |mt| {
+                if (dir.len == mt.at.len) return ctx.refuse(sv.state_line, "STATE {s} is the place itself, not a directory in it: /run and the root of a MOUNT are the machine's, and a world owns a directory inside one", .{dir});
+                if (mt.fs != .ext4 and mt.fs != .tmpfs) return ctx.refuse(sv.state_line, "STATE {s} is inside MOUNT {s}, a {s} filesystem, which keeps no owners: only ext4 and tmpfs can hand a directory to an identity", .{ dir, mt.name, @tagName(mt.fs) });
+                for (mt.options) |o| if (o == .ro) return ctx.refuse(sv.state_line, "STATE {s} is inside MOUNT {s}, which is read-only: nothing can be made on it", .{ dir, mt.name });
+                if (!sv.grantsFilesystem()) return ctx.refuse(sv.state_line, "STATE {s} is inside MOUNT {s}, and {s} does not declare the filesystem, so the machine's storage is not in its tree", .{ dir, mt.name, sv.name });
+                if (!sv.keeps(mt.name)) return ctx.refuse(sv.state_line, "STATE {s} is inside MOUNT {s}, which {s} does not keep (SEES): a directory on storage the world cannot see is no place for it", .{ dir, mt.name, sv.name });
+                // what a world does not keep is detached from its tree, and detaching a mount takes the
+                // mounts inside it along (MNT-1): a mount the world names inside one it does not is empty to it
+                for (mount_slice) |outer| {
+                    if (outer.at.len >= mt.at.len or !within(mt.at, outer.at)) continue;
+                    if (!sv.keeps(outer.name)) return ctx.refuse(sv.state_line, "STATE {s} is inside MOUNT {s}, which lies inside MOUNT {s}, and {s} does not keep {s}: detaching a mount takes the mounts inside it along, so the directory is not in the world's tree", .{ dir, mt.name, outer.name, sv.name, outer.name });
+                }
+            } else if (within(dir, run_dir)) {
+                if (dir.len == run_dir.len) return ctx.refuse(sv.state_line, "STATE {s} is the place itself, not a directory in it: /run and the root of a MOUNT are the machine's, and a world owns a directory inside one", .{dir});
+            } else {
+                return ctx.refuse(sv.state_line, "STATE {s} is in no place a world may own: a world owns a directory under /run (RAM) or inside a MOUNT it keeps, and this is neither", .{dir});
+            }
+            // a directory has one owner: no two of a machine's STATE paths overlap, in one
+            // world or in two (each pair is asked once)
+            // (reported at the LATER claim's line: it is the one that made the conflict, and when a pack
+            // was placed on a machine that passed alone it is the pack's, so the refusal lands where the
+            // pack's author can read it)
+            for (svc_slice, 0..) |ov, oi| for (ov.state, 0..) |other, oj| {
+                if (oi < si or (oi == si and oj <= di)) continue;
+                if (within(dir, other) or within(other, dir)) return ctx.refuse(ov.state_line, "STATE {s} overlaps {s}, which {s} owns: a directory has one owner, and one inside another is two owners of the same files", .{ other, dir, sv.name });
+            };
+            // the floor's own key and record are in no directory a world owns (JRN-1): the
+            // owner of a directory can replace what is in it
+            if (identity) |key| if (within(key, dir)) return ctx.refuse(sv.state_line, "STATE {s} holds IDENTITY {s}: the floor's own key and record are not a world's to replace (JRN-1), so they sit where no world owns the directory", .{ dir, key });
+            if (journal) |rec| if (within(rec, dir)) return ctx.refuse(sv.state_line, "STATE {s} holds JOURNAL {s}: the floor's own key and record are not a world's to replace (JRN-1), so they sit where no world owns the directory", .{ dir, rec });
+        }
+    }
+    // A world's word that it serves is a file, and who can write that file decides whether
+    // the word means anything. A world that runs as an identity can create a file only in a
+    // directory it owns; and nobody's signal sits in a place ANOTHER world owns.
+    for (svc_slice, 0..) |sv, si| {
+        const ready = sv.ready orelse continue;
+        if (sv.user) |u| {
+            // DIRECTLY in a directory it owns: the image makes every directory above a signal as
+            // root's (`image.zig`), and a world cannot create a file in one it does not own
+            var inside = false;
+            const parent = std.fs.path.dirnamePosix(ready) orelse "/";
+            for (sv.state) |dir| if (std.mem.eql(u8, parent, dir)) {
+                inside = true;
+            };
+            if (!inside) return ctx.refuse(sv.ready_line, "{s} runs as {s} and signals ready on {s}, which is not directly in a directory it owns: a world that is not root cannot create a file in a directory the machine owns, so its signal sits in one the world owns, not in a directory below it -- declare it in STATE", .{ sv.name, u.name, ready });
+        }
+        for (svc_slice, 0..) |ow, oi| {
+            if (oi == si) continue;
+            for (ow.state) |dir| if (within(ready, dir)) {
+                // reported at whichever came LATER in the text, the signal or the directory that holds
+                // it: the claim that arrived second made the conflict, and is the pack's when a pack was
+                // placed on a machine that passed alone
+                const at = if (oi > si) ow.state_line else sv.ready_line;
+                return ctx.refuse(at, "{s} signals ready on {s}, inside {s}'s STATE {s}: the world that owns the directory can write or delete the signal, so no world's word that it serves may sit in another's place", .{ sv.name, ready, ow.name, dir });
+            };
         }
     }
     var mount_paths: std.ArrayList([]const u8) = .{};
@@ -1499,4 +1701,45 @@ test "a list covers everything however it is spelled, and half the space is stil
     try t.expect(!coversEverything(&half)); // half the internet IS a perimeter
     try t.expect(!coversEverything(&gap)); // 64.0.0.0/2 is missing
     try t.expect(!coversEverything(&one));
+}
+
+test "a STATE path is plain names under a root, and containment is at a name boundary (OWN-1)" {
+    const t = std.testing;
+    try t.expect(plainPath("/run/app"));
+    try t.expect(plainPath("/data/app.d/state_1-x"));
+    try t.expect(!plainPath("/"));
+    try t.expect(!plainPath("run/app"));
+    try t.expect(!plainPath("/run/app/"));
+    try t.expect(!plainPath("/run//app"));
+    try t.expect(!plainPath("/run/./app"));
+    try t.expect(!plainPath("/run/../etc"));
+    try t.expect(!plainPath("/run/my app")); // a name a transcript must quote is not plain
+    try t.expect(!plainPath("/run/a\tb"));
+
+    try t.expect(within("/data/app", "/data"));
+    try t.expect(within("/data", "/data"));
+    try t.expect(!within("/database", "/data")); // a prefix of a NAME is not inside
+    try t.expect(!within("/dat", "/data"));
+    try t.expect(within("/anything", "/")); // a mount at the root holds everything
+}
+
+test "a world keeps a mount only if it has the filesystem and has not narrowed it away" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    var r = Refusal{};
+    const src =
+        \\DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+        \\DEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE "x"
+        \\DEFINE MOUNT data AS (AT "/data", FS tmpfs, OPTIONS [rw]) RATIONALE "x"
+        \\DEFINE MOUNT logs AS (AT "/logs", FS tmpfs, OPTIONS [rw]) RATIONALE "x"
+        \\DEFINE SERVICE none AS (RUN ["/a"]) RATIONALE "x"
+        \\DEFINE SERVICE all AS (RUN ["/b"], NEEDS [filesystem]) RATIONALE "x"
+        \\DEFINE SERVICE one AS (RUN ["/c"], NEEDS [filesystem], SEES [data]) RATIONALE "x"
+    ;
+    const m = try declare(arena_state.allocator(), src, &r);
+    try t.expect(!m.services[0].keeps("data")); // no filesystem: no storage in its tree
+    try t.expect(!m.services[0].grantsFilesystem());
+    try t.expect(m.services[1].keeps("data") and m.services[1].keeps("logs")); // saying nothing keeps them all
+    try t.expect(m.services[2].keeps("data") and !m.services[2].keeps("logs")); // SEES narrows
 }

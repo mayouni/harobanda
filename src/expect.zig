@@ -110,6 +110,37 @@ pub fn forwardLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// What PID 1 made for the worlds that declared STATE (OWN-1): which directories
+/// each owns, and as whom. Worded ONCE here, like every judged line -- init prints it
+/// once it has made every one and READ IT BACK (the owner and the mode as the kernel
+/// says them), and derive() writes it. A line that says where the machine is, is said
+/// only after asking (CON-1): a directory the kernel did not hand over leaves this line
+/// unsaid, the boot differs from its expectation and a trial holds. Returns false when
+/// no world declares one, and then nothing is said at all.
+pub fn stateLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    var any = false;
+    for (m.services) |s| {
+        if (s.state.len > 0) any = true;
+    }
+    if (!any) return false;
+    try w.print("boot: state -- ", .{});
+    var first = true;
+    for (m.services) |s| {
+        if (s.state.len == 0) continue;
+        // a STATE needs a USER (the court refuses one without), so there is always an owner to name
+        const u = s.user orelse continue;
+        try w.print("{s}{s} owns ", .{ if (first) "" else "; ", s.name });
+        for (s.state, 0..) |dir, i| {
+            const sep = if (i == 0) "" else if (i + 1 == s.state.len) " and " else ", ";
+            try w.print("{s}{s}", .{ sep, dir });
+        }
+        try w.print(" as {s} ({d}:{d})", .{ u.name, u.uid, u.gid });
+        first = false;
+    }
+    try w.print("; each made, then read back as that identity's, mode 0700\n", .{});
+    return true;
+}
+
 /// This device's own name, said once. The FINGERPRINT is the one thing
 /// a declaration cannot know -- it is made on the device, from the
 /// device's own randomness, and a machine that could derive it from its
@@ -409,6 +440,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
     _ = try healthLine(w, m);
     _ = try confineLine(w, m);
     _ = try floorLine(w, m);
+    _ = try stateLine(w, m);
     // every service starts; a one-shot is ready when it has exited 0, a
     // daemon when spawned or, if it declares READY, when it has signalled
     for (p.steps) |step| if (step == .service) {
@@ -817,4 +849,44 @@ test "a machine that forwards starts its servers after the way is on, and promis
     const q_core = std.mem.indexOf(u8, qtext, "boot: network core -- eth1 up 10.20.0.1/24\n").?;
     try std.testing.expect(q_front < q_names_front and q_names_front < q_core);
     try std.testing.expect(std.mem.indexOf(u8, qtext, "forwards") == null);
+}
+
+test "a world that owns directories says whose and as whom, once, after the floor; one that owns none says nothing (OWN-1)" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var refusal = machine.Refusal{};
+    const src =
+        \\DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+        \\DEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE "x"
+        \\DEFINE MOUNT data AS (AT "/data", FS ext4, DEVICE "/dev/vda", OPTIONS [rw]) RATIONALE "x"
+        \\DEFINE USER srv AS (UID 2000) RATIONALE "x"
+        \\DEFINE USER oth AS (UID 2001, GID 3000) RATIONALE "x"
+        \\DEFINE SERVICE a AS (RUN ["/a"], RESTART always, READY "/run/a/ready", NEEDS [filesystem], USER srv, STATE ["/run/a", "/data/a", "/data/b"]) RATIONALE "x"
+        \\DEFINE SERVICE b AS (RUN ["/b"], RESTART always, USER oth, STATE ["/run/b"]) RATIONALE "x"
+        \\DEFINE SERVICE c AS (RUN ["/c"], RESTART always) RATIONALE "x"
+    ;
+    const m = try arena.create(machine.Machine);
+    m.* = try machine.declare(arena, src, &refusal);
+
+    var aw = std.Io.Writer.Allocating.init(arena);
+    try std.testing.expect(try stateLine(&aw.writer, m));
+    // each world that owns something, in declaration order, with its owner; the one that owns nothing is not named
+    try std.testing.expectEqualStrings("boot: state -- a owns /run/a, /data/a and /data/b as srv (2000:2000); b owns /run/b as oth (2001:3000); each made, then read back as that identity's, mode 0700\n", aw.written());
+
+    // it is in the derived expectation, after the floor and before the first start
+    const text = try derive(arena, try plan.derive(arena, m), .{});
+    const floor = std.mem.indexOf(u8, text, "boot: floor --").?;
+    const state = std.mem.indexOf(u8, text, "boot: state -- a owns").?;
+    const start = std.mem.indexOf(u8, text, "boot: start a --").?;
+    try std.testing.expect(floor < state and state < start);
+
+    // a machine whose worlds own nothing says nothing, and its transcript is what it always was
+    const owns_none = try arena.create(machine.Machine);
+    owns_none.* = try machine.declare(arena, "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE SERVICE c AS (RUN [\"/c\"], RESTART always) RATIONALE \"x\"\n", &refusal);
+    var bw = std.Io.Writer.Allocating.init(arena);
+    try std.testing.expect(!(try stateLine(&bw.writer, owns_none)));
+    try std.testing.expectEqual(@as(usize, 0), bw.written().len);
+    const quiet_text = try derive(arena, try plan.derive(arena, owns_none), .{});
+    try std.testing.expect(std.mem.indexOf(u8, quiet_text, "boot: state") == null);
 }

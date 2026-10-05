@@ -87,8 +87,9 @@ A service on a declared machine is one declaration:
 DEFINE SERVICE commons AS (
   RUN ["/stzr", "/app/commons.luau"],
   RESTART always,
-  READY "/run/commons.ready",
+  READY "/run/commons/ready",
   USER world,
+  STATE ["/run/commons"],
   NEEDS [network, filesystem]
 ) RATIONALE "The Commons: catalogue, orders, payments; it says
   when it is serving"
@@ -102,6 +103,7 @@ Each word is something the floor does for the service:
 | `RESTART always` | PID 1 restarts it when it dies, and says so in the transcript |
 | `READY` | the service's own word that it is serving; nothing that comes AFTER it starts before, and an update trial never commits without it |
 | `USER world` | the service runs as this identity, never as the machine; uid 0 cannot be declared |
+| `STATE ["/run/commons"]` | the directories the service owns: PID 1 makes each before the service starts, hands it to that identity and closes it to the others, and says so only once the kernel has read it back. The service signals from one of them, because an identity cannot create a file in a directory the machine owns |
 | `NEEDS [network, filesystem]` | the court refuses the whole machine if any of these is not granted: `needs gpio, which no declaration grants` |
 
 That is the entire contract between a layer and the floor. Everything
@@ -188,11 +190,15 @@ is alive, prints its banner, and the machine never calls it ready.
 What is still true of this section: no CUSTOMER's server is declared (the
 Commons is RestoLean's, and it is that desk's to hand over); RingServ
 writes no ready file of its own, so the world is `harb ready`, which
-starts it and says it is serving only while `/health` answers; the world
-runs as root, because a USER cannot create a path under the image's
-root-owned `/run`; and the machine's reach is its own loopback, so
-nothing outside it can ask the server anything until rung 3 puts a front
-before it (`doc/CLOUD.md`).
+starts it and says it is serving only while `/health` answers; and the
+machine's reach is its own loopback, so nothing outside it can ask the
+server anything until rung 3 puts a front before it (`doc/CLOUD.md`).
+*Amended 2026-10-05 (OWN-1): this paragraph also said the world runs as
+root, because a USER cannot create a path under the image's root-owned
+`/run`. That was the whole reason, and `STATE` removes it: PID 1 makes the
+directories a world owns and hands them over, so the server runs as its
+own identity, signals from `/run/ringserv` and keeps what it keeps in
+`/data/ringserv`.*
 
 ## 6. The runtime: stzr today, Ring++ and Haro tomorrow
 

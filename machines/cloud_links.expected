@@ -39,11 +39,13 @@ core: boot: network loopback -- lo up 127.0.0.1/8
 core: boot: budget -- ringserv 128 MiB and 100% of a core and 64 tasks; the kernel holds the ceiling, not the world
 core: boot: health -- ringserv every 10s; a world that stops refreshing stops the watchdog
 core: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
-core: boot: start ringserv -- pid N -- /harb ready /run/ringserv.ready 127.0.0.1:8210 --every 2 -- /ringserv run /app/app.ring --data /data
+core: boot: state -- ringserv owns /run/ringserv and /data/ringserv as appserver (2000:2000); each made, then read back as that identity's, mode 0700
+core: boot: start ringserv -- pid N -- /harb ready /run/ringserv/ready 127.0.0.1:8210 --every 2 -- /ringserv run /app/app.ring --data /data/ringserv -- as appserver (2000:2000)
+core: ringserv: --data puts the database at /data/ringserv/ringserv.db
 core: ringserv: serving plain HTTP on 0.0.0.0:8210 — :behindproxy is set, so TLS is the proxy's job.
 core: RingServ 0.9.0 — serving on http://0.0.0.0:8210/api/v1  (2 workers)
-core: boot: ringserv -- ready (/run/ringserv.ready)
-core: boot: judge -- the boot matches its expectation (/etc/expected, 20 lines)
+core: boot: ringserv -- ready (/run/ringserv/ready)
+core: boot: judge -- the boot matches its expectation (/etc/expected, 21 lines)
 till: the declared device, which knows nothing and asks:
 till: boot: harb init -- machine cloud_till (hosted / x86_64 / qemu_pc) -- pid 1
 till: boot: console /dev/ttyS0

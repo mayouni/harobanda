@@ -114,25 +114,18 @@ pub const Confinement = struct {
     pub fn ofAlloc(m: machine.Machine, svc: machine.Service, gpa: ?std.mem.Allocator) !Confinement {
         var c = ofService(svc);
         if (m.networks.len == 0) c.network = true;
-        var granted_fs = false;
-        for (svc.needs) |n| {
-            if (n == .filesystem) granted_fs = true;
-        }
-        if (!granted_fs) {
+        if (!svc.grantsFilesystem()) {
             // no grant at all: the machine's storage is not in its tree
             c.hidden = m.mountPaths();
             return c;
         }
-        const kept = svc.sees orelse return c; // the grant, unnarrowed
+        if (svc.sees == null) return c; // the grant, unnarrowed
         const a = gpa orelse return c;
         var hide: std.ArrayList([]const u8) = .{};
-        for (m.mounts) |mt| {
-            var named = false;
-            for (kept) |name| {
-                if (std.mem.eql(u8, mt.name, name)) named = true;
-            }
-            if (!named) try hide.append(a, mt.at);
-        }
+        // what a world keeps is `Service.keeps`, the one reading the court judges a STATE
+        // against too (OWN-1): the world is never given a directory on storage it was
+        // built not to see
+        for (m.mounts) |mt| if (!svc.keeps(mt.name)) try hide.append(a, mt.at);
         c.hidden = try hide.toOwnedSlice(a);
         return c;
     }

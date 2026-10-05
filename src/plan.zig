@@ -195,6 +195,11 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
                 for (kept, 0..) |name, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", name });
                 try out.print("]", .{});
             }
+            if (svc.state.len > 0) {
+                try out.print(" -- owns [", .{});
+                for (svc.state, 0..) |dir, i| try out.print("{s}{s}", .{ if (i > 0) ", " else "", dir });
+                try out.print("]", .{});
+            }
             try out.print("\n", .{});
         },
     };

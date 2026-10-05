@@ -24,7 +24,7 @@ RingServ([
     :behindproxy = true,
     :announce = 0,
     :workers = 2,
-    :database = "/data/ringserv.db",
+    :database = "ringserv.db",
     :services = [
         :hello = [
             :greet = func oReq {

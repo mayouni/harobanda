@@ -85,7 +85,8 @@
   NEEDS [inference, filesystem],
   SEES [models, exchange],
   MEMORY 4096, CPU 200,
-  READY <span class="c">"/run/model.ready"</span>
+  STATE [<span class="c">"/run/model"</span>],
+  READY <span class="c">"/run/model/ready"</span>
 ) <span class="kw">RATIONALE</span> <span class="c">"Reads weights and questions; no network, no new process"</span>
 
 <span class="kw">DEFINE SERVICE</span> desk <span class="kw">AS</span> (
@@ -93,10 +94,11 @@
   NEEDS [network, filesystem],
   SEES [exchange],
   MEMORY 256,
-  READY <span class="c">"/run/desk.ready"</span>
+  STATE [<span class="c">"/run/desk"</span>],
+  READY <span class="c">"/run/desk/ready"</span>
 ) <span class="kw">RATIONALE</span> <span class="c">"Answers the office, and never sees the weights"</span></pre>
     </div>
-    <p class="cap">The court accepts this machine as written: <code>harb docs --check</code> judges every machine a page of this site shows in full, each time the site changes.</p>
+    <p class="cap">The court accepts this machine as written: <code>harb docs --check</code> judges every machine a page of this site shows in full, each time the site changes. A world that runs as an identity owns only the directories it names in <code>STATE</code>, so each of these two signals from a directory of its own. A directory two worlds share, which is what the exchange disk is for, is not built: the machine shows each world's envelope, and not yet the hand-over between them.</p>
     <div class="trio" style="margin-top:clamp(24px,3vw,34px)">
       <div class="card"><h4>What the model gets</h4><p>No network interface at all, no way to start a program, a process table of its own; its weights, read-only, and the exchange disk. Hijacked, it reaches its own answers — which the desk reads — and its own budget.</p></div>
       <div class="card"><h4>What the desk gets</h4><p>The office network, with no route beyond it, and the exchange disk — never the weights. Hijacked, it reaches the people in the office, and nothing past them.</p></div>

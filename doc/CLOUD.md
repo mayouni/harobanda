@@ -121,10 +121,20 @@ is NOT done: no customer's server (the Commons is RestoLean's to hand
 over, and RingServ here stands in for it, as the Luau worlds stand in for
 the box's); readiness is a stand-in program, `harb ready`, because
 RingServ writes no ready file (a native `--ready-file` is asked of its
-desk); the world runs as root; and nothing outside the machine can ask the
+desk); and nothing outside the machine can ask the
 server a question yet, since it listens on the machine's own loopback
 (rung 3 is its front). The box's own worlds are still stand-ins
-(`machines/makeen_box.machine`).
+(`machines/makeen_box.machine`). *Amended 2026-10-05 (OWN-1): the world
+no longer runs as root, which this paragraph listed as not done. It runs
+as `appserver` (2000:2000) and owns two directories PID 1 makes and
+hands over before it starts (`STATE`, judged by the court): `/run/ringserv`
+for its signal and `/data/ringserv` for what it keeps. The pinned boot is
+49 lines and reads the directory back from the disk it leaves; the same
+image with no disk behind the mount does not start the world. What is
+still not shown by a boot: the server's database FILE, because creating a
+table at startup took longer than RingServ's own 2000 ms wait under the
+emulator, as root too; that it keeps one there as an unprivileged user
+was measured outside the machine (`experiment/ringserv_nonroot.sh`).*
 
 **Rung 2 -- two links.** `FORWARD` on a machine with two `NETWORK`s
 makes it the way from one link to the other; in the fleet file a
@@ -141,8 +151,8 @@ machine (the kernel's own switch, read back before the boot says so);
 fleet v0.2, `LINKS` and `ROUTE` (60 of 60, 24 of them new); the box's
 lease names it the router and its resolver answers for the full names on
 the links it is the way to; and `experiment/os8_links.sh` boots the
-smallest cloud on two wires, pinned at 146 lines and identical on two
-runs. **A till on the front link asks for `commons.core.cloud`, is told
+smallest cloud on two wires, pinned at 148 lines (146 before OWN-1 took
+the server off root) and identical on two runs. **A till on the front link asks for `commons.core.cloud`, is told
 `10.20.0.2`, connects to it through the box, and RingServ on the core link
 answers `/health` with 200.** The two negatives are the same till: a
 device nobody declared gets no lease and so no router and no resolver (the

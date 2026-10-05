@@ -14,6 +14,10 @@
 //                    declared mounts require, merged over tinyconfig
 //   disk.list        the virtio disks the declared mounts need (emulator
 //                    boards; one per image today)
+//   state.list       the directories a world owns that live on that disk
+//                    (STATE, OWN-1), as the disk names them and with the
+//                    identity each is handed to: what a boot leaves behind
+//                    and a witness reads back from the disk image itself
 //   sd.list          for a board that boots from an SD card: the card's
 //                    partitions and the boot partition's files, with the
 //                    firmware's config.txt and cmdline.txt written beside
@@ -531,6 +535,29 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         try w.print("# disk.list -- derived by harb image: id device fs size_mb image\n", .{});
         if (block) |b| if (t.blk_device != null) try w.print("d0 {s} {s} {d} disk0.img\n", .{ b.device.?, @tagName(b.fs), opts.disk_mb });
         try writeOut(opts.out_dir, "disk.list", disks.items);
+    }
+
+    // state.list -- the directories a world owns that live on the machine's DISK (OWN-1): what a
+    // boot leaves behind, and what a witness can read back from the disk image itself rather than
+    // take from PID 1's word. One line each: the mount, the directory as the machine names it, the
+    // directory as the disk names it (the mount's root is /), and the identity it was handed to. A
+    // directory in RAM leaves nothing behind and is not listed, nor is one on a mount that is not
+    // the disk: the INNERMOST mount holding the directory decides (machine.holderOf).
+    {
+        var owned: std.ArrayList(u8) = .{};
+        const w = owned.writer(arena);
+        try w.print("# state.list -- derived by harb image: mount directory path-on-the-disk uid gid\n", .{});
+        if (block) |b| for (m.services) |s| for (s.state) |dir| {
+            const holder = machine.holderOf(m.mounts, dir) orelse continue;
+            if (!std.mem.eql(u8, holder.name, b.name)) continue;
+            const u = s.user orelse continue;
+            // the directory as the disk names it: the mount's root is `/`, and a mount written with
+            // a trailing slash is still the same mount
+            const at = std.mem.trimRight(u8, b.at, "/");
+            const on_disk = if (at.len == 0) dir else dir[at.len..];
+            try w.print("{s} {s} {s} {d} {d}\n", .{ b.at, dir, on_disk, u.uid, u.gid });
+        };
+        try writeOut(opts.out_dir, "state.list", owned.items);
     }
 
     // sd.list + config.txt + cmdline.txt -- a board that boots from a card

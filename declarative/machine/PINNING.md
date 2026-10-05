@@ -5,10 +5,29 @@
 `fixtures.json` sha256:
 
 ```
-0c3bde455a1dc04c516359371344fdc918924055da8ad96217fcf5e0574fa785
+02a61b456054e9c49c100da002e628597cd940a70687a738e3035b2b21c71829
 ```
 
-(Before the FORWARD seat of 2026-10-04 (FWD-1):
+(Before the STATE seat of 2026-10-05 (OWN-1):
+`0c3bde455a1dc04c516359371344fdc918924055da8ad96217fcf5e0574fa785`,
+132/132; the widening added A30-A35 and R104-R138 -- a world that runs
+as an identity owns the directories it names and nothing else of the
+machine's: only an identity can own one (R104), in a plain absolute path
+of bounded length (R105-R110, R137, R138), only where the machine can
+hand one over -- under /run, or inside an ext4 or tmpfs mount that world
+keeps, with every mount above it kept too, and that is not read-only
+(R111-R118, R133, R136) -- never the place itself, no two worlds owning
+overlapping directories (R119-R121), a world's signal a plain path
+sitting directly in its own directory and never in root's /run or a
+neighbour's (R122-R124, R128, R129, R132), and the floor's own key and
+record, named in plain paths, in no directory a world owns (R125, R126,
+R130, R131); STATE is a clause of a service, by the clause menu (R127);
+and two rules about mounts, because a directory's holder is the
+innermost mount only if the outer one is declared first and no two share
+a mount point (R134, R135). The first 24 of these (R104-R127) were the
+seat as built; the other eleven rejects and two accepts are what an independent read-only review
+of it found, each a spelling or an order the first rules did not see.
+Before the FORWARD seat of 2026-10-04 (FWD-1):
 `197fb6ee952b45e9249802bd060fe6e72e2a49a8f55661f998a478d6e8e66492`,
 120/120; the widening added A27-A29 and R95-R103 -- a machine says it
 is the way between its networks, never assumes it, and is refused it
@@ -102,7 +121,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **132/132** — 29 accepts with structural expectations, 103 rejects with expected refusal fragments (120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **160/160** — 33 accepts with structural expectations, 127 rejects with expected refusal fragments (132/132 before STATE; 120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
@@ -157,6 +176,66 @@ not committed ... the next boot is A`, and the card read back still
 booting A. Each judged line is worded once, in `src/expect.zig`, for
 init and for the derivation alike; five unit tests pin the derivation
 and the judge's negatives.
+
+## A world's own place, judged by the disk it leaves (OWN-1)
+
+`STATE` on a SERVICE: the directories a world owns, made and handed to
+its identity by PID 1 before the world starts. Fixture-first -- A30-A35
+accept it and R104-R138 refuse what it must never be: **132/132 to
+173/173**, and the pack court 30/30 to 33/33, with the Commons pack's
+own READY moved into a directory it owns, because a world that is not
+root can no longer signal in root's /run. The first machine that boots
+it is `machines/qemu_cloud.machine` with `machines/ringserv.pack`: the
+first real server, which ran as root because its signal sat in root's
+/run, now runs as `appserver` (2000:2000).
+
+Three things judge it, and none of them is the declaration:
+
+- the machine's own boot line `boot: state -- ringserv owns /run/ringserv
+  and /data/ringserv as appserver (2000:2000); each made, then read back
+  as that identity's, mode 0700`, said only after the kernel read each
+  directory back, and part of the 19 lines the machine judges itself on;
+- **the disk the boot leaves behind** (`experiment/os2_image.sh`, from the
+  `state.list` that `harb image` derives): `disk: /data/ringserv -- owned
+  by 2000:2000, mode 0700` and, beside it, `disk: / -- owned by 0:0, mode
+  0755`, read back with `debugfs` from the image after the journal is
+  replayed on a copy, and compared with the declaration the image
+  derived (a disk that differs says so on its line, whatever the pin
+  says) -- the directory is the world's and the disk's root is still the
+  machine's;
+- **the same image with no disk behind its mount**: the kernel refuses the
+  mount, and the machine says `boot: state -- ringserv was not given
+  /data/ringserv: the mount it lies on was refused by the kernel; a world
+  that owns a directory it was not given does not start`, starts nothing,
+  and announces no directory it could not hand over. That boot has no
+  verdict, because a world that does not start is never ready: a trial is
+  never committed on it, and nothing rolls it back either (RDY-1's safe
+  outcome).
+
+The pinned transcripts moved with the seat, in the same commit:
+`qemu_cloud_ringserv.expected` **23 to 49 lines** (the state line, the
+identity on the start line, the server's own `--data` line, the disk's
+three lines and the 21 of the disk-less round) and `cloud_links.expected`
+**146 to 148**. Both were read as diffs before they were pinned, and both
+were identical on a second boot.
+
+Two probes sit beside it. `experiment/state_probe.sh` runs the act's own
+unit tests on Linux -- the directory (made, handed over, read back, no link
+followed, every directory above it the machine's) and the signal (a regular
+file read without following a link, a stale one cleared) -- and then
+against ten mutants, each of which must be convicted by the test named for
+it; the two that remove the chown need root, because only a root run hands
+a directory to a DIFFERENT owner, and the probe says when it did not run
+them. The first run of the first version was red for a real reason, the
+standard library calls a chown on a directory opened without `iterate`
+unreachable, which in the ReleaseSafe build harb ships in is a panic of
+PID 1. `experiment/ringserv_nonroot.sh` measures the server itself,
+outside the machine, and judges itself: as uid 2000, from `/`, with an
+empty environment, it serves `/health` and keeps its database and the
+files beside it in its own directory, and the same probe run with the
+server as root must be convicted (four statements fail), or the probe
+measures nothing. It is not the machine's image: it looks at the places an
+unprivileged user can write on its host, not at all of them.
 
 ## How many tasks a world may hold (THR-1)
 

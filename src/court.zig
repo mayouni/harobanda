@@ -185,6 +185,20 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
             const got = try p.granted(arena);
             if (!sameList(got, gv.array)) why = try std.fmt.allocPrint(arena, "granted set differs (got {d})", .{got.len});
         }
+        // the directories each named world owns (OWN-1), in the order it declared them; a
+        // world the expectation does not name is not asked about, and one it names that the
+        // machine does not declare is a failure
+        if (expect.get("state")) |sv| {
+            var it = sv.object.iterator();
+            while (it.next()) |e| {
+                var found = false;
+                for (m.services) |s| if (std.mem.eql(u8, s.name, e.key_ptr.*)) {
+                    found = true;
+                    if (!sameList(s.state, e.value_ptr.array)) why = try std.fmt.allocPrint(arena, "state of {s} differs (got {d} directories)", .{ s.name, s.state.len });
+                };
+                if (!found) why = try std.fmt.allocPrint(arena, "state: no service {s}", .{e.key_ptr.*});
+            }
+        }
         if (why) |w| {
             failures += 1;
             try out.print("  FAIL {s} {s} -- {s}\n", .{ id, name, w });
