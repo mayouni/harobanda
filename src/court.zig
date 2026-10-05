@@ -199,6 +199,27 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
                 if (!found) why = try std.fmt.allocPrint(arena, "state: no service {s}", .{e.key_ptr.*});
             }
         }
+        // the time seat (TIME-1): the clock a machine has, whom it asks, and the port each link's authority answers on
+        if (str(expect.get("clock"))) |w| if (m.clock == null or !std.mem.eql(u8, m.clock.?, w)) {
+            why = try std.fmt.allocPrint(arena, "clock: expected {s} got {s}", .{ w, m.clock orelse "none" });
+        };
+        if (str(expect.get("time_from"))) |w| if (m.time_from == null or !std.mem.eql(u8, m.time_from.?.text, w)) {
+            why = try std.fmt.allocPrint(arena, "time_from: expected {s} got {s}", .{ w, if (m.time_from) |tf| tf.text else "none" });
+        };
+        if (expect.get("time_authority")) |tv| {
+            var it = tv.object.iterator();
+            while (it.next()) |e| {
+                var got: ?u16 = null;
+                for (m.networks) |n| if (std.mem.eql(u8, n.name, e.key_ptr.*)) {
+                    got = n.time_authority;
+                };
+                const want: i64 = switch (e.value_ptr.*) {
+                    .integer => |i| i,
+                    else => -1,
+                };
+                if (got == null or @as(i64, got.?) != want) why = try std.fmt.allocPrint(arena, "time_authority of {s}: expected {d}", .{ e.key_ptr.*, want });
+            }
+        }
         if (why) |w| {
             failures += 1;
             try out.print("  FAIL {s} {s} -- {s}\n", .{ id, name, w });
@@ -323,6 +344,10 @@ pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.
         };
         if (int(expect.get("routes"))) |w| if (@as(i64, @intCast(f.routes.len)) != w) {
             why = try std.fmt.allocPrint(arena, "routes: expected {d} got {d}", .{ w, f.routes.len });
+        };
+        // the member the fleet takes the time from (TIME-1)
+        if (str(expect.get("time_authority"))) |w| if (f.time_authority == null or !std.mem.eql(u8, f.time_authority.?, w)) {
+            why = try std.fmt.allocPrint(arena, "time_authority: expected {s} got {s}", .{ w, f.time_authority orelse "none" });
         };
         if (why) |w| {
             failures += 1;

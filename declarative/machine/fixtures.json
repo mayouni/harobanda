@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once. Widened again 2026-10-05 (STATE, a world's own directory): A30-A35, R104-R138; a world that runs as an identity owns the directories it names and nothing else of the machine's, only an identity can own one, only where the machine can hand one over (under /run, or inside an ext4 or tmpfs mount the world keeps and that is not read-only, with every mount above it kept too), no two worlds own overlapping directories, a world's signal sits directly in its own directory and never in a neighbour's, the floor's own key and record are in no directory a world owns, and the paths the court compares are plain names of bounded length, so that no spelling reaches one file by two names. Two rules about mounts came with it, because a directory's holder is the innermost mount only if the outer one is declared first and no two share a mount point.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once. Widened again 2026-10-05 (STATE, a world's own directory): A30-A35, R104-R138; a world that runs as an identity owns the directories it names and nothing else of the machine's, only an identity can own one, only where the machine can hand one over (under /run, or inside an ext4 or tmpfs mount the world keeps and that is not read-only, with every mount above it kept too), no two worlds own overlapping directories, a world's signal sits directly in its own directory and never in a neighbour's, the floor's own key and record are in no directory a world owns, and the paths the court compares are plain names of bounded length, so that no spelling reaches one file by two names. Two rules about mounts came with it, because a directory's holder is the innermost mount only if the outer one is declared first and no two share a mount point. Widened again 2026-10-05 (the time seat, TIME-1): A36-A43, R139-R170; time enters a record only as an authority's signed statement, so a machine declares the clock it HAS (a plain device path under /dev, and a key to sign with), a link it answers the time on (one, a static address, a port from 1024 to 65535, never a loopback, never asking anybody), or whom it asks and whose word it takes (a journal to date, an address and a port from 1 to 65535 each spelled one way, a way there, and one spelling of a key that is a key); and a clock is a real-time clock, not any device. The boundary cases are here because a probe with a mutated court found the first version of these fixtures judged none of them: A38-A40 and R159-R162 are what that probe asked for; A41-A43 and R164-R170 are what an independent review of the seat asked for.",
   "accepts": [
     {
       "id": "A1",
@@ -658,6 +658,151 @@
             "/data/cache/s"
           ]
         }
+      }
+    },
+    {
+      "id": "A36",
+      "name": "a machine with a clock and a key can be a link's time authority: it answers on one UDP port, from a clock it was declared to have",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "clock": "/dev/rtc0",
+        "time_authority": {
+          "lan": 7000
+        }
+      }
+    },
+    {
+      "id": "A37",
+      "name": "a machine with a journal can ask an authority for the time of its record, and says whose word it takes",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "time_from": "10.30.0.9:7000"
+      }
+    },
+    {
+      "id": "A38",
+      "name": "the lowest port an authority may answer on is the first one that needs no privilege to hold",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 1024) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "clock": "/dev/rtc0",
+        "time_authority": {
+          "lan": 1024
+        }
+      }
+    },
+    {
+      "id": "A39",
+      "name": "and the highest is the last port there is",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 65535) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "clock": "/dev/rtc0",
+        "time_authority": {
+          "lan": 65535
+        }
+      }
+    },
+    {
+      "id": "A40",
+      "name": "a device may ask an authority on the last port there is",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.9:65535\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "time_from": "10.30.0.9:65535"
+      }
+    },
+    {
+      "id": "A41",
+      "name": "an authority off the link is asked through the link's default route: a GATEWAY is a way there",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"192.168.77.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", GATEWAY \"10.30.0.254\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "time_from": "192.168.77.9:7000"
+      }
+    },
+    {
+      "id": "A42",
+      "name": "... or through a destination the link's EGRESS names, which writes a route to exactly that and nowhere else",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"192.168.77.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", GATEWAY \"10.30.0.254\", EGRESS [\"192.168.77.0/24\"]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "time_from": "192.168.77.9:7000"
+      }
+    },
+    {
+      "id": "A43",
+      "name": "a link that asks for its address by dhcp is told its way by the lease: nothing declared can say there is none",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"192.168.77.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS dhcp) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "time_from": "192.168.77.9:7000"
       }
     }
   ],
@@ -1489,6 +1634,198 @@
       "name": "nor a path longer than 200 whole, whatever its names",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, STATE [\"/run/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"]) RATIONALE \"x\"\n",
       "refusal": "STATE is an absolute path of plain names"
+    },
+    {
+      "id": "R139",
+      "name": "a clock is a hosted machine's declaration: an edge machine has the clock its own substrate gives it",
+      "source": "DEFINE MACHINE s AS (PROFILE edge, ARCH thumbv7em, KERNEL none, CLOCK \"/dev/rtc0\") RATIONALE \"x\"\n",
+      "refusal": "CLOCK is a hosted machine's declaration"
+    },
+    {
+      "id": "R140",
+      "name": "the clock is a device: a path outside /dev is a file somebody wrote, not hardware",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/data/rtc\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "CLOCK is the device path of the clock this machine has"
+    },
+    {
+      "id": "R141",
+      "name": "a relative path names no device",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "CLOCK is the device path of the clock this machine has"
+    },
+    {
+      "id": "R142",
+      "name": "/dev itself is not a clock",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "CLOCK is the device path of the clock this machine has"
+    },
+    {
+      "id": "R143",
+      "name": "a clock is read to SIGN: a machine with no key would sign nothing, and a time nobody signed is the epoch wearing a date's authority",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "declares no IDENTITY"
+    },
+    {
+      "id": "R144",
+      "name": "a clock that attests nothing is hardware nobody asked",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "a clock that attests nothing"
+    },
+    {
+      "id": "R145",
+      "name": "an authority that reads no clock would sign a time it made up",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "declares no CLOCK"
+    },
+    {
+      "id": "R146",
+      "name": "the address a time question goes to is not a lease: an authority declares a static address",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS dhcp, TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "is not a lease"
+    },
+    {
+      "id": "R147",
+      "name": "a port below 1024 is a service the machine would need a privilege to hold",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 80) RATIONALE \"x\"\n",
+      "refusal": "TIME_AUTHORITY is the UDP port"
+    },
+    {
+      "id": "R148",
+      "name": "a machine answers the time on one link",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\nDEFINE NETWORK back AS (INTERFACE \"eth1\", ADDRESS \"10.40.0.1/24\", TIME_AUTHORITY 7001) RATIONALE \"x\"\n",
+      "refusal": "a machine answers the time on one link"
+    },
+    {
+      "id": "R149",
+      "name": "a loopback is asked by nobody else",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK loopback AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "a time authority answers on a link"
+    },
+    {
+      "id": "R150",
+      "name": "an authority asks nobody: a record dated by its own signer is dated by nobody",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\", TIME_FROM \"10.30.0.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "dated by its own signer is dated by nobody"
+    },
+    {
+      "id": "R151",
+      "name": "whom it asks needs whose word it takes: an answer from anyone on the wire would be taken for the authority's",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.9:7000\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "declares no TIME_KEY"
+    },
+    {
+      "id": "R152",
+      "name": "and a key with nobody to ask is a key for nothing",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "declares no TIME_FROM"
+    },
+    {
+      "id": "R153",
+      "name": "the authority is an address and a port",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"clock.cloud\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "TIME_FROM is the authority's address and port"
+    },
+    {
+      "id": "R154",
+      "name": "a port is a number from 1 to 65535",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.9:0\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "TIME_FROM is the authority's address and port"
+    },
+    {
+      "id": "R155",
+      "name": "a key is one spelling of 32 bytes: 64 lowercase hex",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.9:7000\", TIME_KEY \"ABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABAB\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "TIME_KEY is the authority's Ed25519 public key as 64 lowercase hex"
+    },
+    {
+      "id": "R156",
+      "name": "what is asked about is the last entry of the machine's own record: with none there is nothing to date",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", TIME_FROM \"10.30.0.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "declares no JOURNAL"
+    },
+    {
+      "id": "R157",
+      "name": "a question asked over a network needs one: a loopback is not a way to anywhere",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n",
+      "refusal": "declares none"
+    },
+    {
+      "id": "R158",
+      "name": "TIME_AUTHORITY is a clause of a network, by the clause menu",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_AUTHORITY 7000) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "Unknown clause 'TIME_AUTHORITY' for MACHINE"
+    },
+    {
+      "id": "R159",
+      "name": "a device path is a plain one: a path that starts under /dev and climbs out of it names a file somebody wrote",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/../data/rtc\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "CLOCK is the device path of the clock this machine has"
+    },
+    {
+      "id": "R160",
+      "name": "one port short of the first an authority may answer on",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 1023) RATIONALE \"x\"\n",
+      "refusal": "TIME_AUTHORITY is the UDP port"
+    },
+    {
+      "id": "R161",
+      "name": "one port past the last there is: a number that is not a port is refused, never wrapped into one",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 65536) RATIONALE \"x\"\n",
+      "refusal": "TIME_AUTHORITY is the UDP port"
+    },
+    {
+      "id": "R162",
+      "name": "a number that does not fit a port is refused for the port a device asks on, never wrapped into a small one: 65537 is not port 1",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.9:65537\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "TIME_FROM is the authority's address and port"
+    },
+    {
+      "id": "R163",
+      "name": "a key is a key: 64 lowercase hex that no Ed25519 public key is written as would be taken for the authority's and never verify anything",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.9:7000\", TIME_KEY \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "TIME_KEY is the authority's Ed25519 public key, and"
+    },
+    {
+      "id": "R164",
+      "name": "a clock is a clock: a device under /dev that is not a real-time clock is a device that reading would open, and some are armed by it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", CLOCK \"/dev/watchdog\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+      "refusal": "is a device and not a clock"
+    },
+    {
+      "id": "R165",
+      "name": "a device that asks the time is a hosted machine's: an edge machine keeps its record in its own substrate",
+      "source": "DEFINE MACHINE s AS (PROFILE edge, ARCH thumbv7em, KERNEL none, TIME_FROM \"10.30.0.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\n",
+      "refusal": "TIME_FROM is a hosted machine's declaration"
+    },
+    {
+      "id": "R166",
+      "name": "a port is spelled one way: a leading zero names the same port in a second text",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.9:07000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "TIME_FROM is the authority's address and port"
+    },
+    {
+      "id": "R167",
+      "name": "and so is an address: an octet with a leading zero is a second spelling of the same one",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.030.0.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "TIME_FROM is the authority's address and port"
+    },
+    {
+      "id": "R168",
+      "name": "an authority off every link, with no gateway to carry the question: it could never be asked",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"192.168.77.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "has no way there"
+    },
+    {
+      "id": "R169",
+      "name": "... and an EGRESS list that names other destinations writes no route to it either",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"172.16.0.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", GATEWAY \"10.30.0.254\", EGRESS [\"192.168.77.0/24\"]) RATIONALE \"x\"\n",
+      "refusal": "has no way there"
+    },
+    {
+      "id": "R170",
+      "name": "... and one that DOES name it writes no route without a gateway to write it through: a destination is a way only where something carries the question",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"192.168.77.9:7000\", TIME_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", EGRESS [\"192.168.77.0/24\"]) RATIONALE \"x\"\n",
+      "refusal": "has no way there"
     }
   ]
 }

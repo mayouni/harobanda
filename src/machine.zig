@@ -302,6 +302,82 @@ pub const User = struct {
 };
 
 pub const Ipv4 = struct { text: []const u8, addr: u32 };
+
+/// The time authority a machine asks, and the key it takes the answer from (TIME-1).
+pub const TimeFrom = struct {
+    /// `a.b.c.d:port`, as written
+    text: []const u8,
+    ip: u32,
+    port: u16,
+    /// the authority's Ed25519 public key, as written (64 lowercase hex) and as bytes
+    key_text: []const u8,
+    key: [32]u8,
+    line: usize,
+};
+
+/// A number as an endpoint spells it: digits and nothing else, no sign, no separator and no leading zero.
+/// `parseInt` takes `+7000`, `7_000` and `07000` for 7000, and then one endpoint has several spellings, each a
+/// different text in a transcript and in a comparison made on text.
+fn plainDecimal(s: []const u8) bool {
+    if (s.len == 0) return false;
+    for (s) |c| if (c < '0' or c > '9') return false;
+    return s.len == 1 or s[0] != '0';
+}
+
+/// `a.b.c.d:port` -> the address and the port, or null. A port is 1..65535, and every number is spelled one way
+/// (`plainDecimal`).
+pub fn parseHostPort(text: []const u8) ?struct { ip: u32, port: u16 } {
+    const colon = std.mem.lastIndexOfScalar(u8, text, ':') orelse return null;
+    var octets = std.mem.splitScalar(u8, text[0..colon], '.');
+    while (octets.next()) |o| if (!plainDecimal(o)) return null;
+    if (!plainDecimal(text[colon + 1 ..])) return null;
+    const ip = parseIpv4(text[0..colon]) orelse return null;
+    const port = std.fmt.parseInt(u16, text[colon + 1 ..], 10) catch return null;
+    if (port == 0) return null;
+    return .{ .ip = ip, .port = port };
+}
+
+/// Whether the clock at `path` is a real-time clock: `/dev/rtc`, or `/dev/rtc` and a number. Reading a device
+/// opens it, and opening some arms them (a watchdog), so a clock is named by what it is and not by being a device.
+pub fn isRtcNode(path: []const u8) bool {
+    const stem = "/dev/rtc";
+    if (!std.mem.startsWith(u8, path, stem)) return false;
+    const rest = path[stem.len..];
+    for (rest) |c| if (c < '0' or c > '9') return false;
+    return true;
+}
+
+/// Whether `ip` is inside the prefix of `base`.
+fn onPrefix(base: u32, prefix: u6, ip: u32) bool {
+    const mask: u32 = if (prefix == 0) 0 else ~@as(u32, 0) << @intCast(32 - @as(u8, prefix));
+    return (base & mask) == (ip & mask);
+}
+
+/// Whether these networks give the machine a way to `ip`, as PID 1 will actually write the routes (netcfg.zig): it
+/// is on a static link's own prefix, or that link has a GATEWAY and no EGRESS list (a default route), or its EGRESS
+/// list covers it AND it has a GATEWAY (a route to another network is written THROUGH one, and with none declared
+/// no route is written at all), or a link asks by dhcp -- whose lease is the way, and nothing declared can say it
+/// is not there. A loopback is no way to anywhere. A question that can never be asked is refused where it is
+/// declared, not said at every boot.
+pub fn hasWayTo(nets: []const Network, ip: u32) bool {
+    for (nets) |n| {
+        if (isLoopback(n)) continue;
+        switch (n.address) {
+            .dhcp => return true,
+            .static => |s| {
+                if (onPrefix(s.ip, s.prefix, ip)) return true;
+                switch (n.egress) {
+                    .unrestricted => if (n.gateway != null) return true,
+                    .none => {},
+                    .to => |dests| if (n.gateway != null) {
+                        for (dests) |d| if (onPrefix(d.ip, d.prefix, ip)) return true;
+                    },
+                }
+            },
+        }
+    }
+    return false;
+}
 pub const Destination = struct { text: []const u8, ip: u32, prefix: u6 };
 
 /// Whether a list of destinations reaches EVERY IPv4 address, however it
@@ -378,6 +454,11 @@ pub const Network = struct {
     /// peer is `imprimante.makeen`. Null is a machine that is merely ON a
     /// network somebody else serves.
     domain: ?[]const u8,
+    /// the UDP port this machine answers time questions on, on this link (TIME-1): it is the
+    /// link's TIME AUTHORITY, which reads its CLOCK and signs, with its device key, that the
+    /// entry it was asked about existed no later than that reading. Needs a static
+    /// ADDRESS (the address that is asked is not a lease), a CLOCK and an IDENTITY.
+    time_authority: ?u16 = null,
     rationale: []const u8,
 };
 
@@ -511,6 +592,19 @@ pub const Machine = struct {
     /// did, which is the world's to keep. Needs an IDENTITY to sign
     /// with and a persistent mount to survive on (JRN-1).
     journal: ?[]const u8,
+    /// the battery-backed clock this machine HAS, as the hardware it is: a device path
+    /// ("/dev/rtc0"). The floor has no date of its own and never claims one; a machine that
+    /// has a clock and an IDENTITY can be a fleet's TIME AUTHORITY -- it reads the clock and
+    /// signs, with its device key, that an entry existed no later than that reading
+    /// (STZ-OS-RULING-07). Declared, and read once at boot so the boot can say whether the
+    /// hardware answered, and again at every question (TIME-1).
+    clock: ?[]const u8 = null,
+    /// where this machine asks for the time of its record, and whose word it takes: the
+    /// authority's address and the public key its answer must verify against. The key is a
+    /// fact the machine holds so that a statement is refused at the door when it is not the
+    /// authority's; that it IS the fleet's authority's key is a fact about a set, and the
+    /// fleet court judges it (TIME-1).
+    time_from: ?TimeFrom = null,
     /// whether this machine is the way from one of its networks to
     /// another (FWD-1): the kernel's own forwarding, switched on once
     /// every network is up. It forwards among ALL its networks and
@@ -753,15 +847,15 @@ pub const Decl = struct {
 
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
-        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD" },
+        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD", "CLOCK", "TIME_FROM", "TIME_KEY" },
         .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES", "STATE" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
-        .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS", "EGRESS", "DOMAIN" },
+        .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS", "EGRESS", "DOMAIN", "TIME_AUTHORITY" },
         .USER => &.{ "UID", "GID" },
         .PEER => &.{ "NETWORK", "HARDWARE", "ADDRESS" },
-        .FLEET => &.{ "LINK", "LINKS" },
+        .FLEET => &.{ "LINK", "LINKS", "TIME_AUTHORITY" },
         .MEMBER => &.{ "DECLARATION", "KEY", "HARDWARE" },
         .RETIREMENT => &.{ "MEMBER", "KEY", "THROUGH" },
         .ROUTE => &.{ "BETWEEN", "THROUGH" },
@@ -950,6 +1044,12 @@ pub fn plainPath(p: []const u8) bool {
     return true;
 }
 
+/// Lowercase hexadecimal, and nothing else (a key, a digest: one spelling of each).
+pub fn lowerHex(s: []const u8) bool {
+    for (s) |c| if (!((c >= '0' and c <= '9') or (c >= 'a' and c <= 'f'))) return false;
+    return true;
+}
+
 /// Whether `path` is `dir` or lies inside it, at a name boundary:
 /// /data/app is inside /data, and /database is not.
 pub fn within(path: []const u8, dir: []const u8) bool {
@@ -1118,6 +1218,43 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         forward = true;
         forward_line = c.line;
     }
+    // CLOCK, TIME_FROM and TIME_KEY -- time enters a record only as an authority's signed statement
+    // (STZ-OS-RULING-07, TIME-1). CLOCK is the battery-backed clock this machine HAS, as the hardware
+    // it is; TIME_FROM is whom it asks about the entry it has just written, and TIME_KEY whose word it takes.
+    // What an authority needs is checked once the networks are known.
+    var clock: ?[]const u8 = null;
+    var clock_line: usize = md.line;
+    if (find(md, "CLOCK")) |c| {
+        if (profile != .hosted) return ctx.refuse(c.line, "CLOCK is a hosted machine's declaration; a machine of PROFILE {s} has the clock its own substrate gives it", .{@tagName(profile)});
+        const path = try wantString(&ctx, c);
+        if (!plainPath(path) or !within(path, "/dev") or path.len <= "/dev/".len) return ctx.refuse(c.line, "CLOCK is the device path of the clock this machine has (\"/dev/rtc0\"), not '{s}'", .{path});
+        if (identity == null) return ctx.refuse(c.line, "a clock is read to SIGN what the machine is asked, and this machine declares no IDENTITY: a time nobody signed is the epoch wearing a date's authority", .{});
+        if (!isRtcNode(path)) return ctx.refuse(c.line, "CLOCK is a real-time clock, /dev/rtc or /dev/rtc and a number: '{s}' is a device and not a clock, and reading it opens it (some devices are armed by being opened)", .{path});
+        clock = path;
+        clock_line = c.line;
+    }
+    var time_from: ?TimeFrom = null;
+    {
+        const tf_c = find(md, "TIME_FROM");
+        const tk_c = find(md, "TIME_KEY");
+        if (tf_c != null or tk_c != null) {
+            const anchor = tf_c orelse tk_c.?;
+            if (profile != .hosted) return ctx.refuse(anchor.line, "TIME_FROM is a hosted machine's declaration; a machine of PROFILE {s} keeps its record in its own substrate", .{@tagName(profile)});
+            const tf = tf_c orelse return ctx.refuse(tk_c.?.line, "TIME_KEY is whose word this machine takes about the time of its record, and it declares no TIME_FROM: whom does it ask?", .{});
+            const tk = tk_c orelse return ctx.refuse(tf.line, "TIME_FROM names whom this machine asks, and it declares no TIME_KEY: an answer from anyone on the wire would be taken for the authority's", .{});
+            const text = try wantString(&ctx, tf);
+            const hp = parseHostPort(text) orelse return ctx.refuse(tf.line, "TIME_FROM is the authority's address and port (\"10.30.0.1:7000\"), not '{s}'", .{text});
+            const key_text = try wantString(&ctx, tk);
+            if (key_text.len != 64 or !lowerHex(key_text)) return ctx.refuse(tk.line, "TIME_KEY is the authority's Ed25519 public key as 64 lowercase hex, not '{s}'", .{key_text});
+            if (journal == null) return ctx.refuse(tf.line, "TIME_FROM asks about the last entry of this machine's own record, and it declares no JOURNAL: there is nothing to date", .{});
+            var key: [32]u8 = undefined;
+            _ = std.fmt.hexToBytes(&key, key_text) catch return ctx.refuse(tk.line, "TIME_KEY is the authority's Ed25519 public key as 64 lowercase hex, not '{s}'", .{key_text});
+            // the same question the fleet asks of an enrolled KEY (FR6, FR20): a key that no public key is written as
+            // would be a word the machine takes for the authority's and can never verify
+            _ = std.crypto.sign.Ed25519.PublicKey.fromBytes(key) catch return ctx.refuse(tk.line, "TIME_KEY is the authority's Ed25519 public key, and '{s}' is 64 hex that no key is written as", .{key_text});
+            time_from = .{ .text = text, .ip = hp.ip, .port = hp.port, .key_text = key_text, .key = key, .line = tf.line };
+        }
+    }
     var slots: ?[]const u8 = null;
     if (find(md, "SLOTS")) |c| {
         const dev = try wantString(&ctx, c);
@@ -1238,7 +1375,16 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             };
             domain = s;
         }
-        try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .domain = domain, .rationale = d.rationale });
+        // TIME_AUTHORITY -- this machine answers the time on this link (TIME-1). What it needs
+        // that is not on this network (a CLOCK, an IDENTITY) is checked once all of them are read.
+        var time_authority: ?u16 = null;
+        if (find(d, "TIME_AUTHORITY")) |c| {
+            if (address == .dhcp) return ctx.refuse(c.line, "{s} asks for its own address by dhcp, and the address a time question goes to is not a lease: a time authority declares a static ADDRESS", .{d.name});
+            const port = try wantNumber(&ctx, c);
+            if (port < 1024 or port > 65535) return ctx.refuse(c.line, "TIME_AUTHORITY is the UDP port this machine answers the time on, 1024 to 65535, not {d}", .{port});
+            time_authority = @intCast(port);
+        }
+        try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .domain = domain, .time_authority = time_authority, .rationale = d.rationale });
     };
 
     // a loopback is a network the machine declares and not a way to anywhere:
@@ -1247,6 +1393,23 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
     if (forward) for (nets.items) |n| if (n.egress == .none and !isLoopback(n)) {
         return ctx.refuse(n.line, "EGRESS none says {s} knows no way off its own link, and FORWARD makes this machine the way between its networks: a machine that forwards is a way off every link it joins, so it cannot say there is none", .{n.name});
     };
+
+    // TIME-1: what a time authority needs, and what it is not. A machine answers the time on ONE link, from
+    // a clock it has, and asks nobody: a record dated by its own signer is dated by nobody.
+    var authority_on: ?Network = null;
+    for (nets.items) |n| if (n.time_authority != null) {
+        if (authority_on) |first| return ctx.refuse(n.line, "{s} is a time authority too, and {s} already is: a machine answers the time on one link", .{ n.name, first.name });
+        if (isLoopback(n)) return ctx.refuse(n.line, "{s} is a loopback, which nobody else can ask: a time authority answers on a link", .{n.name});
+        authority_on = n;
+    };
+    if (authority_on) |n| {
+        if (clock == null) return ctx.refuse(n.line, "{s} says this machine is the time authority, and it declares no CLOCK: an authority that reads no clock would sign a time it made up", .{n.name});
+        if (time_from != null) return ctx.refuse(time_from.?.line, "this machine is a time authority and asks for the time of its own record: a record dated by its own signer is dated by nobody", .{});
+    } else if (clock != null) {
+        return ctx.refuse(clock_line, "CLOCK is the clock a time authority reads, and no NETWORK of this machine declares TIME_AUTHORITY: a clock that attests nothing", .{});
+    }
+    if (time_from != null and countLinks(nets.items) == 0) return ctx.refuse(time_from.?.line, "TIME_FROM asks over a network, and this machine declares none (a loopback is not a way to anywhere)", .{});
+    if (time_from) |tf| if (!hasWayTo(nets.items, tf.ip)) return ctx.refuse(tf.line, "TIME_FROM asks {s}, and this machine has no way there: it is on none of its links' own prefixes, and no link has a GATEWAY to carry it (as a default route, or for an EGRESS destination that covers it: a route to another network is written through a gateway, and with none declared none is written), so the question could never be asked", .{tf.text});
 
     // peers: who else is on a link this machine serves. Read after the
     // networks, because every check a peer needs is a fact about its link.
@@ -1625,6 +1788,8 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .slots = slots,
         .identity = identity,
         .journal = journal,
+        .clock = clock,
+        .time_from = time_from,
         .forward = forward,
         .rationale = md.rationale,
         .services = svc_slice,

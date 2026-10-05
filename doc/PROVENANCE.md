@@ -303,6 +303,17 @@ clock module the box declares, or a member of its fleet that has one. A
 till's business records need dates -- the world's to keep, the floor's to
 make trustworthy -- so this is the box's next hardware question after
 the board itself. The mechanism is a seat, not built.
+*Amended 2026-10-05 (TIME-1, rung 3a): the seat is built for the first
+source item 3 names, a battery-backed clock declared as hardware, and
+judged in the emulator; items 1 and 2 hold as written and are what it
+does, and item 4 holds for a machine that runs the record's witness
+(`harb journal`), from its second boot on -- a machine that keeps a
+record and runs no witness says nothing of time yet. One refinement of item 2, found by an independent review: the
+statement names the digest of the entry's whole written line, signature
+included, and not the entry's own hash -- that hash is made of public
+bytes, so anybody could have asked an authority its time before the device
+had written the entry. Authenticated network time (NTS) is not built, and
+a board's real clock is OS-5's to show.*
 
 **STZ-OS-RULING-08 — chapter 07 ratified; 06 and 08 left for the
 author.** `softanza/vision/07-SYSTEM.md`, the floor's own chapter, is

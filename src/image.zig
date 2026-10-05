@@ -36,6 +36,10 @@ const confine = @import("confine.zig");
 const plan = @import("plan.zig");
 const expect = @import("expect.zig");
 
+/// What the emulator's real-time clock reads when its virtual machine starts (TIME-1): the instrument's
+/// fixed point, after the earliest time an authority will sign.
+pub const emulator_rtc_base = "2026-10-05T12:00:00";
+
 pub const Options = struct {
     out_dir: []const u8,
     root: []const u8,
@@ -237,6 +241,13 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         try out.print("image: refused -- CONSOLE {s} is not a port BOARD {s} has\n", .{ m.console, @tagName(m.board) });
         return 2;
     };
+    // A clock is a driver, and the image knows one: the PC's, whose emulated RTC was OBSERVED (TIME-1). A
+    // board that has a clock of its own (a Pi has none; a module on its bus is a driver nobody has asked
+    // for here) is refused in words, not given a kernel whose clock the machine would then read as zero.
+    if (m.clock != null and m.board != .qemu_pc) {
+        try out.print("image: refused -- CLOCK has a driver in this image only for qemu_pc, where the emulator's real-time clock was observed; on {s} none is known, and a kernel without one would answer a time nobody read\n", .{@tagName(m.board)});
+        return 2;
+    }
     // The emulator's NICs are numbered by the order it is given them: the Nth
     // network is the Nth NIC, which the kernel calls eth(N-1). A machine of
     // several networks that declares them in another order would be wired to
@@ -435,6 +446,9 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
                 for (t.net_cfg) |l| try w.print("{s}\n", .{l});
             }
         }
+        // the real-time clock a time authority reads (TIME-1): the class, the device node under /dev, and the
+        // PC's driver; refused above for any other board
+        if (m.clock != null) try w.print("CONFIG_RTC_CLASS=y\nCONFIG_RTC_INTF_DEV=y\nCONFIG_RTC_DRV_CMOS=y\n", .{});
         if (m.slots != null) {
             // the boot partition is FAT (the firmware's), mounted by PID 1 to
             // read the committed slot and to commit a trial
@@ -641,6 +655,11 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         };
         try w.print("{s} {s}", .{ t.qemu, t.machine_args });
         if (t.memory_mb > 0) try w.print(" -m {d}M", .{t.memory_mb});
+        // The emulator's real-time clock is the instrument's, not the declaration's: a fixed base that runs with
+        // the virtual machine, so that a time authority booted under it reads a time a pinned transcript can
+        // stand on (a board has the clock it has). The base is after `timeserve.earliest`, or the authority
+        // would rightly refuse to sign it.
+        if (m.clock != null) try w.print(" -rtc base={s},clock=vm", .{emulator_rtc_base});
         try w.print(" -nographic{s} -no-reboot -kernel {s} -initrd initramfs.cpio", .{ routing.items, t.image_name });
         if (t.sd) {
             try w.print(" -drive file=sd.img,if=sd,format=raw", .{});

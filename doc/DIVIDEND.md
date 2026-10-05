@@ -487,10 +487,16 @@ diagram. This is where the floor pays each band of it:
    derived from CAPABILITY.
 4. ~~The signed journal~~ **Built (JRN-1)** as the machine's own boot
    record: hash-chained, signed by the device's key, verified before it
-   is extended. A TRUSTED CLOCK is still the seam -- the entries carry
-   no timestamp, because a board with no clock would be writing the
-   epoch wearing the authority of a date, and the sequence is the
-   order. A world's journal of business records sits above this one.
+   is extended. The entries carry no timestamp, on purpose: a board with
+   no clock would be writing the epoch wearing the authority of a date,
+   and the sequence is the order. A time reaches a record another way,
+   **built (TIME-1)**: a fleet's one time authority signs that a record's
+   last entry existed no later than a time it read from a clock it has, the
+   machine keeps that statement beside the record, and an auditor who
+   holds only the fleet file checks it; a record with no statement is
+   ORDERED and UNDATED, and `harb journal`, the record's witness, says
+   so. A world's journal of business records sits
+   above this one.
 5. ~~The per-device identity.~~ **Built (IDN-1)** as `IDENTITY` on a
    hosted machine: an Ed25519 key made on first boot and kept on a
    declared partition. ~~What remains is the fleet's half.~~ **Also

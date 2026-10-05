@@ -435,6 +435,38 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/ringserv_nonroot.sh
 
+# a record is dated by somebody else's word (TIME-1): an
+# authority and a till on one wire, enrolled by hand; the till
+# booted with it, without it, and with an impostor's
+#   -> zig-out/wsl/time.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os10_time.sh
+
+# what anyone holding only the fleet file can check of it
+zig-out\bin\harb.exe time verify `
+  <file.fleet> <statements> [<record>]
+
+# the time seat's tests on Linux and 75 mutants that must be
+# convicted: 31 of the tests, 44 of the grammars' time rules
+#   -> zig-out/wsl/time_probe_units.txt, time_probe_courts.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/time_probe.sh units
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/time_probe.sh courts
+
+# the scene itself, probed: five bugs put back one at a time
+# in a scratch copy, each of which must fail the scene on a
+# line of the section that names it (about six scenes long;
+# name some -- s1 .. s5 -- to run only those)
+#   -> zig-out/wsl/time_scene_probe.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/time_scene_probe.sh
+
+# every unit test, on Linux, none skipped
+#   -> zig-out/wsl/linux_test.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/linux_test.sh
+
 # the guided tour: 18 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -471,6 +503,66 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A time is somebody else's word, bound to one record, and a record
+  with none says so** (TIME-1, STZ-OS-RULING-07): the floor has no date,
+  so a record is ORDERED and UNDATED until an authority its fleet declares
+  has signed `time authority=<fp> entry=<digest> t=<s> sig=<sig>` -- the
+  entry with that digest existed no later than that time: an upper bound,
+  never a lower one. **What a statement names is the digest of the entry's
+  whole written line, signature and all, and never its `hash=`**: that is a
+  hash of public bytes (its place, the hash before it, the machine's name,
+  the declaration's digest, a verdict), so anybody could compute the NEXT
+  one, ask the authority its time and hold a genuine signature that dates an
+  entry the device had not yet written -- and two devices on one machine
+  file share one `hash=` chain. An independent review found it; with the
+  old behaviour put back, the scene's audit says every statement is about an
+  entry the record does not hold. The authority is a member enrolled like any
+  (`CLOCK` on its machine, `TIME_AUTHORITY` on one link and on the fleet); a
+  machine with a journal asks (`TIME_FROM`, `TIME_KEY`) after it writes an
+  entry and keeps the answer beside the record only if the key it was
+  declared to take verifies it AND it names the entry it asked. The fleet
+  court judges what no machine can (the address, the port, the key and a way
+  there, FR50-FR59); `harb time verify` binds statements to a record by
+  recomputing entry digests with the fleet file alone, so **a record cut at
+  its end -- which still hashes and chains -- is convicted by the statement
+  about the entry that was cut**. **A clock that cannot be read makes
+  silence, never a time made up**: it is read at every question (the scene
+  asserts each statement is later than the one before, and a responder that
+  kept its boot's reading fails it), and a reading before 2026 is a
+  battery's idea of now, signed by nobody and refused by everybody. **The
+  same key signs a statement and a journal entry, so an entry is judged by
+  its SHAPE**: a statement dressed with a hash and a `prev` verified as a
+  line of the authority's own record. **A statement has one spelling**:
+  `parseInt` takes `+`, leading zeros and `_`, so two lines verified as one
+  statement, and a genuine answer with ten line ends after it was longer than
+  the buffer PID 1 keeps it in, which is a panic of PID 1 off the wire.
+  **What PID 1 forks and never execs holds what PID 1 held**: the responder
+  inherited the hardware watchdog (close-on-exec is for worlds), so it is
+  given nothing but stdio and its socket. **A witness that gates a commit
+  does not fail on what is advisory**: `harb journal` first exited 1 on a
+  kept statement that did not verify, and a line a power cut shortened would
+  have held back every later boot; it reports, and `harb time verify` is
+  what exits 1. **A promise is said only after what keeps it exists**: the
+  authority's line comes after its fork, and an authority with no clock that
+  answers, or no link, says so and does not say it answers (two boots of the
+  scene). **A check another check also makes is judged by the case only it
+  can see**, twice here: the entry's hash, shadowed by the chain, and the
+  chain, shadowed by the entry's place. Judged by two machines on one wire
+  (`experiment/os10_time.sh`, 557 lines, identical on two runs), by the
+  tests, 101 of them on Linux with none skipped, by 31 mutants of them and
+  44 of the grammars' rules, all convicted (`experiment/time_probe.sh`),
+  and by the scene itself: five bugs put back one at a time in a scratch
+  copy -- the witness that fails, the public hash, the cached clock, an
+  authority that says it answers with no clock, an answer whose signature is
+  not checked -- and the scene fails on a line of the section that names
+  each (`experiment/time_scene_probe.sh`). `harb journal`, the record's
+  witness, says in those words that a machine with no `TIME_FROM` has a
+  record that is ORDERED and UNDATED (ruling 07, item 4), from its second
+  boot on: the first prints "no record yet" and stops. A machine that keeps
+  a record and runs no witness, `makeen_box`, says nothing of time. The
+  emulator's clock is a fixed base that runs with the virtual machine: a
+  board's is OS-5's to show. A server's own boot never ends, so a script that
+  boots one waits for its LAST WORDS and not for the image script's timeout.
 - **A witness asked from inside the world finds what the declaration and
   the machine's own word cannot** (OWN-2): `harb own` is run AS the
   identity a world was given, and asks the kernel what it may write -- its
@@ -1125,20 +1217,30 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   `experiment/os8_links.sh`, three machines on two wires, where a till
   reaches RingServ on the core link through the box, pinned at 148 lines.
   It is reached over plain HTTP, between members of one cloud, behind a
-  front that is not built. Next, in the ladder's order and not yet
-  ordered by the author: rung 3, TIME (attested, ruling 07) and then the
-  front (TLS at a proxy, as ruled). The Enterprise page's cloud sentence
-  stays by his word: the ladder makes it true, and CLOUD.md's status
-  lines are where the distance is read.
+  front that is not built. **Rung 3's time half is built (TIME-1)**: a
+  fleet's one time authority signs that an entry of a record existed no
+  later than a time it read from its clock, the asking machine keeps that
+  beside its record, and `experiment/os10_time.sh` boots an authority and
+  a till on one wire (557 lines). Next, in the ladder's order and by the
+  delegation of 2026-10-05 (STZ-OS-RULING-16): the front (TLS at a proxy,
+  as ruled), which needs a port below 1024 or another declared. The
+  Enterprise page's cloud sentence stays by his word: the ladder makes it
+  true, and CLOUD.md's status lines are where the distance is read.
 - **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
   attempt: behind `HARB_CC=zigcc` the kernel builds with `make CC="zig
   cc"` and the image does NOT boot (it dies in the 16-bit setup code).
   gcc stays; the instrument and its six probes are kept.
-- **Open seams, none blocking.** A trusted CLOCK (the journal carries no
-  timestamp because the board has no clock, and a box with `EGRESS none`
-  cannot ask the network -- where the trust comes from was the author's
-  ruling -- ruled 2026-09-27, STZ-OS-RULING-07: attested by a declared
-  time authority, never assumed; the seat is not built). ~~REVOCATION in
+- **Open seams, none blocking.** ~~A trusted CLOCK~~ -- built as an
+  attested one (TIME-1, STZ-OS-RULING-07): the journal still carries no
+  timestamp, and a fleet's one time authority signs that an entry existed
+  no later than a time it read from its own clock. What remains: authenticated
+  network time (NTS) as a source, which a box with `EGRESS none` would need
+  from a member of its fleet; a fleet with several authorities; a lower
+  bound; the clock of a real board (OS-5), where the emulator hands the
+  authority a fixed base that runs with the virtual machine; PID 1 waiting
+  up to six seconds, once, after the verdict, for an answer; and an
+  authority that answers any datagram that asks, with no limit.
+  ~~REVOCATION in
   a fleet~~ -- built as RETIREMENT (RET-1);
   what remains is retiring the RECORDS a retired card signed. Hardware
   DECLARED but never observed (in the OS-5 plan, step 4). ~~Forwarding
@@ -1164,7 +1266,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   retirement's three choices, the MIRROR (a private release, restored
   and verified), the LICENCE (MIT, the estate's), EGRESS (everywhere has
   one spelling), the CLOCK (time is attested, never assumed -- the seat
-  is not built), and chapter 07 ratified. What still waits on him, and
+  is built, TIME-1), and chapter 07 ratified. What still waits on him, and
   why no delegation reaches it: ~~one word for 06 -- X or A~~ **ruled A
   by the author, 2026-09-27**, and ~~ratifying 06~~ **ratified by him as
   drafted** the same day, and **08 ratified by him** too. The ZQL -> Z
@@ -1178,7 +1280,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

@@ -36,8 +36,11 @@
 // No timestamp, deliberately. The board has no clock of its own and
 // nothing on the boot path sets one, so a time in this file would be
 // the epoch wearing the authority of a date. The SEQUENCE is the order.
-// A trusted clock is a named seam, and the day one exists the field can
-// be added to the end of the payload without moving anything.
+// A time reaches a record from outside it (TIME-1): an authority the
+// fleet declares signs that an entry existed no later than a time it
+// read from a clock it has, and the statement is kept BESIDE the record,
+// never in it -- so an entry's bytes, its hash and its signature are the
+// same whether or not anybody ever dated it.
 
 const std = @import("std");
 const Ed25519 = std.crypto.sign.Ed25519;
@@ -81,9 +84,21 @@ fn field(line: []const u8, name: []const u8) ?[]const u8 {
     return null;
 }
 
+/// Whether these bytes are the payload of the entry at place `n` (1-based): the shape this file writes,
+/// `seq=<n> prev=<...> machine=... declaration=... verdict=...`. A signature is over BYTES, and a device's key
+/// signs others than an entry's (a time authority's statements, whose text a caller chooses in part), so a
+/// verifier that accepted whatever was signed would take a statement dressed with a hash and a `prev` for a
+/// line of the device's own record.
+pub fn entryShaped(payload: []const u8, n: usize) bool {
+    var head: [40]u8 = undefined;
+    const want = std.fmt.bufPrint(&head, "seq={d} prev=", .{n}) catch return false;
+    return std.mem.startsWith(u8, payload, want);
+}
+
 /// Walk the chain and say where it breaks, if it does. Every entry owes
 /// three things: its own hash over its own bytes, a `prev` that is the
-/// entry before it, and a signature this device's public key accepts.
+/// entry before it, and a signature this device's public key accepts --
+/// and the bytes it signed must be an entry's.
 pub fn verify(text: []const u8, public: Ed25519.PublicKey) Check {
     var c = Check{};
     var it = std.mem.splitScalar(u8, text, '\n');
@@ -99,6 +114,11 @@ pub fn verify(text: []const u8, public: Ed25519.PublicKey) Check {
             return c;
         };
         const payload = line[0..cut];
+        if (!entryShaped(payload, n)) {
+            c.broken_at = n;
+            c.reason = "the entry is not the one this place holds (seq=<its place> prev=...): an entry was removed, reordered or replaced, or these are not an entry's bytes";
+            return c;
+        }
 
         const hash_field = field(line, "hash") orelse {
             c.broken_at = n;
@@ -114,7 +134,8 @@ pub fn verify(text: []const u8, public: Ed25519.PublicKey) Check {
             return c;
         }
 
-        const prev = field(line, "prev") orelse {
+        // (read from the payload the signature covers: a `prev=` written after the hash is nobody's word)
+        const prev = field(payload, "prev") orelse {
             c.broken_at = n;
             c.reason = "the entry carries no prev";
             return c;
@@ -186,6 +207,7 @@ pub fn firstSignedBy(text: []const u8, public: Ed25519.PublicKey) bool {
         const line = std.mem.trimRight(u8, raw, "\r");
         if (line.len == 0) continue;
         const cut = std.mem.indexOf(u8, line, " hash=") orelse return false;
+        if (!entryShaped(line[0..cut], 1)) return false;
         const sig_field = field(line, "sig") orelse return false;
         if (sig_field.len != 128) return false;
         var sig_bytes: [64]u8 = undefined;

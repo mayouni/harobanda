@@ -1,3 +1,269 @@
+# TIME-1 — a record is dated by somebody else's word, or says it is undated
+
+The floor has no date. The board has no clock of its own and nothing on the
+boot path sets one, so a time the machine wrote into its own journal would be
+the epoch wearing the authority of a date, and JRN-1 left the journal without
+one on purpose. STZ-OS-RULING-07 (2026-09-27) decided where the trust in time
+comes from: a time is ATTESTED, by an authority the fleet declares and enrols
+like any member, and a machine with no source says its records are ORDERED and
+UNDATED, in those words. STZ-OS-RULING-16 (2026-10-05) put it first on rung 3,
+because a certificate is a dated claim and the floor has no date. This is the
+seat, built, and what judged it.
+
+## What was built
+
+- **The statement** (`src/timeattest.zig`): `time authority=<fp> entry=<digest>
+  t=<seconds> sig=<sig>`, Ed25519 over the exact bytes before ` sig=` -- the
+  entry whose digest is `<digest>` existed no later than `<seconds>`. An UPPER
+  bound: the authority was shown the digest, so the entry existed; nothing is
+  said of how long before. **`<digest>` is the sha256 of the entry's whole
+  written line, signature and all** (`entryDigest`), and the chain says the rest:
+  every entry's hash covers the one before it. It is one spelling to the byte:
+  lowercase hex, a time of digits with no sign, no separator and no leading zero,
+  no more than one line end, a time the calendar can hold (`max_t`), and one the
+  clock cannot have been set before (`earliest`: the authority will not sign it
+  and an auditor will not take it). A bound is printed rounded UP to the minute.
+- **The grammar**: `CLOCK`, `TIME_FROM` and `TIME_KEY` on a MACHINE,
+  `TIME_AUTHORITY` on a NETWORK and on a FLEET. The machine court went from 173
+  to 213 cases (A36-A43, R139-R170) and the fleet court from 60 to 71 (FA12,
+  FR50-FR59). A clock is a real-time clock (`/dev/rtc`, `/dev/rtcN`), not any
+  device; an endpoint is spelled one way; a question needs a way there (on a
+  link's own prefix, a gateway, an EGRESS destination with a gateway to
+  carry it, or a lease). The fleet
+  court judges what no machine can: the one authority is a member, is enrolled,
+  answers on a link; every machine that asks asks THAT address and port, takes
+  THAT key's word (FR58), and has a way there (FR59).
+- **The acts** (`src/timeserve.zig`, `src/init.zig`): the authority is PID 1
+  forking a loop that reads the RTC at every question (`/dev/rtc0`, one ioctl)
+  and answers `time? entry=<64 hex>` over UDP -- nothing it cannot stand behind:
+  a clock that will not answer, or reads a time before 2026, is silence, never a
+  time made up (`respond`). The responder is given nothing of PID 1's but its
+  stdio and its socket (`closeInherited`), and its line is said only once it
+  exists. The asker is PID 1, after it has written the journal's entry: three
+  tries, two seconds apiece, and the answer is kept in `<journal>.time` only if
+  `TIME_KEY` verifies it AND it names the entry asked (`keep` ends a file a power
+  cut left without a last newline, so the next statement is not run onto the cut
+  one). Said on the console and never in the ledger, so an authority that is down
+  holds no trial back.
+- **The auditor** (`src/timeaudit.zig`, `harb time verify <fleet> <statements>
+  [<record>]`): checks a statement with the fleet's key alone and binds it to a
+  record by recomputing each entry's digest. An entry is bounded by the EARLIEST
+  statement at or after it; an entry after the last is ORDERED and UNDATED. A
+  statement about an entry the record does not hold is refused: a record cut at
+  its end still hashes and chains, and the statement about the entry that was cut
+  is the only thing that says it used to be longer. It exits 1 on a statement that
+  does not verify, on one that is not about the record, and on a file with no
+  statement at all (a verification of nothing is not one). One reading, two
+  callers: `harb journal` runs it from inside the machine with the key it was
+  declared to take -- and REPORTS, never fails on, a kept statement that does not
+  verify, because that witness is a service whose exit gates the trial's commit
+  and time is advisory. For a machine that declares no `TIME_FROM` it says that its
+  record is ORDERED and UNDATED (ruling 07, item 4) -- from the machine's second
+  boot on, because the first prints "no record yet" and stops, and only for a machine
+  that runs this witness: `makeen_box` keeps a record and runs none, and says nothing
+  of time. (`qemu_identity.expected` and `fleet_temoin.expected` each gained that one
+  line, read as a diff before it was pinned, and both boots were re-run against the
+  re-pins.)
+- **The journal's verifier** (`src/journal.zig`): an entry is the shape the file
+  writes (`seq=<its place> prev=...`), and nothing else a device's key signed is one.
+- **The scene** (`machines/time_clockbox.machine`, `machines/time_till.machine`,
+  `machines/time_cloud.fleet`, `experiment/os10_time.sh`): see below.
+
+## What judges it
+
+- **The pinned scene, 557 lines, identical on two runs** (`machines/time.expected`):
+  the authority booted alone makes its key and publishes it, and enrolment is
+  somebody reading a line and writing it down, into COPIES of the fleet and of the
+  till's declaration; then the till is booted three times with the authority on the
+  wire (each boot's record is dated by a statement kept beside it, and the witness
+  from inside says so), twice with the authority gone (what it had said stays said,
+  the entries after it are `ORDERED and UNDATED`, no date made up), once answered by an
+  IMPOSTOR -- a different machine on the authority's address, with a perfectly good
+  signature of its own, refused at the door -- and once with a statement the power cut
+  short on its disk, which the witness says is not a statement and does not fail on.
+  Then two authorities that cannot keep what they declare, one whose clock will not
+  answer and one with no link to answer on: each says so, does NOT say it answers, and
+  so differs from what it expects. The disk, read back from the DISK (`debugfs`, after
+  the journal is replayed on a copy), holds the three statements the authority gave,
+  byte for byte, and none of the impostor's.
+- **what the host can say with the fleet file and no secret**: the till's record
+  dated (the authority's key) and attributed (the device's key, `harb fleet ...
+  verify`) -- two questions, two keys; the record after the authority went away,
+  mixed, with entry 4 undated; and six audits that must fail: a statement a second
+  late, a fleet that takes its time from another machine, an entry taken out, the
+  record cut at its end, nothing to verify, a fleet that takes its time from nobody.
+- **the clock the statements read** is the emulator's: `-rtc base=2026-10-05T12:00:00,
+  clock=vm`, a fixed point that runs with the virtual machine. The pin cannot hold a
+  minute that depends on how fast an emulator booted (BDG-1), so the times are
+  normalised and the script ASSERTS what the pin cannot: the first statement is no
+  earlier than the base, each is LATER than the one before (a responder that kept its
+  boot's reading states one second three times), all within half an hour.
+- **the scene is itself probed** (`experiment/time_scene_probe.sh`, 23 minutes): in a
+  scratch copy of the sources, five bugs the seat had or a review named are put back one
+  at a time, the machine is built from each, the WHOLE scene is run, and it must fail on a
+  line of the section the bug changes. **s1**, a witness that exits 1 on a kept statement
+  that does not verify: the cut boot's `record (pid N) exited 0` is gone. **s2**, an asker
+  that asks about the entry's public `hash=`: the `dated:` audit says every statement is
+  about an entry the record does not hold. **s3**, a responder that keeps the clock it read
+  at its first question: the `clock:` line says `no`. **s4**, an authority whose clock will
+  not answer that says it answers: the `deadclock:` boot says it. **s5**, an asker that does
+  not check the signature of the answer it keeps: the `disk:` line says the impostor's
+  answer was kept. The unmutated copy matches the pin first, because a mutant convicted by
+  a scene that was red already is no conviction. (Until a second review asked for it, "the
+  scene convicts three put-back bugs" was a hand experiment that nobody could repeat.)
+- **the unit tests**, on Linux with none skipped (`experiment/linux_test.sh`: 101
+  tests): the statement and every way to damage or respell one, the calendar, the
+  audit (and what cannot be bought in advance), the journal's shape, the RTC, the
+  answer to one datagram, the cut line, the sweep (a forked child asked what it holds),
+  and a wire test that asks a real socket and is answered by the authority, by an
+  impostor, by the authority about ANOTHER entry, by the authority's own answer with
+  twenty line ends after it, and by nobody.
+- **the probe** (`experiment/time_probe.sh`): 31 mutants of those tests and 44 of the
+  grammars' time rules (33 machine, 11 fleet), each in a scratch copy, each convicted by
+  the case named for it. Its runs found: the machine court judged no boundary of a port
+  and no `..` in a device path (A38-A40, R159-R162); the record test altered only a
+  non-final entry, so every test passed with the entry's own hash check removed; and,
+  after the review's fixes, the same thing twice more -- the chain check, shadowed by the
+  entry's place, and the responder's made-up-time mutant, made equivalent by `sign`
+  refusing zero -- each closed by the case only that check can fail. Mutants that did not compile
+  convict nothing and were rewritten (Zig will not discard an error set, and an unused
+  capture or parameter is an error). Two court mutants are convicted by a CRASH of the
+  court on the case: the refusal they removed is what stands between a bad declaration
+  and an integer cast or an unwrapped null. Its first production run on the widened
+  machine court also found FR59 refused for the wrong reason: the machine court now
+  refuses an asker with no way there before the fleet can say no route joins its link.
+- **every other pinned boot is byte-identical**: the regression of all fourteen pinned
+  scenes against the final binary -- except the two that carry the new `harb journal`
+  line.
+
+## What it found
+
+An independent read-only review, after every gate was green, found these. Each was
+checked against the code before it was acted on, and each fix has the case that now
+convicts it.
+
+- **A time could be bought for an entry before the device wrote it** (HIGH, design). The
+  entry's `hash=` is a hash of public bytes, and the question carries the hash before it
+  in the clear, so anybody could compute the next entry's hash, ask the authority its
+  time, and hold a genuine signature; and two devices running one machine file share one
+  `hash=` chain, so one's statements bound to the other's record. A statement now names
+  the digest of the whole written line. With the old behaviour put back the scene fails
+  and says why.
+- **A genuine answer with twenty line ends after it panicked PID 1** (MEDIUM). `parse`
+  trimmed any number of line ends, the datagram was longer than the buffer a statement is
+  kept in, and the copy was out of bounds in the process that reads the wire. One line end
+  at most, the kept line is the trimmed one, and a wire test sends exactly that.
+- **The responder inherited the hardware watchdog** (MEDIUM, latent): a fork that is never
+  exec'd keeps what close-on-exec exists to drop. It is given nothing but stdio and its
+  socket, asked of the kernel by a test that forks. (No machine can be both A/B-slotted and
+  an authority today, so no boot could ever have shown it.)
+- **A statement was a valid journal entry of the authority's own record** (MEDIUM-LOW): the
+  same key signs both, and a caller chooses part of a statement's text. The journal's
+  verifier and the auditor take only the shape the file writes.
+- **Two spellings of one statement verified** (`+N`, `000N`, `1_000`), against the claim
+  that the signature is over the bytes on the line. One spelling, checked over the line.
+- **A fork that failed announced a promise it could not keep**: the line was said before the
+  fork, so the boot matched its expectation and committed with no authority. It is said after.
+- **Claims no boot, pin or mutant showed**: that the clock is read at every question
+  (now asserted, and convicted); that an authority says it answers only if the hardware
+  answered (two boots in the scene); that a `TIME_FROM` on an edge machine is refused (R165);
+  the clock being any node under `/dev` (`/dev/watchdog` passed, R164); a question to an
+  address a machine has no way to (R168, R169; accepts A41-A43); an endpoint with several
+  spellings (R166, R167); an auditor that took any time its key signed (a floor and a
+  ceiling now); a rehearsal that started a responder on somebody's host. And the docs: a
+  probe "that convicts every mutant" meant the ones it tries, and now says so.
+
+One finding was this author's own mutant, put in the tree on purpose to see the scene
+convict it, and left there at the moment of reading.
+
+A second independent read-only review, of the tree with those fixes, found these; again
+each was checked against the code before it was acted on.
+
+- **A way there that nothing writes** (MEDIUM). An EGRESS list that covers the
+  authority's address counted as a way even on a link with no GATEWAY, and PID 1
+  writes a route to another network only through a gateway (`netcfg.zig`): a till so
+  declared was accepted by the court and could never ask. A destination is a way only
+  where a gateway carries it (R170; mutant c33), and the refusal's words now say so.
+- **A clock that went backwards was said in one order of the file only** (LOW). The
+  auditor noticed a later entry dated earlier than an earlier one only when the
+  statement about the earlier entry came first in the file; the two orders are one
+  claim and are both said now (mutants u30 and u31, and a test with the file reordered).
+- **Words that said more than the code.** Item 4 of ruling 07 (a machine with no source
+  says its records are ORDERED and UNDATED) held for a machine that runs the record's
+  witness, from its second boot on, and for no other: the documents now say who says it.
+  "No front and no clock" ignored the emulator's. A witness that gates a commit still
+  failed when the file of kept statements could not be read, or the declared key was no
+  key, where the rest of its time reading only reports. And the seat's own comments,
+  messages and documents still said `head` where a statement names an entry's digest.
+- **A scene that did not check its builds.** Its three image builds did not read whether
+  they had succeeded before using what they left, so a failed build could have left the
+  last run's image to be mistaken for this one's; each is removed first and its status
+  read now (NAM-2).
+
+## Named, not closed
+
+- **NTS is not built.** Ruling 07 names two sources for an authority: a battery-backed
+  clock declared as hardware, and authenticated network time through a declared
+  EGRESS. Only the first exists; a box with `EGRESS none` needs a member of its
+  fleet that has a clock, which is built, and a clock of its own, which is a purchase.
+- **One authority, and an upper bound.** A fleet has one; a statement says no later
+  than and never how long before; and an authority that signs a time earlier than the
+  real one makes false statements over true signatures -- that is the trust a fleet
+  places in the member it names, and the court cannot judge a clock.
+- **The holder of the device's key** can compute its own future lines and ask their time
+  early: a statement dates bytes, and the device's signature on them says whose they are.
+  Closing it takes a challenge the authority issues and the entry carries, which changes
+  the journal's format and is not built.
+- **An authority's key cannot be replaced.** A rebuilt card makes a new key, and the
+  statements the old key signed are not taken by a fleet that no longer enrols it;
+  there is no retirement for an authority as there is for a device (RET-1). The witness
+  says so of each of them and does not fail on them; `harb time verify` with the old
+  fleet file is how they are audited.
+- **The authority answers anyone who asks, as often as they ask, from a process that is
+  not confined.** It signs a digest nobody has to have written (that is what a time-stamp
+  is: the existence of bytes, never their authorship), costs a signature per datagram, and
+  answers a 76-byte question with about 250. It holds the device's key and parses one datagram
+  format, in a child of PID 1 given only stdio and its socket. There is no limit, no
+  filter and no namespace.
+- **PID 1 waits up to six seconds, once, after the verdict.** The feed of the watchdog and
+  the health checks resume afterwards.
+- **The emulator's clock is a fixed base.** What a board's battery keeps is OS-5's to
+  show. (The base is a day in the past: it is the host's own clock being outside the half
+  hour the statements are held to that tells an RTC read from a clock that was not.)
+- **The tour does not teach it**, and `stranger_walk.sh` does not boot the scene: it
+  needs two machines on a wire and the enrolment by hand.
+
+## The law this pays for
+
+**Name what nobody can compute in advance.** A time-stamp proves a value existed. The
+journal's own hash was the obvious value and it is made of public things, so an
+authority asked about it dated a future the device had not yet written. The digest of
+the line the device SIGNED cannot be asked for until the line exists.
+
+**A check that another check also makes is judged by the case only it can see**, and it
+happens again each time a neighbour is added: the record's hash check was invisible to
+every test that altered an entry with another after it; and once the entry's place was
+checked, the chain check was invisible to every cut. A guard shadowed by a neighbour
+reports green while doing nothing, and a mutant of it survives until somebody writes the
+case that only it can fail.
+
+**A witness that gates a commit does not fail on what is advisory.** The first
+`harb journal` exited 1 on a kept statement that did not verify, and that service decides
+whether a trial commits: a line a power cut shortened, or a statement signed under a key
+since replaced, would have held back every later boot, for a seat whose whole contract is
+that an authority that is down costs the machine nothing.
+
+**What a process reads off the wire must not be able to take it down.** PID 1 asks, and
+`parseInt`'s leniency was a panic of PID 1 waiting for a datagram with line ends on it.
+
+**A judge you have never seen convict is a claim, and so is a conviction nobody can
+repeat.** The scene's pin was said to catch three put-back bugs, from an experiment done
+by hand and gone with the afternoon. A second review asked where the script was. It is
+five mutants now, each run through the whole scene in a copy of the tree, and it runs in
+twenty-three minutes.
+
+---
+
 # OWN-2 — a world asks the kernel what it may write, and the machine's root was open
 
 OWN-1 gave a world a directory and said so. Everything it showed that a

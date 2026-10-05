@@ -86,7 +86,7 @@ file says where it runs, and the court says whether the two agree.
 | a server world | worlds serve and signal (SRV-1) but stand in for the real ones | the Commons, RingServ or stzAppServer as a declared `SERVICE` reading `/etc/machine` |
 | machines reaching each other | **built (FWD-1):** `FORWARD` on a machine, `LINKS` and `ROUTE` in the fleet, names across the links a box is the way between; two links, one forwarder, plain HTTP | a chain of forwarders (transit), a way that is one-way (needs the packet filter of rung 6), a forwarder's own hardware addresses |
 | a front | TLS is ruled to a proxy in front; no clause | a front pack: the names it fronts, its key on a declared mount |
-| time | the journal carries no timestamp; ruling 07: attested, never assumed | a `TIME` clause naming a declared authority; the journal carrying attested time |
+| time | **built (TIME-1), in the emulator:** a fleet's one time authority signs that an entry of a record existed no later than a time it read from a clock it has; the asking machine keeps the statement beside its record; ruling 07: attested, never assumed | a board's real clock (OS-5), authenticated network time as a source (NTS), a lower bound |
 | rollout | an A/B trial per box, self-judged | waves over the set, and the set's own commit |
 | reach per world | `EGRESS` writes routes; worlds with `network` share them | per-world egress, and the packet filter |
 | one record | each journal signed; `harb fleet attribute` | a witness world that collects and verifies every member's journal, holding no secret |
@@ -177,8 +177,48 @@ asset on a declared mount like `IDENTITY`, fronting the names the
 fleet declares. *Judge:* a request from outside the front link reaches
 the Commons through the front and nothing else, and the journal's time
 is the authority's. *Buys:* a solution reachable from the internet
-with a declared surface. *Status:* not built; TLS stays out of the
-floor by ruling.
+with a declared surface. *Status:* the time half is BUILT (TIME-1,
+2026-10-05), in the emulator, with its limits named below; the front is
+not built, and TLS stays out of the floor by ruling.
+
+*The time half, as built.* `CLOCK` on a machine names the clock it HAS (a
+device), `TIME_AUTHORITY` on one of its links makes it that link's time
+authority, and the fleet's own `TIME_AUTHORITY` names the one member whose
+word dates its records, enrolled like any member. A machine with a journal
+asks (`TIME_FROM`, `TIME_KEY`) once it has written an entry, and keeps the
+answer beside the record only if it is the authority's signed word about
+THAT entry. What a statement says is an upper bound -- the entry whose
+digest is D existed no later than T, and what every entry before it says
+with it -- and D is the digest of the entry's whole written line, signature
+and all: the entry's own hash is a hash of public bytes, which anybody could
+have computed, and asked the time of, before the device had written it. The
+entries after the last statement are ORDERED and UNDATED, in those words.
+`harb time verify` checks a statement and binds it to a record with the
+fleet file alone, and `harb journal` says the same from inside the machine
+(for a machine that asks nobody, from its second boot on, that its record
+is ORDERED and UNDATED), reporting a kept statement that does not verify
+without failing on it.
+*Judged* by `experiment/os10_time.sh`: an authority and a till on one wire,
+pinned at 557 lines and identical on two runs -- three boots dated, two
+with the authority gone (the dated entries stay dated and the later ones
+are undated, with no date made up for them), an impostor with a good
+signature of its own refused at the door and absent from the disk read
+back, a line the power cut short that the witness reports and survives, an
+authority whose clock will not answer and one with no link to answer on
+(each says so and does not say it answers), and six audits that must fail;
+by the unit tests and a probe that convicts each of the 31 mutants it
+tries of them and the 44 it tries of the grammars' time rules
+(`experiment/time_probe.sh`), and by a second probe that puts five bugs
+back into what PID 1 does with a time, one at a time in a scratch copy,
+and requires the scene to fail on a line of the section that names each
+(`experiment/time_scene_probe.sh`). *Not built:* authenticated network time (NTS)
+as a source, so an authority stands on a declared clock and on nothing else;
+a fleet with more than one authority; a lower bound (a statement says no
+later than, never how long before); an authority's key that is replaced
+(the statements the old key signed are not taken by a fleet that no longer
+enrols it); a limit on how often the authority answers, or a confinement of
+the process that does; and a board's real clock, which is OS-5's to show --
+the emulator's clock is a fixed base that runs with the virtual machine.
 
 **Rung 4 -- an image a provider's machine boots.** An EFI stub or a
 boot loader, the two slots on a disk, a `BOARD` for a generic virtio
@@ -286,9 +326,12 @@ ladder makes the same act.
   machines (PLC-1 and SRV-2, then FWD-1, 2026-10-04: the pack file,
   `harb place`, RingServ placed and booted; `FORWARD`, fleet v0.2 and a
   till reaching it across two links), and for no customer's: the
-  Commons is not placed, and RingServ is the stand-in. No other rung is
-  built. Today there is no front and no clock, a placed server is reached
-  over plain HTTP from the links of its own cloud and from nowhere else,
+  Commons is not placed, and RingServ is the stand-in. Rung 3's time half
+  is built too (TIME-1, 2026-10-05), in the emulator, where the clock is a
+  fixed base that runs with the virtual machine; no other rung is built.
+  Today there is no front and no board's clock has been read, a placed
+  server is reached over plain HTTP from the links of its own cloud and
+  from nowhere else,
   a route is a way both ways, and the packet filter that would say
   otherwise does not exist.
 - `site/enterprise.html` says *"the same declared machine can run the
@@ -302,7 +345,12 @@ ladder makes the same act.
   charter.
 - Rungs 2 and 5 are judged in the emulator, like everything here
   until OS-5; the clock (rung 3) is where the emulator cannot stand in
-  for the world, because the authority it attests must be real.
+  for the world, because the authority it attests must be real. The time
+  half of rung 3 is built and judged all the same, against a clock the
+  emulator hands the authority (a fixed base that runs with the virtual
+  machine), and says so: what is shown is the mechanism, that a statement
+  is an authority's word, bound to one record, checked with a public key.
+  That the clock on a board keeps time is the first board's to show.
 
 ## 9. The first rung, in one session
 

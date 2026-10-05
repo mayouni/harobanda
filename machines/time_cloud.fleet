@@ -1,0 +1,31 @@
+-- time_cloud.fleet -- a fleet that takes the time from one member it enrols (TIME-1, STZ-OS-RULING-07).
+--
+-- A fleet's machines keep records that are ORDERED and UNDATED, and a fleet that wants dates names the one
+-- member whose word about the time it takes: TIME_AUTHORITY. That member is enrolled like every other (its
+-- KEY is the public half of the key it signs with), so what it signs is checked with a public key by anyone who
+-- holds this file and no secret. The court judges what no machine can: that the authority's machine answers,
+-- that the device that asks asks THAT address and port, takes THAT key's word, and has a way there (FR50-FR59).
+--
+-- KEY below is a placeholder, because a device makes its own key on its first boot and a file in a repository
+-- cannot know it. experiment/os10_time.sh boots the authority, reads the public half it publishes and writes it
+-- in a COPY of this file and of machines/time_till.machine -- which is what enrolment is.
+--
+-- HARDWARE says which physical unit each member is. Nothing on this wire serves addresses, so no register is
+-- held against it; two machines on one wire need two different ones, and that is a fact about a deployment,
+-- which belongs in a declaration and never in a script (HDW-1).
+
+DEFINE FLEET nuage AS (
+  LINK lan,
+  TIME_AUTHORITY clockbox
+) RATIONALE "Two machines on one wire that take the time of their records from the one that has a clock, and from nobody else"
+
+DEFINE MEMBER clockbox AS (
+  DECLARATION "time_clockbox.machine",
+  KEY "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  HARDWARE "52:54:00:12:36:01"
+) RATIONALE "The time authority: the machine with the clock, enrolled so that what it signs can be checked"
+
+DEFINE MEMBER till AS (
+  DECLARATION "time_till.machine",
+  HARDWARE "52:54:00:12:36:02"
+) RATIONALE "The device that asks how late its record can be"

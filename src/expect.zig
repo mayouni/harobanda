@@ -141,6 +141,26 @@ pub fn stateLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// What a machine that answers the time says it does (TIME-1): which link, on which port, and what it
+/// stands on. Worded ONCE here, like every judged line -- init prints it once the clock has answered and the
+/// socket is bound, a line that says where the machine is being said only after asking (CON-1), and derive()
+/// writes it. A machine that answers no time says nothing, and its transcript is what it always was.
+pub fn timeLines(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    const clock = m.clock orelse return false;
+    var any = false;
+    for (m.networks) |n| {
+        const port = n.time_authority orelse continue;
+        const at = switch (n.address) {
+            .static => |s| s,
+            .dhcp => continue,
+        };
+        var ib: [16]u8 = undefined;
+        try w.print("boot: time -- {s} answers on {s}:{d}: an entry it is asked about, signed with this device's key and the time {s} reads; the floor keeps no time of its own\n", .{ n.name, fmtIp(&ib, at.ip), port, clock });
+        any = true;
+    }
+    return any;
+}
+
 /// This device's own name, said once. The FINGERPRINT is the one thing
 /// a declaration cannot know -- it is made on the device, from the
 /// device's own randomness, and a machine that could derive it from its
@@ -436,6 +456,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
         .off => try w.writeAll(fmt_watchdog_off),
     };
     _ = try identityLine(w, m);
+    _ = try timeLines(w, m);
     _ = try budgetLine(w, m);
     _ = try healthLine(w, m);
     _ = try confineLine(w, m);

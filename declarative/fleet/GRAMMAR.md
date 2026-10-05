@@ -28,6 +28,7 @@ declares a `FLEET` is refused by name, and a fleet file that declares a
 |---|---|---|
 | `LINK` | ident | optional — the wire these machines share. Within one fleet, every member's `NETWORK` of this name is the same physical link, which is what makes the address checks mean anything. Without it a fleet is an estate and not a network, and only the identity checks apply |
 | `LINKS` | name list | optional (fleet v0.2, FWD-1) — several wires, where `LINK` names one: a `NETWORK` of any of these names, on any member, is that wire, and every per-link check below is made on each. `LINK x` and `LINKS [x]` mean one thing, and a fleet says it once (FR27); an empty list is not a declaration (FR28), and a link named twice is refused (FR29). A fleet that declares neither judges only the identity checks |
+| `TIME_AUTHORITY` | ident | optional (TIME-1, STZ-OS-RULING-07) — the ONE member whose word about the time this fleet takes: a member of this fleet (FR50), enrolled (FR51), whose machine answers the time on a link (FR52). A member that answers the time in a fleet that names no authority is refused (FR53), and so are two that answer (FR54). A fleet that declares none has records that are ORDERED and UNDATED, which is true, and refuses a member that asks somebody for the time (FR55) |
 
 ### DEFINE MEMBER — one machine of the set
 
@@ -193,6 +194,16 @@ checks the members it has, and says nothing about the rest of the wire.
 | FR47 | a member whose `EGRESS` touches nothing on another link the route joins to its own |
 | FR48 | a route to a declared link that no route joins to the member's own: a route to nowhere |
 | FR49 | two declared links whose prefixes share addresses |
+| FR50 | a `TIME_AUTHORITY` that names nobody in the fleet |
+| FR51 | **a time authority that is not enrolled**: a statement nobody can check against a key is a claim and not a time |
+| FR52 | a time authority whose machine answers on no link: it cannot answer |
+| FR53 | a member that answers the time, in a fleet that never named an authority: a statement from a member nobody was declared to trust |
+| FR54 | two members that answer the time: a record would be dated by whoever the asker happened to reach |
+| FR55 | a member that asks for the time of its record, in a fleet with no authority: a question nobody was declared to answer |
+| FR56 | a member that asks an address the authority does not answer on: it would ask somebody who is not the authority |
+| FR57 | ... or a port it does not answer on |
+| FR58 | **a member whose `TIME_KEY` is not the authority's enrolled key**: it would believe another's answer |
+| FR59 | a member that asks the authority from a link the authority's is not joined to: a question with no way there |
 
 ## Attribution: one machine verifying another's record
 
@@ -278,8 +289,65 @@ stolen: fleet atelier -- 1 entry from there on verifies under
     signed after it was retired
 ```
 
+## Time: one member's word, checked with a public key (TIME-1)
+
+The floor has no date: a machine's journal is ORDERED and UNDATED, and a
+time it wrote itself would be the epoch wearing a date's authority. A
+fleet that wants dates names the one member whose word about the time it
+takes, `TIME_AUTHORITY`, and that member is enrolled like any other: what
+it signs is checked with its public key, holding no secret, by anyone who
+has this file (FLT-1). What the fleet court judges is what no machine can:
+that the authority answers, that every device that asks asks THAT address
+and port, takes THAT key's word, and has a way there (FR50-FR59). Each is a
+case where every machine in the fleet is faultless alone.
+
+```
+# what the authority said about a record, checked here
+harb time verify <file.fleet> <statements> [<record>]
+```
+
+A statement is `time authority=<fp> entry=<digest> t=<seconds> sig=<sig>`:
+the entry whose digest is `<digest>` existed no later than `<seconds>`.
+The digest is that of the entry's WHOLE written line, signature and all
+(not the entry's own `hash=`, which is a hash of public bytes that anybody
+could compute, and ask the time of, before the device had written the
+entry; and which two devices running one machine file share). It is an
+UPPER bound and says nothing of how long before; it dates that line and,
+by the chain, what every entry before it says, and an entry after the last
+statement is ORDERED and UNDATED. The verb recomputes each entry's digest
+from the record, so a statement about an entry the record does not hold is
+refused -- a record cut at its end still hashes and chains, and the
+statement about the entry that was cut is what says it used to be longer.
+Every field has one spelling (lowercase hex, a time of digits with no
+sign and no leading zero, one line end at most), a statement from before
+the clock was ever set is refused by whoever reads it, and the signature
+is checked over the bytes on the line. It exits 1 on a statement that does
+not verify, on one that is not about this record, and on a file with no
+statement at all: a verification of nothing is not one. Whose the record
+is stays `harb fleet <file> verify`'s question and takes the DEVICE's key:
+two questions, two keys, two verbs.
+
+`experiment/os10_time.sh` runs the arc on two machines on one wire, with
+the negatives that decide it (a statement changed, another authority, an
+entry removed, a record cut at its end, nothing to verify, a fleet that
+takes its time from nobody). `machines/time_cloud.fleet` is the fleet it
+runs, with a placeholder key: a device makes its key on its first boot and
+a file in a repository cannot know it, so the script enrols the authority
+into COPIES.
+
 ## Named seams (stated, not hidden)
 
+- **Time.** A fleet has ONE time authority, which stands on a clock it
+  declares and on nothing else (authenticated network time is not built);
+  a statement is an upper bound, never a lower one; and the authority
+  answers whoever asks on its link, so a statement dates an entry's bytes
+  and proves nothing about who wrote them -- that is the device's key
+  (FLT-1), and a holder of that key can compute its own future lines and ask
+  their time early. An authority's key that is replaced takes its statements
+  with it: a rebuilt card makes a new key, a fleet that no longer enrols the
+  old one refuses what it signed, and there is no retirement for an
+  authority as there is for a device (RET-1); audit the old statements with
+  the fleet file as it was.
 - ~~A machine cannot say its own hardware address.~~ **Closed (HDW-1)**
   by putting `HARDWARE` on the MEMBER rather than the machine. What is
   still open: a member's hardware is declared, never OBSERVED, so a

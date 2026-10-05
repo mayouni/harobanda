@@ -171,6 +171,21 @@
         ],
         "routes": 1
       }
+    },
+    {
+      "id": "FA12",
+      "name": "a fleet that takes the time from one enrolled member: it answers on a port, its machine has the clock and the key, and the device that asks takes its word",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan,\n  TIME_AUTHORITY clockbox\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.1:7000\", TIME_KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 2,
+        "link": "lan",
+        "routes": 0,
+        "time_authority": "clockbox"
+      }
     }
   ],
   "rejects": [
@@ -661,6 +676,105 @@
         "gw.machine": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"10.0.0.1/24\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.0.0.2/24\") RATIONALE \"x\"\n"
       },
       "refusal": "front is 10.0.0.0/24 and core is 10.0.0.0/24, and the two share addresses"
+    },
+    {
+      "id": "FR50",
+      "name": "the time authority is a machine of this fleet",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan,\n  TIME_AUTHORITY nobody\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.1:7000\", TIME_KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "no MEMBER nobody is declared"
+    },
+    {
+      "id": "FR51",
+      "name": "a statement nobody can check against a key is a claim and not a time: the authority is enrolled",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan,\n  TIME_AUTHORITY clockbox\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.1:7000\", TIME_KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "has no KEY"
+    },
+    {
+      "id": "FR52",
+      "name": "an authority whose machine answers on no link cannot answer",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan,\n  TIME_AUTHORITY clockbox\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.1:7000\", TIME_KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "declares no NETWORK with TIME_AUTHORITY"
+    },
+    {
+      "id": "FR53",
+      "name": "a member that answers the time, in a fleet that never named an authority, is a statement nobody was declared to trust",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n"
+      },
+      "refusal": "this fleet declares no TIME_AUTHORITY"
+    },
+    {
+      "id": "FR54",
+      "name": "a fleet has one time authority: a second that answers would date a record by whoever was reached",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan,\n  TIME_AUTHORITY clockbox\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER second AS (\n  DECLARATION \"second.machine\",\n  KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.1:7000\", TIME_KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+        "second.machine": "DEFINE MACHINE second AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.3/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n"
+      },
+      "refusal": "a fleet has one time authority"
+    },
+    {
+      "id": "FR55",
+      "name": "a question nobody was declared to answer",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.1:7000\", TIME_KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "declares no time authority"
+    },
+    {
+      "id": "FR56",
+      "name": "it would ask somebody who is not the authority: the address is the one the authority answers on",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan,\n  TIME_AUTHORITY clockbox\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.99:7000\", TIME_KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "it would ask somebody who is not the authority"
+    },
+    {
+      "id": "FR57",
+      "name": "and the port",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan,\n  TIME_AUTHORITY clockbox\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.1:7001\", TIME_KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "it would ask somebody who is not the authority"
+    },
+    {
+      "id": "FR58",
+      "name": "the word it takes is the authority's: a machine that holds another key would believe another's answer",
+      "source": "DEFINE FLEET nuage AS (\n  LINK lan,\n  TIME_AUTHORITY clockbox\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.1:7000\", TIME_KEY \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "the word it takes is not the authority's"
+    },
+    {
+      "id": "FR59",
+      "name": "a question with no way there: the asker is on a link the authority's is not joined to, however good a gateway it names",
+      "source": "DEFINE FLEET nuage AS (\n  LINKS [lan, side],\n  TIME_AUTHORITY clockbox\n) RATIONALE \"x\"\nDEFINE MEMBER clockbox AS (\n  DECLARATION \"clockbox.machine\",\n  KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"till.machine\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "clockbox.machine": "DEFINE MACHINE clockbox AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", CLOCK \"/dev/rtc0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", TIME_AUTHORITY 7000) RATIONALE \"x\"\n",
+        "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", JOURNAL \"/data/journal\", TIME_FROM \"10.30.0.1:7000\", TIME_KEY \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK side AS (INTERFACE \"eth0\", ADDRESS \"172.16.0.2/24\", GATEWAY \"172.16.0.1\") RATIONALE \"x\"\n"
+      },
+      "refusal": "a question with no way there"
     }
   ]
 }

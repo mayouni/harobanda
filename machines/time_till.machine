@@ -1,0 +1,68 @@
+-- time_till.machine -- a device with a record, asking its fleet's time authority how late that record can be (TIME-1).
+--
+-- Its journal is the floor's own record: one line per boot, chained and signed with this device's key, and
+-- ORDERED and UNDATED, because nothing on the floor can say what day it is. This machine asks. After it has
+-- written its record it sends the digest of the entry it has just written (the whole line, signature and all) to
+-- the authority it was declared to ask (TIME_FROM) and keeps what comes back beside the journal -- if, and only
+-- if, it is the authority's word (TIME_KEY) and it is about THAT entry. A datagram anybody on the wire sends in
+-- the authority's name is refused at the door; an authority that is down leaves the record ORDERED and
+-- UNDATED, which is true, and holds nothing back.
+--
+-- Two questions are asked of a record and they take two keys: WHOSE it is (this device's own, which it
+-- publishes here for a fleet to enrol -- FLT-1) and WHEN it can be no later than (the authority's, TIME_KEY).
+-- Neither answers the other: a record dated by the authority and signed by nobody is dated content, and a
+-- record signed by this device and never dated is an ordered one.
+--
+-- TIME_KEY below is the placeholder every machine file of this kind carries: a key a device makes on its
+-- own first boot is not a thing a design can state. experiment/os10_time.sh boots the authority, reads the
+-- public half it publishes, and writes it here and in the fleet's enrolment of the authority in COPIES, as
+-- enrolment always is -- somebody reading a line and writing it down (FLT-1). The two places that must agree
+-- are judged together by the fleet court (FR58), and agree here by being the same placeholder.
+
+DEFINE MACHINE time_till AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  IDENTITY "/data/device.key",
+  JOURNAL "/data/journal",
+  TIME_FROM "10.30.0.1:7000",
+  TIME_KEY "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+) RATIONALE "A device that keeps a signed record of its boots and asks its fleet's time authority how late each can be, taking nobody's word but the authority's"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The witness is a process"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The record is a file, and the partition it lives on is declared"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "The question goes over the link"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where the key and the record live: a partition that survives the power"
+
+DEFINE NETWORK lan AS (
+  INTERFACE "eth0",
+  ADDRESS "10.30.0.2/24"
+) RATIONALE "The link the authority is on, and a static address of its own"
+
+DEFINE SERVICE enrol AS (
+  RUN ["/harb", "attest", "--export"],
+  RESTART never,
+  NEEDS [process, filesystem]
+) RATIONALE "The device publishing who it is, so that a fleet can enrol it and say whose the record is: the authority dates a record and does not attribute it, and the two are checked with two different public keys"
+
+DEFINE SERVICE record AS (
+  RUN ["/harb", "journal", "--export"],
+  RESTART never,
+  AFTER [enrol],
+  NEEDS [process, filesystem]
+) RATIONALE "The record read back from inside the machine that wrote it, and what the authority has said about it, as this machine sees it -- and both published as the exact bytes, so that somebody who holds only the fleet file can check them"

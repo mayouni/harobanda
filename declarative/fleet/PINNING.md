@@ -5,10 +5,25 @@
 `fixtures.json` sha256:
 
 ```
-5920f74c1f0fd971179ae6addc856a15fd793034a12a9856221b6ba83cfb2e91
+247b8f5ed72517d878d1aba7a3c89f93485aa3f4e7378134837362e4508a417a
 ```
 
-(Before the ROUTE seat of 2026-10-04 (FWD-1, fleet v0.2):
+(FR59 moved within the same seat, before it was ever committed: its asker
+now names a GATEWAY, because the machine court refuses a question to an
+address a machine has no way to (R168), and an asker with no gateway was
+refused there, for the wrong reason, before the fleet could say that no
+ROUTE joins its link to the authority's. Found by the probe's first
+production run on the widened machine court.
+Before the time authority of 2026-10-05 (TIME-1):
+`5920f74c1f0fd971179ae6addc856a15fd793034a12a9856221b6ba83cfb2e91`,
+60/60; the widening added FA12 and FR50-FR59 -- a fleet takes the time
+from ONE member it enrolls, whose machine answers on a port from a clock
+it has (FR50-FR54), and every member that asks takes that member's word:
+the address and port it answers on (FR56, FR57), the key it is enrolled
+as (FR58), and a way there (FR59); a question nobody was declared to
+answer is refused (FR55). Each is a case where every machine in the fleet
+is faultless alone.
+Before the ROUTE seat of 2026-10-04 (FWD-1, fleet v0.2):
 `9c5e200f0167bdbb61cf0894580fe919f56b13398ceac0c45535b75576c3ac6b`,
 32/32; the widening added FA7-FA11 and FR27-FR49, gave the fleet its
 fourth kind and `FLEET` its `LINKS`, and took FA7 verbatim from the real
@@ -29,7 +44,7 @@ grammar's own `PINNING.md` requires of itself.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **60/60** — 11 accepts, 49 rejects (32/32 before ROUTE; the first run of the widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
+| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **71/71** — 12 accepts, 59 rejects (32/32 before ROUTE; the first run of the widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
 
 `zig build court` runs BOTH grammars: the machine fixtures first, the
 fleet fixtures after. One step, two courts, because a fleet is no better

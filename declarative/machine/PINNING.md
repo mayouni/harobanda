@@ -5,10 +5,36 @@
 `fixtures.json` sha256:
 
 ```
-02a61b456054e9c49c100da002e628597cd940a70687a738e3035b2b21c71829
+d997ac95d938759201218c0de6a9b926cd5d419a8afb3982d52e469cf065e77d
 ```
 
-(Before the STATE seat of 2026-10-05 (OWN-1):
+(Before the time seat of 2026-10-05 (TIME-1):
+`02a61b456054e9c49c100da002e628597cd940a70687a738e3035b2b21c71829`,
+173/173; the widening added A36-A43 and R139-R170 -- time enters a
+record only as an authority's signed statement, so a machine declares the
+clock it HAS (a plain device path under /dev that is a real-time clock,
+hosted, with a key to sign with: R139-R143, R159, R164), a link it answers
+the time on (one, never a loopback, a static address, a port from 1024 to
+65535, and a clock to read: R144-R149, R160, R161) -- never asking anybody
+(R150) -- or whom it asks and whose word it takes (an address and a port
+from 1 to 65535 each spelled one way, a way there, one spelling of a key
+that is a key, a journal to date, and a network to ask over: R151-R157,
+R162, R163, R165-R170; A41-A43 accept the ways there are: a gateway, an
+EGRESS destination with a gateway to carry it, a lease); TIME_AUTHORITY
+is a clause of a network, by the clause menu (R158). A38-A40 and
+R159-R162 are what a probe with a
+mutated court asked for: the first version of these fixtures judged no
+boundary of a port and no `..` in a device path, and a court mutated to
+forget either stayed green until they existed. R163 is what the seat's
+builder found reading the machine court beside the fleet's: a key the
+machine court took for one because it was 64 hex, which no public key is
+written as, where the fleet court had always asked. R164-R170 and A41-A43
+are what an independent read-only review of the seat found: a clock that
+was any node under /dev (`/dev/watchdog` passed, and reading a device opens
+it), a TIME_FROM on an edge machine that no fixture judged, an endpoint
+with several spellings, and a question to an address the machine has no way
+to, which the boot would have said "cannot ask" at every start.
+Before the STATE seat of 2026-10-05 (OWN-1):
 `0c3bde455a1dc04c516359371344fdc918924055da8ad96217fcf5e0574fa785`,
 132/132; the widening added A30-A35 and R104-R138 -- a world that runs
 as an identity owns the directories it names and nothing else of the
@@ -121,7 +147,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **160/160** — 33 accepts with structural expectations, 127 rejects with expected refusal fragments (132/132 before STATE; 120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **213/213** — 43 accepts with structural expectations, 170 rejects with expected refusal fragments (173/173 before TIME; 132/132 before STATE; 120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):

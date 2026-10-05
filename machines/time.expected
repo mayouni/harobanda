@@ -1,0 +1,557 @@
+=== the authority, booted alone: it makes its key and publishes the public half ===
+time_clockbox: image built (16 expected lines)
+enrolled: the authority's key, as the line it printed on its own console
+=== the roll: the authority enrolled, the till not yet (it has not made its key) ===
+roll: fleet nuage -- 2 members on lan, served by nobody in this fleet -- judged, no refusal
+roll:   time -- the word of clockbox, and of nobody else, is what dates this fleet's records
+roll:   clockbox -- time_clockbox (time_clockbox.machine, 10.30.0.1/24) -- 52:54:00:12:36:01 -- enrolled, fingerprint FP1
+roll:   till -- time_till (time_till.machine, 10.30.0.2/24) -- 52:54:00:12:36:02 -- KEEPS A RECORD AND IS NOT ENROLLED: nobody can verify what it signs
+roll: fleet nuage -- 1 member keeps a signed record that no holder of this file can check; enrol from the line the device prints on its own console
+=== the till's image (built, not booted) ===
+time_till: image built (17 expected lines)
+=== round 1: declared -- the authority on the wire, the till booted three times on one disk ===
+=== the roll: both enrolled ===
+roll: fleet nuage -- 2 members on lan, served by nobody in this fleet -- judged, no refusal
+roll:   time -- the word of clockbox, and of nobody else, is what dates this fleet's records
+roll:   clockbox -- time_clockbox (time_clockbox.machine, 10.30.0.1/24) -- 52:54:00:12:36:01 -- enrolled, fingerprint FP1
+roll:   till -- time_till (time_till.machine, 10.30.0.2/24) -- 52:54:00:12:36:02 -- enrolled, fingerprint FP2
+=== round 2: alone -- nobody on the wire, the till booted twice more ===
+=== round 3: an impostor -- a different machine answers from the authority's address ===
+=== the till's disk, read back from the disk itself ===
+disk: /data/journal.time holds 3 statements, byte for byte the ones the till published before the impostor answered, and none of the impostor's
+disk: /data/journal holds 6 entries, one for each of the 6 boots
+=== round 4: a statement the power cut short, on the till's disk -- and a boot it must not hold back ===
+=== round 5: an authority whose clock will not answer, and one with no link to answer on ===
+=== the clock the statements read ===
+clock: 3 statements (the ones the till kept), the first no earlier than the emulator's clock base, each later than the one before, all within half an hour of the base: yes
+=== the host: the record's entries, dated, by somebody who holds only the fleet file ===
+dated: time: fleet nuage takes the time from clockbox, enrolled as fingerprint FP1
+dated: time: the record has 2 entries, each shaped like one, hashing to what it says and chained to the one before it
+dated: time: statement 1 verifies -- the entry H8 existed no later than <time>
+dated: time:   that is entry 1 of 2: it, and every entry before it, existed no later than then
+dated: time: statement 2 verifies -- the entry H8 existed no later than <time>
+dated: time:   that is entry 2 of 2: it, and every entry before it, existed no later than then
+dated: time: entry 1 existed no later than <time> (statement 1)
+dated: time: entry 2 existed no later than <time> (statement 2)
+dated: time: 2 statements verified against the key clockbox holds in this fleet, and no secret took part
+dated: exit 0
+=== ... and whose they are, by the same file and the other key ===
+whose: fleet nuage -- till: 2 entries verified against the enrolled key (fingerprint FP2), and no secret took part
+whose: fleet nuage -- till: its head is entry 2, hash=H -- the entry a RETIREMENT of this key would be trusted THROUGH
+whose: exit 0
+=== the host: after the authority went away -- what it said stays said, and what came after is undated ===
+mixed: time: fleet nuage takes the time from clockbox, enrolled as fingerprint FP1
+mixed: time: the record has 4 entries, each shaped like one, hashing to what it says and chained to the one before it
+mixed: time: statement 1 verifies -- the entry H8 existed no later than <time>
+mixed: time:   that is entry 1 of 4: it, and every entry before it, existed no later than then
+mixed: time: statement 2 verifies -- the entry H8 existed no later than <time>
+mixed: time:   that is entry 2 of 4: it, and every entry before it, existed no later than then
+mixed: time: statement 3 verifies -- the entry H8 existed no later than <time>
+mixed: time:   that is entry 3 of 4: it, and every entry before it, existed no later than then
+mixed: time: entry 1 existed no later than <time> (statement 1)
+mixed: time: entry 2 existed no later than <time> (statement 2)
+mixed: time: entry 3 existed no later than <time> (statement 3)
+mixed: time: entry 4 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+mixed: time: 3 statements verified against the key clockbox holds in this fleet, and no secret took part
+mixed: exit 0
+=== negative 1: one second added to a statement ===
+changed: time: fleet nuage takes the time from clockbox, enrolled as fingerprint FP1
+changed: time: the record has 4 entries, each shaped like one, hashing to what it says and chained to the one before it
+changed: time: statement 1 does not verify: it was changed after it was signed, or signed by another key
+changed: time: statement 2 verifies -- the entry H8 existed no later than <time>
+changed: time:   that is entry 2 of 4: it, and every entry before it, existed no later than then
+changed: time: statement 3 verifies -- the entry H8 existed no later than <time>
+changed: time:   that is entry 3 of 4: it, and every entry before it, existed no later than then
+changed: time: entry 1 existed no later than <time> (statement 2)
+changed: time: entry 2 existed no later than <time> (statement 2)
+changed: time: entry 3 existed no later than <time> (statement 3)
+changed: time: entry 4 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+changed: time: 1 of 3 statements refused: what a refused statement says is not taken
+changed: exit 1
+=== negative 2: the same statements, offered to a fleet that takes its time from another machine ===
+foreign: time: fleet nuage takes the time from clockbox, enrolled as fingerprint FP3
+foreign: time: the record has 4 entries, each shaped like one, hashing to what it says and chained to the one before it
+foreign: time: statement 1 was signed by somebody else than the time authority
+foreign: time: statement 2 was signed by somebody else than the time authority
+foreign: time: statement 3 was signed by somebody else than the time authority
+foreign: time: entry 1 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+foreign: time: entry 2 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+foreign: time: entry 3 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+foreign: time: entry 4 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+foreign: time: 3 of 3 statements refused: what a refused statement says is not taken
+foreign: exit 1
+=== negative 3: an entry taken out of the record ===
+removed: time: fleet nuage takes the time from clockbox, enrolled as fingerprint FP1
+removed: time: record entry 3 is not the entry this place holds (seq=<its place> prev=...): an entry was removed, reordered or replaced, or this line is not an entry at all
+removed: exit 1
+=== negative 4: the record cut at its end, which still hashes and chains ===
+cut: time: fleet nuage takes the time from clockbox, enrolled as fingerprint FP1
+cut: time: the record has 2 entries, each shaped like one, hashing to what it says and chained to the one before it
+cut: time: statement 1 verifies -- the entry H8 existed no later than <time>
+cut: time:   that is entry 1 of 2: it, and every entry before it, existed no later than then
+cut: time: statement 2 verifies -- the entry H8 existed no later than <time>
+cut: time:   that is entry 2 of 2: it, and every entry before it, existed no later than then
+cut: time: statement 3 verifies -- the entry H8 existed no later than <time>
+cut: time: statement 3 is about an entry this record does not hold: it is another record's, or entries were cut from the end of this one
+cut: time: entry 1 existed no later than <time> (statement 1)
+cut: time: entry 2 existed no later than <time> (statement 2)
+cut: time: 1 of 3 statements refused: what a refused statement says is not taken
+cut: exit 1
+=== negative 5: nothing to verify ===
+nothing: time: fleet nuage takes the time from clockbox, enrolled as fingerprint FP1
+nothing: time: the record has 4 entries, each shaped like one, hashing to what it says and chained to the one before it
+nothing: time: no statement is kept: every entry of this record is ORDERED and UNDATED
+nothing: time: a verification of nothing is not one: the file holds no statement
+nothing: exit 1
+=== negative 6: a fleet that takes its time from nobody ===
+nobody: time: fleet salle_makeen declares no time authority: there is no key a statement could be checked against, so none is taken
+nobody: exit 1
+=== what each machine said ===
+enrol: the machine with the clock, booted on a disk that has never held its key:
+enrol: boot: harb init -- machine time_clockbox (hosted / x86_64 / qemu_pc) -- pid 1
+enrol: boot: console /dev/ttyS0
+enrol: boot: mount proc at /proc -- done
+enrol: boot: mount sysfs at /sys -- done
+enrol: boot: mount devtmpfs at /dev -- done
+enrol: boot: mount ext4 at /data -- done
+enrol: boot: grant process (effectful)
+enrol: boot: grant filesystem (effectful)
+enrol: boot: grant network (effectful)
+enrol: boot: network lan -- eth0 up 10.30.0.1/24
+enrol: boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint FP1
+enrol: boot: time -- lan answers on 10.30.0.1:7000: an entry it is asked about, signed with this device's key and the time /dev/rtc0 reads; the floor keeps no time of its own
+enrol: boot: confine -- attest has no network of its own; what a world did not declare, the kernel does not give it
+enrol: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+enrol: boot: start attest -- pid N -- /harb attest --export
+enrol: attest time_clockbox -- ed25519, fingerprint FP1
+enrol: enrol time_clockbox ed25519 KEY1 -- KEY for this machine's MEMBER in a fleet
+enrol: attest: signed 21 bytes with this device's key and verified them against its public half
+enrol: attest: one bit flipped in the message, and the same signature is refused
+enrol: boot: attest (pid N) exited 0
+enrol: boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
+enrol: boot: every service has ended -- and this machine is still the time authority of lan: a server stops when the machine stops, not when the asking does
+authority: the same machine on the disk that holds it, answering, before anybody has asked:
+authority: boot: harb init -- machine time_clockbox (hosted / x86_64 / qemu_pc) -- pid 1
+authority: boot: console /dev/ttyS0
+authority: boot: mount proc at /proc -- done
+authority: boot: mount sysfs at /sys -- done
+authority: boot: mount devtmpfs at /dev -- done
+authority: boot: mount ext4 at /data -- done
+authority: boot: grant process (effectful)
+authority: boot: grant filesystem (effectful)
+authority: boot: grant network (effectful)
+authority: boot: network lan -- eth0 up 10.30.0.1/24
+authority: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP1
+authority: boot: time -- lan answers on 10.30.0.1:7000: an entry it is asked about, signed with this device's key and the time /dev/rtc0 reads; the floor keeps no time of its own
+authority: boot: confine -- attest has no network of its own; what a world did not declare, the kernel does not give it
+authority: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+authority: boot: start attest -- pid N -- /harb attest --export
+authority: attest time_clockbox -- ed25519, fingerprint FP1
+authority: enrol time_clockbox ed25519 KEY1 -- KEY for this machine's MEMBER in a fleet
+authority: attest: signed 21 bytes with this device's key and verified them against its public half
+authority: attest: one bit flipped in the message, and the same signature is refused
+authority: boot: attest (pid N) exited 0
+authority: boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
+authority: boot: every service has ended -- and this machine is still the time authority of lan: a server stops when the machine stops, not when the asking does
+till 1: declared, with the authority on the wire:
+till1: boot: harb init -- machine time_till (hosted / x86_64 / qemu_pc) -- pid 1
+till1: boot: console /dev/ttyS0
+till1: boot: mount proc at /proc -- done
+till1: boot: mount sysfs at /sys -- done
+till1: boot: mount devtmpfs at /dev -- done
+till1: boot: mount ext4 at /data -- done
+till1: boot: grant process (effectful)
+till1: boot: grant filesystem (effectful)
+till1: boot: grant network (effectful)
+till1: boot: network lan -- eth0 up 10.30.0.2/24
+till1: boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint FP2
+till1: boot: confine -- enrol has no network of its own, record has no network of its own; what a world did not declare, the kernel does not give it
+till1: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+till1: boot: start enrol -- pid N -- /harb attest --export
+till1: attest time_till -- ed25519, fingerprint FP2
+till1: enrol time_till ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+till1: attest: signed 17 bytes with this device's key and verified them against its public half
+till1: attest: one bit flipped in the message, and the same signature is refused
+till1: boot: enrol (pid N) exited 0
+till1: boot: start record -- pid N -- /harb journal --export
+till1: journal /data/journal -- no record yet: this is the first boot, and its entry is written after the verdict
+till1: boot: record (pid N) exited 0
+till1: boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
+till1: boot: journal -- /data/journal: the chain begins, entry 1 signed by this device (verdict matched)
+till1: boot: time -- the record's last entry H8 existed no later than <time>, by the word of FP1 (kept in /data/journal.time)
+till1: boot: every service has ended -- init has nothing left to keep alive
+till1: boot: init halts the machine -- reboot(RESTART)
+till1: reboot: Restarting system
+till 2: declared, with the authority on the wire:
+till2: boot: harb init -- machine time_till (hosted / x86_64 / qemu_pc) -- pid 1
+till2: boot: console /dev/ttyS0
+till2: boot: mount proc at /proc -- done
+till2: boot: mount sysfs at /sys -- done
+till2: boot: mount devtmpfs at /dev -- done
+till2: boot: mount ext4 at /data -- done
+till2: boot: grant process (effectful)
+till2: boot: grant filesystem (effectful)
+till2: boot: grant network (effectful)
+till2: boot: network lan -- eth0 up 10.30.0.2/24
+till2: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP2
+till2: boot: confine -- enrol has no network of its own, record has no network of its own; what a world did not declare, the kernel does not give it
+till2: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+till2: boot: start enrol -- pid N -- /harb attest --export
+till2: attest time_till -- ed25519, fingerprint FP2
+till2: enrol time_till ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+till2: attest: signed 17 bytes with this device's key and verified them against its public half
+till2: attest: one bit flipped in the message, and the same signature is refused
+till2: boot: enrol (pid N) exited 0
+till2: boot: start record -- pid N -- /harb journal --export
+till2: record seq=1 prev=- machine=time_till declaration=D verdict=matched hash=H sig=S
+till2: statement time authority=FP1 entry=H t=T sig=S
+till2: journal /data/journal -- 1 entry, every one chained to the one before it and signed by this device
+till2: journal:   seq=1 prev=- machine=time_till declaration=D verdict=matched
+till2: journal: time -- this machine asks 10.30.0.1:7000 and takes only the word of key FP1 (TIME_KEY)
+till2: time: the record has 1 entry, each shaped like one, hashing to what it says and chained to the one before it
+till2: time: statement 1 verifies -- the entry H8 existed no later than <time>
+till2: time:   that is entry 1 of 1: it, and every entry before it, existed no later than then
+till2: time: entry 1 existed no later than <time> (statement 1)
+till2: boot: record (pid N) exited 0
+till2: boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
+till2: boot: journal -- /data/journal: 1 entry verified, entry 2 appended and signed (verdict matched)
+till2: boot: time -- the record's last entry H8 existed no later than <time>, by the word of FP1 (kept in /data/journal.time)
+till2: boot: every service has ended -- init has nothing left to keep alive
+till2: boot: init halts the machine -- reboot(RESTART)
+till2: reboot: Restarting system
+till 3: declared, with the authority on the wire:
+till3: boot: harb init -- machine time_till (hosted / x86_64 / qemu_pc) -- pid 1
+till3: boot: console /dev/ttyS0
+till3: boot: mount proc at /proc -- done
+till3: boot: mount sysfs at /sys -- done
+till3: boot: mount devtmpfs at /dev -- done
+till3: boot: mount ext4 at /data -- done
+till3: boot: grant process (effectful)
+till3: boot: grant filesystem (effectful)
+till3: boot: grant network (effectful)
+till3: boot: network lan -- eth0 up 10.30.0.2/24
+till3: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP2
+till3: boot: confine -- enrol has no network of its own, record has no network of its own; what a world did not declare, the kernel does not give it
+till3: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+till3: boot: start enrol -- pid N -- /harb attest --export
+till3: attest time_till -- ed25519, fingerprint FP2
+till3: enrol time_till ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+till3: attest: signed 17 bytes with this device's key and verified them against its public half
+till3: attest: one bit flipped in the message, and the same signature is refused
+till3: boot: enrol (pid N) exited 0
+till3: boot: start record -- pid N -- /harb journal --export
+till3: record seq=1 prev=- machine=time_till declaration=D verdict=matched hash=H sig=S
+till3: record seq=2 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+till3: statement time authority=FP1 entry=H t=T sig=S
+till3: statement time authority=FP1 entry=H t=T sig=S
+till3: journal /data/journal -- 2 entries, every one chained to the one before it and signed by this device
+till3: journal:   seq=1 prev=- machine=time_till declaration=D verdict=matched
+till3: journal:   seq=2 prev=H machine=time_till declaration=D verdict=matched
+till3: journal: time -- this machine asks 10.30.0.1:7000 and takes only the word of key FP1 (TIME_KEY)
+till3: time: the record has 2 entries, each shaped like one, hashing to what it says and chained to the one before it
+till3: time: statement 1 verifies -- the entry H8 existed no later than <time>
+till3: time:   that is entry 1 of 2: it, and every entry before it, existed no later than then
+till3: time: statement 2 verifies -- the entry H8 existed no later than <time>
+till3: time:   that is entry 2 of 2: it, and every entry before it, existed no later than then
+till3: time: entry 1 existed no later than <time> (statement 1)
+till3: time: entry 2 existed no later than <time> (statement 2)
+till3: boot: record (pid N) exited 0
+till3: boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
+till3: boot: journal -- /data/journal: 2 entries verified, entry 3 appended and signed (verdict matched)
+till3: boot: time -- the record's last entry H8 existed no later than <time>, by the word of FP1 (kept in /data/journal.time)
+till3: boot: every service has ended -- init has nothing left to keep alive
+till3: boot: init halts the machine -- reboot(RESTART)
+till3: reboot: Restarting system
+alone 1: the authority gone, nobody on the wire:
+alone1: boot: harb init -- machine time_till (hosted / x86_64 / qemu_pc) -- pid 1
+alone1: boot: console /dev/ttyS0
+alone1: boot: mount proc at /proc -- done
+alone1: boot: mount sysfs at /sys -- done
+alone1: boot: mount devtmpfs at /dev -- done
+alone1: boot: mount ext4 at /data -- done
+alone1: boot: grant process (effectful)
+alone1: boot: grant filesystem (effectful)
+alone1: boot: grant network (effectful)
+alone1: boot: network lan -- eth0 up 10.30.0.2/24
+alone1: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP2
+alone1: boot: confine -- enrol has no network of its own, record has no network of its own; what a world did not declare, the kernel does not give it
+alone1: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+alone1: boot: start enrol -- pid N -- /harb attest --export
+alone1: attest time_till -- ed25519, fingerprint FP2
+alone1: enrol time_till ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+alone1: attest: signed 17 bytes with this device's key and verified them against its public half
+alone1: attest: one bit flipped in the message, and the same signature is refused
+alone1: boot: enrol (pid N) exited 0
+alone1: boot: start record -- pid N -- /harb journal --export
+alone1: record seq=1 prev=- machine=time_till declaration=D verdict=matched hash=H sig=S
+alone1: record seq=2 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+alone1: record seq=3 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+alone1: statement time authority=FP1 entry=H t=T sig=S
+alone1: statement time authority=FP1 entry=H t=T sig=S
+alone1: statement time authority=FP1 entry=H t=T sig=S
+alone1: journal /data/journal -- 3 entries, every one chained to the one before it and signed by this device
+alone1: journal:   seq=1 prev=- machine=time_till declaration=D verdict=matched
+alone1: journal:   seq=2 prev=H machine=time_till declaration=D verdict=matched
+alone1: journal:   seq=3 prev=H machine=time_till declaration=D verdict=matched
+alone1: journal: time -- this machine asks 10.30.0.1:7000 and takes only the word of key FP1 (TIME_KEY)
+alone1: time: the record has 3 entries, each shaped like one, hashing to what it says and chained to the one before it
+alone1: time: statement 1 verifies -- the entry H8 existed no later than <time>
+alone1: time:   that is entry 1 of 3: it, and every entry before it, existed no later than then
+alone1: time: statement 2 verifies -- the entry H8 existed no later than <time>
+alone1: time:   that is entry 2 of 3: it, and every entry before it, existed no later than then
+alone1: time: statement 3 verifies -- the entry H8 existed no later than <time>
+alone1: time:   that is entry 3 of 3: it, and every entry before it, existed no later than then
+alone1: time: entry 1 existed no later than <time> (statement 1)
+alone1: time: entry 2 existed no later than <time> (statement 2)
+alone1: time: entry 3 existed no later than <time> (statement 3)
+alone1: boot: record (pid N) exited 0
+alone1: boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
+alone1: boot: journal -- /data/journal: 3 entries verified, entry 4 appended and signed (verdict matched)
+alone1: boot: time -- no answer from 10.30.0.1:7000 after 3 tries: this record stays ORDERED and UNDATED
+alone1: boot: every service has ended -- init has nothing left to keep alive
+alone1: boot: init halts the machine -- reboot(RESTART)
+alone1: reboot: Restarting system
+alone 2: the authority gone, nobody on the wire:
+alone2: boot: harb init -- machine time_till (hosted / x86_64 / qemu_pc) -- pid 1
+alone2: boot: console /dev/ttyS0
+alone2: boot: mount proc at /proc -- done
+alone2: boot: mount sysfs at /sys -- done
+alone2: boot: mount devtmpfs at /dev -- done
+alone2: boot: mount ext4 at /data -- done
+alone2: boot: grant process (effectful)
+alone2: boot: grant filesystem (effectful)
+alone2: boot: grant network (effectful)
+alone2: boot: network lan -- eth0 up 10.30.0.2/24
+alone2: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP2
+alone2: boot: confine -- enrol has no network of its own, record has no network of its own; what a world did not declare, the kernel does not give it
+alone2: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+alone2: boot: start enrol -- pid N -- /harb attest --export
+alone2: attest time_till -- ed25519, fingerprint FP2
+alone2: enrol time_till ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+alone2: attest: signed 17 bytes with this device's key and verified them against its public half
+alone2: attest: one bit flipped in the message, and the same signature is refused
+alone2: boot: enrol (pid N) exited 0
+alone2: boot: start record -- pid N -- /harb journal --export
+alone2: record seq=1 prev=- machine=time_till declaration=D verdict=matched hash=H sig=S
+alone2: record seq=2 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+alone2: record seq=3 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+alone2: record seq=4 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+alone2: statement time authority=FP1 entry=H t=T sig=S
+alone2: statement time authority=FP1 entry=H t=T sig=S
+alone2: statement time authority=FP1 entry=H t=T sig=S
+alone2: journal /data/journal -- 4 entries, every one chained to the one before it and signed by this device
+alone2: journal:   seq=1 prev=- machine=time_till declaration=D verdict=matched
+alone2: journal:   seq=2 prev=H machine=time_till declaration=D verdict=matched
+alone2: journal:   seq=3 prev=H machine=time_till declaration=D verdict=matched
+alone2: journal:   seq=4 prev=H machine=time_till declaration=D verdict=matched
+alone2: journal: time -- this machine asks 10.30.0.1:7000 and takes only the word of key FP1 (TIME_KEY)
+alone2: time: the record has 4 entries, each shaped like one, hashing to what it says and chained to the one before it
+alone2: time: statement 1 verifies -- the entry H8 existed no later than <time>
+alone2: time:   that is entry 1 of 4: it, and every entry before it, existed no later than then
+alone2: time: statement 2 verifies -- the entry H8 existed no later than <time>
+alone2: time:   that is entry 2 of 4: it, and every entry before it, existed no later than then
+alone2: time: statement 3 verifies -- the entry H8 existed no later than <time>
+alone2: time:   that is entry 3 of 4: it, and every entry before it, existed no later than then
+alone2: time: entry 1 existed no later than <time> (statement 1)
+alone2: time: entry 2 existed no later than <time> (statement 2)
+alone2: time: entry 3 existed no later than <time> (statement 3)
+alone2: time: entry 4 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+alone2: boot: record (pid N) exited 0
+alone2: boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
+alone2: boot: journal -- /data/journal: 4 entries verified, entry 5 appended and signed (verdict matched)
+alone2: boot: time -- no answer from 10.30.0.1:7000 after 3 tries: this record stays ORDERED and UNDATED
+alone2: boot: every service has ended -- init has nothing left to keep alive
+alone2: boot: init halts the machine -- reboot(RESTART)
+alone2: reboot: Restarting system
+impostor: a different machine, with a key of its own, answering from the authority's address:
+impostor: boot: harb init -- machine time_clockbox (hosted / x86_64 / qemu_pc) -- pid 1
+impostor: boot: console /dev/ttyS0
+impostor: boot: mount proc at /proc -- done
+impostor: boot: mount sysfs at /sys -- done
+impostor: boot: mount devtmpfs at /dev -- done
+impostor: boot: mount ext4 at /data -- done
+impostor: boot: grant process (effectful)
+impostor: boot: grant filesystem (effectful)
+impostor: boot: grant network (effectful)
+impostor: boot: network lan -- eth0 up 10.30.0.1/24
+impostor: boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint FP3
+impostor: boot: time -- lan answers on 10.30.0.1:7000: an entry it is asked about, signed with this device's key and the time /dev/rtc0 reads; the floor keeps no time of its own
+impostor: boot: confine -- attest has no network of its own; what a world did not declare, the kernel does not give it
+impostor: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+impostor: boot: start attest -- pid N -- /harb attest --export
+impostor: attest time_clockbox -- ed25519, fingerprint FP3
+impostor: enrol time_clockbox ed25519 KEY3 -- KEY for this machine's MEMBER in a fleet
+impostor: attest: signed 21 bytes with this device's key and verified them against its public half
+impostor: attest: one bit flipped in the message, and the same signature is refused
+impostor: boot: attest (pid N) exited 0
+impostor: boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
+impostor: boot: every service has ended -- and this machine is still the time authority of lan: a server stops when the machine stops, not when the asking does
+till 6: the same till, answered by it:
+till6: boot: harb init -- machine time_till (hosted / x86_64 / qemu_pc) -- pid 1
+till6: boot: console /dev/ttyS0
+till6: boot: mount proc at /proc -- done
+till6: boot: mount sysfs at /sys -- done
+till6: boot: mount devtmpfs at /dev -- done
+till6: boot: mount ext4 at /data -- done
+till6: boot: grant process (effectful)
+till6: boot: grant filesystem (effectful)
+till6: boot: grant network (effectful)
+till6: boot: network lan -- eth0 up 10.30.0.2/24
+till6: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP2
+till6: boot: confine -- enrol has no network of its own, record has no network of its own; what a world did not declare, the kernel does not give it
+till6: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+till6: boot: start enrol -- pid N -- /harb attest --export
+till6: attest time_till -- ed25519, fingerprint FP2
+till6: enrol time_till ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+till6: attest: signed 17 bytes with this device's key and verified them against its public half
+till6: attest: one bit flipped in the message, and the same signature is refused
+till6: boot: enrol (pid N) exited 0
+till6: boot: start record -- pid N -- /harb journal --export
+till6: record seq=1 prev=- machine=time_till declaration=D verdict=matched hash=H sig=S
+till6: record seq=2 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+till6: record seq=3 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+till6: record seq=4 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+till6: record seq=5 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+till6: statement time authority=FP1 entry=H t=T sig=S
+till6: statement time authority=FP1 entry=H t=T sig=S
+till6: statement time authority=FP1 entry=H t=T sig=S
+till6: journal /data/journal -- 5 entries, every one chained to the one before it and signed by this device
+till6: journal:   seq=1 prev=- machine=time_till declaration=D verdict=matched
+till6: journal:   seq=2 prev=H machine=time_till declaration=D verdict=matched
+till6: journal:   seq=3 prev=H machine=time_till declaration=D verdict=matched
+till6: journal:   seq=4 prev=H machine=time_till declaration=D verdict=matched
+till6: journal:   seq=5 prev=H machine=time_till declaration=D verdict=matched
+till6: journal: time -- this machine asks 10.30.0.1:7000 and takes only the word of key FP1 (TIME_KEY)
+till6: time: the record has 5 entries, each shaped like one, hashing to what it says and chained to the one before it
+till6: time: statement 1 verifies -- the entry H8 existed no later than <time>
+till6: time:   that is entry 1 of 5: it, and every entry before it, existed no later than then
+till6: time: statement 2 verifies -- the entry H8 existed no later than <time>
+till6: time:   that is entry 2 of 5: it, and every entry before it, existed no later than then
+till6: time: statement 3 verifies -- the entry H8 existed no later than <time>
+till6: time:   that is entry 3 of 5: it, and every entry before it, existed no later than then
+till6: time: entry 1 existed no later than <time> (statement 1)
+till6: time: entry 2 existed no later than <time> (statement 2)
+till6: time: entry 3 existed no later than <time> (statement 3)
+till6: time: entry 4 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+till6: time: entry 5 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+till6: boot: record (pid N) exited 0
+till6: boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
+till6: boot: journal -- /data/journal: 5 entries verified, entry 6 appended and signed (verdict matched)
+till6: boot: time -- an answer from 10.30.0.1:7000 was signed by somebody else than the time authority: this record stays ORDERED and UNDATED
+till6: boot: every service has ended -- init has nothing left to keep alive
+till6: boot: init halts the machine -- reboot(RESTART)
+till6: reboot: Restarting system
+cut: the same till, with a statement the power cut short on its disk, and nobody on the wire:
+cut: boot: harb init -- machine time_till (hosted / x86_64 / qemu_pc) -- pid 1
+cut: boot: console /dev/ttyS0
+cut: boot: mount proc at /proc -- done
+cut: boot: mount sysfs at /sys -- done
+cut: boot: mount devtmpfs at /dev -- done
+cut: boot: mount ext4 at /data -- done
+cut: boot: grant process (effectful)
+cut: boot: grant filesystem (effectful)
+cut: boot: grant network (effectful)
+cut: boot: network lan -- eth0 up 10.30.0.2/24
+cut: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP2
+cut: boot: confine -- enrol has no network of its own, record has no network of its own; what a world did not declare, the kernel does not give it
+cut: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+cut: boot: start enrol -- pid N -- /harb attest --export
+cut: attest time_till -- ed25519, fingerprint FP2
+cut: enrol time_till ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+cut: attest: signed 17 bytes with this device's key and verified them against its public half
+cut: attest: one bit flipped in the message, and the same signature is refused
+cut: boot: enrol (pid N) exited 0
+cut: boot: start record -- pid N -- /harb journal --export
+cut: record seq=1 prev=- machine=time_till declaration=D verdict=matched hash=H sig=S
+cut: record seq=2 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+cut: record seq=3 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+cut: record seq=4 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+cut: record seq=5 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+cut: record seq=6 prev=H machine=time_till declaration=D verdict=matched hash=H sig=S
+cut: statement time authority=FP1 entry=H t=T sig=S
+cut: statement time authority=FP1 entry=H t=T sig=S
+cut: statement time authority=FP1 entry=H t=T sig=S
+cut: statement time authority=abab
+cut: journal /data/journal -- 6 entries, every one chained to the one before it and signed by this device
+cut: journal:   seq=1 prev=- machine=time_till declaration=D verdict=matched
+cut: journal:   seq=2 prev=H machine=time_till declaration=D verdict=matched
+cut: journal:   seq=3 prev=H machine=time_till declaration=D verdict=matched
+cut: journal:   seq=4 prev=H machine=time_till declaration=D verdict=matched
+cut: journal:   seq=5 prev=H machine=time_till declaration=D verdict=matched
+cut: journal:   seq=6 prev=H machine=time_till declaration=D verdict=matched
+cut: journal: time -- this machine asks 10.30.0.1:7000 and takes only the word of key FP1 (TIME_KEY)
+cut: time: the record has 6 entries, each shaped like one, hashing to what it says and chained to the one before it
+cut: time: statement 1 verifies -- the entry H8 existed no later than <time>
+cut: time:   that is entry 1 of 6: it, and every entry before it, existed no later than then
+cut: time: statement 2 verifies -- the entry H8 existed no later than <time>
+cut: time:   that is entry 2 of 6: it, and every entry before it, existed no later than then
+cut: time: statement 3 verifies -- the entry H8 existed no later than <time>
+cut: time:   that is entry 3 of 6: it, and every entry before it, existed no later than then
+cut: time: statement 4 is not a time statement
+cut: time: entry 1 existed no later than <time> (statement 1)
+cut: time: entry 2 existed no later than <time> (statement 2)
+cut: time: entry 3 existed no later than <time> (statement 3)
+cut: time: entry 4 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+cut: time: entry 5 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+cut: time: entry 6 is ORDERED and UNDATED: no statement is about it, or about any entry after it
+cut: boot: record (pid N) exited 0
+cut: boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
+cut: boot: journal -- /data/journal: 6 entries verified, entry 7 appended and signed (verdict matched)
+cut: boot: time -- no answer from 10.30.0.1:7000 after 3 tries: this record stays ORDERED and UNDATED
+cut: boot: every service has ended -- init has nothing left to keep alive
+cut: boot: init halts the machine -- reboot(RESTART)
+cut: reboot: Restarting system
+deadclock: the authority's declaration with a clock that is not there:
+deadclock: boot: harb init -- machine time_clockbox (hosted / x86_64 / qemu_pc) -- pid 1
+deadclock: boot: console /dev/ttyS0
+deadclock: boot: mount proc at /proc -- done
+deadclock: boot: mount sysfs at /sys -- done
+deadclock: boot: mount devtmpfs at /dev -- done
+deadclock: boot: mount ext4 at /data -- done
+deadclock: boot: grant process (effectful)
+deadclock: boot: grant filesystem (effectful)
+deadclock: boot: grant network (effectful)
+deadclock: boot: network lan -- eth0 up 10.30.0.1/24
+deadclock: boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint FP4
+deadclock: boot: time -- lan cannot answer: the clock /dev/rtc1: there is no such device (does the board have one, and has the kernel its driver?); this machine will not sign a time it cannot read
+deadclock: boot: confine -- attest has no network of its own; what a world did not declare, the kernel does not give it
+deadclock: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+deadclock: boot: start attest -- pid N -- /harb attest --export
+deadclock: attest time_clockbox -- ed25519, fingerprint FP4
+deadclock: enrol time_clockbox ed25519 KEY4 -- KEY for this machine's MEMBER in a fleet
+deadclock: attest: signed 21 bytes with this device's key and verified them against its public half
+deadclock: attest: one bit flipped in the message, and the same signature is refused
+deadclock: boot: attest (pid N) exited 0
+deadclock: boot: judge -- the boot differs from its expectation (/etc/expected): 1 line(s) expected and not said, 0 said and not expected
+deadclock: boot: judge -- expected, not said: time -- lan answers on 10.30.0.1:7000: an entry it is asked about, signed with this device's key and the time /dev/rtc1 reads; the floor keeps no time of its own
+deadclock: boot: every service has ended -- init has nothing left to keep alive
+deadclock: boot: init halts the machine -- reboot(RESTART)
+deadclock: reboot: Restarting system
+nolink: the authority, on the disk that holds its key, with no network card to answer on:
+nolink: boot: harb init -- machine time_clockbox (hosted / x86_64 / qemu_pc) -- pid 1
+nolink: boot: console /dev/ttyS0
+nolink: boot: mount proc at /proc -- done
+nolink: boot: mount sysfs at /sys -- done
+nolink: boot: mount devtmpfs at /dev -- done
+nolink: boot: mount ext4 at /data -- done
+nolink: boot: grant process (effectful)
+nolink: boot: grant filesystem (effectful)
+nolink: boot: grant network (effectful)
+nolink: boot: network lan -- eth0: no such interface (NODEV)
+nolink: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP1
+nolink: boot: time -- lan could not answer on port 7000: NoSuchLink
+nolink: boot: confine -- attest has no network of its own; what a world did not declare, the kernel does not give it
+nolink: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+nolink: boot: start attest -- pid N -- /harb attest --export
+nolink: attest time_clockbox -- ed25519, fingerprint FP1
+nolink: enrol time_clockbox ed25519 KEY1 -- KEY for this machine's MEMBER in a fleet
+nolink: attest: signed 21 bytes with this device's key and verified them against its public half
+nolink: attest: one bit flipped in the message, and the same signature is refused
+nolink: boot: attest (pid N) exited 0
+nolink: boot: judge -- the boot differs from its expectation (/etc/expected): 2 line(s) expected and not said, 1 said and not expected
+nolink: boot: judge -- expected, not said: network lan -- eth0 up 10.30.0.1/24
+nolink: boot: judge -- expected, not said: time -- lan answers on 10.30.0.1:7000: an entry it is asked about, signed with this device's key and the time /dev/rtc0 reads; the floor keeps no time of its own
+nolink: boot: judge -- said, not expected: network lan -- eth0: no such interface (NODEV)
+nolink: boot: every service has ended -- init has nothing left to keep alive
+nolink: boot: init halts the machine -- reboot(RESTART)
+nolink: reboot: Restarting system

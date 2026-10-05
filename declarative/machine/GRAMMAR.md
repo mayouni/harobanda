@@ -100,6 +100,9 @@ RETIREMENT was not refused for a wrong reason, it was ACCEPTED.
 | `IDENTITY` | string | optional, hosted only — the absolute path where this device's own key lives. PID 1 makes an Ed25519 pair there the first time the machine boots and loads it every time after. It must sit inside a declared PERSISTENT mount (R65), be absolute (R64), and the edge profile is refused it (R66): an edge device's key is MicroRing's, and its custody is the hardware's |
 | `JOURNAL` | string | optional, hosted only — where this machine keeps its OWN record: one line per boot, hash-chained and signed by the device's key. Needs an `IDENTITY` to sign with (R67), must be absolute (R69) and must live on a declared persistent mount (R68). It records what the machine was and what it judged of itself, never what a world did |
 | `FORWARD` | the word `yes` | optional, hosted only (R95) — this machine is the way from one of its networks to another: the kernel's own forwarding (`/proc/sys/net/ipv4/ip_forward`), switched on once every network is up and READ BACK before the boot says so. It forwards among **all** its networks and filters nothing, because the kernel decides by the interface a packet ARRIVES on and a list of networks here would name a perimeter nothing keeps. Saying nothing is not being the way: a machine on two links that does not say it never was. The word is `yes` (R96, R97), and a machine with fewer than two networks has nothing to forward between (R98, R99; a loopback is a network a machine declares and is not a way to anywhere, so it is not counted, R100). A machine that forwards is a way off every link it joins, so it cannot say `EGRESS none` for one of them (R101). Which links such a machine may join is a fact about a SET, and the fleet declares it (`ROUTE`, `declarative/fleet/GRAMMAR.md`); the boot line is `boot: forward -- between lan and core: ...`. The servers of the links it serves start AFTER that line, and offer the router and answer for the far links only if the switch read back as on: a promise about the way is made once the kernel has said there is one |
+| `CLOCK` | string, a device path (`"/dev/rtc0"`) | optional, hosted only (R139) — the battery-backed clock this machine HAS, as the hardware it is: a plain path under `/dev` (R140-R142, R159) that is a real-time clock, `/dev/rtc` or `/dev/rtc` and a number -- reading a device opens it, and some devices are armed by being opened (R164) -- and an `IDENTITY` to sign with (R143), because a clock is read to SIGN what the machine is asked, and a time nobody signed is the epoch wearing a date's authority. A clock that no `NETWORK` of the machine reads as its time authority attests nothing (R144). Read when the machine is asked, never kept: the floor has no time of its own (TIME-1) |
+| `TIME_FROM` | string `"a.b.c.d:port"` | optional, hosted only, with `TIME_KEY` (R151, R152) — whom this machine asks, after it has written an entry of its journal, how late that entry can be: an address and a port from 1 to 65535, each number spelled one way, with no sign, no separator and no leading zero (R153, R154, R162, R166, R167), a `JOURNAL` to date (R156), a network to ask over (R157) and a way there: the address is on a static link's own prefix, or that link has a GATEWAY and no EGRESS list, or an EGRESS destination covers it and that link has a GATEWAY to carry it (a route to another network is written through one, and with none declared none is written), or the link asks by dhcp, whose lease is the way (R168-R170; A41-A43). A machine that is itself a time authority asks nobody (R150) |
+| `TIME_KEY` | string, 64 lowercase hex | optional, hosted only, with `TIME_FROM` — whose word this machine takes: the authority's Ed25519 public key, one spelling of 32 bytes (R155). An answer from anyone else on the wire is refused at the door, and the fleet court holds this key to the one the fleet enrols the authority as (FR58) |
 | `SLOTS` | string, the boot partition's device (`"/dev/mmcblk0p1"`) | optional — the machine updates A/B: two slots on that partition, `config.txt` naming the committed one and, under `[tryboot]`, the other; PID 1 reads which slot it booted (`harb.slot=` on the cmdline), arms the watchdog, and commits a trial only once every service has started. Needs a board whose firmware can try a slot (`rpi4`; R41); an absolute device path (R42) |
 | `CONSOLE` | string, a device | optional; defaults `/dev/console`, `uart0`, `logcat` by profile. **Hosted: a port the board HAS** (R91-R94) -- `qemu_pc` `/dev/ttyS0`..`/dev/ttyS3`, `qemu_virt` `/dev/ttyAMA0`, `rpi4` `/dev/ttyS1` (the mini-UART on the header pins; its PL011 goes to Bluetooth) -- or nothing, which is the kernel's own `/dev/console` and on the board is its first port (A25, A26). The kernel's boot line follows it: the card's `cmdline.txt` and the emulator's line both name the port, and the emulator listens on that port and no other. PID 1 then asks the kernel which device its console really is (`TIOCGDEV`) and says the declared line only when they agree; otherwise it says both, and the boot differs from its file (CON-1). Edge and touch: the substrate's; this repository neither boots nor narrates them, and does not check them |
 
@@ -246,6 +249,60 @@ that keeps it can write there); and it grants nothing the world did not
 declare (`NEEDS`) -- it is where a world may write, not whether it may
 open a file.
 
+#### Time — attested, never assumed (TIME-1)
+
+The floor has no date and nothing on it gives it one: a machine's journal
+is ORDERED and UNDATED, and a time the machine wrote itself would be the
+epoch wearing a date's authority (JRN-1). A time reaches a record only as
+a signed statement (STZ-OS-RULING-07), and three clauses of a MACHINE and
+one of a NETWORK carry the two parties of it:
+
+- **the authority** says it HAS a clock (`CLOCK`) and that it answers the
+  time on a link (`TIME_AUTHORITY`). PID 1 reads the clock before it says
+  so, and says so only if the hardware answered, with a reading that can be
+  this decade (a clock that was never set reads the epoch, and the
+  authority will not sign it); it reads the clock again for every question,
+  and a clock that will not answer makes silence and never a time made up
+- **the asker** says whom it asks and whose word it takes (`TIME_FROM`,
+  `TIME_KEY`). After PID 1 has written the journal's entry it sends the
+  digest of that entry's whole line -- signature and all, which nobody
+  without the device's key can compute before the line is written, where
+  the entry's own `hash=` is a hash of public bytes that anybody could
+  compute, and ask the time of, in advance -- and keeps what comes back
+  beside the journal only if the key verifies it and it is about THAT
+  entry; an authority that is down, a wrong signer, and an answer about
+  another entry each leave the record ORDERED and UNDATED, and none holds
+  the boot back
+- **the rules** are the court's and are all about who may say a time and
+  who may take one: R139-R170 (A36-A43 accept a clock and an authority, an
+  authority's lowest and highest port, an asker on the last port, and the
+  three ways to an authority off the link)
+
+What the floor then says is in words that cannot be mistaken for a date:
+`harb journal` prints each entry as dated no later than a time, or as
+ORDERED and UNDATED, and says the second of a machine that declares no
+`TIME_FROM` at all (STZ-OS-RULING-07, item 4) -- from its second boot on,
+because the first prints "no record yet" and stops, and only of a machine
+that runs that witness: one that keeps a record and runs none, like
+`makeen_box`, says nothing of time. It REPORTS a kept statement
+that does not verify -- a line a power cut shortened, one signed under a
+key since replaced -- and does not fail on it: time is advisory, an
+authority that is down holds no boot back, and that witness is a service
+whose exit gates a trial's commit. The auditor's verb, `harb time verify`,
+is what exits 1. It is judged by
+`experiment/os10_time.sh` (two machines on one wire, enrolment by hand,
+and the negatives), the scene by a probe that puts five bugs back in a
+scratch copy (`experiment/time_scene_probe.sh`), and its rules by a probe
+that mutates each in a scratch copy (`experiment/time_probe.sh`). Named seams: authenticated network
+time (NTS) as a source; a fleet with more than one authority; a lower
+bound; an authority's key that is replaced (a rebuilt card makes a new
+one, and the statements the old key signed are not taken by a fleet that
+no longer enrols it); a holder of the DEVICE's key, who can compute its
+own future lines and ask their time early; PID 1 waits up to six seconds
+for an answer, once, after the verdict; and the authority answers any
+datagram that asks, with no limit on how often, from a process that is
+not confined (it is given nothing of PID 1's but its stdio and its socket).
+
 ### DEFINE NETWORK — one interface, one way to an address
 
 | clause | value | obligation |
@@ -256,6 +313,7 @@ open a file.
 | `EGRESS` | string list of destinations, or the word `none` | optional — how far this network REACHES. A list writes one route per destination and NO default route; `none` writes no route at all. Saying nothing is today's behaviour: a declared GATEWAY becomes a default route. `none` with a GATEWAY is refused (R60), an empty list is refused (R61), a destination is an address and a prefix, never a name (R62), and a list whose destinations together cover EVERY address is refused however it is spelled -- `0.0.0.0/0`, `10.0.0.0/0`, or `0.0.0.0/1` with `128.0.0.0/1` -- because everywhere already has a spelling: no EGRESS at all (R88-R90, STZ-OS-RULING-06); half the space is still a perimeter (A24). The rule's story is EGR-1 to EGR-3 in `experiment/PROTOCOL.md` |
 | `DNS` | string list | optional, static only — the servers; a dhcp network learns them |
 | `DOMAIN` | string | optional, static only — the name this link answers to, which makes this machine the link's own SERVER of addresses and names (`"makeen"`). A dhcp link is refused (R77): a machine that asks for its own address is not the one that hands them out. A domain is lowercase labels, digits and the hyphen, separated by dots. One machine answers for a domain once (R103): two links under one name would make a name on either a name on both, and a machine that is the way between them could never be asked for the far one by its full name |
+| `TIME_AUTHORITY` | number, a UDP port | optional (TIME-1) — this machine answers the time on this link: `time? entry=<digest>` is answered with a statement it signs with its device key, that the entry with that digest existed no later than the time its `CLOCK` reads. 1024 to 65535 (R147, R160, R161), on a static address because the address a time question goes to is not a lease (R146), on one link (R148) that is not a loopback (R149), from a `CLOCK` it declares (R145), and asking nobody (R150). A clause of a NETWORK and not of a MACHINE (R158) |
 
 A NETWORK needs the `network` capability granted (R36: silence is
 refusal, as for a service). A NETWORK is to the wire what a MOUNT is to

@@ -1,0 +1,55 @@
+-- time_clockbox.machine -- a fleet's time authority: the one machine whose word about the time is taken (TIME-1).
+--
+-- The floor has no date, and nothing on it gives it one: the journal of every machine is ORDERED and UNDATED,
+-- because a time the machine wrote itself would be the epoch wearing the authority of a date. What a fleet can
+-- have is somebody else's word, and STZ-OS-RULING-07 says whose: a member the fleet DECLARES and enrols like
+-- any other, whose machine has a clock it was declared to have and a key it signs with.
+--
+-- This is that machine. It declares the battery-backed clock it has (CLOCK) and answers, on one link and one
+-- UDP port (TIME_AUTHORITY), the only question it is asked: here is an entry of a record, how late can it be?
+-- It reads the clock, signs "that entry existed no later than T" with its device key, and sends it back. It
+-- keeps no time of its own, remembers nobody who asked, and cannot say anything about how long BEFORE T the
+-- entry existed. A statement is checked with this machine's public half, by anyone who holds the fleet file.
+--
+-- The witness is the same one qemu_identity has: it publishes the public half, the half a fleet enrols. The
+-- clock is the emulator's, a fixed point that runs with the virtual machine; a board has the clock it has.
+
+DEFINE MACHINE time_clockbox AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  IDENTITY "/data/device.key",
+  CLOCK "/dev/rtc0"
+) RATIONALE "A machine that has a clock and a key and answers the time, signed, on one link: the word a fleet's records are dated by"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The witness is a process"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The key is a file, and the partition it lives on is declared"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "The authority answers on a link"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where the key lives: a partition that survives the power, and therefore an authority that does"
+
+DEFINE NETWORK lan AS (
+  INTERFACE "eth0",
+  ADDRESS "10.30.0.1/24",
+  TIME_AUTHORITY 7000
+) RATIONALE "The link it answers the time on: a static address, because the address a time question goes to is not a lease"
+
+DEFINE SERVICE attest AS (
+  RUN ["/harb", "attest", "--export"],
+  RESTART never,
+  NEEDS [process, filesystem]
+) RATIONALE "The witness: it signs with the device's own key and publishes the public half, which is what a fleet enrols"

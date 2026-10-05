@@ -178,6 +178,11 @@ pub const Fleet = struct {
     retirements: []const Retirement,
     /// the ways between links, each through one member
     routes: []const Route,
+    /// the member whose word about the time the fleet takes (TIME-1, STZ-OS-RULING-07): enrolled
+    /// like any member, so what it signs is checked with a public key by anyone who holds this file.
+    /// Null is a fleet that has no time, and whose records are ORDERED and UNDATED.
+    time_authority: ?[]const u8 = null,
+    time_line: usize = 0,
     rationale: []const u8,
 
     pub fn member(self: Fleet, name: []const u8) ?Member {
@@ -438,6 +443,14 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         try routes.append(arena, .{ .name = d.name, .line = d.line, .between = between, .through = via, .rationale = d.rationale });
     };
 
+    // ---- the time authority (TIME-1) ---------------------------------
+    var time_authority: ?[]const u8 = null;
+    var time_line: usize = fd.line;
+    if (machine.find(fd, "TIME_AUTHORITY")) |c| {
+        time_authority = try machine.wantIdent(&ctx, c);
+        time_line = c.line;
+    }
+
     const f = Fleet{
         .name = fd.name,
         .line = fd.line,
@@ -445,6 +458,8 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         .members = try members.toOwnedSlice(arena),
         .retirements = try retirements.toOwnedSlice(arena),
         .routes = try routes.toOwnedSlice(arena),
+        .time_authority = time_authority,
+        .time_line = time_line,
         .rationale = fd.rationale,
     };
 
@@ -538,8 +553,66 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
     }
 
     try checkRoutes(&ctx, f);
+    try checkTime(&ctx, f);
 
     return f;
+}
+
+// ---- the time authority (TIME-1) ----------------------------------------
+
+/// The facts about time that no single machine can know (STZ-OS-RULING-07): who the fleet takes the
+/// time from, that what that member signs can be CHECKED (it is enrolled), that its machine can
+/// answer, and that everyone who asks asks it -- the address, the key and a way there. Each is a case
+/// where every machine in the fleet is faultless alone.
+fn checkTime(ctx: *machine.Ctx, f: Fleet) machine.Error!void {
+    // who answers the time: every member whose machine says it does
+    var answerer: ?Member = null;
+    for (f.members) |m| {
+        var answers = false;
+        for (m.machine.networks) |n| if (n.time_authority != null) {
+            answers = true;
+        };
+        if (!answers) continue;
+        if (answerer) |first| return ctx.refuse(m.line, "{s} answers the time too, and {s} already does: a fleet has one time authority, or a record would be dated by whoever the asker happened to reach", .{ m.name, first.name });
+        answerer = m;
+    }
+    const who = f.time_authority orelse {
+        if (answerer) |a| return ctx.refuse(a.line, "{s} answers the time, and this fleet declares no TIME_AUTHORITY: a statement from a member the fleet never named is one nobody was declared to trust", .{a.name});
+        for (f.members) |m| if (m.machine.time_from) |tf| {
+            return ctx.refuse(m.line, "{s} asks {s} for the time of its record, and this fleet declares no time authority: a question nobody was declared to answer", .{ m.name, tf.text });
+        };
+        return;
+    };
+    const am = f.member(who) orelse return ctx.refuse(f.time_line, "TIME_AUTHORITY names {s}, and no MEMBER {s} is declared: an authority is a machine of this fleet", .{ who, who });
+    if (am.key == null) return ctx.refuse(f.time_line, "{s} is the fleet's time authority and has no KEY: a statement nobody can check against a key is a claim and not a time, so the authority is enrolled like every member whose record is verified", .{who});
+    var net: ?machine.Network = null;
+    for (am.machine.networks) |n| if (n.time_authority != null) {
+        net = n;
+    };
+    const wire = net orelse return ctx.refuse(f.time_line, "{s} is the fleet's time authority, and its machine declares no NETWORK with TIME_AUTHORITY: it cannot answer", .{who});
+    const at = switch (wire.address) {
+        .static => |s| s,
+        .dhcp => unreachable, // the machine court refuses a TIME_AUTHORITY on a leased address
+    };
+    for (f.members) |m| {
+        if (std.mem.eql(u8, m.name, am.name)) continue;
+        const tf = m.machine.time_from orelse continue;
+        if (tf.ip != at.ip or tf.port != wire.time_authority.?) {
+            return ctx.refuse(m.line, "{s} asks {s} for the time, and the fleet's time authority {s} answers on {s}:{d}: it would ask somebody who is not the authority", .{ m.name, tf.text, who, at.text[0 .. std.mem.indexOfScalar(u8, at.text, '/') orelse at.text.len], wire.time_authority.? });
+        }
+        if (!std.mem.eql(u8, &tf.key, &am.key.?.toBytes())) {
+            return ctx.refuse(m.line, "{s} takes the time from the key {s}, and the fleet's time authority {s} is enrolled as {s}: the word it takes is not the authority's", .{ m.name, tf.key_text, who, am.key_text.? });
+        }
+        // a way to the authority: its link, or one a ROUTE joins to it -- judged only where the fleet names wires
+        if (f.links.len > 0) {
+            var reach = false;
+            for (m.machine.networks) |n| {
+                if (machine.isLoopback(n)) continue;
+                if (std.mem.eql(u8, n.name, wire.name) or f.joined(n.name, wire.name)) reach = true;
+            }
+            if (!reach) return ctx.refuse(m.line, "{s} asks the time of {s}, which answers on {s}, and {s} is on no link that is {s} or that a ROUTE joins to it: a question with no way there", .{ m.name, who, wire.name, m.name, wire.name });
+        }
+    }
 }
 
 // ---- the ways between links (FWD-1) ------------------------------------

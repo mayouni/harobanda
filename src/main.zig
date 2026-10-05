@@ -32,6 +32,9 @@ const pack = @import("pack.zig");
 const ready = @import("ready.zig");
 const get = @import("get.zig");
 const own = @import("own.zig");
+const timeattest = @import("timeattest.zig");
+const timeaudit = @import("timeaudit.zig");
+const timeserve = @import("timeserve.zig");
 const confine = @import("confine.zig");
 const expect = @import("expect.zig");
 
@@ -63,6 +66,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  harb journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
+        \\  harb time   verify <file.fleet> <statements> [<record>]   (what the fleet's time authority said about a record, checked with the key the fleet holds)
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
         \\  harb place  <file.machine> <file.pack>... [--out <file>]   (a solution's services, placed on a machine and judged as one)
         \\  harb court  --pack [declarative/pack/fixtures.json]
@@ -268,16 +272,36 @@ pub fn main() !u8 {
                 return 1;
             },
         };
+        // what an authority said about this record, kept beside it (TIME-1): nothing, on a machine that never asked.
+        // Time is advisory and this witness gates the trial's commit, so a file that cannot be read is said and
+        // does not fail the witness: the record's own verdict, below, is what it owes
+        const kept_path = try std.fmt.allocPrint(arena, "{s}{s}", .{ rec_path, timeattest.kept_suffix });
+        var kept_unread = false;
+        const kept: []const u8 = std.fs.cwd().readFileAlloc(arena, kept_path, 1 << 20) catch |e| switch (e) {
+            error.FileNotFound => "",
+            else => blk: {
+                try out.print("journal: cannot read {s}: {s}\n", .{ kept_path, @errorName(e) });
+                kept_unread = true;
+                break :blk "";
+            },
+        };
         // A record that cannot leave the machine can only be checked by
         // the machine, which is attribution nobody else can test. With
         // --export the entries come out as the exact bytes that were
-        // signed, ready to be verified by any holder of the fleet file.
+        // signed, ready to be verified by any holder of the fleet file --
+        // and the statements dating them, as the bytes the authority signed.
         for (args[2..]) |a| if (std.mem.eql(u8, a, "--export")) {
             var lines = std.mem.splitScalar(u8, text, '\n');
             while (lines.next()) |raw| {
                 const line = std.mem.trimRight(u8, raw, "\r");
                 if (line.len == 0) continue;
                 try out.print("record {s}\n", .{line});
+            }
+            var stated = std.mem.splitScalar(u8, kept, '\n');
+            while (stated.next()) |raw| {
+                const line = std.mem.trimRight(u8, raw, "\r");
+                if (line.len == 0) continue;
+                try out.print("statement {s}\n", .{line});
             }
         };
         const check = journal.verify(text, pair.public_key);
@@ -294,7 +318,39 @@ pub fn main() !u8 {
             const cut = std.mem.indexOf(u8, line, " hash=") orelse line.len;
             try out.print("journal:   {s}\n", .{line[0..cut]});
         }
+        // ... and, on a machine that declared whom to ask, what its authority has said about the record it just
+        // read: each entry dated no finer than a statement can stand behind, or ORDERED and UNDATED. Said by the
+        // same reading an auditor runs, with the one key this machine was declared to take the answer from.
+        if (m.time_from) |tf| {
+            // REPORTED, never failed on: time is advisory (an authority that is down holds no boot back), and
+            // this witness gates the trial's commit. A statement that does not verify -- a line a power cut
+            // shortened, one an authority signed under a key since replaced -- is said and not taken, and must
+            // not make every later boot fail; the auditor's verb (`harb time verify`) is what exits 1 on it
+            if (Ed.PublicKey.fromBytes(tf.key)) |key| {
+                try out.print("journal: time -- this machine asks {s} and takes only the word of key {s} (TIME_KEY)\n", .{ tf.text, journal.fingerprintOf(tf.key) });
+                if (kept_unread) {
+                    try out.print("journal: time -- what the authority said could not be read, so every entry of this record is ORDERED and UNDATED here\n", .{});
+                } else {
+                    _ = try timeaudit.read(arena, out, key, kept, text);
+                }
+            } else |_| {
+                try out.print("journal: time -- TIME_KEY is not a public key, so no statement can be taken: every entry of this record is ORDERED and UNDATED here\n", .{});
+            }
+        } else {
+            // STZ-OS-RULING-07: a machine with no declared source says so, in those words, rather than print a
+            // date it cannot stand behind
+            try out.print("journal: time -- this machine declares no TIME_FROM, so its record is ORDERED and UNDATED: the sequence is the order, and nothing here can say what day it is\n", .{});
+        }
         return 0;
+    }
+    if (std.mem.eql(u8, verb, "time")) {
+        // Time, checked by something that never held the secret: the authority's statements about a record,
+        // with the key the fleet holds for it (TIME-1)
+        if (args.len < 3 or !std.mem.eql(u8, args[2], "verify")) {
+            try out.print("harb: time takes a verb: verify <file.fleet> <statements> [<record>]\n", .{});
+            return 1;
+        }
+        return timeaudit.run(arena, args[3..], out);
     }
     if (std.mem.eql(u8, verb, "attest")) {
         // The witness of the IDENTITY seat, as `reach` is EGRESS's and
@@ -510,6 +566,8 @@ pub fn main() !u8 {
                 try out.print(", through {s}\n", .{r.through});
             }
         }
+        // the one member whose word about the time the fleet takes (TIME-1)
+        if (f.time_authority) |ta| try out.print("  time -- the word of {s}, and of nobody else, is what dates this fleet's records\n", .{ta});
         var unenrolled: usize = 0;
         for (f.members) |m| {
             try out.print("  {s} -- {s} ({s}", .{ m.name, m.machine.name, m.declaration });
@@ -1029,6 +1087,9 @@ test {
     _ = ready;
     _ = get;
     _ = own;
+    _ = timeattest;
+    _ = timeaudit;
+    _ = timeserve;
     _ = learn;
     _ = docs;
 }

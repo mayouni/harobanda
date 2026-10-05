@@ -404,6 +404,7 @@ same for all three.
 | a machine that is the way between two networks, and the names it answers across them | `src/machine.zig` (`FORWARD`), `src/names.zig`, `src/get.zig` | `machines/qemu_forward.expected`, `machines/cloud_links.expected` |
 | a solution's services, written apart from a machine and placed on one; and the program that says a server is serving | `src/pack.zig`, `src/ready.zig` | `harb court --pack`, `machines/qemu_cloud_ringserv.expected` |
 | a world that runs as an identity, and the directories it owns | `src/machine.zig` (`STATE`), `src/init.zig` | `machines/qemu_cloud_ringserv.expected` (the directory read back from the disk), `machines/qemu_own.expected` (a world asks the kernel what it may write), `experiment/state_probe.sh` |
+| time: a record dated by an authority's signed word, or said to be undated | `src/timeattest.zig`, `src/timeserve.zig`, `src/timeaudit.zig`, `src/machine.zig` (`CLOCK`, `TIME_FROM`) | `machines/time.expected` (two machines on one wire), `experiment/time_probe.sh`, `experiment/time_scene_probe.sh` |
 | updates: two slots, and a trial before any commit | `src/update.zig` | the card read back after a trial |
 | the guided tour, judged like any other claim | `src/learn.zig` | `harb learn --check` |
 | the pages: every code line fits GitHub's column, every machine a page shows in full is one the court accepts, and the words are the tour's own | `src/docs.zig` | `harb docs --check`, in `zig build court` |
@@ -416,8 +417,8 @@ Design documents live in `doc/`: `VISION.md` for what this is for,
 is the floor of, `DIVIDEND.md` for what owning the floor gives each layer
 above it, `CLOUD.md` for how many machines compose into a cloud that serves
 one solution (the first two of its six rungs are built, on emulated
-machines; the rest are not), and `PROVENANCE.md` for the
-rulings that shaped it.
+machines, and the third in part: its time, not its front; the rest are
+not), and `PROVENANCE.md` for the rulings that shaped it.
 
 ## For contributors
 
@@ -452,7 +453,11 @@ transcript:
 - `bash experiment/os9_cloud.sh` — a real server placed on a declared
   machine and booted, with the program that says it is serving. It runs as an
   identity of its own, and the boot reads its directory back from the disk it
-  leaves.
+  leaves;
+- `bash experiment/os10_time.sh` — two machines on one wire: a record is
+  dated by an authority's signed word, stays undated when the authority is
+  gone, and refuses an impostor's answer; then what anyone holding only the
+  fleet file can check of it, and six audits that must fail.
 
 Every line of doctrine here was paid for by a mistake, and each is written up
 under its own tag in `experiment/PROTOCOL.md`, newest first. A few of them:

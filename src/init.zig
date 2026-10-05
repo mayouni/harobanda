@@ -33,6 +33,8 @@ const names = @import("names.zig");
 const confine = @import("confine.zig");
 const expect = @import("expect.zig");
 const journal = @import("journal.zig");
+const timeattest = @import("timeattest.zig");
+const timeserve = @import("timeserve.zig");
 
 pub const Options = struct {
     rehearse: bool = false,
@@ -364,6 +366,108 @@ fn journalWrite(gpa: std.mem.Allocator, m: *const machine.Machine, id: ?Identity
         out.print("boot: journal -- {s}: {d} entr{s} verified, entry {d} appended and signed (verdict {s})\n", .{ path, check.verified, if (check.verified == 1) "y" else "ies", seq, verdict.text() }) catch {};
     }
     return true;
+}
+
+// ---- time, from an authority and for a record (TIME-1) -------------------------------------------
+//
+// The floor has no date, and nothing here gives it one. A machine with a clock and a key can be a link's
+// TIME AUTHORITY: it reads the clock it was declared to have and signs, with its device key, that an entry it
+// was asked about existed no later than that reading. A machine with a journal can ask: after it has written
+// its record it sends the digest of the entry it just wrote and keeps the answer, if the answer is the
+// authority's word about THAT entry, beside the record it dates. Neither is a world (neither is declared as a
+// service and neither is confined): this is the machine being what it said it was, like the server of names.
+
+/// Become this machine's link's time authority, once there is a key to sign with. The clock is asked BEFORE
+/// anything is said, and the socket is taken before the fork, so that "this machine could not become the
+/// authority it declared itself" is said by the machine, in order, in the transcript that is judged: the
+/// line is the expectation's, and a boot that cannot say it differs from it (CON-1, NS-1). And it is said
+/// only once the responder EXISTS: the first version said it before the fork, so a fork that failed left a
+/// ledger that matched its expectation and a machine that answered nobody.
+fn serveTime(m: *const machine.Machine, id: Identity, led: *Ledger, out: *std.Io.Writer) !?[]const u8 {
+    const clock = m.clock orelse return null;
+    for (m.networks) |n| {
+        const port = n.time_authority orelse continue;
+        const at = switch (n.address) {
+            .static => |s| s,
+            .dhcp => continue,
+        };
+        _ = timeserve.readRtc(clock) catch |e| {
+            try out.print("boot: time -- {s} cannot answer: the clock {s}: {s}; this machine will not sign a time it cannot read\n", .{ n.name, clock, timeserve.clockWords(e) });
+            continue;
+        };
+        const fd = timeserve.bind(at.ip, port, n.interface) catch |e| {
+            try out.print("boot: time -- {s} could not answer on port {d}: {s}\n", .{ n.name, port, @errorName(e) });
+            continue;
+        };
+        const pid = std.posix.fork() catch |e| {
+            try out.print("boot: time -- {s} could not start its server: {s}\n", .{ n.name, @errorName(e) });
+            std.posix.close(fd);
+            continue;
+        };
+        if (pid == 0) {
+            // PID 1's own code in a child that is never exec'd, so close-on-exec does not reach it: it is given
+            // nothing of PID 1's but its stdio and its socket (the hardware watchdog above all, WDG-1)
+            timeserve.closeInherited(fd);
+            timeserve.serve(fd, id.pair, clock);
+        }
+        // the parent keeps no descriptor to the port: the child is the authority
+        std.posix.close(fd);
+        _ = try expect.timeLines(led.w(), m);
+        try led.echo();
+        return n.name;
+    }
+    return null;
+}
+
+/// The last line of a record that is not empty.
+fn lastLine(text: []const u8) ?[]const u8 {
+    const t = std.mem.trimRight(u8, text, "\r\n");
+    if (t.len == 0) return null;
+    return t[(if (std.mem.lastIndexOfScalar(u8, t, '\n')) |i| i + 1 else 0)..];
+}
+
+/// Ask the authority this machine declared for the time of the entry it has just written, and keep the answer
+/// if it is the authority's word about that entry. Said on the console and never in the ledger: an authority
+/// that is down must not hold a trial back, and a record that stays ORDERED and UNDATED is a true state. The
+/// answer is judged against the key the machine was declared to take it from, so a datagram anybody on the
+/// wire sends in the authority's name is refused here, at the door.
+fn askTime(gpa: std.mem.Allocator, m: *const machine.Machine, id: ?Identity, out: *std.Io.Writer) void {
+    const tf = m.time_from orelse return;
+    const ident = id orelse return;
+    const jpath = m.journal orelse return;
+    const text = std.fs.cwd().readFileAlloc(gpa, jpath, 1 << 20) catch return;
+    defer gpa.free(text);
+    const check = journal.verify(text, ident.pair.public_key);
+    if (check.broken_at != null or check.verified == 0) return;
+    // what is asked about is the digest of the line just written, signature and all -- not its `hash=`, which is a
+    // hash of public bytes that anybody could have computed, and asked about, before the entry existed
+    const last = lastLine(text) orelse return;
+    const entry = timeattest.entryDigest(last);
+    const key = std.crypto.sign.Ed25519.PublicKey.fromBytes(tf.key) catch {
+        out.print("boot: time -- TIME_KEY is not a public key: this record stays ORDERED and UNDATED\n", .{}) catch {};
+        return;
+    };
+    switch (timeserve.ask(tf.ip, tf.port, &entry, key, 3, 2000)) {
+        .answered => |a| {
+            var pbuf: [std.fs.max_path_bytes]u8 = undefined;
+            // never a fallback to the journal's own path: a statement appended there would be written INTO the record
+            const lpath = std.fmt.bufPrint(&pbuf, "{s}{s}", .{ jpath, timeattest.kept_suffix }) catch {
+                out.print("boot: time -- the answer could not be kept: its file name is too long; this record stays ORDERED and UNDATED\n", .{}) catch {};
+                return;
+            };
+            timeserve.keep(lpath, a.line[0..a.len]) catch |e| {
+                out.print("boot: time -- the answer could not be kept in {s}: {s}; this record stays ORDERED and UNDATED\n", .{ lpath, @errorName(e) }) catch {};
+                return;
+            };
+            var tb: [32]u8 = undefined;
+            const when = timeattest.minuteUp(&tb, a.t) catch "?";
+            out.print("boot: time -- the record's last entry {s} existed no later than {s}, by the word of {s} (kept in {s})\n", .{ entry[0..8], when, a.authority, lpath }) catch {};
+        },
+        .silent => out.print("boot: time -- no answer from {s} after 3 tries: this record stays ORDERED and UNDATED\n", .{tf.text}) catch {},
+        .refused => |v| out.print("boot: time -- an answer from {s} {s}: this record stays ORDERED and UNDATED\n", .{ tf.text, v.words() }) catch {},
+        .wrong_entry => out.print("boot: time -- {s} answered about another entry: this record stays ORDERED and UNDATED\n", .{tf.text}) catch {},
+        .no_socket => out.print("boot: time -- this machine cannot ask {s}: this record stays ORDERED and UNDATED\n", .{tf.text}) catch {},
+    }
 }
 
 // ---- budgets, held by the kernel (BDG-1) ---------------------------------
@@ -1051,6 +1155,16 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             id.fingerprint,
         });
     }
+    // a machine that is a time authority answers once it has a key to sign with and a clock that answered
+    // ... and is then a machine that waits, like a server of names: it is the authority when nobody asks, too.
+    // A rehearsal is an ordinary process on somebody's host, which reads no clock of its own and binds no
+    // address it was declared on
+    if (device) |id| if (!opts.rehearse) if (try serveTime(m, id, &led, out)) |wire| {
+        if (serving_buf.items.len > 0) try serving_buf.appendSlice(gpa, " and ");
+        try serving_buf.appendSlice(gpa, "the time authority of ");
+        try serving_buf.appendSlice(gpa, wire);
+        serving = serving_buf.items;
+    };
 
     // the ceilings, before the first world runs: a world must never see
     // a boot in which its group did not exist yet (BDG-1)
@@ -1134,6 +1248,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                 // the record, after the verdict and before the commit:
                 // what this boot was is what the entry is worth (JRN-1)
                 const recorded = journalWrite(gpa, m, device, matches, true, out);
+                // and, if this machine declared whom to ask, the time of the record it just wrote
+                if (recorded) askTime(gpa, m, device, out);
                 if (ab) |*s| if (!s.done and !opts.hold) {
                     if (matches and !recorded) {
                         held = true;
