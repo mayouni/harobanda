@@ -72,6 +72,44 @@ ruling can be one-meaning-per-word:
 - **Device** — the L2 language (ex-MicroRing's seam); PIN here is its
   first seat, and the two must converge or one must yield.
 
+## The ruling of 2026-10-05 (taken on the author's behalf, at his word)
+
+With the smallest cloud built, this desk put two things to the author:
+whether to publish six commits that were still local, and which work to
+take first. He answered both at once: *"take whatever decision pending
+on my behalf and then continue."* Ruled, open to his reversal.
+
+**STZ-OS-RULING-16 — publish the smallest cloud, then take the first
+server off root, then time, then the front.**
+
+1. **The six commits are published.** `e481f0c` to `761ebc7`: a loopback
+   is not a way to be found (EGR-2), RingServ placed on a declared
+   machine and booted (SRV-2), a machine that is the way between links
+   and a fleet that declares two (FWD-1, with the six things an
+   independent review found), and `/dev/watchdog` close-on-exec
+   (WDG-1). What decided it: each is authored by his noreply address; a
+   scan of the lines they add found no machine path, no e-mail address,
+   nothing shaped like a key, and none of Central's files; and each
+   message names what it was judged by and what could not be. The push
+   redeploys the site, because one page of it (`threats.html`) quotes the
+   court's fixture count.
+2. **The first server comes off root before anything is built on it.**
+   `doc/CLOUD.md` names it under rung 1: *the world runs as root*. It does
+   because its READY path sits in root's `/run` and its database on a disk
+   only root can write, so a world with a declared identity (USR-1) could
+   not start it. Rung 3 puts more worlds on a machine, a clock authority
+   and a TLS front, and each would copy the shape of the first one; the
+   shape is cheapest to change while there is one. This hardens a seat
+   that exists. It is not a new rung and adds no rung's worth of claim.
+3. **Then rung 3, in the order the ladder gives.** Time first, *because a
+   certificate is a dated claim and the floor has no date*
+   (STZ-OS-RULING-07, unchanged: attested, never assumed), then the front
+   (TLS at a proxy, ruling 14). Nothing new is decided about either: the
+   seats are named and are not built.
+
+Not touched by this ruling: the Pi kit, which is a purchase, and the
+OS-5 board it is for, which stays parked.
+
 ## The rulings of 2026-10-04 (the author's own words)
 
 Asked how the declared machine could be composed into an industry-grade
