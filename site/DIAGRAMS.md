@@ -116,6 +116,7 @@ no change. Diagram 3 is drawn here at both widths.
 | 9 | `harobanda-diagram-9.png` | index | *what just happened*, 31% | **live** (1376 × 500) |
 | 10 | `harobanda-diagram-10.png` | field | before the two cases, 40% | **retired** 2026-09-29 (page dissolved; files removed) |
 | 11 | `harobanda-diagram-11.png` | security | after the page's opening, 21% | **live** (added 2026-09-29) |
+| 12 | `harobanda-diagram-12.png` | cloud | after the page's opening, 23% | **live** (added 2026-10-05) |
 
 **The register is complete: ten diagrams, and every page's first diagram is
 inside its first third.** The site has since grown to nine pages. Two of them
@@ -381,6 +382,36 @@ chips honest and visibly different — one delivered, one in development.
 **Must not.** Do not draw a datacentre, a logo, or a map of Africa. Do not
 make the two look like one product with two skins; they are two topologies
 that happen to share a floor.
+
+---
+
+## 11 · The smallest cloud — `cloud.html`
+
+The Enterprise section grew three pages about the cloud (2026-10-05), and the first of them needed one
+picture. It is a topology, which is what a diagram is for here: three machines, two networks, and which
+of them joins the two.
+
+**The sentence it must make true:** *a till on one network asks for a server on another by name, and
+reaches it through the one machine the fleet file says is the way between them.*
+
+**Composition.** The fleet file as a band across the top: it names the machines, the two links and the
+way between. Under it three machines in a row, each with an arrow from the file: `till` (asks by name),
+`box` (the way between) -- wider, in the machine's blue-grey, carrying the one orange mark -- and `server`
+(RingServ 0.9). The two links between them are lines with the same head at both ends, labelled `front`
+and `core`: a route is a way both ways, and a one-way arrow would claim a packet filter that does not
+exist. Beneath, three rows -- `the box says`, `the till gets`, `the server runs` -- each with the
+machine's own words in quotation marks, and a last band, `NOT THERE YET`: no front, no packet filter, no
+board.
+
+**Exact labels.** Kicker: `HAROBANDA — THE SMALLEST CLOUD`. Every quotation is a substring of
+`machines/cloud_links.expected`, and `diagram12.py` and `narrow12.py` refuse to draw one that is not (the
+rule of diagram 11). Its phone drawing breaks the till's address after the slash, because one long word
+wider than the column would run off the picture, and a quotation is wrapped and never shrunk.
+
+**Must not.** No cloud shape: the picture is of what boots, and the cloud is the set. No arrow from the
+till to the server that goes round the box. No lock and no certificate, because there is no front. No
+datacentre and no logo. The server is `RingServ 0.9` and nothing grander, because it stands in for a
+customer's.
 
 ---
 

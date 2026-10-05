@@ -449,6 +449,9 @@ p code{color:var(--laterite);}
 @media(max-width:640px){.stage{white-space:normal;border-radius:12px;}}
 .stage.now{background:var(--kept-wash);color:var(--kept);}
 .stage.prog{background:var(--river-wash);color:var(--river);}
+/* Not built: an outline and no fill, the mark the diagrams use for absence, in the colour this site
+   keeps for what is not held. An outline rather than a border, so the tag is the size of the others. */
+.stage.open{background:transparent;color:var(--laterite);box-shadow:inset 0 0 0 1px var(--laterite);}
 @media(max-width:720px){.stage{justify-self:start;}}
 .osdelta{display:flex;flex-direction:column;gap:8px;margin-top:6px;padding-top:13px;border-top:1px solid var(--line);}
 .osdelta p{font-size:18px;line-height:1.5;padding-left:18px;position:relative;}

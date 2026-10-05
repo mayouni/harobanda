@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where the cloud stands — Harobanda</title>
+<meta name="description" content="Six steps to a cloud, in the order each needs the one before: two built, a third half built, three ahead. What judges each, what is not built, and what you keep when somebody else owns the hardware.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html" aria-label="Harobanda — home">
+      <img class="brandmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="ai.html">AI &amp; agents</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="security.html">Security</a>
+      <a href="enterprise.html" class="active">Enterprise</a>
+    </nav>
+    <a class="ghlink" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </div>
+</header>
+
+  <nav class="path" aria-label="Section">
+    <div class="path-in">
+      <a href="enterprise.html">For IT</a>
+      <a href="cloud.html">The cloud</a>
+      <a href="cloud-files.html">How it is written</a>
+      <a href="cloud-status.html" class="here" aria-current="page">Where the cloud stands</a>
+    </div>
+  </nav>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">Where the cloud stands</p>
+    <h1>Two steps built, a third half built, three ahead.</h1>
+    <p class="lead">A cloud is built in the order its parts depend on one another: a server to serve, a way between networks, a date and a front, a machine a provider can boot, an update that rolls through the set, and a witness that checks every machine's record. This page says where each stands and what judges it. Everything built has run only in an emulator, and none of it for a customer.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">The six steps</p>
+      <h2>In the order each one needs the one before.</h2>
+    </div>
+    <div class="fam">
+      <div class="fam-row"><span class="nm">1 · A server</span><span class="rl"><b>A solution's server, placed on a machine.</b> A pack, the solution's server programs written apart from any machine, is put on a machine, and the machine runs the server as a confined program under a user of its own, with directories only that user may write. It is called ready only once it has answered a request. Judged by a boot compared line for line with its kept transcript, and by the same machine with no disk behind the server's directory, which does not start it.</span><span class="stage now">built · emulated</span></div>
+      <div class="fam-row"><span class="nm">2 · Two links</span><span class="rl"><b>A box that is the way between two networks.</b> The fleet file, which names the machines of the cloud, says which box and which networks. The box answers for the far network's names and for nothing else, and a till on one network reaches a server on the other through it. Judged by three machines on two networks; by the same box without its one line, which goes silent about the far network; and by a device nobody declared, which is given nothing.</span><span class="stage now">built · emulated</span></div>
+      <div class="fam-row"><span class="nm">3a · Time</span><span class="rl"><b>A date a record can lean on.</b> A fleet's one time authority signs, with its own key, that an entry of a machine's record existed no later than a time it read from its clock. A record with no such statement says it is ordered and undated. Judged by two machines on one wire, and by deliberately breaking each rule to see that a check catches it.</span><span class="stage now">built · emulated</span></div>
+      <div class="fam-row"><span class="nm">3b · A front</span><span class="rl"><b>A program at the edge that ends TLS</b>, the encryption of a web connection, with its key on a disk the machine declares. Until it exists, a server is reached over plain HTTP from the networks of its own cloud, and from nowhere else.</span><span class="stage open">not built</span></div>
+      <div class="fam-row"><span class="nm">4 · Provider</span><span class="rl"><b>The same file, booted on a machine somebody else owns.</b> An image that a cloud provider's virtual machine can boot, with the same two slots and the same trial as a board has. Today the emulator is handed the kernel directly.</span><span class="stage open">not built</span></div>
+      <div class="fam-row"><span class="nm">5 · Rollout</span><span class="rl"><b>An update that goes through the set a wave at a time.</b> The next wave starts only when every machine in the current one has kept its own trial, so the set judges itself as one machine does. Today each machine judges its own trial, and nothing judges the set.</span><span class="stage open">not built</span></div>
+      <div class="fam-row"><span class="nm">6 · Witness</span><span class="rl"><b>Each program's own network reach, a filter behind the routes, and a witness.</b> The witness is a program that collects every machine's signed record and checks it with the fleet's public keys, holding no secret, so that an auditor reads one page. Today a route is a way both ways, and one record is checked at a time.</span><span class="stage open">not built</span></div>
+    </div>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">One step, shown</p>
+      <h2>A record is dated by somebody else's word, or says it is undated.</h2>
+    </div>
+    <div class="prose stack-gap" style="margin-bottom:clamp(24px,3vw,34px)">
+      <p>A machine with no clock of its own cannot say what day it is, and a date it made up would be worse than none. So its record of its boots is ordered and undated, and what a fleet can have is another machine's word. One member, which the fleet names and enrols like any other, has a battery-backed clock. When a machine asks, it signs: <em>the entry with this fingerprint existed no later than this time.</em> That is an upper bound and nothing more, because it says nothing of how long before. The machine that asked keeps the statement beside its record, and anyone holding only the fleet file can check it.</p>
+    </div>
+    <div class="term" aria-label="Lines from the pinned boot of the time scene, machines/time.expected">
+      <div class="term-bar"><i></i><i></i><i></i><b>harb time verify, from its pin</b></div>
+<pre><span class="d"># a record and the authority's statements, checked with the fleet file alone</span>
+time: entry 4 is <span class="k">ORDERED and UNDATED</span>: no statement is about it, or about any entry after it
+time: 3 statements verified against the key clockbox holds in this fleet, and no secret took part
+
+<span class="d"># one second added to a statement</span>
+time: statement 1 <span class="k">does not verify</span>: it was changed after it was signed, or signed by another key
+time: 1 of 3 statements refused: what a refused statement says is not taken</pre>
+    </div>
+    <p class="cap">The authority was taken away after the third boot, and what it had said stayed said: the entries after its last statement say they are ordered and undated, and no date is made up for them. Add one second to a statement and it no longer verifies.</p>
+  </section>
+
+  <section class="wrap block" id="not-built">
+    <div class="sec-head prose">
+      <p class="eyebrow">Said plainly</p>
+      <h2>What the boots do not show.</h2>
+    </div>
+    <ul class="honest two">
+      <li><b>No customer's server, and nothing to rent.</b> RingServ stands in for a customer's server, and none is placed. Nothing here is a service you can rent.</li>
+      <li><b>A route is a way both ways.</b> No packet filter exists to make it one-way, and two networks are joined through one box, not through a chain of boxes.</li>
+      <li><b>Forwarding filters nothing.</b> A device nobody declared is given no address, router or resolver, but one that chose its own address and named the box as its gateway would be carried.</li>
+      <li><b>No board.</b> Every boot on these pages ran in an emulator. The time statements read a clock the emulator hands the authority, a fixed time that runs with the virtual machine. Whether a board's battery keeps time is the first board's to show.</li>
+      <li><b>Time has one source and one bound.</b> One authority per fleet, a clock it was declared to have, no time taken from the network, and a statement that says "no later than" and never "how long before". An authority's key cannot be replaced yet.</li>
+    </ul>
+  </section>
+
+  <section class="wrap block">
+    <p class="prose">Back: <a href="cloud-files.html">How it is written →</a> The three kinds of file, what is left out on purpose, and what you keep when somebody else owns the hardware. <a href="enterprise.html">Enterprise IT →</a></p>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in foot-row">
+    <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    <p class="foot-credit">A Softanza Project, open source (MIT).<br>By: Mansour Ayouni &copy; 2026.</p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How a cloud is written — Harobanda</title>
+<meta name="description" content="Three kinds of file write a cloud, in one language, and are checked as a whole before anything boots. What a cloud usually has and this one leaves out on purpose, and what you keep when somebody else owns the hardware.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html" aria-label="Harobanda — home">
+      <img class="brandmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="ai.html">AI &amp; agents</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="security.html">Security</a>
+      <a href="enterprise.html" class="active">Enterprise</a>
+    </nav>
+    <a class="ghlink" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </div>
+</header>
+
+  <nav class="path" aria-label="Section">
+    <div class="path-in">
+      <a href="enterprise.html">For IT</a>
+      <a href="cloud.html">The cloud</a>
+      <a href="cloud-files.html" class="here" aria-current="page">How it is written</a>
+      <a href="cloud-status.html">Where the cloud stands</a>
+    </div>
+  </nav>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">How a cloud is written</p>
+    <h1>Written as files, checked as a whole.</h1>
+    <p class="lead">A cloud is written the way one machine is: in plain text files, in one language, checked before anything boots. Nothing manages it afterwards. There is no discovery, no orchestrator and no program that decides what runs where, and this page says what stands in their place and what is left out on purpose.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">What you write</p>
+      <h2>Three kinds of file, in one language.</h2>
+    </div>
+    <div class="trio">
+      <div class="card"><h4>A machine file</h4><p>Says what one machine is and what each program on it may use: the network, which disks, which user, how much memory. <code>harb check</code> reads it against the language's rules and refuses what breaks one, naming the line.</p></div>
+      <div class="card"><h4>A fleet file</h4><p>Names the machines of one estate, each with the public key it is enrolled by, the networks it sits on (the fleet file calls a network a link), and which machine is the way between two of them. It is judged as a whole, because some mistakes belong to no single machine: two machines that each serve the same network are each faultless, and together a broken network.</p></div>
+      <div class="card"><h4>A pack</h4><p>A solution's server programs on their own, written apart from any machine: what each one needs to run. <code>harb place</code> puts a pack on a machine, and the machine's own checks judge the result as one machine. A pack that asks for what the machine does not grant is refused at the pack's own line, before any image is built.</p></div>
+    </div>
+    <div class="prose stack-gap" style="margin-top:clamp(24px,3vw,34px)">
+      <p>An ordinary cloud has a control plane: a service that decides what runs where and watches that it keeps running. Here that job is done by the files in git and by each machine's own check of its own boot. There is nothing to install, nothing to keep alive, and nothing that holds a second copy of who is in the set and could disagree with the file. The part of <code>harb</code> that checks the files is called the court, and it refuses a mistake while the cloud is still text.</p>
+    </div>
+    <p class="pull prose" style="margin-top:clamp(22px,3vw,32px)">What matters in a set of machines is the list of states it must never be in. <b>Here each one is a refusal the court can make before anything boots.</b></p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Left out on purpose</p>
+      <h2>What most clouds have, and this one does not.</h2>
+    </div>
+    <div class="trio">
+      <div class="card"><h4>No discovery, no autoscaling</h4><p>The fleet file is the list of who is in the set. A program that discovered the set would be a second source of truth about it, and one that added machines by itself would be deciding what the file should say. Capacity is declared: adding a machine is one line in the file and one image.</p></div>
+      <div class="card"><h4>No automatic enrolment</h4><p>A machine joins when a person copies its public key into the fleet file. An automatic enrolment would have to trust whatever answered on the wire, and the key is the one thing that says whose a signed record is.</p></div>
+      <div class="card"><h4>No hypervisor in the product</h4><p>A hypervisor cuts one computer into several virtual ones. Here, more programs on one machine is density, more machines is isolation between owners, and a provider's virtual machine is simply the hardware. The emulator used on these pages is the court's instrument for trying a machine on a laptop, and is not part of what ships.</p></div>
+    </div>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Whose cloud</p>
+      <h2>What you keep when somebody else owns the hardware.</h2>
+    </div>
+    <div class="prose stack-gap">
+      <p>The same files describe a cloud on hardware you own and, once the fourth step is built, on a machine you rent. What changes between them is who holds the keys. Each machine makes its own key the first time it boots, and whoever holds the hardware holds that key.</p>
+      <p>So on a machine somebody else owns you keep two things: the declaration, which is the file, and the evidence, because every machine's record is signed and anyone holding the fleet's public keys can check it, holding no secret. You do not keep the hardware. Run the same files on hardware of your own and you do; it is the same act.</p>
+    </div>
+    <p class="pull prose" style="margin-top:clamp(24px,3vw,34px)">The honest promise is <b>your declaration and your evidence</b>, never “your cloud”.</p>
+    <p class="prose" style="margin-top:clamp(22px,3vw,32px)">Next: <a href="cloud-status.html">Where the cloud stands →</a> The six steps, which are built and which are not, and what judges each.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in foot-row">
+    <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    <p class="foot-credit">A Softanza Project, open source (MIT).<br>By: Mansour Ayouni &copy; 2026.</p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
