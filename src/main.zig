@@ -31,6 +31,7 @@ const fleet = @import("fleet.zig");
 const pack = @import("pack.zig");
 const ready = @import("ready.zig");
 const get = @import("get.zig");
+const own = @import("own.zig");
 const confine = @import("confine.zig");
 const expect = @import("expect.zig");
 
@@ -53,6 +54,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb judge  <file.machine> <transcript> [--lens emulator]   (a captured boot, against what the machine expects)
         \\  harb net    <iface> <a.b.c.d>/<prefix> [gateway] | <iface> dhcp   (by hand, what init does for a NETWORK)
         \\  harb id                                     (uid and gid, from inside a machine)
+        \\  harb own    <dir> [--not <dir>]...          (what may this world write? it asks the kernel, as the identity it runs as, from inside it)
         \\  harb reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
         \\  harb confined [iface] [path...]             (what can this WORLD see and do? from inside one)
         \\  harb swarm  [n]                             (ask for n tasks and say where the kernel stopped; from inside a world)
@@ -215,6 +217,12 @@ pub fn main() !u8 {
         }
         try out.print("id: uid={d} gid={d}\n", .{ std.os.linux.getuid(), std.os.linux.getgid() });
         return 0;
+    }
+    if (std.mem.eql(u8, verb, "own")) {
+        // The witness of the STATE seat, as `id` is USER's and `reach` is
+        // EGRESS's: a world asks the kernel, as the identity it runs as,
+        // what it may write (OWN-1)
+        return own.run(args[2..], out);
     }
     if (std.mem.eql(u8, verb, "journal")) {
         // The record read back and checked, from inside the machine that
@@ -1020,6 +1028,7 @@ test {
     _ = pack;
     _ = ready;
     _ = get;
+    _ = own;
     _ = learn;
     _ = docs;
 }

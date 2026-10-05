@@ -250,9 +250,15 @@ mkdir -p "$OUT" zig-out/wsl
       # differs from it whatever a pinned text says; the pin then says what was seen
       if [ "$owner" = "$2" ] && [ "$mode" = "$3" ]; then echo "owned by $owner, mode $mode"; else echo "owned by $owner, mode $mode -- DIFFERS from the declaration (wanted $2, mode $3)"; fi
     }
+    listed() { # $1 = a directory as the machine names it, $2 = as the disk names it: what is IN it, each as the disk says
+      debugfs -R "ls -l $2" "$OUT/disk0.witness.img" 2> /dev/null | awk -v d="$1" 'NF >= 9 && $NF != "." && $NF != ".." { m = $2; printf "disk: %s/%s -- owned by %s:%s, mode %s\n", d, $NF, $4, $5, substr(m, length(m) - 3) }'
+    }
     echo "disk: / -- $(witness / 0:0 0755)" >> "$OUT/transcript.txt"
     grep -v '^#' "$OUT/state.list" | while read -r _at dir ondisk uid gid; do
       echo "disk: $dir -- $(witness "$ondisk" "$uid:$gid" 0700)" >> "$OUT/transcript.txt"
+      # a world that wrote there left its mark, and the mark is that identity's (a world's own words are
+      # on the console; what it KEPT is on the disk)
+      listed "$dir" "$ondisk" >> "$OUT/transcript.txt"
     done
     # ... and the SAME image with no disk behind its mount (OWN-1's negative): the kernel refuses the mount, so
     # the directory a world was to own is not on the disk it was declared on, and a directory made at the mount

@@ -403,7 +403,7 @@ same for all three.
 | a fleet: facts about a set, the keys a device used to have, and the ways between its links | `src/fleet.zig` | `declarative/fleet/`, `experiment/os7_fleet.sh`, `experiment/os8_links.sh` |
 | a machine that is the way between two networks, and the names it answers across them | `src/machine.zig` (`FORWARD`), `src/names.zig`, `src/get.zig` | `machines/qemu_forward.expected`, `machines/cloud_links.expected` |
 | a solution's services, written apart from a machine and placed on one; and the program that says a server is serving | `src/pack.zig`, `src/ready.zig` | `harb court --pack`, `machines/qemu_cloud_ringserv.expected` |
-| a world that runs as an identity, and the directories it owns | `src/machine.zig` (`STATE`), `src/init.zig` | `machines/qemu_cloud_ringserv.expected` (the directory read back from the disk), `experiment/state_probe.sh` |
+| a world that runs as an identity, and the directories it owns | `src/machine.zig` (`STATE`), `src/init.zig` | `machines/qemu_cloud_ringserv.expected` (the directory read back from the disk), `machines/qemu_own.expected` (a world asks the kernel what it may write), `experiment/state_probe.sh` |
 | updates: two slots, and a trial before any commit | `src/update.zig` | the card read back after a trial |
 | the guided tour, judged like any other claim | `src/learn.zig` | `harb learn --check` |
 | the pages: every code line fits GitHub's column, every machine a page shows in full is one the court accepts, and the words are the tour's own | `src/docs.zig` | `harb docs --check`, in `zig build court` |

@@ -3,13 +3,15 @@
 #
 # `STATE` on a SERVICE names directories PID 1 makes for the world's declared identity before the world
 # exists, and a world's signal (READY) is read as root in a directory the world may own. The acts are in
-# src/init.zig, and two unit tests beside the code ask the questions that decide, of a kernel:
+# src/init.zig, and three unit tests beside the code ask the questions that decide, of a kernel:
 #
 #   a world's own directory is made, handed over and read back, and no link is followed (OWN-1)
 #       `ownDir`: walk from the root with no link followed, every directory above the last the machine's,
 #       make, give to the identity, close, read back as the kernel says it
 #   a signal an earlier boot left is cleared, a link is not followed, and only a regular file is a signal (OWN-1)
 #       `signalStat`, `removeStaleSignal`: what PID 1 reads at a READY path, and what is left after it clears one
+#   a directory the machine owns is closed to everyone's writing, as the initial root must be (OWN-2)
+#       `closeDir`: the initial filesystem is a tmpfs, whose root is mode 1777 until PID 1 closes it
 #
 # They can only be asked on Linux; `zig build test` on the Windows host skips them. This probe runs them on
 # Linux, then again against scratch copies of the source with ONE mutation each, and requires every mutant to
@@ -26,6 +28,7 @@
 #   mutant 8  a stale signal is not cleared                      -> the signal test
 #   mutant 9  a link is followed when a signal is read           -> the signal test
 #   mutant 10 a directory counts as a signal                     -> the signal test
+#   mutant 11 the root is not closed                             -> the root test
 #
 # Mutants 6 and 7 need ROOT: giving a directory to the identity that already owns it asks for no privilege, so
 # only a root run hands over to a DIFFERENT owner (2000), which is what a chown that did nothing cannot fake.
@@ -47,6 +50,7 @@ mkdir -p "$R/zig-out/wsl"
 rm -f "$LOG"
 OWN="a world's own directory is made, handed over and read back, and no link is followed (OWN-1)"
 SIG="a signal an earlier boot left is cleared, a link is not followed, and only a regular file is a signal (OWN-1)"
+ROOTT="a directory the machine owns is closed to everyone's writing, as the initial root must be (OWN-2)"
 if [ "$(id -u)" -eq 0 ]; then ROOT=yes; else ROOT=no; fi
 (
   [ -x "$Z" ] || { echo "no Linux zig at $Z -- run experiment/zigcc_fetch.sh first"; echo "exit 1"; exit 1; }
@@ -57,7 +61,7 @@ if [ "$(id -u)" -eq 0 ]; then ROOT=yes; else ROOT=no; fi
   grep -q 'fn ownDir' src/init.zig || { echo "src/init.zig has no ownDir: nothing to probe"; exit 1; }
 
   run() { # $1 = label ; leaves the output in $S/$1.txt and the status in RC
-    "$Z" test src/main.zig --test-filter "OWN-1" > "$S/$1.txt" 2>&1
+    "$Z" test src/main.zig --test-filter "OWN-" > "$S/$1.txt" 2>&1
     RC=$?
     echo "--- $1: exit $RC"
     grep -E 'passed|failed|FAIL|skipped|OWN-1' "$S/$1.txt" | head -12
@@ -90,6 +94,7 @@ if [ "$(id -u)" -eq 0 ]; then ROOT=yes; else ROOT=no; fi
   if grep -Eq '[1-9][0-9]* skipped' "$S/production.txt"; then echo "a test was skipped, so the question was not asked"; verdict=1; fi
   grep -F "$OWN" "$S/production.txt" | grep -q '\.\.\.OK$' || { echo "the directory test did not run and pass"; verdict=1; }
   grep -F "$SIG" "$S/production.txt" | grep -q '\.\.\.OK$' || { echo "the signal test did not run and pass"; verdict=1; }
+  grep -F "$ROOTT" "$S/production.txt" | grep -q '\.\.\.OK$' || { echo "the root test did not run and pass"; verdict=1; }
 
   mutant "mutant 1: a link on the way is followed" 's/\.no_follow = true, //g' mutant1 "$OWN"
   mutant "mutant 2: the directory is not closed" '/try kernel(std\.os\.linux\.fchmod(fd, 0o700));/d' mutant2 "$OWN"
@@ -108,6 +113,8 @@ if [ "$(id -u)" -eq 0 ]; then ROOT=yes; else ROOT=no; fi
   mutant "mutant 8: a stale signal is not cleared" 's/std\.os\.linux\.unlink(&p)/std.os.linux.access(\&p, 0)/' mutant8 "$SIG"
   mutant "mutant 9: a link is followed when a signal is read" 's/std\.os\.linux\.AT\.SYMLINK_NOFOLLOW/0/' mutant9 "$SIG"
   mutant "mutant 10: a directory counts as a signal" '/if (!std\.os\.linux\.S\.ISREG(st\.mode)) return null;/d' mutant10 "$SIG"
+  # (access for chmod: the directory is asked about and left as it is)
+  mutant "mutant 11: the root is not closed" 's/std\.os\.linux\.chmod(&p, 0o755)/std.os.linux.access(\&p, 0)/' mutant11 "$ROOTT"
 
   echo "=== verdict ==="
   if [ "$verdict" -eq 0 ]; then

@@ -1,3 +1,89 @@
+# OWN-2 — a world asks the kernel what it may write, and the machine's root was open
+
+OWN-1 gave a world a directory and said so. Everything it showed that a
+world writes only there was indirect: PID 1's word that it handed the
+directory over, the disk's reading of the directory after the boot, and a
+probe run outside the machine. No boot had shown a world that is not root
+doing the writing -- the first server's application declares no table, so
+it leaves no file -- and none had asked the kernel, from inside a world, what
+that identity may write. So the witness of the seat is a verb a world runs
+as itself, and a machine to run it on.
+
+## What was built
+
+- `harb own <dir> [--not <dir>]...` (`src/own.zig`), the witness of STATE as
+  `harb id` is USER's and `harb reach` is EGRESS's. Run as the identity the
+  machine gave a world, it makes a file in `<dir>` and reads it back; asks to
+  make a file in `<dir>`'s parent and in `/`, which are the machine's, and must
+  be refused; and, for each `--not`, a directory another world owns, asks to list
+  it and to make a file in it, and must be refused both. Its last line is the
+  verdict. It exits 1 when an answer was wrong (unlike `get` and `reach`, whose
+  answers are where a machine stands: this asserts an invariant), so PID 1's
+  ledger says `exited 1` where the expectation says `exited 0`, and the world
+  that comes AFTER never starts.
+- `machines/qemu_own.machine`: two worlds, `first` as `alpha` owning
+  `/data/alpha` and `second` as `beta` owning `/data/beta`, each running
+  `harb own` on its own directory with the other's as `--not`. Nothing but
+  `harb` is on the image, so a stranger boots it
+  (`experiment/os2_image.sh qemu_own`, and `stranger_walk.sh` does).
+- the disk witness of `os2_image.sh` reads what is IN each directory too, as
+  the disk names it: `disk: /data/alpha/note -- owned by 2001:2001, mode 0644`.
+  What a world said is on the console; what it kept is on the disk.
+
+## What it found, the first time a world was asked
+
+**`/` was writable by every identity.** The first boot said
+`own: / -- WROTE A FILE THERE: this world can change the machine's own
+directory`. The initial filesystem is a tmpfs when the kernel has `TMPFS`
+(every image's does), and a tmpfs's root is mode 1777: until closed, any
+identity can make files in `/`. It was true of every machine with a USER since
+USR-1, whose entry said an identity "can write only where the machine made a
+writable place (`/tmp`, a declared mount)". `/tmp` is root's, mode 0755, and the
+root was the open one. The sticky bit kept an identity from deleting what root
+put there, so nothing the image carries could be taken; it could still leave a
+file where another world, or PID 1, would read it. PID 1 now closes `/` (mode
+0755) before anything else, silently when the kernel does it (nothing claims it:
+the pinned boot of `qemu_own` is what shows it, from inside a world) and with a
+console line when it cannot.
+
+## What judges it
+
+- the pinned boot, **53 lines, identical on two runs**
+  (`machines/qemu_own.expected`): both worlds write their own directory, are
+  refused in `/data`, in `/`, and in the other's directory (a listing and a file),
+  and say `this world wrote in its own directory and nowhere else`; the disk,
+  read back, has each `note` owned by its identity and each directory 0700 with
+  the disk's root still 0:0; and the same image with no disk behind its mount
+  starts neither world.
+- **the pin convicts the machine it should**: with the call that closes `/`
+  disabled, the same boot says `own: / -- WROTE A FILE THERE` for both worlds, the
+  first exits 1, and `second never started -- it comes AFTER first, which exited 1`.
+- the act's unit test and a mutant (`experiment/state_probe.sh`: the directory is
+  asked about and left as it is, and the mode is read back as 1777).
+
+## Named, not closed
+
+- **The tour does not teach it.** A lesson needs the exactness the tour demands
+  of every step (the file, the text, the command, the expected answer and the
+  undo) and a renumbering nobody asked for; `qemu_own` is booted by a stranger's
+  walk and not yet by a lesson.
+- **It asks the questions a world can ask, not every one.** It asks about its
+  directory, the directory above, `/`, and the named neighbours. It does not walk
+  the image.
+- **A directory a machine declares as tmpfs is open too** (a mount's root is
+  1777); a world that keeps one can write there. A world that wants none declares
+  no `filesystem`, or narrows its sight (`SEES`).
+
+## The law this pays for
+
+**A witness asked from inside the world finds what the declaration and the
+machine's own word cannot.** The declaration said a world writes only where it
+was handed, PID 1 said it had handed it, the disk agreed, and the root was open.
+Nothing that read a file or a transcript could have seen it: only a world, as
+that identity, asking the kernel.
+
+---
+
 # OWN-1 — a world owns a place of its own, and the first server stops being root
 
 The first server of the cloud (SRV-2) ran as the machine itself, and two

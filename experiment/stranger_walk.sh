@@ -26,8 +26,9 @@ LOG=$W/stranger.txt
 mkdir -p "$W"
 rm -f "$LOG"
 # the tour's boots, in the tour's order: lessons 4-6 and 11, 7-9, 10, 12-13,
-# 14, 15, 17 and 18
-ACTS=${*:-qemu_egress qemu_confine qemu_budget qemu_identity fleet names makeen_box guarantees}
+# 14, 15, 17 and 18 -- and qemu_own, which no lesson asks for yet but whose own
+# comment says a stranger can boot it (OWN-1: a claim about a stranger is judged here)
+ACTS=${*:-qemu_egress qemu_confine qemu_budget qemu_identity qemu_own fleet names makeen_box guarantees}
 (
   echo "=== the stranger's copy ==="
   [ -x "$Z" ] || { echo "no Linux zig at $Z -- run experiment/zigcc_fetch.sh first"; exit 1; }

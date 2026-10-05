@@ -471,6 +471,22 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A witness asked from inside the world finds what the declaration and
+  the machine's own word cannot** (OWN-2): `harb own` is run AS the
+  identity a world was given, and asks the kernel what it may write -- its
+  directory (a file made and read back), the directory above and `/`
+  (refused), and a neighbour's (a listing and a file, refused). Its first
+  boot said `own: / -- WROTE A FILE THERE`: the initial filesystem is a
+  tmpfs, whose root is mode 1777, so every identity of every machine since
+  USR-1 could make files in `/`, while the declaration said a world writes
+  only where it was handed and PID 1 said it had handed it. PID 1 closes
+  `/` (0755) first thing now. `machines/qemu_own.machine` runs two such
+  worlds with nothing but `harb` on the image (a stranger boots it); its
+  pin is 53 lines, the disk read back shows each world's `note` as that
+  identity's, and with the closing disabled the same boot convicts itself
+  and the world after never starts, because `own` exits 1 on a wrong answer
+  (it asserts an invariant; `get` and `reach` report where a machine
+  stands, and exit 0).
 - **A world that is not root owns exactly the directories it names, and
   the machine says so only after the kernel has read each one back**
   (OWN-1): every directory of the image is root's, so an identity could
@@ -1162,7 +1178,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

@@ -865,6 +865,12 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         return 2;
     }
     if (opts.rehearse) try out.print("boot: rehearsal -- mounts are narrated, not executed; services are spawned\n", .{});
+    // The initial filesystem is a tmpfs, and a tmpfs's root is mode 1777: until it is closed any identity
+    // can make files in `/`. Found by `harb own`, the witness of OWN-1, the first time a world was asked
+    // whether it could. The machine's root is the machine's. Silent when it works, because nothing here
+    // claims it (the pinned boot of qemu_own is what shows it, from inside a world); a console line when
+    // it does not, because an identity could then write the machine's root.
+    if (!opts.rehearse) if (closeDir("/")) |why| try out.print("boot: root -- could not be closed: {s}; an identity could make files in /\n", .{why});
 
     var slots: std.ArrayList(Slot) = .{};
     defer slots.deinit(gpa);
@@ -1507,6 +1513,17 @@ fn release(gate: std.posix.fd_t) void {
 // machine's, so the first server runs as itself and keeps its database and its
 // signal in a place of its own instead of as root.
 
+/// Close a directory the machine owns to everyone but its owner's group and others' writing: mode 0755.
+/// Null when the kernel did it, else the kernel's word for why not. (The initial filesystem's root is a
+/// tmpfs's, which is 1777; see `runLinux`.)
+fn closeDir(path: []const u8) ?[]const u8 {
+    const p = std.posix.toPosixPath(path) catch return "the path is too long";
+    return switch (std.os.linux.E.init(std.os.linux.chmod(&p, 0o755))) {
+        .SUCCESS => null,
+        else => |e| @tagName(e),
+    };
+}
+
 /// What the kernel answered, as an error this file names. The raw calls are used and not
 /// the standard library's wrappers, which call EINVAL and EBADF `unreachable`: in the
 /// ReleaseSafe build this binary ships in that is a PANIC in PID 1, where a refusal in a
@@ -1666,6 +1683,27 @@ fn clearSignals(slots: []Slot, rehearse: bool, out: *std.Io.Writer) !void {
         };
     }
     try out.flush();
+}
+
+test "a directory the machine owns is closed to everyone's writing, as the initial root must be (OWN-2)" {
+    // Linux only: the kernel is the one being asked what mode the directory has afterwards
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    const gpa = std.testing.allocator;
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const base = try tmp.dir.realpathAlloc(gpa, ".");
+    defer gpa.free(base);
+    var d = try tmp.dir.openDir(".", .{ .iterate = true });
+    defer d.close();
+    // open to everyone, as a tmpfs's root is until it is closed
+    try d.chmod(0o1777);
+    try std.testing.expect((try d.stat()).mode & 0o7777 == 0o1777);
+    try std.testing.expect(closeDir(base) == null);
+    try std.testing.expectEqual(@as(u32, 0o755), (try d.stat()).mode & 0o7777);
+    // and a directory that is not there is the kernel's refusal, said in its word
+    const gone = try std.fmt.allocPrint(gpa, "{s}/nowhere", .{base});
+    defer gpa.free(gone);
+    try std.testing.expectEqualStrings("NOENT", closeDir(gone).?);
 }
 
 test "a signal an earlier boot left is cleared, a link is not followed, and only a regular file is a signal (OWN-1)" {

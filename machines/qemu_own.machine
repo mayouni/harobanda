@@ -1,0 +1,58 @@
+-- qemu_own.machine -- two worlds, each the owner of one directory and of nothing else (OWN-1).
+--
+-- Every directory of the image is root's, so a world that runs as an identity can write nowhere
+-- unless the machine hands it a place. `STATE` is how: PID 1 makes the directory, gives it to the
+-- world's identity, closes it, and says so only after the kernel has read it back. This machine
+-- shows it from the world's own side, with nothing but `harb` on the image, so a stranger can boot
+-- it (`experiment/os2_image.sh qemu_own`).
+--
+-- Each world runs `harb own`, which asks the kernel, as the identity it runs as, what that identity
+-- may write: its own directory (a file made and read back), the machine's directories above it (it
+-- must be refused), and the other world's directory (it must be refused both a listing and a file).
+-- The disk the boot leaves behind is read back too: the file each world made is that identity's, the
+-- directory is closed to the other, and the disk's root is still the machine's.
+--
+-- The worlds run one after the other (`AFTER`) so that the transcript is one order.
+
+DEFINE MACHINE qemu_own AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "A machine whose worlds each own a directory of a disk and nothing else, so that what an identity may write is asked of the kernel from inside the world and read back from the disk"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The worlds write to a declared mount, and only to the directory each was given on it"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "A disk that survives the power, whose root is the machine's and whose directories are the worlds'"
+
+DEFINE USER alpha AS (
+  UID 2001
+) RATIONALE "The first world's identity: it owns /data/alpha and is no one in /data/beta"
+
+DEFINE USER beta AS (
+  UID 2002
+) RATIONALE "The second world's identity: it owns /data/beta and is no one in /data/alpha"
+
+DEFINE SERVICE first AS (
+  RUN ["/harb", "own", "/data/alpha", "--not", "/data/beta"],
+  NEEDS [filesystem],
+  SEES [data],
+  USER alpha,
+  STATE ["/data/alpha"]
+) RATIONALE "Writes in its own directory, and is refused everywhere else it asks"
+
+DEFINE SERVICE second AS (
+  RUN ["/harb", "own", "/data/beta", "--not", "/data/alpha"],
+  AFTER [first],
+  NEEDS [filesystem],
+  SEES [data],
+  USER beta,
+  STATE ["/data/beta"]
+) RATIONALE "The same question from the other side, once the first world has answered"

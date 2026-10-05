@@ -237,6 +237,17 @@ server as root must be convicted (four statements fail), or the probe
 measures nothing. It is not the machine's image: it looks at the places an
 unprivileged user can write on its host, not at all of them.
 
+A third boot judges it from the world's own side (OWN-2).
+`machines/qemu_own.machine` runs `harb own` as two identities, each owning
+one directory of a disk, with nothing but `harb` on the image: each world
+makes a file in its own directory and reads it back, and is refused in the
+directory above, in `/` and in the other's directory (a listing and a file).
+**53 lines, identical on two runs.** The disk, read back, has each `note`
+owned by its identity. Its first boot found that `/` itself was writable by
+every identity -- the initial filesystem is a tmpfs, whose root is mode 1777 --
+which PID 1 now closes; with that disabled the same boot convicts itself, the
+first world exits 1 and the second never starts.
+
 ## How many tasks a world may hold (THR-1)
 
 `TASKS n` on a SERVICE becomes cgroup v2's `pids.max`, which counts

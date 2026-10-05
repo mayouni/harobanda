@@ -1,0 +1,53 @@
+boot: harb init -- machine qemu_own (hosted / x86_64 / qemu_pc) -- pid 1
+boot: console /dev/ttyS0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: mount ext4 at /data -- done
+boot: grant filesystem (effectful)
+boot: confine -- first has no sight of the other worlds and no way to start one, second has no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+boot: state -- first owns /data/alpha as alpha (2001:2001); second owns /data/beta as beta (2002:2002); each made, then read back as that identity's, mode 0700
+boot: start first -- pid N -- /harb own /data/alpha --not /data/beta -- as alpha (2001:2001)
+own: uid=2001 gid=2001
+own: /data/alpha -- wrote note and read it back (6 bytes)
+own: /data -- refused: AccessDenied
+own: / -- refused: AccessDenied
+own: /data/beta -- refused to list: AccessDenied
+own: /data/beta -- refused to write: AccessDenied
+own: this world wrote in its own directory and nowhere else
+boot: first (pid N) exited 0
+boot: start second -- pid N -- /harb own /data/beta --not /data/alpha -- as beta (2002:2002)
+own: uid=2002 gid=2002
+own: /data/beta -- wrote note and read it back (6 bytes)
+own: /data -- refused: AccessDenied
+own: / -- refused: AccessDenied
+own: /data/alpha -- refused to list: AccessDenied
+own: /data/alpha -- refused to write: AccessDenied
+own: this world wrote in its own directory and nowhere else
+boot: second (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)
+reboot: Restarting system
+disk: what the boot left on the disk, read back from the disk itself:
+disk: / -- owned by 0:0, mode 0755
+disk: /data/alpha -- owned by 2001:2001, mode 0700
+disk: /data/alpha/note -- owned by 2001:2001, mode 0644
+disk: /data/beta -- owned by 2002:2002, mode 0700
+disk: /data/beta/note -- owned by 2002:2002, mode 0644
+nodisk: the same image with no disk behind its mount:
+nodisk: boot: harb init -- machine qemu_own (hosted / x86_64 / qemu_pc) -- pid 1
+nodisk: boot: console /dev/ttyS0
+nodisk: boot: mount proc at /proc -- done
+nodisk: boot: mount sysfs at /sys -- done
+nodisk: boot: mount devtmpfs at /dev -- done
+nodisk: boot: mount ext4 at /data -- refused by the kernel: NOENT
+nodisk: boot: grant filesystem (effectful)
+nodisk: boot: confine -- first has no sight of the other worlds and no way to start one, second has no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
+nodisk: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+nodisk: boot: state -- first was not given /data/alpha: the mount it lies on was refused by the kernel; a world that owns a directory it was not given does not start
+nodisk: boot: state -- second was not given /data/beta: the mount it lies on was refused by the kernel; a world that owns a directory it was not given does not start
+nodisk: boot: every service has ended -- init has nothing left to keep alive
+nodisk: boot: init halts the machine -- reboot(RESTART)
+nodisk: reboot: Restarting system
