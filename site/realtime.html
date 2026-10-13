@@ -45,7 +45,7 @@
   <section class="wrap pagehead">
     <p class="eyebrow">Real time</p>
     <h1>A machine that gives a program its time.</h1>
-    <p class="lead">A control loop needs time that nothing else on the box can take, and a way to know how late it was. Here a program declares the time it needs, the kernel keeps it and refuses what does not fit, and a witness measures it — in an emulator so far, where every number is the laptop's.</p>
+    <p class="lead">A real-time system is built on Harobanda the way any solution is: it brings its control loop, and the machine brings the time and the proof. A program declares the time it needs, the kernel keeps it on a core set apart and refuses what does not fit, and a witness measures how late each wake was. That is the floor a robot's brain or a controller stands on.</p>
   </section>
 
   <section class="wrap block">
@@ -55,7 +55,7 @@
     </div>
     <div class="prose stack-gap">
       <p>"Real time" is two promises. The first: a loop runs when it should <em>nearly always</em>, and you can measure how nearly — a Linux kernel built to be interrupted almost anywhere, with fine timers, keeps that on a PC or a Raspberry Pi. The second: a loop runs when it should <em>every time, by construction</em> — which no Linux can promise and a microcontroller running one compiled loop can. A robot needs both, the first in the brain that plans and the second in the body that moves. Harobanda takes the first here; the second belongs to its edge profile, on the MicroRing substrate of the same project, and is not built.</p>
-      <p>It is not a real-time operating system. A program has no priorities to set and no scheduler to call: the loop is still the scheduler. What the machine adds is a reservation the kernel keeps, and a number you can read.</p>
+      <p>Can a real-time operating system be built on it? Yes — that is what the floor is for. The kernel's own deadline scheduler, which most systems never use, is what a declared program gets: a reservation held on a core set apart, with nothing to configure and no priority to pick. The loop stays the program's own, as it would in any real-time system; what the machine adds beneath it is time the kernel holds and a number you can read.</p>
     </div>
   </section>
 
@@ -99,7 +99,7 @@ tick: measured -- woke late by <span class="k">N</span> us at the median, N us a
       <h2>The floor of a robot, and of anything that answers a sensor on time.</h2>
     </div>
     <div class="prose stack-gap">
-      <p>Harobanda gives the control loop its time and measures it, and refuses to be more. The loop's program is written in the Haro language, which owes it bounded execution; the robot is designed in Softanza's own design language, which says what the body is and what a safe state is; and whatever intelligence sits above them stays outside the deadline path, proposing to a layer that decides. None of that has moved a motor yet: what exists is the floor's part, run in an emulator.</p>
+      <p>Harobanda is the floor of a real-time solution: it gives the control loop its time and proves it, and leaves the loop to the program that owns it. The loop is written in the Haro language, which owes it bounded execution; the robot is designed in Softanza's own design language, which says what the body is and what a safe state is; and whatever intelligence sits above them stays outside the deadline path, proposing to a layer that decides. What exists today is the floor's part, run in an emulator; the rest is on the last page of this section.</p>
     </div>
     <p class="prose" style="margin-top:clamp(22px,3vw,32px)">Next: <a href="cloud-files.html">How it is written →</a> A cloud's three files and a program's four lines, what the court refuses, and what is left out on purpose.</p>
   </section>

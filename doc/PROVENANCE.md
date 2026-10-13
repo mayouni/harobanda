@@ -93,6 +93,15 @@ the floor's refusals name the scheduling calls first.**
    code). The hosted tier first, because the emulator can judge it. The
    word "RTOS" stays refused, on every page: *the loop is the scheduler*
    (the refusal of 2026-09-12, kept), and the loop gains a schedule.
+   *Amended by the author, 2026-10-13 evening, on reading the first
+   real-time page:* "It is not a real-time operating system" is
+   technically true and misleading -- it hurts the reader who asks whether
+   Harobanda can help in building a real-time operating system, and
+   weakens the truth that it can, by providing the host foundation for it.
+   So the pages say that, affirmatively, and the refusal stands only for
+   the floor itself: it is not an RTOS and carries no RTOS interface. His
+   general advice, kept beside this item: *do not let the tendency to be
+   transparent and fair make the statements elusive.*
 2. **MicroRing's scope: declared here, built there.** The kHz loop is
    the substrate's compiled code, named by the machine file and never
    written by it -- the split `robotics.md` already draws ("in hardware

@@ -89,7 +89,7 @@
       <li><b>No customer's server, and nothing to rent.</b> RingServ stands in for a customer's server, and none is placed.</li>
       <li><b>A route is a way both ways, and forwarding filters nothing.</b> No packet filter exists, and two networks are joined through one box, not a chain.</li>
       <li><b>Time has one source and one bound.</b> One authority per fleet, a clock it was declared to have, no time from the network, and "no later than", never "how long before".</li>
-      <li><b>Not a real-time operating system.</b> No priorities, no scheduler to call, no thread to pin; one core per program, and what a program starts runs unreserved.</li>
+      <li><b>A floor, not a kit of primitives.</b> A real-time system is built on it, not inside it: a program is given its time and keeps its own loop, with no priorities to set and no scheduler to call; one core per program, and what a program starts runs unreserved.</li>
       <li><b>No kernel's word is taken on trust.</b> Five numbers copied from the kernel's source were wrong when the kernel was asked, and each was caught by a line the machine prints to be read back.</li>
       <li><b>The body is not here.</b> The safe state, the edge schedule and the robot as a set need a microcontroller, a wire and the MicroRing substrate. Nothing has moved a motor.</li>
     </ul>

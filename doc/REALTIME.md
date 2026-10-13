@@ -358,6 +358,19 @@ where the court's bound is put back to 95 and the kernel refuses the
 second world at the act. What rung 2 does not show is any latency: the
 emulator is a program on a host, and its time is the host's.
 
+**The name on the pages, amended by the author the same evening.** §6
+asked that the thing never be called an RTOS on a page, and the first
+real-time page said "It is not a real-time operating system". He read it
+and refused the framing: *technically true, but it hurts the reader who
+asks whether Harobanda can help build a real-time operating system, and
+weakens the truth that it can, by providing the host foundation for it* --
+and, in general, *do not let the tendency to be transparent and fair make
+the statements elusive.* So the pages say it affirmatively: a real-time
+system is built ON Harobanda, which gives the loop its time and the proof
+of it; "the loop stays the program's own, no priorities to set" is said as
+what the floor gives. What §6 refuses still holds for the floor itself:
+it carries no RTOS interface and is not one.
+
 **Rung 3 is built the same day (TCK-1):** the witness measures, the pin
 holds its shape and no number, and six readings of this desk stand in
 `experiment/PROTOCOL.md` -- the emulator's own latency (hundreds of
