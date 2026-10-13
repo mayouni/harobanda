@@ -43,7 +43,7 @@ pub const Break = struct {
     /// what the reader does with `paste` -- the difference between
     /// adding a line and replacing one is not something to leave them
     /// to infer from the prose
-    pub const How = enum { append, replace, create };
+    pub const How = enum { append, replace, create, remove };
 
     /// one sentence: what you are about to prove
     proves: []const u8,
@@ -268,7 +268,7 @@ pub const lessons = [_]Lesson{
             "ok   pin -- declarative/machine/fixtures.json is the file declarative/machine/PINNING.md names (sha256 ...)",
             "245/245 -- 51 accepts, 194 rejects, 0 failures     (the machine grammar)",
             "71/71 -- 12 accepts, 59 rejects, 0 failures        (the fleet grammar)",
-            "learn -- 19 lessons: every path they name is present, ...",
+            "learn -- 20 lessons: every path they name is present, ...",
             "",
             "Most of those cases are things the language REFUSES, and each one",
             "carries the exact words its refusal must contain. So refusing for the wrong",
@@ -320,7 +320,7 @@ pub const lessons = [_]Lesson{
             "worlds run and the box halted. Every line of it came from one text file,",
             "machines\\qemu_egress.machine -- open it, it is short. The first line is",
             "harb itself, started by the kernel as the machine's first program: pid 1.",
-            "The `reach` lines are what its two worlds said, and lesson 12 is about",
+            "The `reach` lines are what its two worlds said, and lesson 13 is about",
             "them; here, notice only that the machine says what each world did. This",
             "takes a few minutes the first time and about a minute afterwards, because",
             "the kernel build is cached.",
@@ -426,10 +426,10 @@ pub const lessons = [_]Lesson{
                 "edited -- change the machine and its expectation changes with it. To see a",
                 "MISMATCH you have to change what the machine SAYS without changing what it",
                 "DECLARES. Two places in this tour do exactly that, and neither needs you",
-                "to edit anything: the `stranger` in lesson 16, which is this same kind of",
+                "to edit anything: the `stranger` in lesson 17, which is this same kind of",
                 "image booted onto a wire that will not lease it an address, and the",
-                "flagship's `unmet:` section in lesson 18, where the emulator lacks",
-                "hardware the board has. Lesson 16's is the cleaner one -- nothing about",
+                "flagship's `unmet:` section in lesson 19, where the emulator lacks",
+                "hardware the board has. Lesson 17's is the cleaner one -- nothing about",
                 "the declaration differs at all, only the wire.",
             },
             .undo = "git checkout -- machines/qemu_egress.machine",
@@ -829,6 +829,82 @@ pub const lessons = [_]Lesson{
     },
     .{
         .act = "III. WHAT A WORLD MAY DO",
+        .title = "A promise is not a measurement",
+        .question = "The kernel promised the world its time. How late was it, actually?",
+        .run = RUN_WSL ++ "os2_image.sh qemu_tick",
+        .look = &.{
+            "Lesson 11 was a promise: the kernel read a reservation back. This machine",
+            "MEASURES one. A reserved spinner burns the witness's own core, an unreserved",
+            "one burns the other, and the witness runs a thousand periods of a millisecond",
+            "on an absolute timer, noting how late each wake was:",
+            "",
+            "  spin: on core 1 and no other, under SCHED_DEADLINE (500 us of every 1000 us):",
+            "  it burns what it was given and the kernel holds it there",
+            "  spin: on core 0 and no other, under policy 0: it burns what the scheduler gives",
+            "  tick: 1000 periods of 1000 us, deadline 500 us -- under SCHED_DEADLINE (200 us of",
+            "  every 1000 us), on core 1 and no other",
+            "  tick: measured -- woke late by N us at the median, N us at the 99th, N us at the",
+            "  worst; the step took N us at the worst; N of 1000 past the deadline",
+            "",
+            "Every N above is a NUMBER on your screen and the letter N in the pin. That is",
+            "not a shortcut. The numbers are this machine's, and this machine is a program",
+            "on your laptop whose time is your laptop's. The image script keeps the SHAPE",
+            "of the line -- the witness ran, said its median, its 99th, its worst, its step",
+            "and its misses -- and turns every number into N before the pin sees it. The",
+            "raw transcript, zig-out/image/qemu_tick/transcript.txt, keeps the numbers.",
+            "",
+            "On the laptop this tour was written on, the witness woke about 400 us late at",
+            "the median and 20 ms late at the worst, and missed its 500 us deadline four",
+            "hundred times in a thousand. That is the EMULATOR's latency: QEMU translates",
+            "the machine's instructions and takes its timers from a host that owes it",
+            "nothing. A board runs the same witness and gives the first number that",
+            "counts, which is the day a Raspberry Pi 4 meets the card (OS-5).",
+            "",
+            "What the emulator CAN show is everything but the number: the kernel is timed",
+            "(the line beginning `boot: timed`), both reservations are held (`boot:",
+            "reserve`), each spinner sits where its declaration put it, and the witness ran",
+            "under the reservation it was declared -- its first line is the kernel's word,",
+            "and it must agree with the period and the deadline its RUN line names, or the",
+            "witness refuses to run at all.",
+        },
+        .breakit = .{
+            .proves = "that without its reservation the witness is nobody's to keep, and the machine says so in the kernel's words -- while the number stays a number",
+            .file = "machines\\qemu_tick.machine",
+            .where = "in the `tick` service, its four reservation lines",
+            .how = .remove,
+            .paste = &.{
+                "  PERIOD 1000,",
+                "  DEADLINE 500,",
+                "  RUNTIME 200,",
+                "  CORE 1,",
+            },
+            .then = RUN_WSL ++ "os2_image.sh qemu_tick",
+            .expect = &.{
+                "tick: 1000 periods of 1000 us, deadline 500 us -- NO RESERVATION: policy 0, on",
+                "core 0 and no other, kept by nobody",
+                "",
+                "The witness still runs its thousand periods -- the RUN line still says what to",
+                "keep -- but the kernel says nobody keeps it: an ordinary policy, on core 0,",
+                "beside the hog and PID 1, because core 1 is a partition for reserved worlds",
+                "and this one no longer is. The `boot: reserve` line names the neighbour alone.",
+                "",
+                "Now read the measured line, and do NOT expect it to be worse. On the laptop",
+                "this was written on it was BETTER without the reservation -- 242 us at the",
+                "median against 413 -- because the host that runs the emulator decides when",
+                "its two virtual processors run, and nothing in the machine can promise over",
+                "the host's head. That is the whole lesson: a number from an emulator is a",
+                "reading, a reservation is a promise, and only a board can show the promise",
+                "kept as a number. What changed for certain is the first line -- and the pin",
+                "refuses the transcript, the loudest thing on your screen.",
+            },
+            .undo = "git checkout -- machines/qemu_tick.machine",
+        },
+        .law = "A promise is not a measurement, and a measurement from an emulator is the host's: the pin judges that the witness ran and said its numbers, never the numbers, and the first number that counts is a board's.",
+        .story = "experiment/PROTOCOL.md (TCK-1)",
+        .needs = &.{ "machines/qemu_tick.machine", "machines/qemu_tick.expected", "experiment/os2_image.sh", "experiment/tick_diag.sh", "src/tick.zig" },
+    },
+    .{
+        .act = "III. WHAT A WORLD MAY DO",
         .title = "How far a granted network reaches",
         .question = "The box may speak. May it speak to ANYONE?",
         .run = RUN_WSL ++ "os2_image.sh qemu_egress",
@@ -1009,7 +1085,7 @@ pub const lessons = [_]Lesson{
         .act = "IV. WHO A DEVICE IS",
         .title = "The machine's own signed record of every boot",
         .question = "What did this box do, and how would you know if someone edited the answer?",
-        .run = "(read the output of lesson 13 and find the lines beginning `journal`)",
+        .run = "(read the output of lesson 14 and find the lines beginning `journal`)",
         .look = &.{
             "Four lines, in the order they happen. The first boot finds nothing:",
             "",
@@ -1186,7 +1262,7 @@ pub const lessons = [_]Lesson{
                 "Do NOT copy a key out of this lesson or anywhere else. Yours is not the",
                 "one in any example: the device makes a NEW key every time the script",
                 "runs, because it builds a fresh disk and a key is made on first boot.",
-                "Run the script twice and compare the KEY lines -- that is lesson 13's",
+                "Run the script twice and compare the KEY lines -- that is lesson 14's",
                 "point arriving from the other side. A key survives the POWER; it does",
                 "not survive the disk being thrown away.",
             },
@@ -1439,7 +1515,7 @@ pub const lessons = [_]Lesson{
             "  unmet:    created ... fingerprint KEY3        another pristine card",
             "",
             "Three cards. KEY1 appears twice because that card kept its key across a",
-            "power cycle, which is lesson 13's whole claim; KEY2 and KEY3 are different",
+            "power cycle, which is lesson 14's whole claim; KEY2 and KEY3 are different",
             "because a new card is a new device. The court maps each DISTINCT fingerprint",
             "to KEY1, KEY2, KEY3 rather than blanking them, which is the only reason any",
             "of this is visible.",
@@ -1529,7 +1605,7 @@ pub const lessons = [_]Lesson{
             "them today and neither keeps them all.",
             "",
             "First against the board's EXPECTATION, which `harb image` derived before",
-            "anything booted -- and derives even when lesson 18's image is refused for",
+            "anything booted -- and derives even when lesson 19's image is refused for",
             "want of the runtime, because what a boot must print is the declaration's",
             "alone. So this lesson needs nothing but this repository:",
             "",
@@ -1675,7 +1751,7 @@ fn pinPath(b: Break, buf: []u8) ?[]const u8 {
     return out;
 }
 
-/// "lessons 10 and 18": the lessons whose own boot needs the private
+/// "lessons 10 and 19": the lessons whose own boot needs the private
 /// runtime, counted from the table rather than typed (LRN-3)
 fn privateLessons(buf: []u8) ![]const u8 {
     var total: usize = 0;
@@ -1743,6 +1819,7 @@ fn renderBreak(w: *std.Io.Writer, b: Break) !void {
             .append => "Add this there, exactly as it is written:",
             .replace => "REPLACE that line with this one:",
             .create => "Put this in it, all of it:",
+            .remove => "REMOVE these lines, and nothing else:",
         } });
         try block(w, "         ", b.paste);
         step += 1;
@@ -1849,7 +1926,7 @@ const said_prefixes = [_][]const u8{
     "attest:",   "journal", "kds:",       "poste:",     "modest:",
     "swarm:",    "greedy:", "reach ",     "ask ",       "device:",
     "roll:",     "verify:", "tampered:",  "foreign:",   "unenrolled:",
-    "salle:",    "carried:", "reserved:",
+    "salle:",    "carried:", "reserved:",  "tick:",      "spin:",
 };
 
 fn looksSaid(line: []const u8) bool {
@@ -2265,14 +2342,17 @@ test "a step that boots an edited machine warns about the pin it will fail" {
             try t.expect(std.mem.indexOfScalar(u8, pin, '\\') == null);
         }
     }
-    // lessons 4, 5, 7, 9 and 10 edit a pinned machine and boot it. Lesson
-    // 11 did too, until STZ-OS-RULING-06: `EGRESS ["0.0.0.0/0"]` is now
-    // REFUSED before anything is built, so its step is a check and the
-    // derivation rightly does not fire. Its last experiment still boots an
-    // edited machine, in prose, and says the pin will refuse it in its own
-    // words -- verified by running it, 2026-09-27. This count is a
+    // lessons 4, 5, 7, 9 and 10 edit a pinned machine and boot it, and so
+    // does lesson 12 since TCK-1: it takes the witness's reservation away
+    // and boots qemu_tick, whose pin refuses the transcript -- verified by
+    // running it, 2026-10-13 (`experiment/tick_diag.sh broken`). Lesson 13
+    // (the reach) did too, until STZ-OS-RULING-06: `EGRESS ["0.0.0.0/0"]`
+    // is now REFUSED before anything is built, so its step is a check and
+    // the derivation rightly does not fire. Its last experiment still boots
+    // an edited machine, in prose, and says the pin will refuse it in its
+    // own words -- verified by running it, 2026-09-27. This count is a
     // tripwire: it moved, somebody looked, and the reason is here.
-    try t.expectEqual(@as(usize, 5), warned);
+    try t.expectEqual(@as(usize, 6), warned);
 }
 
 test "the machine a command boots is read from the command" {
@@ -2309,7 +2389,7 @@ test "the private-runtime note is derived for exactly the boots that need it" {
         if (needsRuntime(l.run) != null) runs += 1;
         if (needsRuntime(l.breakit.then) != null) breaks += 1;
     }
-    // lesson 10 (the budget) and lesson 18 (the flagship) boot machines
+    // lesson 10 (the budget) and lesson 19 (the flagship) boot machines
     // with Luau worlds, and lesson 10's BREAK IT boots one again. Lessons
     // 4 to 6 booted qemu_hello until LRN-3 and boot qemu_egress now, which
     // runs only harb. A tripwire, like the pin-warning census above.
@@ -2331,7 +2411,7 @@ test "the private-runtime note is derived for exactly the boots that need it" {
     const seen = flat.items;
     try t.expect(std.mem.indexOf(u8, seen, "image: refused -- service modest: program /stzr is not staged under zig-out/image/qemu_budget/root") != null);
     try t.expect(std.mem.indexOf(u8, seen, "image: refused -- service kds: program /stzr is not staged under zig-out/image/makeen_box/root") != null);
-    try t.expect(std.mem.indexOf(u8, seen, "only lessons 10 and 18 need the runtime") != null);
+    try t.expect(std.mem.indexOf(u8, seen, "only lessons 10 and 19 need the runtime") != null);
     try t.expect(std.mem.indexOf(u8, seen, "plan machines\\qemu_budget.machine") != null);
 }
 

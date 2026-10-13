@@ -29,7 +29,6 @@ boot: second (pid N) exited 0
 boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
-reboot: Restarting system
 disk: what the boot left on the disk, read back from the disk itself:
 disk: / -- owned by 0:0, mode 0755
 disk: /data/alpha -- owned by 2001:2001, mode 0700

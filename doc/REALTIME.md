@@ -95,9 +95,9 @@ than an engineer's good manners.
 
 Six rungs, in the order the dependencies allow. Each names the clause it
 proposes (every name provisional, the author's to rule), the judge, what
-it buys, and its status: **rungs 1 and 2 are built** (TIM-1, 2026-10-13,
-with the corrections §7 records beside what this section proposed), the
-other four are not.
+it buys, and its status: **rungs 1, 2 and 3 are built** (TIM-1 and
+TCK-1, 2026-10-13, with the corrections §7 records beside what this
+section proposed), the other three are not.
 
 **Rung 1 -- the timed kernel.** A machine that carries any world with a
 reservation is built `PREEMPT_RT`, with high-resolution timers, CPU
@@ -164,6 +164,24 @@ Pi kit (OS-5, parked on hardware) a purchase with a second reason.
 neighbour on the same core: the worst wake goes from microseconds to
 whatever the neighbour leaves. *Buys:* the difference between a promise
 and a measurement, which is the only thing a real-time claim is.
+*Built (TCK-1), and read against this paragraph:* `harb tick` and `harb
+spin`, `machines/qemu_tick.machine` (a reserved spinner on the witness's
+core, an unreserved hog on the other, the witness started once both
+burn), the pin holding the line's shape with every number `N` -- without
+a lens, since the judged lines are the witness's existence, policy, core
+and shape. The BREAK IT's prediction was wrong on the emulator and the
+lesson says so: without its reservation the witness did BETTER at the
+median on this desk (242 us against 413), because QEMU's time is its
+host's and nothing in the machine promises over the host's head; what
+the BREAK IT shows for certain is the kernel's word and the pin's
+refusal. What the emulator did show: a world with no reservation
+anywhere gets no timed kernel, and an absolute sleep of 1 ms then costs
+a jiffy every period (three seconds late after a thousand); a hog on the
+OTHER core made the witness's tails twenty times worse (the host's
+threads); and a constrained deadline is not a period -- 200/500 beside
+700/1000 fits the court's utilisation and not the earliest-deadline
+rule's density, and missed 923 of 1000 until the neighbour was 500. The
+six readings are in `experiment/PROTOCOL.md` (TCK-1).
 
 **Rung 4 -- the safe state.** What the floor can promise about liveness
 is a quarter of a second (PID 1's loop) and a hardware watchdog whose
@@ -338,5 +356,13 @@ kernel") is not in the pinned machine, because the court refuses it
 first; it is a mutant of the probe (`experiment/deadline_probe.sh`),
 where the court's bound is put back to 95 and the kernel refuses the
 second world at the act. What rung 2 does not show is any latency: the
-emulator is a program on a host, and its time is the host's. Rung 3,
-the witness, is the next session.
+emulator is a program on a host, and its time is the host's.
+
+**Rung 3 is built the same day (TCK-1):** the witness measures, the pin
+holds its shape and no number, and six readings of this desk stand in
+`experiment/PROTOCOL.md` -- the emulator's own latency (hundreds of
+microseconds at the median, tens of milliseconds at the worst), the
+jiffy-per-period drift of a world with no timed kernel, and a BREAK IT
+whose number came out better without the reservation, which the lesson
+says rather than hides. Next: rung 4's hosted half, which is small, and
+then the cloud's front; rungs 5 and 6 need MicroRing's desk and a body.

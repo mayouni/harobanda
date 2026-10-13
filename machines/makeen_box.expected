@@ -30,7 +30,6 @@ boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this de
 boot: slot B -- committed: every service is ready and has held its health window and the boot matches its expectation; config.txt now boots B, A is the fallback
 boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 boot: init halts the machine -- reboot(RESTART)
-reboot: Restarting system
 card: config.txt after the trial:
 card: os_prefix=slots/B/
 card: [tryboot]

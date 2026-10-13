@@ -22,7 +22,6 @@ boot: ringserv -- ready (/run/ringserv/ready)
 boot: judge -- the boot matches its expectation (/etc/expected, 19 lines)
 boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 boot: init halts the machine -- reboot(RESTART)
-reboot: Restarting system
 disk: what the boot left on the disk, read back from the disk itself:
 disk: / -- owned by 0:0, mode 0755
 disk: /data/ringserv -- owned by 2000:2000, mode 0700

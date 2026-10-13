@@ -22,8 +22,21 @@ LOG=zig-out/wsl/regress.txt
 mkdir -p zig-out/wsl
 rm -f "$LOG"
 WANT="$*"
-MACHINES="qemu_hello qemu_egress qemu_confine qemu_budget qemu_identity qemu_own qemu_forward qemu_deadline fleet_temoin makeen_qemu makeen_box"
+MACHINES="qemu_hello qemu_egress qemu_confine qemu_budget qemu_identity qemu_own qemu_forward qemu_deadline qemu_tick fleet_temoin makeen_qemu makeen_box"
+SCENES="guarantees names fleet time cloud links"
 (
+  # A GATE THAT IS NOT IN THE LIST REPORTS AS NOTHING (PX): the first run of this script was asked for three
+  # names and ran two, because the third machine was pinned after the list was written and the script said
+  # nothing about it. So: a pinned machine this list does not know refuses the whole run, and a name the
+  # script cannot run refuses it too -- loudly, never silently
+  for f in machines/*.expected; do
+    stem=$(basename "$f" .expected)
+    [ -f "machines/$stem.machine" ] || continue
+    case " $MACHINES " in *" $stem "*) ;; *) echo "regress.sh does not know $stem, which is pinned at $f: add it to MACHINES"; echo "exit 2"; exit 2 ;; esac
+  done
+  for w in $WANT; do
+    case " $MACHINES $SCENES " in *" $w "*) ;; *) echo "regress.sh cannot run '$w': a machine is one of [$MACHINES], a scene one of [$SCENES]"; echo "exit 2"; exit 2 ;; esac
+  done
   fails=0; ran=0
   wanted() { [ -z "$WANT" ] && return 0; case " $WANT " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
   one() { # $1 = label, $2 = the log the command writes (or - to keep its stdout), $3.. = the command

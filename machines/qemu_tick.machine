@@ -1,0 +1,78 @@
+-- qemu_tick.machine -- the machine that MEASURES what the reservation
+-- promised.
+--
+-- qemu_deadline (lesson 11) showed a world given its time: the kernel
+-- read back a reservation it holds. This machine asks the other
+-- question, the one a real-time claim lives or dies on: how late was
+-- the world, actually? Three worlds on two cores:
+--
+--   neighbour   reserved 500 of every 1000 us on core 1, and it SPINS:
+--               a world that would take the whole core if it could
+--   hog         no reservation, and it spins too: it lands where every
+--               unreserved world lands, on core 0, with PID 1
+--   tick        reserved 200 of every 1000 us on core 1, within 500 --
+--               beside the neighbour -- and it runs 1000 periods of
+--               1000 us on an absolute timer, noting how late each wake
+--               was and how long each step took
+--
+-- tick's two lines are the point. The first says what it runs under,
+-- read from the kernel, and must agree with the period and the deadline
+-- its RUN line names. The second is the measurement:
+--
+--   tick: measured -- woke late by N us at the median, N us at the 99th,
+--   N us at the worst; the step took N us at the worst; N of 1000 past
+--   the deadline
+--
+-- where every N on YOUR screen is a number and in the pin it is the
+-- letter N: the numbers are this machine's, and on the emulator this
+-- machine's time is its host's. The image script keeps the shape and
+-- normalises the numbers away; the raw transcript keeps them. The first
+-- number that counts is a board's (OS-5).
+--
+-- What the emulator CAN show is the contrast: take tick's reservation
+-- away (lesson 12's BREAK IT) and it lands on core 0 beside the hog,
+-- where its worst wake is whatever the scheduler leaves it. Read the
+-- two measured lines side by side: that difference is the reservation,
+-- measured.
+
+DEFINE MACHINE qemu_tick AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  CORES 2
+) RATIONALE "Two cores, so that a reserved core can be measured beside one that is nobody's: the witness, its reserved neighbour and an unreserved hog"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The machine may start worlds; none of these starts another"
+
+DEFINE SERVICE neighbour AS (
+  RUN ["/harb", "spin", "--ready", "/run/neighbour.ready"],
+  RESTART always,
+  READY "/run/neighbour.ready",
+  PERIOD 1000,
+  DEADLINE 1000,
+  RUNTIME 500,
+  CORE 1,
+  NEEDS [process]
+) RATIONALE "A greedy world on the witness's own core, held by the kernel to 500 of every 1000 us: it burns all it is given, and the witness's 200 within 500 are still the witness's -- 200/500 and 500/1000 together fit the core by the earliest-deadline rule's own test, which 700 would not"
+
+DEFINE SERVICE hog AS (
+  RUN ["/harb", "spin", "--ready", "/run/hog.ready"],
+  RESTART always,
+  AFTER [neighbour],
+  READY "/run/hog.ready",
+  NEEDS [process]
+) RATIONALE "A greedy world with no reservation: it lands on core 0 with PID 1 and everything unreserved, which is where the witness lands too the day its reservation is taken away. It starts after the neighbour has spoken, so the two spinners' lines have one order"
+
+DEFINE SERVICE tick AS (
+  RUN ["/harb", "tick", "1000", "--period", "1000", "--deadline", "500"],
+  RESTART never,
+  AFTER [neighbour, hog],
+  PERIOD 1000,
+  DEADLINE 500,
+  RUNTIME 200,
+  CORE 1,
+  NEEDS [process]
+) RATIONALE "The witness: 1000 periods of a millisecond, each step due within half of it, measured on an absolute timer beside a neighbour that would take the core. It starts once both spinners are burning, so that what it measures is the reservation under load and not an idle machine"

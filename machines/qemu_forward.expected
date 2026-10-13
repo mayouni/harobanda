@@ -15,4 +15,3 @@ boot: witness (pid N) exited 0
 boot: judge -- the boot matches its expectation (/etc/expected, 13 lines)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
-reboot: Restarting system

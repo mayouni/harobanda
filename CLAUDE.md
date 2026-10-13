@@ -495,7 +495,22 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/deadline_kernel_read.sh
 
-# the guided tour: 19 lessons, each with a command, the lines
+# a promise measured (TCK-1): a reserved witness runs 1000
+# periods of a millisecond on an absolute timer beside a
+# reserved spinner and an unreserved hog, and says how late
+# it woke; the pin holds the shape and no number
+#   -> zig-out/wsl/image_qemu_tick.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_tick
+
+# the witness read in six settings (alone, loose, beside the
+# neighbour, the full machine, hogged, the BREAK IT), the
+# measured lines side by side: a reading of THIS host, never
+# a gate -> zig-out/wsl/tick_diag.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/tick_diag.sh
+
+# the guided tour: 20 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
 
@@ -531,6 +546,33 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A promise is not a measurement, and a measurement from an emulator
+  is the host's** (TCK-1): `harb tick` runs a world's declared period
+  on an ABSOLUTE timer and says how late each wake was -- median, 99th,
+  worst, the step's worst, the misses -- and `harb spin` is the
+  neighbour it is measured beside. The pin holds the SHAPE of the
+  measured line and no number (`os2_image.sh` turns every number in a
+  `tick: measured` line into `N`, one named rule); the raw transcript
+  keeps them; a board gives the first number that counts (OS-5). Read on
+  this desk (`experiment/tick_diag.sh`, a reading never a gate): alone on
+  its core the reserved witness woke 593 us late at the median and 12.7
+  ms at the worst, because QEMU's time is its host's; a hog on the OTHER
+  core made the tails twenty times worse (the host's threads); and
+  without its reservation the witness did BETTER at the median -- the
+  lesson says so, because a number that reassures is the one to doubt.
+  **A world with no reservation anywhere gets no timed kernel**, and on a
+  kernel without fine timers an absolute sleep of 1 ms costs a jiffy
+  every period: three seconds late after a thousand. **A constrained
+  deadline is not a period**: the court sums utilisation (200/1000 +
+  700/1000 fits), the earliest-deadline rule needs density (200/500 +
+  700/1000 does not), and the first boot missed 923 of 1000 until the
+  neighbour was 500. **Two spinners released together race for the
+  console**: the hog starts AFTER the neighbour. The verbs are reports
+  (exit 0 whatever they measured), the period and the deadline sit in
+  the RUN line so a world with no reservation can still be asked, and a
+  reserved world whose RUN disagrees with its reservation refuses to run.
+  No mutant probe, by construction: a mutant of the loop changes the
+  numbers, and the pin holds none.
 - **A world is GIVEN its time, and every number the floor copies from
   the kernel is read back at the act** (TIM-1): `CORES` on a hosted
   machine; `PERIOD`, `DEADLINE`, `RUNTIME` and `CORE` on a SERVICE, the
@@ -1336,16 +1378,21 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   RUNTIME / CORE` on a SERVICE, `machines/qemu_deadline.machine` pinned
   at 22 lines, the kernel's refusal shown by the probe's mutant and not
   by the machine, because the court refuses it first; the four numbers
-  the kernel corrected are in the doctrine line above. 3 `harb tick`
-  (the latency witness: a world runs its declared period with an
-  absolute clock and reports how late it was; the emulator's number is
-  a host's and a board's is the one that counts), 4 the safe state in
-  the BODY (a heartbeat brain-to-body; PID 1's quarter-second loop
-  cannot stop a motor), 5 the edge schedule (`EVERY / PRIORITY / WORST`),
-  6 the robot as a fleet with a WIRE. The repair came first (PRI-1,
-  built the same day). **Next session: rung 3, `harb tick`**; the
-  cloud's front (rung 3b of the cloud ladder) follows the real-time
-  rungs by ruling 17. Haro's desk holds one constraint from the ruling:
+  the kernel corrected are in the doctrine line above. **3 `harb tick`
+  is built (TCK-1, the same day)**: the latency witness runs its
+  declared period on an absolute timer and says how late it woke;
+  `machines/qemu_tick.machine` pins the shape and no number, the raw
+  transcript keeps the numbers, `experiment/tick_diag.sh` reads six
+  settings side by side, and the first number that counts is a board's.
+  4 the safe state in the BODY (a heartbeat brain-to-body; PID 1's
+  quarter-second loop cannot stop a motor; the hosted half is small:
+  the court refuses a HEALTH window below what PID 1 can keep, and a
+  reserved world that overruns is signalled and the transcript says
+  it), 5 the edge schedule (`EVERY / PRIORITY / WORST`), 6 the robot as
+  a fleet with a WIRE. The repair came first (PRI-1, built the same
+  day). **Next session: rung 4's hosted half**, then the cloud's front
+  (rung 3b of the cloud ladder), which follows the real-time rungs by
+  ruling 17; rungs 5 and 6 need MicroRing's desk and a body. Haro's desk holds one constraint from the ruling:
   the reservation is the world's main thread's, since the kernel refuses
   a reserved task that forks or spawns a thread unless its children fall
   back to normal scheduling -- which is how TIM-1 sets it (reset-on-fork),
@@ -1380,7 +1427,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   as the first declared server world. Haro's runtime as the image's
   second binary. `makeen_box` gets its own `DOMAIN` at OS-5, when there
   is a NIC to serve. ~~The tour's boot lessons that need `stzr`~~ --
-  done (LRN-3): lessons 4-6 boot `qemu_egress`, and 10 and 18 say before
+  done (LRN-3): lessons 4-6 boot `qemu_egress`, and 10 and 19 say before
   their RUN what a reader without the runtime sees. ~~CONSOLE announced,
   never acted on~~ -- done (CON-1): the boot line follows it and PID 1
   asks the kernel; what remains is observing the card's witness on a
@@ -1410,7 +1457,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

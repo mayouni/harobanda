@@ -21,7 +21,6 @@ boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)
 boot: journal -- /data/boot.journal: the chain begins, entry 1 signed by this device (verdict matched)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)
-reboot: Restarting system
 again: the same machine, booted again on the same disk:
 again: boot: harb init -- machine fleet_temoin (hosted / x86_64 / qemu_pc) -- pid 1
 again: boot: console /dev/ttyS0

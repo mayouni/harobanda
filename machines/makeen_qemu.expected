@@ -24,4 +24,3 @@ boot: poste -- ready (/run/poste.ready)
 boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
 boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 boot: init halts the machine -- reboot(RESTART)
-reboot: Restarting system

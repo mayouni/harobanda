@@ -33,6 +33,7 @@ const ready = @import("ready.zig");
 const get = @import("get.zig");
 const own = @import("own.zig");
 const reserve = @import("reserve.zig");
+const tick = @import("tick.zig");
 const timeattest = @import("timeattest.zig");
 const timeaudit = @import("timeaudit.zig");
 const timeserve = @import("timeserve.zig");
@@ -60,6 +61,8 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb id                                     (uid and gid, from inside a machine)
         \\  harb own    <dir> [--not <dir>]...          (what may this world write? it asks the kernel, as the identity it runs as, from inside it)
         \\  harb reserved [--stay <ready-path>]         (what time does this world run under, on which core? it asks the kernel, from inside it)
+        \\  harb tick   <periods> --period <us> --deadline <us>   (run the period on an absolute timer and say how late each wake was; from inside a world)
+        \\  harb spin   [--ready <path>]                (say where this world runs, then burn the processor until the machine ends; the witness's neighbour)
         \\  harb reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
         \\  harb confined [iface] [path...]             (what can this WORLD see and do? from inside one)
         \\  harb swarm  [n]                             (ask for n tasks and say where the kernel stopped; from inside a world)
@@ -235,6 +238,18 @@ pub fn main() !u8 {
         // time it runs under and on which core, and says it. A report, never an
         // assertion -- a world with no reservation is a true state too
         return reserve.run(args[2..], out);
+    }
+    if (std.mem.eql(u8, verb, "tick")) {
+        // The latency witness (TCK-1): a world runs its declared period on an
+        // absolute timer and says how late each wake was. The numbers are the
+        // machine's -- the emulator's are its host's -- and a report, never an
+        // assertion
+        return tick.run(arena, args[2..], out);
+    }
+    if (std.mem.eql(u8, verb, "spin")) {
+        // The neighbour a witness is measured beside: it says where it runs
+        // and burns the processor until the machine ends
+        return tick.spin(args[2..], out);
     }
     if (std.mem.eql(u8, verb, "journal")) {
         // The record read back and checked, from inside the machine that
@@ -1115,6 +1130,7 @@ test {
     _ = get;
     _ = own;
     _ = reserve;
+    _ = tick;
     _ = timeattest;
     _ = timeaudit;
     _ = timeserve;

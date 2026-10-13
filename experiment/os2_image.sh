@@ -335,13 +335,25 @@ mkdir -p "$OUT" zig-out/wsl
   # first, because /[0-9a-f]+/ matches ordinary English too: the fleet
   # witness's first run read the "af" of "after" as a fingerprint and
   # wrote a normalised token into the middle of a word (FLT-1).
+  # ... and a MEASUREMENT (TCK-1): a world that measured how late its wakes were says so in a line
+  # beginning `tick: measured`, and its numbers are the machine's -- on the emulator, its host's. The
+  # SHAPE of that line is judged (the witness ran, said its median, its 99th, its worst, its step and
+  # its misses out of the periods it was asked), every number in it becomes N, and the raw transcript
+  # keeps them for a reader. The pin holds no number, because a number only a board can give is not a
+  # claim the emulator can make.
   sed -e 's/\r$//' "$OUT/transcript.txt" \
     | sed -n '/^.*boot: harb init/,$p' | sed -e '1s/^.*boot: harb init/boot: harb init/' \
     | sed -E 's/pid ([2-9]|[1-9][0-9]+)\b/pid N/g' \
+    | sed -E '/^tick: measured/ { s/[0-9]+ us/N us/g; s/[0-9]+ of ([0-9]+) past/N of \1 past/ }' \
     | sed -e 's/hash=[0-9a-f]\{64\}/hash=H/g' -e 's/sig=[0-9a-f]\{128\}/sig=S/g' \
     | sed -e 's/ed25519 \([0-9a-f]\{64\}\)/ed25519 @@K@\1@@K@/g' -e 's/fingerprint \([0-9a-f]\{16\}\)/fingerprint @@K@\1@@K@/g' \
     | awk '{ while (match($0, /@@K@[0-9a-f]+@@K@/)) { fp = substr($0, RSTART + 4, RLENGTH - 8); if (!(fp in seen)) { n++; seen[fp] = "KEY" n } $0 = substr($0, 1, RSTART - 1) seen[fp] substr($0, RSTART + RLENGTH) } print }' \
-    | sed -e '/^qemu exit$/d; /^qemu exit [0-9]*$/d' > "$OUT/transcript.normalised"
+    | sed -e '/^qemu exit$/d; /^qemu exit [0-9]*$/d' \
+    | sed -e '/^reboot: Restarting system$/d' > "$OUT/transcript.normalised"
+  # ... the last of which is the KERNEL's own last word, printed inside the reboot PID 1 asked for,
+  # after PID 1's own last line: whether the serial port carries it before QEMU exits on `-no-reboot`
+  # is the emulator's timing (qemu_tick's second boot had it, its first did not; a spinning world
+  # changes the odds), so it is nobody's claim and no pin holds it (TCK-1)
   # A machine with no pin yet is not a failure: this run is how its
   # first transcript gets made. A pin that REFUSES the transcript is.
   VERDICT=0

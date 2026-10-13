@@ -1,3 +1,138 @@
+# TCK-1 — a promise is not a measurement, and a measurement from an emulator is the host's
+
+Rung 3 of the real-time ladder (`doc/REALTIME.md`, STZ-OS-RULING-17), built
+2026-10-13 on the author's "continue with rung 3, harb tick", the same day
+as TIM-1.
+
+## What was built
+
+- **The witness** (`src/tick.zig`, `harb tick <periods> --period <us>
+  --deadline <us>`): a world runs its declared period on an ABSOLUTE
+  timer (`clock_nanosleep`, `TIMER_ABSTIME`, the monotonic clock: the
+  next start is a point in time, never "the period from now", or every
+  late wake would push the next one later), notes how late each wake
+  was, does a fixed small step and notes how long it took, and whether
+  the step was done within the deadline of the period's start. Two
+  lines: what it runs under, read from the kernel -- `tick: 1000 periods
+  of 1000 us, deadline 500 us -- under SCHED_DEADLINE (200 us of every
+  1000 us), on core 1 and no other`, or `NO RESERVATION: policy 0, on
+  core 0 and no other, kept by nobody` -- and the measurement: `tick:
+  measured -- woke late by 413 us at the median, 20421 us at the 99th,
+  23548 us at the worst; the step took 39 us at the worst; 411 of 1000
+  past the deadline`. The period and the deadline are in the RUN line,
+  so that a world with no reservation can still be asked to keep one
+  (the tour's BREAK IT); a world WITH a reservation is refused if the
+  two disagree (a declaration that says two things says nothing). A
+  report, never an assertion: exit 0 whatever it measured.
+- **The neighbour** (`harb spin [--ready <path>]`): says where it runs
+  and under what, marks its READY path, and burns the processor until
+  the machine ends.
+- **The pin holds no number.** `os2_image.sh` keeps the SHAPE of a `tick:
+  measured` line and turns every number in it into `N` (one rule, for
+  that prefix only, named in the script); the raw transcript keeps the
+  numbers. On the emulator the numbers are its host's, which is the
+  analysis's own sentence ("the lens says measured, unjudged and the pin
+  holds no number"), done without a lens: the judged lines are the
+  witness's existence, its policy, its core, its shape.
+- **The machine** `machines/qemu_tick.machine`, pinned at 23 lines:
+  `neighbour` (reserved 500 of every 1000 us on core 1, spinning), `hog`
+  (unreserved, spinning, landing on core 0 with PID 1), `tick` (reserved
+  200 within 500 of every 1000 us on core 1, 1000 periods, started once
+  both spinners burn). The neighbour's 500 and not 700: 200/500 and
+  500/1000 together fit the core by the earliest-deadline rule's own
+  density test (0.4 + 0.5), which 700 would not (0.4 + 0.7) -- a
+  constrained deadline is not a period, and the court sums utilisation,
+  not density; the first boot's neighbour was 700 and the witness
+  missed 923 of 1000. The hog starts AFTER the neighbour, because the
+  first boot's two spinners raced for the console and the hog's line
+  came first (BDG-1: close the race, never widen the judge).
+- **Lesson 12** of the tour, with `remove` added to a BREAK IT's shapes
+  (a step that takes four lines away is a step), run before it was
+  promised.
+
+## What this host measured (a reading, never a gate: `experiment/tick_diag.sh`)
+
+Six settings derived from the machine file by taking things away, each
+booted once on this desk (QEMU 10.2 under TCG inside WSL2 on Windows):
+
+| setting | what runs | median | 99th | worst | past the deadline |
+|---|---|---|---|---|---|
+| alone | the witness reserved on core 1, nothing else | 593 us | 7.6 ms | 12.7 ms | 543 of 1000 |
+| neighbour | plus the reserved spinner on core 1 | 235 us | 3.5 ms | 6.5 ms | 380 |
+| full | plus the unreserved hog on core 0 (the pinned machine) | 413 us | 20.4 ms | 23.5 ms | 411 |
+| full, first boot | the same with the neighbour at 700 | 66 ms | 125 ms | 127 ms | 923 |
+| broken | the full machine, the witness's reservation taken away: core 0 beside the hog, the kernel still timed by the neighbour's | 242 us | 4.4 ms | 5.4 ms | 247 |
+| loose, hogged | no reservation anywhere: the image carries no timed kernel | 1.5 s | 3.0 s | 3.0 s | 1000 |
+
+What these say, and what they do not:
+
+- **A world with no reservation anywhere gets no timed kernel**, by the
+  image's own derivation, and on a kernel without fine timers an
+  absolute sleep of 1 ms costs a jiffy (4 ms at HZ=250) every period --
+  a timer already in the past still fires at the next tick -- so the
+  loop falls three milliseconds further behind each period and is three
+  seconds late after a thousand. That is the floor's doctrine measured:
+  the machine carries the kernel its declaration needs and nothing else.
+- **With the reservation the number is the emulator's.** Alone on its
+  core the witness still missed a 500 us deadline half the time and woke
+  12 ms late at the worst: QEMU translates the machine's instructions
+  and takes its timers from a host that owes it nothing. A spinning
+  neighbour on the same core made it BETTER (the virtual processor's
+  thread stays hot on the host), and a hog on the OTHER core made the
+  tails twenty times worse (the host schedules two spinning threads and
+  the one that carries the timers waits) -- effects of the host, not of
+  the kernel, and the reason the pin holds no number.
+- **The BREAK IT's number was better without the reservation** (242 us
+  against 413 at the median). The lesson says so, and why: nothing in
+  the machine can promise over the host's head. What the BREAK IT shows
+  for certain is the kernel's word (NO RESERVATION, on core 0) and the
+  pin's refusal.
+- **The first number that counts is a board's** (OS-5): the same witness
+  on a Raspberry Pi 4 under the same kernel, read by a person.
+
+## Judged
+
+- The tour: `learn --check` over 20 lessons (the `tick:` and `spin:`
+  prefixes mark a machine's words now); the court unchanged (245/245:
+  the witness is a verb, not a clause).
+- Three tests: the summary's arithmetic (median, 99th, worst, step,
+  misses), the summary reading the lateness SORTED and not in the order
+  the wakes came, and the loop keeping an absolute period on Linux (20
+  periods of 2 ms take no less than 40 ms).
+- The boot, 23 lines, the machine judging itself a match; the shape of
+  the measured line pinned, every number `N`.
+- **No mutant probe**, by construction and named: a mutant of the loop
+  (a relative sleep that drifts, a lateness read from the wrong clock)
+  changes the NUMBERS, and the pin was built to hold none. The number is
+  a board's to judge; a probe of the loop is a probe on a board.
+- **The kernel's last word is not the machine's claim.** The second
+  boot of `qemu_tick` differed from its pin by one trailing line,
+  `reboot: Restarting system` -- the kernel's own message inside the
+  reboot PID 1 asked for. Fourteen older pins hold that line, because a
+  PREEMPT_NONE kernel prints it synchronously before the reset; on a
+  PREEMPT_RT kernel printk is threaded, and whether the port carries it
+  before QEMU exits on `-no-reboot` is a race (qemu_deadline's pin was
+  taken without it, qemu_tick's first boot lacked it and its second had
+  it). A gate that flaps is a latency defect (PX), so `os2_image.sh` drops
+  the plain line before the judge, the fourteen pins lost it by rule
+  (one `sed`, one line each, no transcript copied), and every pinned boot
+  was run again.
+- **A gate that is not in the list reports as nothing** (PX, again):
+  `experiment/regress.sh` was asked for three names and ran two, because
+  `qemu_tick` was pinned after its list was written and the script said
+  nothing about the third. It refuses now: a pinned machine it does not
+  know stops the whole run, and a name it cannot run is refused by name.
+
+## What is not built, by name
+
+A verdict on a board's number (the lens that says "measured, unjudged"
+on the emulator and "judged" on a board is not written: no board exists
+to write it against); the step is a fixed computation, not the world's
+own work; the distribution is three points and a count, not a
+histogram; `harb spin` reports no share of the processor it got; and
+the witness runs on the main thread only, which is where a reservation
+lives (TIM-1).
+
 # TIM-1 — a world is given its time, and every number copied from the kernel is read back at the act
 
 Rungs 1 and 2 of the real-time ladder (`doc/REALTIME.md`, STZ-OS-RULING-17
