@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>How a cloud is written — Harobanda</title>
-<meta name="description" content="Three kinds of file write a cloud, in one language, and are checked as a whole before anything boots. What a cloud usually has and this one leaves out on purpose, and what you keep when somebody else owns the hardware.">
+<title>How it is written — Harobanda</title>
+<meta name="description" content="A cloud and a timed machine are written the way one machine is: in plain text files, in one language, checked by the court before anything boots. What you write, what the court refuses, what is left out on purpose, and what you keep.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -25,8 +25,7 @@
       <a href="machine.html">The machine</a>
       <a href="build.html">Build</a>
       <a href="security.html">Security</a>
-      <a href="enterprise.html" class="active">Enterprise</a>
-      <a href="realtime.html">Real time</a>
+      <a href="enterprise.html" class="active">Deploy</a>
     </nav>
     <a class="ghlink" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
   </div>
@@ -36,57 +35,81 @@
     <div class="path-in">
       <a href="enterprise.html">For IT</a>
       <a href="cloud.html">The cloud</a>
+      <a href="realtime.html">Real time</a>
       <a href="cloud-files.html" class="here" aria-current="page">How it is written</a>
-      <a href="cloud-status.html">Where the cloud stands</a>
+      <a href="cloud-status.html">Where it stands</a>
     </div>
   </nav>
 
 <main id="main">
   <section class="wrap pagehead">
-    <p class="eyebrow">How a cloud is written</p>
+    <p class="eyebrow">How it is written</p>
     <h1>Written as files, checked as a whole.</h1>
-    <p class="lead">A cloud is written the way one machine is: in plain text files, in one language, checked before anything boots. Nothing manages it afterwards. There is no discovery, no orchestrator and no program that decides what runs where, and this page says what stands in their place and what is left out on purpose.</p>
+    <p class="lead">A cloud and a timed machine are written the way one machine is: in plain text files, in one language, checked before anything boots by the part of <code>harb</code> called the court. Nothing manages either afterwards. This page says what you write, what the court refuses, and what is left out on purpose.</p>
   </section>
 
   <section class="wrap block">
     <div class="sec-head prose">
       <p class="eyebrow">What you write</p>
-      <h2>Three kinds of file, in one language.</h2>
+      <h2>Three kinds of file, and four lines on a program.</h2>
     </div>
     <div class="trio">
       <div class="card"><h4>A machine file</h4><p>Says what one machine is and what each program on it may use: the network, which disks, which user, how much memory. <code>harb check</code> reads it against the language's rules and refuses what breaks one, naming the line.</p></div>
-      <div class="card"><h4>A fleet file</h4><p>Names the machines of one estate, each with the public key it is enrolled by, the networks it sits on (the fleet file calls a network a link), and which machine is the way between two of them. It is judged as a whole, because some mistakes belong to no single machine: two machines that each serve the same network are each faultless, and together a broken network.</p></div>
-      <div class="card"><h4>A pack</h4><p>A solution's server programs on their own, written apart from any machine: what each one needs to run. <code>harb place</code> puts a pack on a machine, and the machine's own checks judge the result as one machine. A pack that asks for what the machine does not grant is refused at the pack's own line, before any image is built.</p></div>
+      <div class="card"><h4>A fleet file</h4><p>Names the machines of one estate, each with the public key it is enrolled by, the networks it sits on (the fleet file calls a network a link), and which machine is the way between two of them. It is judged as a whole, because some mistakes belong to no single machine.</p></div>
+      <div class="card"><h4>A pack</h4><p>A solution's server programs on their own, written apart from any machine: what each one needs to run. <code>harb place</code> puts a pack on a machine, and the machine's own checks judge the result as one machine.</p></div>
     </div>
-    <div class="prose stack-gap" style="margin-top:clamp(24px,3vw,34px)">
-      <p>An ordinary cloud has a control plane: a service that decides what runs where and watches that it keeps running. Here that job is done by the files in git and by each machine's own check of its own boot. There is nothing to install, nothing to keep alive, and nothing that holds a second copy of who is in the set and could disagree with the file. The part of <code>harb</code> that checks the files is called the court, and it refuses a mistake while the cloud is still text.</p>
+    <div class="term" style="margin-top:clamp(24px,3vw,34px)" aria-label="The reserved program of machines/qemu_deadline.machine, as written">
+      <div class="term-bar"><i></i><i></i><i></i><b>a program's time, in machines/qemu_deadline.machine</b></div>
+<pre><span class="d">-- on a program: the four together, or none (and CORES 2 on the machine)</span>
+DEFINE SERVICE control AS (
+  RUN ["/harb", "reserved", "--stay", "/run/control.ready"],
+  RESTART always, READY "/run/control.ready",
+  <span class="k">PERIOD 1000,</span>
+  <span class="k">DEADLINE 500,</span>
+  <span class="k">RUNTIME 200,</span>
+  <span class="k">CORE 1,</span>
+  NEEDS [process]
+) RATIONALE "..."</pre>
     </div>
-    <p class="pull prose" style="margin-top:clamp(22px,3vw,32px)">What matters in a set of machines is the list of states it must never be in. <b>Here each one is a refusal the court can make before anything boots.</b></p>
+    <p class="cap"><b>PERIOD</b> is how often the work comes round, in microseconds; <b>DEADLINE</b> by when, inside each period, it must be done; <b>RUNTIME</b> how much of the processor the kernel reserves for it every period; <b>CORE</b> which core, never core 0, the machine's own; <b>CORES</b>, on the machine, how many it has. From these the machine derives the kernel, the core set apart, and the reservation handed to the program before its first instruction. The program may not ask the kernel for any of this: the call that would is refused to every program.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">What the court refuses</p>
+      <h2>Before anything boots, with the line named.</h2>
+    </div>
+    <div class="prose stack-gap">
+      <p>For a set of machines, the states it must never be in: two machines that each serve the same network, two that claim one address, a box that is the way between two networks that nobody declared joined, a machine on a joined network with a way there and no way back. Each is a refusal the court makes while the cloud is still text.</p>
+      <p>For a program's time: one of the four numbers without the others; a runtime longer than its deadline, or a deadline past the period; a period the kernel would not hold (its own bounds are 100 microseconds to 4194304); core 0, or a core the machine does not have; a ceiling on the processor beside a reservation of it; and the reservations of one core asking more than 90 per cent of it — the kernel admits 95 and keeps 5 of those for the ordinary programs' own scheduler, which the court learned when two programs asking 95 together were refused the second at boot. The refusal names the line that crossed the bound, not the first program on the core.</p>
+    </div>
   </section>
 
   <section class="wrap block">
     <div class="sec-head prose">
       <p class="eyebrow">Left out on purpose</p>
-      <h2>What most clouds have, and this one does not.</h2>
+      <h2>What a cloud and a real-time system usually have, and these do not.</h2>
     </div>
-    <div class="trio">
-      <div class="card"><h4>No discovery, no autoscaling</h4><p>The fleet file is the list of who is in the set. A program that discovered the set would be a second source of truth about it, and one that added machines by itself would be deciding what the file should say. Capacity is declared: adding a machine is one line in the file and one image.</p></div>
-      <div class="card"><h4>No automatic enrolment</h4><p>A machine joins when a person copies its public key into the fleet file. An automatic enrolment would have to trust whatever answered on the wire, and the key is the one thing that says whose a signed record is.</p></div>
-      <div class="card"><h4>No hypervisor in the product</h4><p>A hypervisor cuts one computer into several virtual ones. Here, more programs on one machine is density, more machines is isolation between owners, and a provider's virtual machine is simply the hardware. The emulator used on these pages is the court's instrument for trying a machine on a laptop, and is not part of what ships.</p></div>
-    </div>
+    <ul class="honest two">
+      <li><b>No discovery, no autoscaling.</b> The fleet file is the list of who is in the set; a program that discovered or added machines would be a second source of truth about it. Capacity is one line and one image.</li>
+      <li><b>No automatic enrolment.</b> A machine joins when a person copies its public key into the fleet file; an automatic one would trust whatever answered on the wire.</li>
+      <li><b>No hypervisor in the product.</b> More programs on one machine is density, more machines is isolation between owners, and a provider's virtual machine is simply the hardware.</li>
+      <li><b>No priorities.</b> A priority is a claim nobody checks; a reservation is refused when it does not fit, and the calls that would set a priority are refused to every program.</li>
+      <li><b>No real-time interface.</b> No scheduler to call, no thread to pin: a reserved program is an ordinary program on a core set apart, and whatever it starts runs without a reservation.</li>
+      <li><b>No declared timing.</b> The kernel's model is derived from the fact that a program reserves time, and read back at every boot; a machine that reserves nothing gets the calm kernel it always had.</li>
+    </ul>
   </section>
 
   <section class="wrap block">
     <div class="sec-head prose">
-      <p class="eyebrow">Whose cloud</p>
-      <h2>What you keep when somebody else owns the hardware.</h2>
+      <p class="eyebrow">What you keep</p>
+      <h2>Your declaration, your evidence, your time.</h2>
     </div>
     <div class="prose stack-gap">
-      <p>The same files describe a cloud on hardware you own and, once the fourth step is built, on a machine you rent. What changes between them is who holds the keys. Each machine makes its own key the first time it boots, and whoever holds the hardware holds that key.</p>
-      <p>So on a machine somebody else owns you keep two things: the declaration, which is the file, and the evidence, because every machine's record is signed and anyone holding the fleet's public keys can check it, holding no secret. You do not keep the hardware. Run the same files on hardware of your own and you do; it is the same act.</p>
+      <p>The same files describe a cloud on hardware you own and, once the fourth step is built, on a machine you rent; what changes is who holds the keys, because each machine makes its own the first time it boots. On a machine somebody else owns you keep the declaration, which is the file, and the evidence, because every record is signed and anyone holding the fleet's public keys can check it. A program keeps its reservation for as long as it runs, given before it becomes the user it runs as; what it does not keep is a promise about the number, which is the witness's to measure.</p>
     </div>
-    <p class="pull prose" style="margin-top:clamp(24px,3vw,34px)">The honest promise is <b>your declaration and your evidence</b>, never “your cloud”.</p>
-    <p class="prose" style="margin-top:clamp(22px,3vw,32px)">Next: <a href="cloud-status.html">Where the cloud stands →</a> The six steps, which are built and which are not, and what judges each.</p>
+    <p class="pull prose" style="margin-top:clamp(24px,3vw,34px)">The honest promise is <b>your declaration and your evidence, and time the kernel holds with a number you can read</b> — never "your cloud", never "real time".</p>
+    <p class="prose" style="margin-top:clamp(22px,3vw,32px)">Next: <a href="cloud-status.html">Where it stands →</a> The twelve steps, which are built and which are not, and what the boots do not show.</p>
   </section>
 </main>
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Real time — Harobanda</title>
-<meta name="description" content="A machine that gives a program its time: a timed kernel read back at every boot, a reservation the kernel keeps and refuses when it does not fit, and a witness that measures how late the program woke. Three steps built, in an emulator; the first number that counts is a board's.">
+<meta name="description" content="A machine that gives a program its time: a timed kernel read back at every boot, a reservation the kernel keeps and refuses when it does not fit, and a witness that measures how late the program woke. Built in an emulator, where every number is the laptop's.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -25,8 +25,7 @@
       <a href="machine.html">The machine</a>
       <a href="build.html">Build</a>
       <a href="security.html">Security</a>
-      <a href="enterprise.html">Enterprise</a>
-      <a href="realtime.html" class="active">Real time</a>
+      <a href="enterprise.html" class="active">Deploy</a>
     </nav>
     <a class="ghlink" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
   </div>
@@ -34,9 +33,11 @@
 
   <nav class="path" aria-label="Section">
     <div class="path-in">
-      <a href="realtime.html" class="here" aria-current="page">A timed machine</a>
-      <a href="realtime-files.html">How it is written</a>
-      <a href="realtime-status.html">Where real time stands</a>
+      <a href="enterprise.html">For IT</a>
+      <a href="cloud.html">The cloud</a>
+      <a href="realtime.html" class="here" aria-current="page">Real time</a>
+      <a href="cloud-files.html">How it is written</a>
+      <a href="cloud-status.html">Where it stands</a>
     </div>
   </nav>
 
@@ -44,7 +45,7 @@
   <section class="wrap pagehead">
     <p class="eyebrow">Real time</p>
     <h1>A machine that gives a program its time.</h1>
-    <p class="lead">A control loop that must run every millisecond needs more than a fast computer. It needs time that nothing else on the box can take, and a way to know how late it was. Here a program declares the time it needs, the kernel keeps it and refuses what does not fit, and a witness measures it. Three of the six steps are built; every boot on these pages ran in an emulator, and the number that counts is a board's.</p>
+    <p class="lead">A control loop needs time that nothing else on the box can take, and a way to know how late it was. Here a program declares the time it needs, the kernel keeps it and refuses what does not fit, and a witness measures it — in an emulator so far, where every number is the laptop's.</p>
   </section>
 
   <section class="wrap block">
@@ -52,14 +53,9 @@
       <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-13.png" alt="A program given its time. The declaration at the top: CORES 2 on the machine; PERIOD 1000, DEADLINE 500, RUNTIME 200, CORE 1 on the program. Beneath it two cores side by side. Core 0, the machine's: PID 1 and every program with no reservation, which gets what is left. Core 1, set apart, drawn in the machine's blue-grey with the one orange mark: reserved programs only, and inside it one period of 1000 microseconds as a bar read left to right, 200 for control, 700 for second, 100 the kernel's. Then what the machine said, quoted from the pinned boots: the kernel, PREEMPT_RT and its timers resolve 1 ns; control, on core 1 and no other; the witness, N us at the median, N us at the 99th. A last band, not there yet: no board, every number is an emulator's; no body, nothing has moved a motor." width="1376" height="768">
       <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-13-narrow.png" alt="A program given its time, as a column. The declaration: CORES 2; PERIOD 1000, DEADLINE 500, RUNTIME 200, CORE 1. Then core 0, the machine's: PID 1 and every program with no reservation, which gets what is left. Then core 1, set apart, with the one orange mark: reserved programs only, and beneath it one period as a bar, 200 for control, 700 for second, the kernel's 100 of 1000. Then what the machine said, quoted from the pinned boots: the kernel, PREEMPT_RT and its timers resolve 1 ns; control, on core 1 and no other; the witness, N us at the median, N us at the 99th. Last, not there yet: no board, every number is an emulator's; no body, nothing has moved a motor." width="640" height="1850">
     </div>
-    <div class="sec-head prose">
-      <p class="eyebrow">Two promises</p>
-      <h2>Firm on the box, hard at the edge.</h2>
-    </div>
     <div class="prose stack-gap">
-      <p>"Real time" is two promises that are usually confused. The first is that a loop runs when it should <em>nearly always</em>, and that you can measure how nearly: a Linux kernel built to be interrupted almost anywhere, with fine timers, can keep that on a PC or a Raspberry Pi, and a measurement says what "nearly" was. The second is that a loop runs when it should <em>every time, by construction</em>, which no Linux can promise and a small microcontroller running one compiled loop can. A robot needs both: the first in the brain that plans, the second in the body that moves.</p>
-      <p>Harobanda takes the first promise here, on the machines it already boots. The second belongs to its edge profile, where a program is compiled onto a microcontroller by the MicroRing substrate of the same project, and is not built. One declaration will one day name both, the brain and the body, and the wire between them; that is the last of the six steps.</p>
-      <p>It is not a real-time operating system, and it does not try to be one. A program here has no priorities to set and no scheduler to call: the loop is still the scheduler. What the machine adds is a reservation the kernel keeps, and a number you can read.</p>
+      <p>"Real time" is two promises. The first: a loop runs when it should <em>nearly always</em>, and you can measure how nearly — a Linux kernel built to be interrupted almost anywhere, with fine timers, keeps that on a PC or a Raspberry Pi. The second: a loop runs when it should <em>every time, by construction</em> — which no Linux can promise and a microcontroller running one compiled loop can. A robot needs both, the first in the brain that plans and the second in the body that moves. Harobanda takes the first here; the second belongs to its edge profile, on the MicroRing substrate of the same project, and is not built.</p>
+      <p>It is not a real-time operating system. A program has no priorities to set and no scheduler to call: the loop is still the scheduler. What the machine adds is a reservation the kernel keeps, and a number you can read.</p>
     </div>
   </section>
 
@@ -69,9 +65,9 @@
       <h2>Three things, each read back from the kernel.</h2>
     </div>
     <div class="trio">
-      <div class="card"><h4>A timed kernel</h4><p>A machine that reserves time for any program is built a kernel that can be interrupted almost anywhere, with timers that resolve to the nanosecond. It is derived from the declaration, never asked for by name, and at every boot the machine reads back what it got: a machine handed a calm kernel differs from its expectation before any program runs.</p></div>
-      <div class="card"><h4>A reservation</h4><p>A program declares its period, its deadline, its runtime and the core it runs on: 200 microseconds of every 1000, done within 500, on core 1. The kernel's own deadline scheduler holds it there, on a core set apart for reserved programs, and refuses a set that does not fit. The program never sets its own place in the queue; it is given one before it starts.</p></div>
-      <div class="card"><h4>A measurement</h4><p>A witness runs the declared period on an absolute timer and says how late each wake was: the median, the 99th, the worst, and how many periods ran past the deadline. In an emulator those numbers are the laptop's, so the kept transcript holds the line's shape and none of its numbers. A board gives the first number that counts.</p></div>
+      <div class="card"><h4>A timed kernel</h4><p>A machine that reserves time for any program is built a kernel that can be interrupted almost anywhere, with timers that resolve to the nanosecond — derived from the declaration, never asked for by name. At every boot the machine reads back what it got, and one handed a calm kernel differs from its expectation before any program runs.</p></div>
+      <div class="card"><h4>A reservation</h4><p>A program declares its period, its deadline, its runtime and its core: 200 microseconds of every 1000, done within 500, on core 1. The kernel's own deadline scheduler holds it there, on a core set apart for reserved programs, and refuses a set that does not fit. The program never sets its own place in the queue; it is given one before it starts.</p></div>
+      <div class="card"><h4>A measurement</h4><p>A witness runs the declared period on an absolute timer and says how late each wake was: the median, the 99th, the worst, and how many periods ran past the deadline. In an emulator those numbers are the laptop's, so the kept transcript holds the line's shape and none of its numbers.</p></div>
     </div>
   </section>
 
@@ -79,9 +75,6 @@
     <div class="sec-head prose">
       <p class="eyebrow">What the machines said</p>
       <h2>Every line is quoted from a pinned boot.</h2>
-    </div>
-    <div class="prose" style="margin-bottom:clamp(22px,3vw,30px)">
-      <p>A pinned boot is a transcript the repository keeps and compares, line for line, with each new run: if a machine says something else, the comparison fails. These lines are from two machines, one that gives two programs their time and one that measures it.</p>
     </div>
     <div class="term" aria-label="Lines from the pinned boots of qemu_deadline and qemu_tick, machines/qemu_deadline.expected and machines/qemu_tick.expected">
       <div class="term-bar"><i></i><i></i><i></i><b>a timed machine, from its pins</b></div>
@@ -97,19 +90,18 @@ reserved: no reservation -- this world runs under policy 0 <span class="k">on 1 
 tick: 1000 periods of 1000 us, deadline 500 us -- under SCHED_DEADLINE (200 us of every 1000 us), on core 1 and no other
 tick: measured -- woke late by <span class="k">N</span> us at the median, N us at the 99th, N us at the worst; the step took N us at the worst; N of 1000 past the deadline</pre>
     </div>
-    <p class="cap">The first line is the kernel's own word about itself: the machine reads back what it got rather than repeating what it asked for, and that line said 4 ms twice before it said 1 ns. The second names both reservations before any program runs. Then two programs ask from inside: the reserved one has core 1 and no other, and the one with no reservation has the one other core, because a reserved core is set apart. The last two lines are the witness, and every <b>N</b> is a number on the screen and the letter N in the pin: on the laptop these pages were written on, about 400 microseconds late at the median and 20 milliseconds at the worst. That is the emulator's number, not the machine's.</p>
+    <p class="cap">A pinned boot is a transcript the repository keeps and compares, line for line, with each new run. The first line is the kernel's own word about itself. The reserved program has core 1 and no other; the one with no reservation has the one other core. Every <b>N</b> in the witness's line is a number on the screen and the letter N in the pin — on the laptop these pages were written on, about 400 microseconds late at the median and 20 milliseconds at the worst: the emulator's number, not the machine's. A board gives the first that counts.</p>
   </section>
 
   <section class="wrap block">
     <div class="sec-head prose">
       <p class="eyebrow">Who it is for</p>
-      <h2>The floor of a robot, and of anything that moves.</h2>
+      <h2>The floor of a robot, and of anything that answers a sensor on time.</h2>
     </div>
     <div class="prose stack-gap">
-      <p>The direction is autonomous machines: a robot, a vehicle, a line in a plant, a device that answers a sensor on time. Harobanda is the floor of that. It gives the control loop its time and measures it, and it refuses to be more. The loop's program is written in the Haro language, which owes it bounded execution; the robot is designed in Softanza's own design language, which says what the body is and what a safe state is; and whatever intelligence sits above them stays outside the deadline path by construction, proposing to a layer that decides.</p>
-      <p>None of that has moved a motor yet. What exists is the floor's part, run in an emulator, and the honest list is on the last page of this section.</p>
+      <p>Harobanda gives the control loop its time and measures it, and refuses to be more. The loop's program is written in the Haro language, which owes it bounded execution; the robot is designed in Softanza's own design language, which says what the body is and what a safe state is; and whatever intelligence sits above them stays outside the deadline path, proposing to a layer that decides. None of that has moved a motor yet: what exists is the floor's part, run in an emulator.</p>
     </div>
-    <p class="prose" style="margin-top:clamp(22px,3vw,32px)">Next: <a href="realtime-files.html">How it is written →</a> The lines a program's time is written in, what the court refuses, and what is left out on purpose.</p>
+    <p class="prose" style="margin-top:clamp(22px,3vw,32px)">Next: <a href="cloud-files.html">How it is written →</a> A cloud's three files and a program's four lines, what the court refuses, and what is left out on purpose.</p>
   </section>
 </main>
 

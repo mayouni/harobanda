@@ -418,7 +418,9 @@ customer's.
 
 ## 12 · A program given its time — `realtime.html`
 
-A seventh section, Real time, grew three pages (2026-10-13), and the first of them needed one picture.
+The Deploy section gained its real-time page (2026-10-13; first as a seventh section of three pages, then
+folded into Deploy beside the cloud the same evening, on the author's review), and that page needed one
+picture.
 It is containment and flow over time, which is what a diagram is for here: two cores, one of them set
 apart, and inside that one a single period drawn as a bar.
 
