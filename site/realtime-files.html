@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How a timed machine is written — Harobanda</title>
+<meta name="description" content="Four lines on a program and one on the machine give a program its time. What each means, what the court refuses before anything boots, what is left out on purpose, and what a program keeps.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" style="position:absolute;left:-9999px;top:0;background:var(--surface);padding:8px 14px;border-radius:6px;z-index:100;" onfocus="this.style.left='12px';this.style.top='12px'" onblur="this.style.left='-9999px'">Skip to content</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <a class="brand" href="index.html" aria-label="Harobanda — home">
+      <img class="brandmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg viewBox="0 0 18 14" aria-hidden="true"><line x1="0" y1="1" x2="18" y2="1"/><line x1="0" y1="7" x2="18" y2="7"/><line x1="0" y1="13" x2="18" y2="13"/></svg></button>
+    <nav class="nav" id="nav">
+      <a href="why.html">Why</a>
+      <a href="ai.html">AI &amp; agents</a>
+      <a href="machine.html">The machine</a>
+      <a href="build.html">Build</a>
+      <a href="security.html">Security</a>
+      <a href="enterprise.html">Enterprise</a>
+      <a href="realtime.html" class="active">Real time</a>
+    </nav>
+    <a class="ghlink" href="https://github.com/mayouni/harobanda" target="_blank" rel="noopener noreferrer" aria-label="Harobanda source on GitHub" title="The source, on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </div>
+</header>
+
+  <nav class="path" aria-label="Section">
+    <div class="path-in">
+      <a href="realtime.html">A timed machine</a>
+      <a href="realtime-files.html" class="here" aria-current="page">How it is written</a>
+      <a href="realtime-status.html">Where real time stands</a>
+    </div>
+  </nav>
+
+<main id="main">
+  <section class="wrap pagehead">
+    <p class="eyebrow">How a timed machine is written</p>
+    <h1>Four lines on a program, one on the machine.</h1>
+    <p class="lead">A program's time is written in the same file as everything else about the machine, in the same language, and checked by the same court before anything boots. There is no configuration of a scheduler and no priority to pick: four numbers say what the program needs, one number says what the machine has, and the kernel is derived from them.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">What you write</p>
+      <h2>A period, a deadline, a runtime and a core.</h2>
+    </div>
+    <div class="term" aria-label="The reserved program of machines/qemu_deadline.machine, as written">
+      <div class="term-bar"><i></i><i></i><i></i><b>machines/qemu_deadline.machine, the part that gives time</b></div>
+<pre><span class="d">-- on the machine: how many cores it has</span>
+DEFINE MACHINE qemu_deadline AS (
+  PROFILE hosted, ARCH x86_64, KERNEL linux, CONSOLE "/dev/ttyS0",
+  <span class="k">CORES 2</span>
+) RATIONALE "..."
+
+<span class="d">-- on a program: the four together, or none</span>
+DEFINE SERVICE control AS (
+  RUN ["/harb", "reserved", "--stay", "/run/control.ready"],
+  RESTART always, READY "/run/control.ready",
+  <span class="k">PERIOD 1000,</span>
+  <span class="k">DEADLINE 500,</span>
+  <span class="k">RUNTIME 200,</span>
+  <span class="k">CORE 1,</span>
+  NEEDS [process]
+) RATIONALE "..."</pre>
+    </div>
+    <div class="prose stack-gap" style="margin-top:clamp(24px,3vw,34px)">
+      <p><b>PERIOD</b> is how often the program's work comes round, in microseconds: every 1000 here, a thousand times a second. <b>DEADLINE</b> is by when, inside each period, the work must be done: within 500. <b>RUNTIME</b> is how much of the processor the kernel reserves for it in every period: 200 microseconds, a fifth of the core. <b>CORE</b> is which core, and the court refuses core 0, which is the machine's own: the first program, the watchdog's feed and every program that reserves nothing run there. <b>CORES</b> on the machine says how many cores it has; the emulator is handed the count, and a board has what it has.</p>
+      <p>From these the machine derives the rest: a kernel built to be interrupted almost anywhere, with fine timers; a reserved core set apart before the first program runs; and the reservation itself, handed to the program in the moment between its creation and its first instruction, with the rule that whatever it starts runs unreserved. The program may not ask the kernel for any of this: the call that would is refused to every program on every machine.</p>
+    </div>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">What the court refuses</p>
+      <h2>Before anything boots, with the line named.</h2>
+    </div>
+    <ul class="honest two">
+      <li><b>One number without the others.</b> A reservation is a period, a deadline, a runtime and a core, together; a period alone is not one, and a core alone is a preference the kernel holds nothing to.</li>
+      <li><b>Numbers that contradict each other.</b> A runtime longer than its deadline cannot run in the time it has, and a deadline past the period is a deadline in another period.</li>
+      <li><b>A period the kernel would not hold.</b> From 100 microseconds to 4194304, which are the kernel's own bounds; the first draft of this rule said ten seconds, and the kernel refused it at the act.</li>
+      <li><b>A core the machine does not have, or core 0.</b> A reservation names a core the machine declared, numbered from 0, and never the machine's own.</li>
+      <li><b>A ceiling beside a reservation.</b> A program may be limited to a share of the processor or reserved a share of it, not both: the two say opposite things about the same time.</li>
+      <li><b>More than a core gives.</b> The reservations of one core together ask no more than 90 per cent of it. The kernel admits 95, and since its version 6.12 it keeps 5 of those for the ordinary programs' own scheduler, in the same ledger; the court found that out when two programs asking 95 together were refused the second at boot.</li>
+    </ul>
+    <div class="term" style="margin-top:clamp(24px,3vw,34px)" aria-label="Two refusals of the court, as printed by harb check">
+      <div class="term-bar"><i></i><i></i><i></i><b>harb check, on a machine edited two ways</b></div>
+<pre><span class="d"># second asked for 750 of every 1000 us beside control's 200</span>
+machine (line 70): the reservations on core 1 ask 95.0 % of it, and <span class="k">the kernel gives reservations 90 % of a core</span>: it keeps 5 % for what is not reserved and 5 % for the ordinary tasks' own server
+
+<span class="d"># control asked for core 0</span>
+machine (line 61): CORE 0: <span class="k">core 0 is the machine's</span> -- PID 1, the watchdog's feed and every world that reserves nothing run there</pre>
+    </div>
+    <p class="cap">Line 70 is the program that asked too much, not the first program on the core: a refusal names the line that crossed the bound. The court counts a core's reservations the way the kernel's own admission counts them, so that what the court accepts the kernel admits, at the edge too.</p>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Left out on purpose</p>
+      <h2>What a real-time system usually has, and this one does not.</h2>
+    </div>
+    <div class="trio">
+      <div class="card"><h4>No priorities</h4><p>A priority is a claim nobody checks: the kernel accepts any set of them and starves whatever is lowest. A reservation is refused when it does not fit. The floor keeps the clause the kernel can refuse, and the five calls that would let a program set a priority of its own are refused to every program.</p></div>
+      <div class="card"><h4>No real-time interface</h4><p>There is no scheduler for a program to call and no thread to pin. A reserved program is an ordinary program on a core set apart, with the time it was given; its loop is still its own scheduler. The reservation is the program's main thread's, and whatever it starts runs without one.</p></div>
+      <div class="card"><h4>No declared timing</h4><p>The kernel's model is not something you write. It is derived from the fact that a program reserves time, and read back at every boot in the kernel's own words. A machine that reserves nothing gets the calm kernel it always had, and its timers resolve to a tick.</p></div>
+    </div>
+  </section>
+
+  <section class="wrap block">
+    <div class="sec-head prose">
+      <p class="eyebrow">Whose time</p>
+      <h2>What a program keeps.</h2>
+    </div>
+    <div class="prose stack-gap">
+      <p>A program that runs as a user of its own, as a server does, is given its reservation before it becomes that user, which is the one way an ordinary user ever holds one: the kernel refuses a real-time policy to an ordinary user who asks, and the floor hands it to one who was declared it. What the program does not keep is a promise about the number: how late it actually woke is the witness's to measure, on the machine it ran on, and that is the next page.</p>
+    </div>
+    <p class="pull prose" style="margin-top:clamp(24px,3vw,34px)">The honest promise is <b>time the kernel holds and a number you can read</b>, never "real time".</p>
+    <p class="prose" style="margin-top:clamp(22px,3vw,32px)">Next: <a href="realtime-status.html">Where real time stands →</a> The six steps, which are built and which are not, and what one laptop measured.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in foot-row">
+    <img class="footmark" src="harobanda-logo.png" alt="Harobanda" width="2171" height="724">
+    <p class="foot-credit">A Softanza Project, open source (MIT).<br>By: Mansour Ayouni &copy; 2026.</p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
