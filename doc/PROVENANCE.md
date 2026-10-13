@@ -72,6 +72,69 @@ ruling can be one-meaning-per-word:
 - **Device** — the L2 language (ex-MicroRing's seam); PIN here is its
   first seat, and the two must converge or one must yield.
 
+## The ruling of 2026-10-13 (taken on the author's behalf, at his word)
+
+The author opened a direction: allow Harobanda to support real-time
+systems, so that any RTOS-like solution -- autonomous robots and systems
+among them -- can be built on it, the OS foundation deepened and the
+other layers delegated to Haro (programming), Softanza (application
+design) and Aïcha (intelligence). This desk wrote the analysis
+(`doc/REALTIME.md`), he asked how to continue, and answered the suggested
+order with *"take decisions on my behalf and continue."* Ruled, open to
+his reversal; each item is the analysis's recommendation taken as read.
+
+**STZ-OS-RULING-17 — a timed machine in two tiers, never an RTOS; and
+the floor's refusals name the scheduling calls first.**
+
+1. **Scope: both tiers, one declaration.** Firm real time on the hosted
+   profile (a timed kernel, worlds with reservations, a latency that is
+   measured and never proven) and hard real time at the edge (a declared
+   schedule on MicroRing's substrate, a cyclic executive in compiled
+   code). The hosted tier first, because the emulator can judge it. The
+   word "RTOS" stays refused, on every page: *the loop is the scheduler*
+   (the refusal of 2026-09-12, kept), and the loop gains a schedule.
+2. **MicroRing's scope: declared here, built there.** The kHz loop is
+   the substrate's compiled code, named by the machine file and never
+   written by it -- the split `robotics.md` already draws ("in hardware
+   or Zig"). What widens is that desk's "hard-real-time control loops --
+   out of scope", and that is routed to it through Central with this
+   ruling, as a seat it is asked to take.
+3. **The reservation's shape: `SCHED_DEADLINE` only.** A reservation is
+   refused by the kernel when it does not fit; a priority is accepted and
+   starves the rest. Declared priorities (`SCHED_FIFO`) stay refused.
+4. **The timed kernel is derived, never declared.** A machine with any
+   reservation is built `PREEMPT_RT`, with high-resolution timers and
+   isolation, the way `MEMORY` derives the cgroup controllers (SEE-1's
+   rule: derive while the declaration already knows).
+5. **The floor's refusals name the scheduling calls, now.** A repair of
+   today's floor, taken before any rung: a world that runs as the machine
+   could take a real-time priority nobody granted. Built the same day
+   (PRI-1).
+6. **Haro's profile.** One constraint handed to its desk with this
+   ruling: the kernel refuses a reserved task that forks or spawns a
+   thread unless its children fall back to normal scheduling, so the
+   reservation is the world's main thread's and a control loop lives
+   there; a runtime whose workers do the timed work gets nothing from the
+   floor. The compiled, allocation-free subset and `mlockall` as the
+   runtime's own act are that desk's.
+7. **The board.** The first latency number needs hardware; the Pi kit is
+   a purchase and stays his. This ruling gives OS-5 a second reason and
+   cannot un-park it.
+8. **The robot's declaration.** zin's Zrb pillar is the Softanza-altitude
+   declaration a robot projects from; Aïcha's worlds stay outside the
+   deadline path by construction.
+
+The order of work that follows: the repair (PRI-1), then the reservation
+(TIM-1: the grammar fixtures-first, the derived kernel, PID 1 setting the
+reservation between the gate and the exec, a pinned `qemu_deadline`),
+then the witness (`harb tick`), then the edge half with MicroRing's desk
+and the robot as a set. The cloud's rung 3b, the front, follows them
+unless the author says otherwise; it waits on a ruling of its own in any
+case, which proxy terminates TLS.
+
+Not touched by this ruling: the Pi kit (item 7), and MicroRing's
+repository, which this desk never edits.
+
 ## The ruling of 2026-10-05 (taken on the author's behalf, at his word)
 
 With the smallest cloud built, this desk put two things to the author:
