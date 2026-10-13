@@ -1370,7 +1370,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   per world is `SCHED_DEADLINE`, which the kernel refuses when it does not
   fit, and never a declared `SCHED_FIFO` priority; a latency witness whose
   number only a board can give) and hard real time at the edge (a declared
-  schedule the court sums per frame, on MicroRing's substrate, which is
+  schedule the court sums per frame, on MicroRing's substrate -- MicroHaro on the public pages, the author's word of 2026-10-13: nothing should be related to Ring -- which is
   asked to take the kHz compiled loop its vision refuses by name). **On
   the pages, say what is true AFFIRMATIVELY** (the author, 2026-10-13, on
   reading "It is not a real-time operating system" on realtime.html): a

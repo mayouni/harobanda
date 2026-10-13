@@ -71,6 +71,11 @@ ruling can be one-meaning-per-word:
   is what would make it real.
 - **Device** — the L2 language (ex-MicroRing's seam); PIN here is its
   first seat, and the two must converge or one must yield.
+- **MicroHaro** — the edge substrate's name on the public pages, by the
+  author's word of 2026-10-13 ("nothing should be related to Ring"),
+  while the repository and the desk are still `microring` in the estate.
+  Two names for one thing, recorded here so that they never coexist
+  silently; the desk's rename is his to order.
 
 ## The ruling of 2026-10-13 (taken on the author's behalf, at his word)
 
