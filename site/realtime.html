@@ -48,6 +48,10 @@
   </section>
 
   <section class="wrap block">
+    <div class="figure" style="margin-bottom:clamp(28px,4vw,44px)">
+      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-13.png" alt="A program given its time. The declaration at the top: CORES 2 on the machine; PERIOD 1000, DEADLINE 500, RUNTIME 200, CORE 1 on the program. Beneath it two cores side by side. Core 0, the machine's: PID 1 and every program with no reservation, which gets what is left. Core 1, set apart, drawn in the machine's blue-grey with the one orange mark: reserved programs only, and inside it one period of 1000 microseconds as a bar read left to right, 200 for control, 700 for second, 100 the kernel's. Then what the machine said, quoted from the pinned boots: the kernel, PREEMPT_RT and its timers resolve 1 ns; control, on core 1 and no other; the witness, N us at the median, N us at the 99th. A last band, not there yet: no board, every number is an emulator's; no body, nothing has moved a motor." width="1376" height="768">
+      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-13-narrow.png" alt="A program given its time, as a column. The declaration: CORES 2; PERIOD 1000, DEADLINE 500, RUNTIME 200, CORE 1. Then core 0, the machine's: PID 1 and every program with no reservation, which gets what is left. Then core 1, set apart, with the one orange mark: reserved programs only, and beneath it one period as a bar, 200 for control, 700 for second, the kernel's 100 of 1000. Then what the machine said, quoted from the pinned boots: the kernel, PREEMPT_RT and its timers resolve 1 ns; control, on core 1 and no other; the witness, N us at the median, N us at the 99th. Last, not there yet: no board, every number is an emulator's; no body, nothing has moved a motor." width="640" height="1850">
+    </div>
     <div class="sec-head prose">
       <p class="eyebrow">Two promises</p>
       <h2>Firm on the box, hard at the edge.</h2>

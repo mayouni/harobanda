@@ -117,8 +117,9 @@ no change. Diagram 3 is drawn here at both widths.
 | 10 | `harobanda-diagram-10.png` | field | before the two cases, 40% | **retired** 2026-09-29 (page dissolved; files removed) |
 | 11 | `harobanda-diagram-11.png` | security | after the page's opening, 21% | **live** (added 2026-09-29; redrawn 2026-10-13, its label reads `30 calls` since PRI-1) |
 | 12 | `harobanda-diagram-12.png` | cloud | after the page's opening, 23% | **live** (added 2026-10-05) |
+| 13 | `harobanda-diagram-13.png` | realtime | after the page's opening, 16% | **live** (added 2026-10-13, on the author's yes) |
 
-**The register is complete: twelve diagrams, and every page's first diagram is
+**The register is complete: thirteen diagrams, and every page's first diagram is
 inside its first third.** The site has since grown to nine pages. Two of them
 carry no diagram of their own and both are deliberate: `different.html` took
 diagram 7 with it when the argument was split, and `running.html` would want
@@ -412,6 +413,43 @@ wider than the column would run off the picture, and a quotation is wrapped and 
 till to the server that goes round the box. No lock and no certificate, because there is no front. No
 datacentre and no logo. The server is `RingServ 0.9` and nothing grander, because it stands in for a
 customer's.
+
+---
+
+## 12 · A program given its time — `realtime.html`
+
+A seventh section, Real time, grew three pages (2026-10-13), and the first of them needed one picture.
+It is containment and flow over time, which is what a diagram is for here: two cores, one of them set
+apart, and inside that one a single period drawn as a bar.
+
+**The sentence it must make true:** *a program that declares its time runs on a core set apart for
+reserved programs, where the kernel gives it its slice of every period and keeps the rest; everything
+without a reservation runs on the other core and gets what is left.*
+
+**Composition.** The declaration as a band across the top -- `CORES 2` on the machine, `PERIOD 1000,
+DEADLINE 500, RUNTIME 200, CORE 1` on the program. Under it two cores with an arrow each: `core 0: the
+machine's` (PID 1, and every program with no reservation: it gets what is left), plain; and `core 1: set
+apart` (reserved programs only), wider, in the machine's blue-grey with the one orange mark, carrying one
+period of 1000 microseconds as a bar read left to right -- 200 in the dark slice for `control`, 700 in
+the taupe one for `second`, and the kernel's 100 in the pale one, named in the legend because the slice
+is too narrow to carry its number at the one readable size. Beneath, three rows -- `the kernel`,
+`control`, `the witness` -- each with the machine's own words in quotation marks, and a last band, `NOT
+THERE YET`: no board, no body.
+
+**Exact labels.** Kicker: `HAROBANDA — A PROGRAM GIVEN ITS TIME`. Every quotation is a substring of
+`machines/qemu_deadline.expected` or `machines/qemu_tick.expected`, and `diagram13.py` and `narrow13.py`
+refuse to draw one that is not (the rule of diagram 11). The witness's words are drawn with the letter
+`N`, exactly as the pin holds them: the picture carries no latency, because an emulator's number is its
+host's.
+
+**Must not.** No clock face, no stopwatch and no oscilloscope trace: the bar is a period, not a
+measurement. No priority ladder and no queue, because there are no priorities. No robot: the direction
+is on the page in words, and nothing has moved a motor. The orange mark is on the core that is set
+apart and nowhere else, because that is what a reservation adds to a machine.
+
+**Seen by:** the session that drew it, on both renders, 2026-10-13: the first wide render's second
+legend line crossed the lower edge of the core 1 box, which no fit check sees because `fit` measures
+width; the box was made taller and the drawing read again. The author's eye is the last gate.
 
 ---
 
