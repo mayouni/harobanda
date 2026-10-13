@@ -7,7 +7,7 @@ boot: mount tmpfs at /tmp -- done
 boot: grant process (effectful)
 boot: grant filesystem (effectful)
 boot: confine -- whoami has no sight of /tmp; what a world did not declare, the kernel does not give it
-boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 boot: start self -- pid N -- /harb plan /etc/machine
 machine qemu_hello -- hosted / x86_64 / board qemu_pc / kernel linux / libc musl
   rationale: The smallest machine that boots: kernel, PID 1, runtime, one world

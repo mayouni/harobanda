@@ -25,7 +25,7 @@ PINNED = pathlib.Path(__file__).resolve().parent.parent.parent / "machines" / "q
 ANSWERS = [("network", "no such interface from here"),
            ("disks", "nothing mounted on it"),
            ("programs", "cannot start another process"),
-           ("25 calls", "cannot change the machine")]
+           ("30 calls", "cannot change the machine")]
 
 pinned = PINNED.read_text(encoding="utf-8")
 for _, words in ANSWERS:

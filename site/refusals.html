@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>What it refuses — Harobanda</title>
-<meta name="description" content="A program asked from inside what it can reach, in the machine's own words, and the 25 calls the kernel refuses to every program, whatever its file says.">
+<meta name="description" content="A program asked from inside what it can reach, in the machine's own words, and the 30 calls the kernel refuses to every program, whatever its file says.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -73,7 +73,7 @@ reach 8.8.8.8 -- <span class="k">no route</span>: this machine knows no way ther
       <h2>Some things no file can ask for.</h2>
     </div>
     <div class="prose stack-gap" style="margin-bottom:clamp(22px,3vw,30px)">
-      <p>In this project's words, <a href="words.html">the floor</a> is what no world may do, whatever it declared. The kernel refuses these 25 calls to every program, in eight groups, each kept for a reason. It is a named list, never a claim that everything else is safe.</p>
+      <p>In this project's words, <a href="words.html">the floor</a> is what no world may do, whatever it declared. The kernel refuses these 30 calls to every program, in nine groups, each kept for a reason. It is a named list, never a claim that everything else is safe.</p>
     </div>
     <div class="refuses">
       <div><b>attaching or detaching disks</b><span>the file says which disks a program sees — <code>mount</code>, <code>umount2</code>, <code>pivot_root</code></span></div>
@@ -84,6 +84,7 @@ reach 8.8.8.8 -- <span class="k">no route</span>: this machine knows no way ther
       <div><b>building or entering walls of its own</b><span>the walls are built before the program starts, and are not its to widen, narrow or leave — <code>unshare</code>, <code>setns</code></span></div>
       <div><b>looking inside another program</b><span>another program's memory is not its to read or steer — <code>ptrace</code></span></div>
       <div><b>touching the machine's own plumbing</b><span>swap, kernel filters, the kernel's log, process accounting, device files — <code>swapon</code>, <code>swapoff</code>, <code>bpf</code>, <code>syslog</code>, <code>acct</code>, <code>mknod</code>, <code>mknodat</code></span></div>
+      <div style="grid-column:1 / -1"><b>taking a priority</b><span>time on the processor is the machine's to give, through a declared budget, and never a program's to take: a program that made itself real-time would starve every other, and these calls can name another program, the machine's first one included — <code>sched_setscheduler</code>, <code>sched_setparam</code>, <code>sched_setattr</code>, <code>setpriority</code>, <code>ioprio_set</code></span></div>
     </div>
     <p class="cap">The list is <code>off_limits</code> in <a href="https://github.com/mayouni/harobanda/blob/main/src/confine.zig" target="_blank" rel="noopener noreferrer">src/confine.zig</a>, each group under the sentence that explains it.</p>
   </section>

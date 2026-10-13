@@ -1,3 +1,104 @@
+# PRI-1 — time on the processor is the floor's to give, and a world could take it
+
+The repair ruled first in STZ-OS-RULING-17 (2026-10-13), before any rung
+of the real-time ladder (`doc/REALTIME.md`), because it is a seam of the
+floor as it stands and not a property of the direction.
+
+## What was found, by reading
+
+The analysis of real-time support read SYS-1's list against the question
+a reservation would ask -- *who sets a world's place in the queue?* -- and
+found that nobody refused the world. The floor's own refusals named the
+clock setters and not `sched_setscheduler`, `sched_setparam`,
+`sched_setattr`, `setpriority` or `ioprio_set`. A world that runs as the
+machine (no `USER`, which is what every world of nine machines does)
+keeps `CAP_SYS_NICE` after the exec, so it could make itself `SCHED_FIFO`
+at the highest priority and, on the one core the emulated PC has, leave
+PID 1 the residue the kernel's throttle keeps for the rest -- five per
+cent of each second, which is how long the watchdog feed would take to
+arrive. And every one of those calls names a PID: a world that shares
+the machine's process table could set PID 1's own policy back. A `USER`
+world was refused by the kernel's own rule (`RLIMIT_RTPRIO` is 0), which
+is why no boot had shown it and no one had looked. No boot shows it now
+either: the finding is a reading, and this seat is its closing.
+
+## What was built
+
+- **The five calls join `off_limits`** (`src/confine.zig`), in a group of
+  their own under the sentence that explains it: time on the processor
+  is the floor's to give -- a ceiling the kernel holds (BDG-1) and, when
+  one is declared, a reservation -- and never a world's to take. Thirty
+  calls in nine groups now; `priority_calls` names the five apart so a
+  test, a probe and the tour can ask for them by name. What is NOT in the
+  list, on purpose: `sched_setaffinity`. Where a world's threads sit
+  among the cores it was given is its own; which cores it was given will
+  be the floor's (`CORE`, TIM-1).
+- **The witness tries it** (`harb confined`): after the namespace it
+  tries to build, each world tries to take the lowest real-time priority
+  and reports the kernel's answer -- `confined: priority -- refused by
+  the kernel (EPERM): time on the processor is the floor's to give, and
+  this world may not take it`. The lowest real-time priority is the safe
+  thing to TRY (SYS-1's rule for a witness): if the filter is not there,
+  the witness is real-time for the rest of its own short life, gives it
+  back on the next line, and the kernel's throttle keeps every other task
+  a residue meanwhile. The line is true for a `USER` world too, where the
+  kernel's own rule refuses first.
+- **The floor line says it**, worded once in `src/expect.zig`: *none may
+  ... trace another process, take a priority over the other worlds, or
+  reboot the box*. Lesson 8 of the tour follows, with the one new line
+  every world of `qemu_confine` prints.
+
+## Judged
+
+- **Two unit tests on Linux** (`experiment/linux_test.sh`, 103 tests,
+  none skipped). The declaration: the five are in the list and on every
+  filter, each jump landing on the refusal. The act, which is the one
+  that decides (MNT-1): a child installs the production filter for a
+  world that declared EVERYTHING and tries `sched_setscheduler(FIFO)` and
+  `setpriority(-5)`; both must answer `EPERM`. A control child with no
+  filter must be ALLOWED first -- as root it is -- or the floor's refusal
+  cannot be told from the kernel's, and the test says so by skipping
+  rather than by passing.
+- **Three mutants** (`experiment/priority_probe.sh`), each convicted by
+  the test named for it. The five names leave the list: the declaration
+  fails (`NotRefused`), and the act fails too (the kernel let it). The
+  filter is built as before and never INSTALLED, which is SYS-1's own
+  defect in its original shape, a floor line printed with nothing behind
+  it: the declaration test passes, because it reads the program, and only
+  the act convicts (`expected 0, found 3`). The names stay and no
+  instruction is emitted for them: both fail. The first version of the
+  probe had that third mutant as its second, and it was "convicted" by
+  the declaration test PANICKING on a null unwrap, which the probe read
+  as a test that did not compile -- a crash is not a verdict, so the
+  test faults instead and the probe refuses a panic by name.
+- **The boot**: `qemu_confine` runs six worlds through the witness, and
+  its pin gained one line per world, 65 to 71, matching on the first boot.
+- **Every pin was changed by the RULE and not by a transcript**: the
+  floor line reworded in all fourteen (`time.expected` carries it twelve
+  times) and the six answers inserted, by one script that refused any
+  pin with a line it did not expect; then every boot was re-run against
+  the final binary, which is the only way a pin changed by hand is
+  believed.
+- **The count, everywhere it is claimed**: `ARCHITECTURE.md`, `CLOUD.md`,
+  six pages of the site, and diagram 11 redrawn with `30 calls` (both
+  drawings; `DIAGRAMS.md` says so).
+
+## The law this pays for
+
+**A refusal list is read against every question a new seat will ask of
+the floor, before the seat is built.** SYS-1 named what a world must not
+do to the MACHINE and was right; it did not name what a world must not
+take from the OTHER WORLDS, because no seat had yet needed the queue. The
+first design that needed it found the hole by reading, and the repair
+cost one afternoon. The alternative was finding it under a robot.
+
+**A declaration test that reads the program is still not the act.** The
+mutant that matters is the one where everything that can be read is
+right and the kernel was never told; only the kernel's answer sees it
+(WDG-1's second mutant, again).
+
+---
+
 # TIME-1 — a record is dated by somebody else's word, or says it is undated
 
 The floor has no date. The board has no clock of its own and nothing on the

@@ -211,7 +211,7 @@ pub fn confineLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
 /// machine, and a machine with no worlds has nobody to say it to.
 pub fn floorLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     if (m.services.len == 0) return false;
-    try w.print("boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box\n", .{});
+    try w.print("boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box\n", .{});
     return true;
 }
 
@@ -684,7 +684,7 @@ test "the board's expectation is derived from the declaration, line for line" {
         \\boot: watchdog armed (/dev/watchdog)
         \\boot: health -- serve every 3s; a world that stops refreshing stops the watchdog
         \\boot: confine -- once has no sight of the other worlds and no way to start one and no sight of /data, serve has no sight of the other worlds and no way to start one and no sight of /data; what a world did not declare, the kernel does not give it
-        \\boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+        \\boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
         \\boot: start once -- pid N -- /harb id -- as world (1000:1000)
         \\boot: once (pid N) exited 0
         \\boot: start serve -- pid N -- /stzr /app/serve.luau

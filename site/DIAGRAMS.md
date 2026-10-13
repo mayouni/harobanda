@@ -115,10 +115,10 @@ no change. Diagram 3 is drawn here at both widths.
 | 8 | `harobanda-diagram-8.png` | enterprise | before the three cards, 35% | **live** |
 | 9 | `harobanda-diagram-9.png` | index | *what just happened*, 31% | **live** (1376 × 500) |
 | 10 | `harobanda-diagram-10.png` | field | before the two cases, 40% | **retired** 2026-09-29 (page dissolved; files removed) |
-| 11 | `harobanda-diagram-11.png` | security | after the page's opening, 21% | **live** (added 2026-09-29) |
+| 11 | `harobanda-diagram-11.png` | security | after the page's opening, 21% | **live** (added 2026-09-29; redrawn 2026-10-13, its label reads `30 calls` since PRI-1) |
 | 12 | `harobanda-diagram-12.png` | cloud | after the page's opening, 23% | **live** (added 2026-10-05) |
 
-**The register is complete: ten diagrams, and every page's first diagram is
+**The register is complete: twelve diagrams, and every page's first diagram is
 inside its first third.** The site has since grown to nine pages. Two of them
 carry no diagram of their own and both are deliberate: `different.html` took
 diagram 7 with it when the argument was split, and `running.html` would want

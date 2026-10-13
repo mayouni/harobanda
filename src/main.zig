@@ -808,6 +808,25 @@ pub fn main() !u8 {
             else => |e| try out.print("confined: the floor -- {s}\n", .{@tagName(e)}),
         }
 
+        // ... and whether this world can take a priority the floor never
+        // gave it (PRI-1). The lowest real-time priority is the safe one to
+        // TRY: if the filter is not there, this witness is real-time for the
+        // rest of its own short life and gives it back on the next line,
+        // and the kernel's own throttle keeps every other task a residue of
+        // the core meanwhile. A world that runs as the machine would have
+        // the privilege; a world that runs as a USER is refused by the
+        // kernel's own rule as well, and this line is true either way.
+        const fifo = l.sched_param{ .priority = 1 };
+        switch (l.E.init(l.sched_setscheduler(0, .{ .mode = .FIFO }, &fifo))) {
+            .PERM => try out.print("confined: priority -- refused by the kernel (EPERM): time on the processor is the floor's to give, and this world may not take it\n", .{}),
+            .SUCCESS => {
+                const back = l.sched_param{ .priority = 0 };
+                _ = l.sched_setscheduler(0, .{ .mode = .NORMAL }, &back);
+                try out.print("confined: priority -- TAKEN: this world made itself real-time, which the floor never granted, and the floor is not holding\n", .{});
+            },
+            else => |e| try out.print("confined: priority -- {s}\n", .{@tagName(e)}),
+        }
+
         // and whether this world may make another process. A permitted
         // fork is PROVEN by forking, not by the absence of an error: the
         // child says so and is reaped.

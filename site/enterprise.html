@@ -60,7 +60,7 @@
         <h4>Security</h4>
         <ul>
           <li><b>A small attack surface, and a named one.</b> Nothing runs that the file did not declare: no shell, no package manager, no store, no login. What is left to attack is the kernel and the programs you declared — and only they ever listen.</li>
-          <li><b>Least privilege, where the kernel can hold it.</b> A machine whose programs need what nobody granted is refused before it is built. While it runs, the kernel gives each program only the network and the disks it declared, lets it start another program only if it said so, and refuses every program 25 calls that would change the machine itself — rebooting it, loading code into the kernel, moving its clock.</li>
+          <li><b>Least privilege, where the kernel can hold it.</b> A machine whose programs need what nobody granted is refused before it is built. While it runs, the kernel gives each program only the network and the disks it declared, lets it start another program only if it said so, and refuses every program 30 calls that would change the machine itself — rebooting it, loading code into the kernel, moving its clock, taking a priority over the others.</li>
           <li><b>Rebuilt at every boot.</b> The system runs from an image in memory, made again from the file each time the machine starts: what a program changes there is gone at the next boot, and only the disks you declared keep anything. No drift, no undocumented change to find.</li>
           <li><b>Tamper-evident audit.</b> A signed boot record and a per-device key: evidence an auditor reads directly.</li>
         </ul>

@@ -7,7 +7,7 @@ boot: grant process (effectful)
 boot: grant network (effectful)
 boot: network lan -- eth0 up 10.0.2.15/24
 boot: egress lan -- 10.9.0.0/16 and nowhere else: no default route
-boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 boot: start allowed -- pid N -- /harb reach 10.9.0.1
 reach 10.9.0.1 -- a route exists: this machine knows a way there
 boot: allowed (pid N) exited 0

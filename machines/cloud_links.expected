@@ -38,7 +38,7 @@ core: boot: egress core -- 192.168.20.0/24 and nowhere else: no default route
 core: boot: network loopback -- lo up 127.0.0.1/8
 core: boot: budget -- ringserv 128 MiB and 100% of a core and 64 tasks; the kernel holds the ceiling, not the world
 core: boot: health -- ringserv every 10s; a world that stops refreshing stops the watchdog
-core: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+core: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 core: boot: state -- ringserv owns /run/ringserv and /data/ringserv as appserver (2000:2000); each made, then read back as that identity's, mode 0700
 core: boot: start ringserv -- pid N -- /harb ready /run/ringserv/ready 127.0.0.1:8210 --every 2 -- /ringserv run /app/app.ring --data /data/ringserv -- as appserver (2000:2000)
 core: ringserv: --data puts the database at /data/ringserv/ringserv.db
@@ -56,7 +56,7 @@ till: boot: grant process (effectful)
 till: boot: grant network (effectful)
 till: boot: network front -- eth0 up 192.168.20.40/24 (dhcp), dns [192.168.20.1], names on front.cloud (/etc/resolv.conf)
 till: boot: egress front -- 10.20.0.0/24 and nowhere else: no default route
-till: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+till: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 till: boot: start where -- pid N -- /harb ask commons.core.cloud
 till: ask commons.core.cloud -- 10.20.0.2 (from 192.168.20.1)
 till: boot: where (pid N) exited 0
@@ -82,7 +82,7 @@ stranger: boot: mount devtmpfs at /dev -- done
 stranger: boot: grant process (effectful)
 stranger: boot: grant network (effectful)
 stranger: boot: network front -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
-stranger: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+stranger: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 stranger: boot: start where -- pid N -- /harb ask commons.core.cloud
 stranger: ask commons.core.cloud -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
 stranger: boot: where (pid N) exited 0
@@ -127,7 +127,7 @@ closed: boot: grant process (effectful)
 closed: boot: grant network (effectful)
 closed: boot: egress front -- 10.20.0.0/24: no way written: this network has no gateway, and a route to another network goes through one
 closed: boot: network front -- eth0 up 192.168.20.40/24 (dhcp), dns [192.168.20.1], names on front.cloud (/etc/resolv.conf)
-closed: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, or reboot the box
+closed: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 closed: boot: start where -- pid N -- /harb ask commons.core.cloud
 closed: ask commons.core.cloud -- no such name on this network (from 192.168.20.1)
 closed: boot: where (pid N) exited 0

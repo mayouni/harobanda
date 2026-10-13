@@ -66,7 +66,7 @@ file says where it runs, and the court says whether the two agree.
 - **The world is the unit.** Network, mount and process namespaces and
   the seccomp filter are derived from `NEEDS` (NS-1, MNT-1, PID-1); a
   cgroup budget (BDG-1, THR-1); `READY` and `HEALTH` (SRV-1, HLT-1);
-  twenty-five calls refused to every world (SYS-1). It is the
+  thirty calls refused to every world (SYS-1, PRI-1). It is the
   isolation a container runtime gives, with no runtime.
 - **The machine.** One file, one image rebuilt at each boot, two
   slots, a trial before a commitment (AB-1), a per-device key (IDN-1),

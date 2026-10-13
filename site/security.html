@@ -48,8 +48,8 @@
   </section>
   <section class="wrap block">
     <div class="figure">
-      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-11.png" alt="The file declares what each program may use. An arrow leads to the kernel, which applies it to every request and does not read prompts. Beneath them, what the kernel says when a request is not granted, in its own words: for the network, “no such interface from here”; for disks, “nothing mounted on it”; for programs, “cannot start another process”; and for 25 calls that change the machine, “cannot change the machine”. A last band lists what is not there yet: no packet filter behind the routes, no signed record of each agent action, and no board yet, the boot is emulated." width="1376" height="768">
-      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-11-narrow.png" alt="The file declares what each program may use. An arrow leads to the kernel, which applies it to every request and does not read prompts. Beneath them, what the kernel says when a request is not granted, in its own words: for the network, “no such interface from here”; for disks, “nothing mounted on it”; for programs, “cannot start another process”; and for 25 calls that change the machine, “cannot change the machine”. A last band lists what is not there yet: no packet filter behind the routes, no signed record of each agent action, and no board yet, the boot is emulated." width="640" height="1674">
+      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-11.png" alt="The file declares what each program may use. An arrow leads to the kernel, which applies it to every request and does not read prompts. Beneath them, what the kernel says when a request is not granted, in its own words: for the network, “no such interface from here”; for disks, “nothing mounted on it”; for programs, “cannot start another process”; and for 30 calls that change the machine, “cannot change the machine”. A last band lists what is not there yet: no packet filter behind the routes, no signed record of each agent action, and no board yet, the boot is emulated." width="1376" height="768">
+      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-11-narrow.png" alt="The file declares what each program may use. An arrow leads to the kernel, which applies it to every request and does not read prompts. Beneath them, what the kernel says when a request is not granted, in its own words: for the network, “no such interface from here”; for disks, “nothing mounted on it”; for programs, “cannot start another process”; and for 30 calls that change the machine, “cannot change the machine”. A last band lists what is not there yet: no packet filter behind the routes, no signed record of each agent action, and no board yet, the boot is emulated." width="640" height="1674">
     </div>
   </section>
   <section class="wrap block">
@@ -73,7 +73,7 @@
     </div>
     <div class="trio">
       <div class="card"><h4>The file declares</h4><p>Every program the machine runs is a few lines in one text file: what it needs, which disks it sees, which user it runs as, how much memory and processor it may use — and, for each, why. <code>harb check</code> refuses the file if a program needs what nobody granted.</p></div>
-      <div class="card"><h4>The kernel refuses</h4><p>A program that did not ask for the network gets an empty one. The disks it did not name are not in its view. It cannot start another program unless its file says so, and 25 calls that would change the machine itself are refused to every program. The rule is set before the program runs, and the program cannot lift it.</p></div>
+      <div class="card"><h4>The kernel refuses</h4><p>A program that did not ask for the network gets an empty one. The disks it did not name are not in its view. It cannot start another program unless its file says so, and 30 calls that would change the machine itself are refused to every program. The rule is set before the program runs, and the program cannot lift it.</p></div>
       <div class="card"><h4>The record keeps</h4><p>A machine that keeps a record signs one line for every boot with its own key: which file it ran, and whether the boot matched it. Anyone holding the public half can check that no line was changed, and the secret never leaves the device.</p></div>
     </div>
   </section>
@@ -93,7 +93,7 @@
     </ul>
   </section>
   <section class="wrap block">
-    <p class="prose">Next: <a href="refusals.html">What it refuses →</a> A program asked from inside what it can reach, in the machine's own words, and the 25 calls no file can ask for.</p>
+    <p class="prose">Next: <a href="refusals.html">What it refuses →</a> A program asked from inside what it can reach, in the machine's own words, and the 30 calls no file can ask for.</p>
   </section>
 </main>
 

@@ -280,7 +280,21 @@ pub const off_limits = [_][]const u8{
     // the machine's own plumbing
     "swapon",      "swapoff",        "bpf",   "syslog", "acct",
     "mknod",       "mknodat",
+    // time on the processor is the floor's to give -- a ceiling held by
+    // the kernel (BDG-1) and, when one is declared, a reservation -- and
+    // never a world's to take: a priority a world takes for itself starves
+    // every other world, PID 1 among them, down to the residue the kernel's
+    // own throttle keeps. And every one of these calls names a PID, so a
+    // world that shares the machine's table could set the machine's own
+    // first program BACK (PRI-1). Where a world's threads sit among the
+    // cores it was given stays its own: `sched_setaffinity` is not here
+    "sched_setscheduler", "sched_setparam", "sched_setattr",
+    "setpriority",        "ioprio_set",
 };
+
+/// The calls PRI-1 added: named apart so that a test and a probe can ask
+/// for them by name, and the tour can count them.
+pub const priority_calls = [_][]const u8{ "sched_setscheduler", "sched_setparam", "sched_setattr", "setpriority", "ioprio_set" };
 
 fn nrOf(comptime name: []const u8) ?u32 {
     if (!@hasField(linux.SYS, name)) return null;
@@ -689,6 +703,84 @@ test "every jump lands inside the program, and on a return" {
         try testing.expectEqual(audit_arch, prog[1].k);
         try testing.expectEqual(prog.len - 1, 1 + 1 + @as(usize, prog[1].jf));
     }
+}
+
+test "the scheduling calls are the floor's refusals, by name (PRI-1)" {
+    // the declaration: every call PRI-1 named is in the list, and on every
+    // filter whatever the world declared. A mutant that drops them from the
+    // list fails here; one that keeps the names and emits no instruction for
+    // them does not -- which is why the act below is the test that matters
+    inline for (priority_calls) |name| {
+        var listed = false;
+        inline for (off_limits) |o| {
+            if (comptime std.mem.eql(u8, o, name)) listed = true;
+        }
+        if (!listed) return error.NotRefused;
+    }
+    if (audit_arch == 0) return error.SkipZigTest;
+    var buf: [64]sock_filter = undefined;
+    const prog = filter(.{ .network = true, .process = true, .threads = true }, &buf);
+    inline for (priority_calls) |name| {
+        // a name the table does not know would be skipped by the filter, and
+        // a refusal nobody emits is no refusal: a fault, never a panic
+        const nr = nrOf(name) orelse return error.NotOnTheFilter;
+        var seen = false;
+        for (prog, 0..) |ins, i| if (ins.code == JMP_JEQ_K and ins.k == nr) {
+            seen = true;
+            try testing.expect(prog[i + 1 + ins.jt].k & linux.SECCOMP.RET.ACTION == linux.SECCOMP.RET.ERRNO);
+        };
+        if (!seen) return error.NotOnTheFilter;
+    }
+}
+
+/// What a child answers about taking a priority: 0 when the kernel refused
+/// both calls with EPERM, 1 when the kernel let it (a filter that is not
+/// holding, or no filter at all), 3 when the question could not be asked.
+/// A child that took the priority gives it back before it answers.
+fn tryPriority(filtered: bool) u8 {
+    if (filtered) {
+        const done = apply(.{ .network = true, .process = true, .threads = true });
+        if (done.trouble != null or !done.seccomp) return 3;
+    }
+    const fifo = linux.sched_param{ .priority = 1 };
+    const sched = linux.E.init(linux.sched_setscheduler(0, .{ .mode = .FIFO }, &fifo));
+    if (sched == .SUCCESS) {
+        const back = linux.sched_param{ .priority = 0 };
+        _ = linux.sched_setscheduler(0, .{ .mode = .NORMAL }, &back);
+    }
+    // setpriority(PRIO_PROCESS, self, -5): a nicer place in the queue, which
+    // only a privilege gives and which the floor refuses whoever holds it
+    const minus_five: usize = @bitCast(@as(isize, -5));
+    const nice = linux.E.init(linux.syscall3(.setpriority, 0, 0, minus_five));
+    if (nice == .SUCCESS) _ = linux.syscall3(.setpriority, 0, 0, 0);
+    if (sched == .PERM and nice == .PERM) return 0;
+    if (sched == .SUCCESS or nice == .SUCCESS) return 1;
+    return 3;
+}
+
+/// Fork, ask in the child, bring its answer back.
+fn askInAChild(filtered: bool) !u8 {
+    const pid = try std.posix.fork();
+    if (pid == 0) linux.exit(tryPriority(filtered));
+    var status: u32 = 0;
+    _ = linux.wait4(pid, &status, 0, null);
+    if (status & 0x7f != 0) return error.ChildKilled;
+    return @intCast((status >> 8) & 0xff);
+}
+
+test "a world is refused a priority it was never given (PRI-1)" {
+    // The question that DECIDES (MNT-1): not whether the list names the
+    // calls, but what the kernel answers a world that makes them from
+    // behind the floor's filter. Asked on Linux only, in a child, with the
+    // production filter for a world that declared EVERYTHING -- so what
+    // refuses it is the floor and nothing on its own account.
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    // the control: the same two calls with no filter. Where they are refused
+    // anyway (no privilege), the floor's refusal cannot be told from the
+    // kernel's, and the question is not asked here
+    const bare_answer = try askInAChild(false);
+    if (bare_answer != 1) return error.SkipZigTest;
+    try testing.expectEqual(@as(u8, 0), try askInAChild(true));
 }
 
 test "the clone bit decides, and it decides the right way round" {

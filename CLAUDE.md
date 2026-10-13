@@ -467,6 +467,12 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/linux_test.sh
 
+# a world is refused a priority it was never given (PRI-1):
+# the two tests on Linux, then three mutants that must be
+# convicted -> zig-out/wsl/priority_probe.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/priority_probe.sh
+
 # the guided tour: 18 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -503,6 +509,29 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **Time on the processor is the floor's to give, never a world's to
+  take** (PRI-1): SYS-1's list named the clock setters and not the
+  scheduling calls, so a world that runs as the machine kept
+  `CAP_SYS_NICE` and could make itself real-time, leaving PID 1 the five
+  per cent the kernel's throttle keeps -- and every such call names a
+  PID, so a world sharing the table could set PID 1 back. Found by
+  READING the list against the question the real-time ladder's first
+  rung would ask (who sets a world's place in the queue?); no boot had
+  shown it, because a `USER` world is refused by the kernel's own rule
+  and nobody had looked at the others. `sched_setscheduler`,
+  `sched_setparam`, `sched_setattr`, `setpriority` and `ioprio_set` are
+  the floor's refusals now (thirty calls, nine groups);
+  `sched_setaffinity` is not, on purpose: which cores a world has is the
+  floor's, where its threads sit among them is its own. The witness
+  tries the lowest real-time priority from inside every world of
+  `qemu_confine` (safe to try: it gives it back on the next line), the
+  floor line says "take a priority over the other worlds", and every
+  pin was changed by the RULE and re-run, never by a transcript. Judged
+  by two tests on Linux and three mutants (`experiment/priority_probe.sh`):
+  the one that matters is a filter built as before and never installed,
+  which only the kernel's answer convicts. **A refusal list is read
+  against every question a new seat will ask, before the seat is built**:
+  the alternative was finding this under a robot.
 - **A time is somebody else's word, bound to one record, and a record
   with none says so** (TIME-1, STZ-OS-RULING-07): the floor has no date,
   so a record is ORDERED and UNDATED until an authority its fleet declares
@@ -1226,6 +1255,35 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   as ruled), which needs a port below 1024 or another declared. The
   Enterprise page's cloud sentence stays by his word: the ladder makes it
   true, and CLOUD.md's status lines are where the distance is read.
+- **The real-time ladder (`doc/REALTIME.md`, STZ-OS-RULING-17 of
+  2026-10-13, taken on the author's delegation).** The author's
+  direction: any RTOS-like solution, autonomous robots included, buildable
+  on the floor, with programming delegated to Haro, application design to
+  Softanza (zin's Zrb pillar) and intelligence to Aïcha. Ruled: a TIMED
+  MACHINE in two tiers of one declaration -- firm real time on the hosted
+  profile (a `PREEMPT_RT` kernel derived from any reservation; the
+  vendored 6.12 carries it in mainline for x86 and arm64; a reservation
+  per world is `SCHED_DEADLINE`, which the kernel refuses when it does not
+  fit, and never a declared `SCHED_FIFO` priority; a latency witness whose
+  number only a board can give) and hard real time at the edge (a declared
+  schedule the court sums per frame, on MicroRing's substrate, which is
+  asked to take the kHz compiled loop its vision refuses by name); never
+  the word "RTOS" on a page, because the loop stays the scheduler. Six
+  rungs, none built: 1 the timed kernel, 2 the reservation
+  (`PERIOD / DEADLINE / RUNTIME / CORE` on a SERVICE, `CORES` on a hosted
+  machine, `qemu_deadline` with a third world the kernel refuses), 3
+  `harb tick`, 4 the safe state in the BODY (a heartbeat brain-to-body;
+  PID 1's quarter-second loop cannot stop a motor), 5 the edge schedule
+  (`EVERY / PRIORITY / WORST`), 6 the robot as a fleet with a WIRE. The
+  repair came first (PRI-1, built the same day). **Next session: TIM-1,
+  the reservation**, fixtures first; then the witness; the cloud's front
+  (rung 3b) follows them. Every kernel the floor had built was
+  `PREEMPT_NONE` at HZ=250 with no high-resolution timers, and the
+  emulated PC has one core: a 1 ms loop cannot be written on today's
+  image, and TIM-1 derives `-smp` as well as the kernel. Haro's desk
+  holds one constraint from the ruling: the reservation is the world's
+  main thread's, since the kernel refuses a reserved task that forks or
+  spawns a thread unless its children fall back to normal scheduling.
 - **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
   attempt: behind `HARB_CC=zigcc` the kernel builds with `make CC="zig
   cc"` and the image does NOT boot (it dies in the 16-bit setup code).
@@ -1280,7 +1338,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and
