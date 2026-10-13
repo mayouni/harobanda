@@ -301,7 +301,7 @@ zig-out/bin/harb check machines/qemu_egress.machine
 zig-out/bin/harb plan machines/qemu_egress.machine
 ```
 
-Take the guided tour — eighteen lessons, each ending with a way to break it:
+Take the guided tour — nineteen lessons, each ending with a way to break it:
 
 ```sh
 zig-out/bin/harb learn

@@ -5,10 +5,34 @@
 `fixtures.json` sha256:
 
 ```
-d997ac95d938759201218c0de6a9b926cd5d419a8afb3982d52e469cf065e77d
+ccfeff69ad36db5e55f9f698232a34f833bf03a48db6cc28dc2b4c42690ece9c
 ```
 
-(Before the time seat of 2026-10-05 (TIME-1):
+(Before the reservation of 2026-10-13 (TIM-1):
+`d997ac95d938759201218c0de6a9b926cd5d419a8afb3982d52e469cf065e77d`,
+213/213; the widening added A44-A51 and R171-R194 -- a hosted machine
+declares how many cores it has (CORES, 2 to 64, a Raspberry Pi 4's four:
+R183-R187, A46, A48, A49) and a world may be given its time on one of
+them: a period, a deadline, a runtime and a core, the four together or
+none (R172-R174), on a machine with a kernel to hold it (R171), with a
+runtime that fits its deadline and a deadline that fits its period
+(R175, R176), a runtime of ten microseconds at least (R177, R178) and a
+period within the kernel's own bounds, 100 us to 4194304 us (R179,
+R193; A50 and A51 sit on them -- the first draft of these fixtures
+admitted ten seconds, which the kernel refuses at the act), on a core
+the machine has that is not core 0, which is the machine's (R180-R182),
+never beside a CPU ceiling on the same world (R190); and the
+reservations on one core together ask no more than the kernel gives
+them, 90 %, counted as the kernel's admission counts it (R188, R189;
+A45 and A47 take exactly that). Ninety and not the 95 the kernel's
+sysctl admits, because since 6.12 the kernel holds 5 % of every core in
+the same ledger for the ordinary tasks' own deadline server: the first
+draft of these fixtures took 95, and the first boot of
+`machines/qemu_deadline.machine` was refused the second of two worlds
+asking it together, at the act, by the kernel (R194). PERIOD and CORES
+are clauses of a service and of the machine, by the clause menu (R191,
+R192).
+Before the time seat of 2026-10-05 (TIME-1):
 `02a61b456054e9c49c100da002e628597cd940a70687a738e3035b2b21c71829`,
 173/173; the widening added A36-A43 and R139-R170 -- time enters a
 record only as an authority's signed statement, so a machine declares the

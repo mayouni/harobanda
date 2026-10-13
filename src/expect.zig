@@ -215,6 +215,47 @@ pub fn floorLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// The standing TIMED line (TIM-1): what the kernel says of ITSELF on a machine
+/// that reserves time -- its preemption model, from its own version string,
+/// and how finely its timers resolve, from `clock_getres`. Worded ONCE here:
+/// init prints what it read, derive() writes what a timed kernel reads (CON-1),
+/// so a reserving machine handed a calm kernel differs from its expectation
+/// before any world's reservation is admitted on a kernel that cannot meet it.
+pub const fmt_timed = "boot: timed -- the kernel is {s} and its timers resolve {d} ns, as it says of itself\n";
+pub const timed_model = "PREEMPT_RT";
+pub const timed_res_ns: u64 = 1;
+
+pub fn timedLine(w: *std.Io.Writer, m: *const machine.Machine, model: []const u8, res_ns: u64) !bool {
+    var any = false;
+    for (m.services) |s| {
+        if (s.reservation != null) any = true;
+    }
+    if (!any) return false;
+    try w.print(fmt_timed, .{ model, res_ns });
+    return true;
+}
+
+/// The standing RESERVE line (TIM-1): which worlds the kernel reserves time
+/// for, how much of each period, by when, and on which core. Worded ONCE
+/// here. The kernel's acceptance of each is that world's start line; its
+/// refusal is a NOT STARTED in the ledger instead, which is what makes the
+/// line a promise the boot can be held to.
+pub fn reserveLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    var any = false;
+    for (m.services) |s| {
+        if (s.reservation != null) any = true;
+    }
+    if (!any) return false;
+    try w.print("boot: reserve -- ", .{});
+    var first = true;
+    for (m.services) |s| if (s.reservation) |r| {
+        try w.print("{s}{s} {d} us of every {d} us, within {d} us, on core {d}", .{ if (first) "" else ", ", s.name, r.runtime_us, r.period_us, r.deadline_us, r.core });
+        first = false;
+    };
+    try w.print("; the kernel holds each reservation and refuses what does not fit\n", .{});
+    return true;
+}
+
 pub fn budgetLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     var any = false;
     for (m.services) |s| {
@@ -458,6 +499,8 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
     _ = try identityLine(w, m);
     _ = try timeLines(w, m);
     _ = try budgetLine(w, m);
+    _ = try timedLine(w, m, timed_model, timed_res_ns);
+    _ = try reserveLine(w, m);
     _ = try healthLine(w, m);
     _ = try confineLine(w, m);
     _ = try floorLine(w, m);

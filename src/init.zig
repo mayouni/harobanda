@@ -35,6 +35,7 @@ const expect = @import("expect.zig");
 const journal = @import("journal.zig");
 const timeattest = @import("timeattest.zig");
 const timeserve = @import("timeserve.zig");
+const reserve = @import("reserve.zig");
 
 pub const Options = struct {
     rehearse: bool = false,
@@ -497,6 +498,25 @@ fn writeKernelFile(path: []const u8, data: []const u8) !void {
     try f.writeAll(data);
 }
 
+/// The same write, answering with the kernel's OWN word for a refusal: the errno's name, which the
+/// standard library's `write` folds into "Unexpected" for the ones it did not foresee (a cpuset that
+/// is not online answers NODEV, and NODEV is one of those). Null when the kernel took it.
+fn writeKernelFileErrno(path: []const u8, data: []const u8) ?[]const u8 {
+    const f = std.fs.cwd().openFile(path, .{ .mode = .write_only }) catch |e| return @errorName(e);
+    defer f.close();
+    var done: usize = 0;
+    while (done < data.len) {
+        const rc = std.os.linux.write(f.handle, data[done..].ptr, data.len - done);
+        switch (std.os.linux.E.init(rc)) {
+            .SUCCESS => done += rc,
+            .INTR => {},
+            else => |e| return @tagName(e),
+        }
+    }
+    return null;
+}
+
+
 /// What one served link is, for the server that speaks on it: its own address,
 /// domain and declared peers. Null for a network that is not a served link.
 fn linkOf(gpa: std.mem.Allocator, m: *const machine.Machine, n: *const machine.Network) !?names.Link {
@@ -605,21 +625,80 @@ fn forwardOn(m: *const machine.Machine, led: *Ledger) !bool {
 /// Delegate the controllers and make one group per budgeted world. A
 /// machine that declares no budget touches none of this and says
 /// nothing: the plumbing a declaration did not ask for is not built.
-fn cgroupPrepare(m: *const machine.Machine, out: *std.Io.Writer) BudgetState {
+fn cgroupPrepare(m: *const machine.Machine, slots: []Slot, out: *std.Io.Writer) BudgetState {
     var any = false;
+    var reserved = false;
     for (m.services) |s| {
         if (s.memory_mb != null or s.cpu_percent != null or s.tasks != null) any = true;
+        if (s.reservation != null) reserved = true;
     }
-    if (!any) return .none;
+    if (!any and !reserved) return .none;
 
-    writeKernelFile("/sys/fs/cgroup/cgroup.subtree_control", "+memory +cpu +pids") catch |e| {
+    if (any) writeKernelFile("/sys/fs/cgroup/cgroup.subtree_control", "+memory +cpu +pids") catch |e| {
         out.print("boot: budget -- the kernel would not delegate the controllers ({s}); no ceiling is held this boot\n", .{@errorName(e)}) catch {};
         return .refused;
     };
+    // a reservation's core is a cpuset partition of its own (TIM-1): the controller is asked for apart,
+    // because a kernel that holds ceilings and no cpusets must still hold the ceilings -- so a refusal
+    // here marks every reserved world NOT STARTED and the budgets go on being written below
+    var cpuset_ok = true;
+    if (reserved) writeKernelFile("/sys/fs/cgroup/cgroup.subtree_control", "+cpuset") catch |e| {
+        out.print("boot: reserve -- the kernel would not delegate the cpuset controller ({s}); no core is a partition this boot, and no reserved world starts\n", .{@errorName(e)}) catch {};
+        for (slots) |*sl| if (sl.service.reservation != null) {
+            sl.partition_refused = true;
+        };
+        cpuset_ok = false;
+    };
+    // ONE PARTITION PER RESERVED CORE, never per world (TIM-1): a root partition's cpus are
+    // exclusive, so the second world on a core was refused its own ("Cpu list in cpuset.cpus not
+    // exclusive", the first boot's words). The worlds reserved on a core sit in groups beneath its
+    // partition and inherit the core; their ceilings, if any, are held in those groups.
+    if (reserved and cpuset_ok) {
+        var core: u32 = 1;
+        while (core < m.cores) : (core += 1) {
+            var used = false;
+            var budgeted = false;
+            for (m.services) |s| if (s.reservation) |r| if (r.core == core) {
+                used = true;
+                if (s.memory_mb != null or s.tasks != null) budgeted = true;
+            };
+            if (!used) continue;
+            var cbuf: [64]u8 = undefined;
+            const cdir = coreDir(&cbuf, core);
+            var answer: [96]u8 = undefined;
+            // the group, the core, the partition, then READ BACK (CON-1): the kernel answers "root"
+            // when the core is this partition's alone, and its own reason when it is not -- and a
+            // reservation on a core the kernel did not set apart is a promise it does not keep, so
+            // the worlds reserved on that core are not started
+            const said = if (std.fs.cwd().makeDir(cdir)) |_| partitionOf(cdir, core, &answer) else |e| switch (e) {
+                error.PathAlreadyExists => partitionOf(cdir, core, &answer),
+                else => @errorName(e),
+            };
+            if (!std.mem.eql(u8, said, partition_kind)) {
+                out.print("boot: reserve -- core {d} could not be made a partition of its own: the kernel says {s}; the worlds reserved on it are not started\n", .{ core, said }) catch {};
+                for (slots) |*sl| if (sl.service.reservation) |q| if (q.core == core) {
+                    sl.partition_refused = true;
+                };
+            } else if (budgeted) {
+                var pbuf: [160]u8 = undefined;
+                const sc = std.fmt.bufPrint(&pbuf, "{s}/cgroup.subtree_control", .{cdir}) catch return .refused;
+                writeKernelFile(sc, "+memory +pids") catch |e| {
+                    out.print("boot: budget -- core {d}: the kernel would not delegate the controllers beneath its partition ({s}); no ceiling is held this boot\n", .{ core, @errorName(e) }) catch {};
+                    return .refused;
+                };
+            }
+        }
+    }
     for (m.services) |s| {
-        if (s.memory_mb == null and s.cpu_percent == null and s.tasks == null) continue;
+        if (s.memory_mb == null and s.cpu_percent == null and s.tasks == null and s.reservation == null) continue;
+        // a world whose core was refused is not started, and needs no group
+        var refused = false;
+        for (slots) |sl| if (std.mem.eql(u8, sl.service.name, s.name) and sl.partition_refused) {
+            refused = true;
+        };
+        if (refused) continue;
         var dbuf: [128]u8 = undefined;
-        const dir = std.fmt.bufPrint(&dbuf, "/sys/fs/cgroup/{s}", .{s.name}) catch return .refused;
+        const dir = groupDir(&dbuf, &s);
         std.fs.cwd().makeDir(dir) catch |e| switch (e) {
             error.PathAlreadyExists => {},
             else => {
@@ -661,7 +740,62 @@ fn cgroupPrepare(m: *const machine.Machine, out: *std.Io.Writer) BudgetState {
             };
         }
     }
-    return .held;
+    return if (any) .held else .none;
+}
+
+/// Whether any world of this machine is reserved time (TIM-1).
+fn reservesTime(m: *const machine.Machine) bool {
+    for (m.services) |s| if (s.reservation != null) return true;
+    return false;
+}
+
+/// How finely the kernel's timers resolve, as it says: `clock_getres(CLOCK_MONOTONIC)` in
+/// nanoseconds -- 1 once the high-resolution timers are on, a tick (4 ms at HZ=250) before, or
+/// forever on a kernel without them. Zero when the kernel would not say. The raw call, because
+/// std.posix's wrapper hands the enum to a parameter typed i32 on Linux (Zig 0.15.2).
+fn timerResolutionNs() u64 {
+    var res: std.os.linux.timespec = .{ .sec = 0, .nsec = 0 };
+    if (std.os.linux.E.init(std.os.linux.clock_getres(@intFromEnum(std.os.linux.clockid_t.MONOTONIC), &res)) != .SUCCESS) return 0;
+    if (res.sec < 0 or res.nsec < 0) return 0;
+    return @as(u64, @intCast(res.sec)) * std.time.ns_per_s + @as(u64, @intCast(res.nsec));
+}
+
+/// The group a reserved core's partition is: `core-<n>`, a name no service can have (a service's
+/// name is an identifier, and an identifier carries no dash).
+fn coreDir(buf: []u8, core: u32) []const u8 {
+    return std.fmt.bufPrint(buf, "/sys/fs/cgroup/core-{d}", .{core}) catch "/sys/fs/cgroup/core-?";
+}
+
+/// A world's own group: beneath its core's partition when it is reserved, at the root when not.
+/// ONE wording, asked by the preparation that writes the ceilings and by the join that puts the
+/// world inside them (THR-1: a group written in one place and joined in another is one nobody is in).
+fn groupDir(buf: []u8, s: *const machine.Service) []const u8 {
+    if (s.reservation) |r| return std.fmt.bufPrint(buf, "/sys/fs/cgroup/core-{d}/{s}", .{ r.core, s.name }) catch "/sys/fs/cgroup/?";
+    return std.fmt.bufPrint(buf, "/sys/fs/cgroup/{s}", .{s.name}) catch "/sys/fs/cgroup/?";
+}
+
+/// The kind of partition a reserved core is: a `root` partition, which gives the core a scheduling
+/// domain of its own -- and a deadline task is admitted against the domain it stands in, so one
+/// domain per reserved core is what lets two reserved worlds on two cores each be admitted on
+/// theirs. (An `isolated` partition puts every such core in the kernel's one default domain, and a
+/// task pinned to one of two isolated cores is refused: its cores are fewer than the domain's.)
+const partition_kind = "root";
+
+/// Make `dir` a cpuset partition of exactly `core`, and return what the kernel SAYS it is afterwards:
+/// `root`, or its own word for why not (`root invalid (...)`), or the write that failed. The answer
+/// is read from the file and never assumed from the write (CON-1).
+fn partitionOf(dir: []const u8, core: u32, answer: []u8) []const u8 {
+    var pbuf: [160]u8 = undefined;
+    var vbuf: [16]u8 = undefined;
+    const cpus = std.fmt.bufPrint(&pbuf, "{s}/cpuset.cpus", .{dir}) catch return "no path";
+    const core_s = std.fmt.bufPrint(&vbuf, "{d}", .{core}) catch return "no number";
+    if (writeKernelFileErrno(cpus, core_s)) |e| return std.fmt.bufPrint(answer, "cpuset.cpus refused ({s})", .{e}) catch "cpuset.cpus refused";
+    const part = std.fmt.bufPrint(&pbuf, "{s}/cpuset.cpus.partition", .{dir}) catch return "no path";
+    if (writeKernelFileErrno(part, partition_kind)) |e| return std.fmt.bufPrint(answer, "cpuset.cpus.partition refused ({s})", .{e}) catch "partition refused";
+    const f = std.fs.cwd().openFile(part, .{}) catch return "unreadable";
+    defer f.close();
+    const n = f.readAll(answer) catch return "unreadable";
+    return std.mem.trimRight(u8, answer[0..n], "\n");
 }
 
 /// Move a world into its own group. PID 1 does it after the fork, so the
@@ -672,10 +806,13 @@ fn cgroupJoin(svc: *const machine.Service, pid: i32) void {
     // was written for it -- which is what happened to the first TASKS
     // world: pids.max was set on a group nobody was in, and the boot
     // announced a ceiling it was not holding (THR-1). Third time a guard
-    // has been narrower than the thing it guards.
-    if (svc.memory_mb == null and svc.cpu_percent == null and svc.tasks == null) return;
+    // has been narrower than the thing it guards. A reservation's core is
+    // the same kind of thing: joined here, BEFORE the gate opens, so the
+    // world takes its reservation inside its partition (TIM-1).
+    if (svc.memory_mb == null and svc.cpu_percent == null and svc.tasks == null and svc.reservation == null) return;
+    var dbuf: [128]u8 = undefined;
     var pbuf: [160]u8 = undefined;
-    const path = std.fmt.bufPrint(&pbuf, "/sys/fs/cgroup/{s}/cgroup.procs", .{svc.name}) catch return;
+    const path = std.fmt.bufPrint(&pbuf, "{s}/cgroup.procs", .{groupDir(&dbuf, svc)}) catch return;
     var vbuf: [24]u8 = undefined;
     const val = std.fmt.bufPrint(&vbuf, "{d}", .{pid}) catch return;
     // a world that has already exited cannot be moved, and that is not
@@ -881,6 +1018,9 @@ const Slot = struct {
     signalled_ms: i64 = 0, // when PID 1 saw that word
     stale: bool = false, // it stopped refreshing, and that latches
     restarts: usize = 0,
+    /// its core could not be made a partition of its own (TIM-1): the console said why, and the
+    /// world is not started, because a reservation on a shared core is a promise the kernel does not keep
+    partition_refused: bool = false,
 
     fn ready(self: Slot) bool {
         return switch (self.service.restart) {
@@ -1168,7 +1308,7 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
 
     // the ceilings, before the first world runs: a world must never see
     // a boot in which its group did not exist yet (BDG-1)
-    switch (cgroupPrepare(m, out)) {
+    switch (cgroupPrepare(m, slots.items, out)) {
         .none => {},
         .held => {
             _ = try expect.budgetLine(led.w(), m);
@@ -1178,6 +1318,33 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         // the expectation has -- so the verdict differs and a trial holds
         .refused => try out.flush(),
     }
+    // what the kernel says of ITSELF on a machine that reserves time (TIM-1): its preemption model
+    // from its own version string, and how finely its timers resolve -- read, never assumed from the
+    // fragment the image derived (CON-1): a reserving machine handed a calm kernel says so here, and
+    // differs from its expectation before any world's reservation is admitted on it
+    if (reservesTime(m)) {
+        const uts = std.posix.uname();
+        const ver = std.mem.sliceTo(&uts.version, 0);
+        // The timers turn fine only once the kernel has VERIFIED its clocksource against a
+        // watchdog, which takes it half a second from the clocksource's registration (a
+        // clocksource marked MUST_VERIFY, as the TSC is, is valid for high resolution only
+        // after that; the next tick then switches the timers). PID 1 gets here sooner, and
+        // the first reading of a kernel that does turn fine was 4 ms: so it is asked again,
+        // for up to three seconds, and what is said is the last answer -- a kernel whose
+        // timers never turn fine says 4000000 here and differs from its expectation.
+        var ns = timerResolutionNs();
+        var waited_ms: u32 = 0;
+        while (ns > expect.timed_res_ns and waited_ms < 3000) : (waited_ms += 50) {
+            std.Thread.sleep(50 * std.time.ns_per_ms);
+            ns = timerResolutionNs();
+        }
+        var mb: [96]u8 = undefined;
+        const model = if (std.mem.indexOf(u8, ver, expect.timed_model) != null) expect.timed_model else std.fmt.bufPrint(&mb, "not {s} ({s})", .{ expect.timed_model, ver }) catch "not " ++ expect.timed_model;
+        if (try expect.timedLine(led.w(), m, model, ns)) try led.echo();
+    }
+    // the reservations, as declared (TIM-1): the kernel's acceptance of each is the start line that
+    // follows, or the NOT STARTED that follows instead
+    if (try expect.reserveLine(led.w(), m)) try led.echo();
     _ = try expect.healthLine(led.w(), m);
     // what the kernel will refuse each world, said before any of them runs
     _ = try expect.confineLine(led.w(), m);
@@ -1527,6 +1694,14 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
                 };
             }
             if (!ok) continue;
+            if (s.partition_refused) {
+                // its core is not its own: a reservation on a shared core is a promise the kernel
+                // does not keep, and a world that would run under one is not started (NS-1, TIM-1)
+                s.state = .never;
+                try led.say("boot: {s} -- NOT STARTED: its core is not a partition of its own, and a reservation on a shared core is a promise the kernel does not keep\n", .{s.service.name});
+                progressed = true;
+                continue;
+            }
             const started = spawn(gpa, s.service, s.held) catch |e| {
                 s.state = .never;
                 try led.say("boot: start {s} -- could not spawn: {s}\n", .{ s.service.name, @errorName(e) });
@@ -1579,6 +1754,21 @@ fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Conf
         var latch: [1]u8 = undefined;
         _ = std.posix.read(gate[0], &latch) catch {}; // PID 1's word, or its death
         std.posix.close(gate[0]);
+        // The time the kernel reserves for this world (TIM-1): taken HERE,
+        // inside the partition PID 1 joined this child to before the gate
+        // opened, and before the filter below, which refuses the call to the
+        // world itself (PRI-1). The kernel's admission is the judge: a set
+        // that does not fit is refused, and a world whose reservation the
+        // kernel refused is not started -- the line it printed would be a
+        // promise the machine did not keep (NS-1).
+        if (svc.reservation) |r| {
+            reserve.take(r) catch |e| {
+                var msg: [320]u8 = undefined;
+                const line = std.fmt.bufPrint(&msg, "boot: {s} -- NOT STARTED: the kernel refused its reservation ({s}); a reservation the kernel does not hold is a promise the machine printed and did not keep\n", .{ svc.name, @errorName(e) }) catch "";
+                _ = std.posix.write(1, line) catch {};
+                std.posix.exit(125);
+            };
+        }
         // What the kernel will hold this world to, before it is a world
         // at all: the namespace it cannot leave and the filter it cannot
         // lift (NS-1). Both must happen BEFORE the exec, and the unshare

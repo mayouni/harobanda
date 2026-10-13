@@ -199,6 +199,36 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
                 if (!found) why = try std.fmt.allocPrint(arena, "state: no service {s}", .{e.key_ptr.*});
             }
         }
+        // the reservation (TIM-1): how many cores the machine has, and what each named world reserves on which
+        if (int(expect.get("cores"))) |w| if (@as(i64, @intCast(m.cores)) != w) {
+            why = try std.fmt.allocPrint(arena, "cores: expected {d} got {d}", .{ w, m.cores });
+        };
+        if (expect.get("reservations")) |rv| {
+            // every world the expectation names reserves exactly this, and no world it does not name reserves anything
+            for (m.services) |s| if (s.reservation != null and rv.object.get(s.name) == null) {
+                why = try std.fmt.allocPrint(arena, "reservations: {s} reserves and the expectation does not say so", .{s.name});
+            };
+            var it = rv.object.iterator();
+            while (it.next()) |e| {
+                var found = false;
+                for (m.services) |s| if (std.mem.eql(u8, s.name, e.key_ptr.*)) {
+                    found = true;
+                    const r = s.reservation orelse {
+                        why = try std.fmt.allocPrint(arena, "reservations: {s} reserves nothing", .{s.name});
+                        continue;
+                    };
+                    const want = e.value_ptr.object;
+                    const got = [_]struct { k: []const u8, n: u64 }{
+                        .{ .k = "period", .n = r.period_us }, .{ .k = "deadline", .n = r.deadline_us },
+                        .{ .k = "runtime", .n = r.runtime_us }, .{ .k = "core", .n = r.core },
+                    };
+                    for (got) |g| if (int(want.get(g.k))) |w| if (@as(i64, @intCast(g.n)) != w) {
+                        why = try std.fmt.allocPrint(arena, "reservations: {s}.{s}: expected {d} got {d}", .{ s.name, g.k, w, g.n });
+                    };
+                };
+                if (!found) why = try std.fmt.allocPrint(arena, "reservations: no service {s}", .{e.key_ptr.*});
+            }
+        }
         // the time seat (TIME-1): the clock a machine has, whom it asks, and the port each link's authority answers on
         if (str(expect.get("clock"))) |w| if (m.clock == null or !std.mem.eql(u8, m.clock.?, w)) {
             why = try std.fmt.allocPrint(arena, "clock: expected {s} got {s}", .{ w, m.clock orelse "none" });

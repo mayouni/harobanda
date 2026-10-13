@@ -150,7 +150,7 @@ checked against what it claimed. This is the record of what changed after it.
 ### 1 · No call to action, and no way to obtain the thing
 
 The site says three separate times that a machine boots on an ordinary laptop
-in an emulator with no hardware, and that `harb learn` is eighteen lessons. It
+in an emulator with no hardware, and that `harb learn` is nineteen lessons. It
 dangles an action it never offers. There is no download, no repository, no
 command to run, no contact, no licence, and the final page returns the reader
 to the beginning.
@@ -282,7 +282,7 @@ buying anything.*
 4. **Break it.** Change one line, watch the court refuse it by name. The
    site's own argument is that a refusal is the evidence; this is the first
    place the reader can feel one.
-5. **Then the tour.** `harb learn` — eighteen lessons, each with a command,
+5. **Then the tour.** `harb learn` — nineteen lessons, each with a command,
    the lines to look for, and a way to break it.
 6. **The source.** The repository, the pinned digests, the licence. Finding 5
    closes here.

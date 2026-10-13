@@ -65,7 +65,8 @@ pub fn derive(arena: std.mem.Allocator, m: *const Machine) !Plan {
         // world declares one. No budget, no mount: a machine carries the
         // plumbing its own declaration asks for and nothing else (BDG-1).
         for (m.services) |s| {
-            if (s.memory_mb != null or s.cpu_percent != null) {
+            // ... and a reservation's core is a cpuset, which lives there too (TIM-1)
+            if (s.memory_mb != null or s.cpu_percent != null or s.reservation != null) {
                 try steps.append(arena, .{ .mount = .{ .at = "/sys/fs/cgroup", .fs = .cgroup2, .device = null, .options = &.{}, .implicit = true } });
                 break;
             }
@@ -189,6 +190,7 @@ pub fn render(plan: Plan, out: *std.Io.Writer) !void {
             if (svc.memory_mb) |mb| try out.print(" -- within {d} MiB", .{mb});
             if (svc.cpu_percent) |pct| try out.print(" -- at most {d}% of a core", .{pct});
             if (svc.tasks) |n| try out.print(" -- at most {d} tasks", .{n});
+            if (svc.reservation) |r| try out.print(" -- reserved {d} us of every {d} us, within {d} us, on core {d}", .{ r.runtime_us, r.period_us, r.deadline_us, r.core });
             if (svc.user) |u| try out.print(" -- as {s} ({d}:{d})", .{ u.name, u.uid, u.gid });
             if (svc.sees) |kept| {
                 try out.print(" -- sees [", .{});

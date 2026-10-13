@@ -95,7 +95,9 @@ than an engineer's good manners.
 
 Six rungs, in the order the dependencies allow. Each names the clause it
 proposes (every name provisional, the author's to rule), the judge, what
-it buys, and its status, which is **not built** for all six.
+it buys, and its status: **rungs 1 and 2 are built** (TIM-1, 2026-10-13,
+with the corrections §7 records beside what this section proposed), the
+other four are not.
 
 **Rung 1 -- the timed kernel.** A machine that carries any world with a
 reservation is built `PREEMPT_RT`, with high-resolution timers, CPU
@@ -299,5 +301,42 @@ to buy, Zrb and Aïcha as drawn. The finding of §2 -- a world that runs
 as the machine could take a real-time priority the floor never granted
 -- was closed the same day (PRI-1, `experiment/PROTOCOL.md`): the five
 scheduling calls are the floor's refusals, the witness tries one from
-inside every world of `qemu_confine`, and the floor line says it. Of the
-six rungs, none is built; TIM-1, the reservation, is the next session.
+inside every world of `qemu_confine`, and the floor line says it.
+
+**Rungs 1 and 2 are built, the same day (TIM-1, `experiment/PROTOCOL.md`),
+and four things in §4 were written before the kernel was asked and are
+corrected here beside their sentences.** The timed kernel is derived
+from any reservation and READ BACK -- `boot: timed -- the kernel is
+PREEMPT_RT and its timers resolve 1 ns, as it says of itself` -- and the
+reading was needed twice before the line was true: the PC's firmware
+lists one processor in its MP table whatever `-smp` says (the second
+cpu is only in the ACPI tables), and the emulated TSC skews under TCG
+until the kernel falls back to jiffies, 4 ms, which is no
+high-resolution timer; ACPI, the HPET and a bounded wait for the
+clocksource's verification are what the derivation carries now. The
+reservation is as §4 drew it, with these differences: (1) the court's
+bound is **90 %** of a core and not 95 -- the kernel admits 95 and,
+since 6.12, holds 5 of them in the same ledger for the ordinary tasks'
+own deadline server, which the first boot of `qemu_deadline` found when
+the second of two worlds asking 95 together was refused at the act; the
+court counts as the kernel counts (2^20ths, truncated), because a bound
+in another arithmetic admits a set the kernel then refuses at the edge;
+(2) a period is bounded by the kernel's own `sched_deadline_period_min_us`
+and `_max_us`, 100 us to 4194304 us, and not by this document's ten
+seconds; (3) the partition is one per reserved CORE, never per world,
+because a root partition's cpus are exclusive -- the worlds reserved on
+a core sit in groups beneath its partition; and an `isolated` partition
+would not do, because the kernel admits a deadline task only against the
+root domain it stands in, and every isolated core shares the default
+one; (4) a reserved world MAY declare `process`: the reservation is set
+with reset-on-fork, so what it spawns runs unreserved and a fork is not
+refused -- the reservation is the main thread's, as ruling 17 told
+Haro's desk. A world that is a USER gets its reservation before it
+becomes that user, which is the one way an ordinary user ever holds one.
+The third world of §4 ("asks for more than there is, refused by the
+kernel") is not in the pinned machine, because the court refuses it
+first; it is a mutant of the probe (`experiment/deadline_probe.sh`),
+where the court's bound is put back to 95 and the kernel refuses the
+second world at the act. What rung 2 does not show is any latency: the
+emulator is a program on a host, and its time is the host's. Rung 3,
+the witness, is the next session.

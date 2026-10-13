@@ -70,6 +70,13 @@ const Target = struct {
     blk_device: ?[]const u8, // the QEMU virtio-blk device, or null when the board boots from a card
     net_cfg: []const []const u8 = &.{}, // for a declared NETWORK (the emulator's NIC; a board has its own in platform_cfg)
     net_device: ?[]const u8 = null, // the QEMU virtio-net device, or null when the board has its own NIC
+    /// what a machine with CORES needs of this board to COUNT them and to keep time finely
+    /// enough for a reservation (TIM-1). On the PC the firmware's MP table lists one
+    /// processor whatever `-smp` says and the rest are in the ACPI tables, and the emulated
+    /// TSC skews under TCG until the kernel falls back to jiffies, 4 ms, which is no
+    /// high-resolution timer: the HPET is the clock the emulator keeps steady. A board whose
+    /// cpus are in its device tree and whose timer is the architecture's needs nothing here.
+    cores_cfg: []const []const u8 = &.{},
     sd: bool = false,
     /// what the BOARD's tree needs that mainline's does not say (applied
     /// to the card's DTB; experiment/dtb_ops.py). Ops:
@@ -112,6 +119,7 @@ fn target(board: machine.Board) ?Target {
             .blk_device = "virtio-blk-pci",
             .net_cfg = &.{ "CONFIG_PCI=y", "CONFIG_VIRTIO_PCI=y" },
             .net_device = "virtio-net-pci",
+            .cores_cfg = &.{ "CONFIG_ACPI=y", "CONFIG_HPET_TIMER=y", "CONFIG_X86_PM_TIMER=y" },
         },
         .qemu_virt => .{
             .kernel_arch = "arm64",
@@ -466,8 +474,24 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
                 if (s.memory_mb != null or s.cpu_percent != null) budgeted = true;
                 if (s.tasks != null) counted = true;
             }
-            if (budgeted or counted) {
+            // a reservation's core is a cpuset partition, which needs the cgroup tree, SMP and the
+            // isolation menu; and a reserved world is only held to its deadline by a kernel that can
+            // be preempted to meet it, with timers finer than a jiffy (TIM-1). The real-time model is
+            // mainline in this tree for x86 and arm64 (EXPERT is set by tinyconfig); the build prints
+            // every requested option that did not survive, which is where a missing dependency shows.
+            var reserved = false;
+            for (m.services) |s| {
+                if (s.reservation != null) reserved = true;
+            }
+            if (budgeted or counted or reserved) {
                 try w.print("CONFIG_CGROUPS=y\n", .{});
+            }
+            if (m.cores > 1) {
+                try w.print("CONFIG_SMP=y\nCONFIG_NR_CPUS={d}\n", .{m.cores});
+                for (t.cores_cfg) |l| try w.print("{s}\n", .{l});
+            }
+            if (reserved) {
+                try w.print("CONFIG_CPUSETS=y\nCONFIG_CPU_ISOLATION=y\nCONFIG_PREEMPT_RT=y\nCONFIG_HIGH_RES_TIMERS=y\n", .{});
             }
             if (budgeted) {
                 try w.print("CONFIG_MEMCG=y\nCONFIG_CGROUP_SCHED=y\nCONFIG_FAIR_GROUP_SCHED=y\nCONFIG_CFS_BANDWIDTH=y\n", .{});
@@ -655,6 +679,9 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
         };
         try w.print("{s} {s}", .{ t.qemu, t.machine_args });
         if (t.memory_mb > 0) try w.print(" -m {d}M", .{t.memory_mb});
+        // the cores the declaration says the machine has: the emulator is handed the number (TIM-1); a
+        // board has what it has, and the court holds the declaration to it
+        if (m.cores > 1) try w.print(" -smp {d}", .{m.cores});
         // The emulator's real-time clock is the instrument's, not the declaration's: a fixed base that runs with
         // the virtual machine, so that a time authority booted under it reads a time a pinned transcript can
         // stand on (a board has the clock it has). The base is after `timeserve.earliest`, or the authority

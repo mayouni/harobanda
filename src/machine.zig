@@ -166,6 +166,43 @@ const shells = [_][]const u8{ "sh", "bash", "dash", "ash", "zsh", "fish", "ksh",
 
 // ---- the declared structure --------------------------------------------
 
+/// The time the kernel RESERVES for a world (TIM-1): every `period_us`
+/// microseconds, `runtime_us` of them, done within `deadline_us` of the
+/// period's start, on `core` -- a core of this machine's that the worlds
+/// with no reservation never run on. It is `SCHED_DEADLINE`, set by PID 1
+/// before the exec and held by the kernel's own admission, which refuses a
+/// set that does not fit; the court refuses it first, with a reason.
+pub const Reservation = struct {
+    period_us: u64,
+    deadline_us: u64,
+    runtime_us: u64,
+    core: u32,
+    line: usize,
+};
+
+/// A reservation's share of its core, COUNTED AS THE KERNEL COUNTS IT:
+/// `to_ratio` in kernel/sched, runtime over period in 2^20ths, truncated.
+/// Not parts per million, because a bound in another arithmetic admits a set
+/// the kernel then refuses at the edge -- two of 4750009 us in 10000000 us
+/// are 950000 ppm to a court counting in millionths and 996148 to the
+/// kernel, which is one more than it gives. The same truncation on the same
+/// numbers is the one way the court and the admission agree everywhere.
+pub const bw_shift: u6 = 20;
+pub fn bandwidthOf(r: Reservation) u64 {
+    return (r.runtime_us << bw_shift) / r.period_us;
+}
+
+/// What the kernel gives reservations of a core, in the same units: 90 %.
+/// It admits 95 % (`sched_rt_runtime_us` 950000 of `sched_rt_period_us`
+/// 1000000, its own default: 996147) and keeps the rest for what is not
+/// reserved -- and since 6.12 it holds 5 % of each core (50 ms of every
+/// second: 52428) in the SAME ledger for the ordinary tasks' own deadline
+/// server, so that a core full of reservations still runs them. Found at the
+/// act: two worlds asking 95 % together were refused the second (EBUSY) by a
+/// kernel whose every number the court had copied, and the server's share was
+/// the one it had not.
+pub const reservable_bw: u64 = (950_000 << bw_shift) / 1_000_000 - (50_000 << bw_shift) / 1_000_000;
+
 pub const Service = struct {
     name: []const u8,
     line: usize,
@@ -210,6 +247,10 @@ pub const Service = struct {
     /// machine will allow, which only the kernel can answer. They are
     /// different questions and each belongs to whoever can answer it.
     tasks: ?u32,
+    /// the time the kernel reserves for this world every period, and the
+    /// core it runs on (TIM-1). Null is a world that gets what is left, as
+    /// every world did before this seat.
+    reservation: ?Reservation = null,
     /// the declared identity this service runs as; null is the machine
     /// itself (root), which is what a service gets only by saying nothing
     user: ?*const User,
@@ -605,6 +646,12 @@ pub const Machine = struct {
     /// authority's; that it IS the fleet's authority's key is a fact about a set, and the
     /// fleet court judges it (TIME-1).
     time_from: ?TimeFrom = null,
+    /// how many cores this machine has (TIM-1): the number the emulator is
+    /// handed, and the number a board has. One when nothing is said, which
+    /// is every hosted machine before this seat; a reservation needs a
+    /// second, because core 0 is the machine's -- PID 1, the watchdog's
+    /// feed and every world that reserves nothing run there.
+    cores: u32 = 1,
     /// whether this machine is the way from one of its networks to
     /// another (FWD-1): the kernel's own forwarding, switched on once
     /// every network is up. It forwards among ALL its networks and
@@ -847,8 +894,8 @@ pub const Decl = struct {
 
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
-        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD", "CLOCK", "TIME_FROM", "TIME_KEY" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES", "STATE" },
+        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD", "CLOCK", "TIME_FROM", "TIME_KEY", "CORES" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES", "STATE", "PERIOD", "DEADLINE", "RUNTIME", "CORE" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
@@ -1255,6 +1302,17 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             time_from = .{ .text = text, .ip = hp.ip, .port = hp.port, .key_text = key_text, .key = key, .line = tf.line };
         }
     }
+    // CORES -- how many cores this machine has (TIM-1). Read after BOARD,
+    // because a board has the cores it has and the declaration must agree.
+    var cores: u32 = 1;
+    if (find(md, "CORES")) |c| {
+        if (profile != .hosted) return ctx.refuse(c.line, "CORES is a hosted machine's declaration; a machine of PROFILE {s} has the cores its own substrate gives it", .{@tagName(profile)});
+        const n = try wantNumber(&ctx, c);
+        if (n == 1) return ctx.refuse(c.line, "CORES 1 is what a machine says by saying nothing: one core is every hosted machine's floor, and a reservation needs a second", .{});
+        if (n < 2 or n > 64) return ctx.refuse(c.line, "CORES is how many cores this machine has, 2 to 64, not {d}", .{n});
+        if (board == .rpi4 and n != 4) return ctx.refuse(c.line, "a Raspberry Pi 4 has four cores, and CORES {d} does not describe one", .{n});
+        cores = @intCast(n);
+    }
     var slots: ?[]const u8 = null;
     if (find(md, "SLOTS")) |c| {
         const dev = try wantString(&ctx, c);
@@ -1522,6 +1580,46 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             if (pct > 1600) return ctx.refuse(c.line, "CPU {d} is more than sixteen cores' worth; 1600 is the ceiling this grammar admits", .{pct});
             cpu_percent = @intCast(pct);
         }
+        // the reservation (TIM-1): a period, a deadline, a runtime and a
+        // core, the four together or none. The arithmetic the kernel will
+        // run at the act is run here first, so the refusal has a reason and
+        // a line; the kernel runs it again and refuses what does not fit.
+        var reservation: ?Reservation = null;
+        {
+            const p_c = find(d, "PERIOD");
+            const d_c = find(d, "DEADLINE");
+            const r_c = find(d, "RUNTIME");
+            const k_c = find(d, "CORE");
+            var n_present: u32 = 0;
+            var first_line: usize = d.line;
+            var seen_first = false;
+            inline for (.{ p_c, d_c, r_c, k_c }) |maybe| if (maybe) |c| {
+                n_present += 1;
+                if (!seen_first) {
+                    first_line = c.line;
+                    seen_first = true;
+                }
+            };
+            if (n_present > 0) {
+                if (profile != .hosted) return ctx.refuse(first_line, "a reservation is the kernel's to hold, and an edge machine has no kernel: {s} declares one on a machine of PROFILE {s}", .{ d.name, @tagName(profile) });
+                if (n_present != 4) return ctx.refuse(first_line, "a reservation is a period, a deadline, a runtime and a core, together: {s} declares {d} of the four", .{ d.name, n_present });
+                const period = try wantNumber(&ctx, p_c.?);
+                const deadline = try wantNumber(&ctx, d_c.?);
+                const runtime = try wantNumber(&ctx, r_c.?);
+                const core = try wantNumber(&ctx, k_c.?);
+                if (runtime < 10) return ctx.refuse(r_c.?.line, "RUNTIME {d} is below ten microseconds, which is below what the scheduler can hold: the number is microseconds of every period", .{runtime});
+                // the kernel's own bounds (sched_deadline_period_min_us and _max_us, left at their
+                // defaults by this floor): 100 us to 2^22 us. A grammar that admitted ten seconds, as
+                // this one first did, accepted a period the kernel then refused at the act (EINVAL)
+                if (period < 100 or period > 4_194_304) return ctx.refuse(p_c.?.line, "PERIOD {d}: the kernel admits a period from 100 us to 4194304 us, its own bounds, and a loop outside them is not a reservation it will hold", .{period});
+                if (runtime > deadline) return ctx.refuse(r_c.?.line, "RUNTIME {d} is more than DEADLINE {d}: a world cannot run longer than the time it has", .{ runtime, deadline });
+                if (deadline > period) return ctx.refuse(d_c.?.line, "DEADLINE {d} is past PERIOD {d}: a deadline past the next period is a deadline in another period", .{ deadline, period });
+                if (core == 0) return ctx.refuse(k_c.?.line, "CORE 0: core 0 is the machine's -- PID 1, the watchdog's feed and every world that reserves nothing run there", .{});
+                if (core >= cores) return ctx.refuse(k_c.?.line, "CORE {d} names a core this machine does not have: it has {d} (CORES), numbered from 0, and core 0 is the machine's", .{ core, cores });
+                if (cpu_percent != null) return ctx.refuse(k_c.?.line, "a ceiling and a reservation on one world's time contradict each other: {s} declares CPU and a reservation", .{d.name});
+                reservation = .{ .period_us = period, .deadline_us = deadline, .runtime_us = runtime, .core = @intCast(core), .line = first_line };
+            }
+        }
         var user: ?*const User = null;
         if (find(d, "USER")) |c| {
             const uname = try wantIdent(&ctx, c);
@@ -1571,9 +1669,28 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             for (paths) |p| if (!plainPath(p)) return ctx.refuse(c.line, "STATE is an absolute path of plain names (\"/data/app\": letters, digits, '.', '_' and '-' between slashes), not '{s}': no relative path, no '.' or '..', no empty name and no trailing slash", .{p});
             state = paths;
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .tasks = tasks, .user = user, .sees = sees, .state = state, .state_line = state_line, .ready_line = ready_line, .rationale = d.rationale });
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .tasks = tasks, .reservation = reservation, .user = user, .sees = sees, .state = state, .state_line = state_line, .ready_line = ready_line, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
+
+    // TIM-1: the reservations on one core together ask no more than the
+    // kernel gives (90 %, `reservable_bw`); the rest is the kernel's own.
+    // Counted as the kernel's admission counts it (`bandwidthOf`), so that
+    // what the court accepts the kernel admits, at the edge too.
+    // The refusal names the world whose reservation CROSSES the bound -- the sum of its core's
+    // reservations declared up to it -- and never the first world on the core: a reader who raised
+    // the second world's runtime was sent to the first world's line (found by running the tour's
+    // BREAK IT before promising it, LRN-1).
+    for (svc_slice, 0..) |s, i| if (s.reservation) |r| {
+        var ask: u64 = 0;
+        for (svc_slice[0 .. i + 1]) |o| if (o.reservation) |q| if (q.core == r.core) {
+            ask += bandwidthOf(q);
+        };
+        if (ask > reservable_bw) {
+            const tenths = (ask * 1000 + (@as(u64, 1) << (bw_shift - 1))) >> bw_shift; // tenths of a per cent, rounded
+            return ctx.refuse(r.line, "the reservations on core {d} ask {d}.{d} % of it, and the kernel gives reservations 90 % of a core: it keeps 5 % for what is not reserved and 5 % for the ordinary tasks' own server", .{ r.core, tenths / 10, tenths % 10 });
+        }
+    };
 
     // AFTER resolves (G6), never to itself, never in a cycle
     for (svc_slice) |s| {
@@ -1790,6 +1907,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .journal = journal,
         .clock = clock,
         .time_from = time_from,
+        .cores = cores,
         .forward = forward,
         .rationale = md.rationale,
         .services = svc_slice,

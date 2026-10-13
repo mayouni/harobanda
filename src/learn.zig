@@ -266,9 +266,9 @@ pub const lessons = [_]Lesson{
         .run = "zig build court -j2",
         .look = &.{
             "ok   pin -- declarative/machine/fixtures.json is the file declarative/machine/PINNING.md names (sha256 ...)",
-            "213/213 -- 43 accepts, 170 rejects, 0 failures     (the machine grammar)",
+            "245/245 -- 51 accepts, 194 rejects, 0 failures     (the machine grammar)",
             "71/71 -- 12 accepts, 59 rejects, 0 failures        (the fleet grammar)",
-            "learn -- 18 lessons: every path they name is present, ...",
+            "learn -- 19 lessons: every path they name is present, ...",
             "",
             "Most of those cases are things the language REFUSES, and each one",
             "carries the exact words its refusal must contain. So refusing for the wrong",
@@ -320,7 +320,7 @@ pub const lessons = [_]Lesson{
             "worlds run and the box halted. Every line of it came from one text file,",
             "machines\\qemu_egress.machine -- open it, it is short. The first line is",
             "harb itself, started by the kernel as the machine's first program: pid 1.",
-            "The `reach` lines are what its two worlds said, and lesson 11 is about",
+            "The `reach` lines are what its two worlds said, and lesson 12 is about",
             "them; here, notice only that the machine says what each world did. This",
             "takes a few minutes the first time and about a minute afterwards, because",
             "the kernel build is cached.",
@@ -426,10 +426,10 @@ pub const lessons = [_]Lesson{
                 "edited -- change the machine and its expectation changes with it. To see a",
                 "MISMATCH you have to change what the machine SAYS without changing what it",
                 "DECLARES. Two places in this tour do exactly that, and neither needs you",
-                "to edit anything: the `stranger` in lesson 15, which is this same kind of",
+                "to edit anything: the `stranger` in lesson 16, which is this same kind of",
                 "image booted onto a wire that will not lease it an address, and the",
-                "flagship's `unmet:` section in lesson 17, where the emulator lacks",
-                "hardware the board has. Lesson 15's is the cleaner one -- nothing about",
+                "flagship's `unmet:` section in lesson 18, where the emulator lacks",
+                "hardware the board has. Lesson 16's is the cleaner one -- nothing about",
                 "the declaration differs at all, only the wire.",
             },
             .undo = "git checkout -- machines/qemu_egress.machine",
@@ -744,6 +744,91 @@ pub const lessons = [_]Lesson{
     },
     .{
         .act = "III. WHAT A WORLD MAY DO",
+        .title = "A world is GIVEN its time, and the kernel keeps it",
+        .question = "A control loop must run every millisecond. Who promises that, and what does the promise cost?",
+        .run = RUN_WSL ++ "os2_image.sh qemu_deadline",
+        .look = &.{
+            "A budget (lesson 10) is a ceiling: no more than this. A reservation is a",
+            "floor: at least this, every period. Two worlds of this machine have one,",
+            "on the second of its two cores, and PID 1 says so before any of them runs:",
+            "",
+            "  boot: timed -- the kernel is PREEMPT_RT and its timers resolve 1 ns, as it",
+            "  says of itself",
+            "  boot: reserve -- control 200 us of every 1000 us, within 500 us, on core 1,",
+            "  second 700 us of every 1000 us, within 1000 us, on core 1; the kernel holds",
+            "  each reservation and refuses what does not fit",
+            "",
+            "The first line is the kernel READ BACK, not the declaration repeated: the",
+            "image asked for a preemptible kernel with fine timers, and PID 1 asks the",
+            "kernel what it got. It said 4 ms twice before it said 1 ns -- once because",
+            "the emulator's firmware had told the kernel about one core only, once because",
+            "PID 1 asked before the kernel had verified its clock. Both were convicted by",
+            "this line, which is what the line is for.",
+            "",
+            "Then each world asks the kernel, from INSIDE itself, what it runs under:",
+            "",
+            "  reserved: SCHED_DEADLINE -- 200 us of every 1000 us, within 500 us, on core 1",
+            "  and no other: as the kernel reports it, and what this world spawns runs",
+            "  unreserved",
+            "  boot: start second -- pid N -- /harb reserved -- as worker (2000:2000)",
+            "  reserved: SCHED_DEADLINE -- 700 us of every 1000 us, within 1000 us, on core 1",
+            "  and no other: as the kernel reports it, and what this world spawns runs",
+            "  unreserved",
+            "  reserved: no reservation -- this world runs under policy 0 on 1 core, and gets",
+            "  what is left",
+            "",
+            "`control` got its 200 and stays alive, so that `second` asks for its 700",
+            "BESIDE a reservation the kernel already holds: 900 of every 1000 us between",
+            "them, which is all the kernel gives. It admits 95 per cent of a core and",
+            "keeps 5 of those for the ordinary tasks' own server, in the same ledger --",
+            "the first boot of this machine asked for the 95th and was refused.",
+            "",
+            "Read the third answer with the machine's CORES 2 in mind: the world that",
+            "reserved nothing may run on ONE core. Core 1 was made a partition of its own",
+            "and nothing without a reservation is let onto it. And read `second`'s start",
+            "line: it runs as an ordinary user, whom the kernel refuses any real-time",
+            "policy. It holds one anyway, because the floor handed it the reservation",
+            "before the world became that user -- what no world may take (lesson 8), the",
+            "machine may give.",
+            "",
+            "Nothing here says how LATE a world was. The emulator is a program on your",
+            "laptop and its time is your laptop's; the mechanism is what this boot shows.",
+        },
+        .breakit = .{
+            .proves = "that the court refuses what the kernel would refuse, before anything boots, and names the world that asked too much",
+            .file = "machines\\qemu_deadline.machine",
+            .where = "in the `second` service, on its `RUNTIME 700,` line",
+            .how = .replace,
+            .paste = &.{
+                "  RUNTIME 750,",
+            },
+            .then = EXE ++ " check machines\\qemu_deadline.machine",
+            .expect = &.{
+                "machine (line 70): the reservations on core 1 ask 95.0 % of it, and the kernel",
+                "gives reservations 90 % of a core: it keeps 5 % for what is not reserved and",
+                "5 % for the ordinary tasks' own server",
+                "",
+                "Line 70 is `second`'s, the world whose reservation crossed the bound -- not",
+                "`control`'s, which was fine on its own. The first version of this rule sent",
+                "you to line 58, and running this step before writing it is how that was",
+                "found.",
+                "",
+                "Ninety-five per cent is what the kernel's own setting says it admits, and",
+                "the court still refuses it: the kernel holds five of those for the ordinary",
+                "tasks' server, in the same ledger, and a court that took the setting at its",
+                "word accepted a machine the kernel then refused at the act. Put the file",
+                "back and try 710: refused too, at 91.0 %. 700 is the last the kernel admits,",
+                "and the court counts it the way the kernel does, so the two never disagree",
+                "at the edge.",
+            },
+            .undo = "git checkout -- machines/qemu_deadline.machine",
+        },
+        .law = "Time on a core is the kernel's to give, never a world's to take: a reservation is refused before any world runs when it does not fit, by the court first and by the kernel at the act, and what the kernel admits it keeps.",
+        .story = "experiment/PROTOCOL.md (TIM-1, PRI-1)",
+        .needs = &.{ "machines/qemu_deadline.machine", "machines/qemu_deadline.expected", "experiment/os2_image.sh", "experiment/deadline_probe.sh", "src/reserve.zig" },
+    },
+    .{
+        .act = "III. WHAT A WORLD MAY DO",
         .title = "How far a granted network reaches",
         .question = "The box may speak. May it speak to ANYONE?",
         .run = RUN_WSL ++ "os2_image.sh qemu_egress",
@@ -924,7 +1009,7 @@ pub const lessons = [_]Lesson{
         .act = "IV. WHO A DEVICE IS",
         .title = "The machine's own signed record of every boot",
         .question = "What did this box do, and how would you know if someone edited the answer?",
-        .run = "(read the output of lesson 12 and find the lines beginning `journal`)",
+        .run = "(read the output of lesson 13 and find the lines beginning `journal`)",
         .look = &.{
             "Four lines, in the order they happen. The first boot finds nothing:",
             "",
@@ -1101,7 +1186,7 @@ pub const lessons = [_]Lesson{
                 "Do NOT copy a key out of this lesson or anywhere else. Yours is not the",
                 "one in any example: the device makes a NEW key every time the script",
                 "runs, because it builds a fresh disk and a key is made on first boot.",
-                "Run the script twice and compare the KEY lines -- that is lesson 12's",
+                "Run the script twice and compare the KEY lines -- that is lesson 13's",
                 "point arriving from the other side. A key survives the POWER; it does",
                 "not survive the disk being thrown away.",
             },
@@ -1354,7 +1439,7 @@ pub const lessons = [_]Lesson{
             "  unmet:    created ... fingerprint KEY3        another pristine card",
             "",
             "Three cards. KEY1 appears twice because that card kept its key across a",
-            "power cycle, which is lesson 12's whole claim; KEY2 and KEY3 are different",
+            "power cycle, which is lesson 13's whole claim; KEY2 and KEY3 are different",
             "because a new card is a new device. The court maps each DISTINCT fingerprint",
             "to KEY1, KEY2, KEY3 rather than blanking them, which is the only reason any",
             "of this is visible.",
@@ -1444,7 +1529,7 @@ pub const lessons = [_]Lesson{
             "them today and neither keeps them all.",
             "",
             "First against the board's EXPECTATION, which `harb image` derived before",
-            "anything booted -- and derives even when lesson 17's image is refused for",
+            "anything booted -- and derives even when lesson 18's image is refused for",
             "want of the runtime, because what a boot must print is the declaration's",
             "alone. So this lesson needs nothing but this repository:",
             "",
@@ -1590,7 +1675,7 @@ fn pinPath(b: Break, buf: []u8) ?[]const u8 {
     return out;
 }
 
-/// "lessons 10 and 17": the lessons whose own boot needs the private
+/// "lessons 10 and 18": the lessons whose own boot needs the private
 /// runtime, counted from the table rather than typed (LRN-3)
 fn privateLessons(buf: []u8) ![]const u8 {
     var total: usize = 0;
@@ -1764,7 +1849,7 @@ const said_prefixes = [_][]const u8{
     "attest:",   "journal", "kds:",       "poste:",     "modest:",
     "swarm:",    "greedy:", "reach ",     "ask ",       "device:",
     "roll:",     "verify:", "tampered:",  "foreign:",   "unenrolled:",
-    "salle:",    "carried:",
+    "salle:",    "carried:", "reserved:",
 };
 
 fn looksSaid(line: []const u8) bool {
@@ -2224,7 +2309,7 @@ test "the private-runtime note is derived for exactly the boots that need it" {
         if (needsRuntime(l.run) != null) runs += 1;
         if (needsRuntime(l.breakit.then) != null) breaks += 1;
     }
-    // lesson 10 (the budget) and lesson 17 (the flagship) boot machines
+    // lesson 10 (the budget) and lesson 18 (the flagship) boot machines
     // with Luau worlds, and lesson 10's BREAK IT boots one again. Lessons
     // 4 to 6 booted qemu_hello until LRN-3 and boot qemu_egress now, which
     // runs only harb. A tripwire, like the pin-warning census above.
@@ -2246,7 +2331,7 @@ test "the private-runtime note is derived for exactly the boots that need it" {
     const seen = flat.items;
     try t.expect(std.mem.indexOf(u8, seen, "image: refused -- service modest: program /stzr is not staged under zig-out/image/qemu_budget/root") != null);
     try t.expect(std.mem.indexOf(u8, seen, "image: refused -- service kds: program /stzr is not staged under zig-out/image/makeen_box/root") != null);
-    try t.expect(std.mem.indexOf(u8, seen, "only lessons 10 and 17 need the runtime") != null);
+    try t.expect(std.mem.indexOf(u8, seen, "only lessons 10 and 18 need the runtime") != null);
     try t.expect(std.mem.indexOf(u8, seen, "plan machines\\qemu_budget.machine") != null);
 }
 

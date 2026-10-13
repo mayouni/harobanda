@@ -1,0 +1,82 @@
+-- qemu_deadline.machine -- the machine that gives a world its time.
+--
+-- Two cores. On the second, two worlds are RESERVED: every 1000 us the
+-- kernel runs `control` for 200 of them, done within 500, and `second`
+-- for 700, done within the period -- 90 % of the core between them,
+-- which is exactly what the kernel gives reservations of a core: it
+-- admits 95 and holds 5 of them for the ordinary tasks' own server, in
+-- the same ledger, which the first boot of this machine found when the
+-- second world asked for the 95th. A third world reserves nothing, and
+-- is where every such world is: on core 0, with PID 1.
+--
+-- Each world asks the kernel, from inside itself, what it runs under
+-- (`harb reserved`), and the answers should form a table that only the
+-- declarations above them explain:
+--
+--                   policy          runtime / deadline / period   cores
+--   control   SCHED_DEADLINE   200 us / 500 us / 1000 us      core 1 and no other
+--   second    SCHED_DEADLINE   700 us / 1000 us / 1000 us     core 1 and no other
+--   loose     no reservation   --                             1 core
+--
+-- The last cell is the partition seen from outside it: the machine has
+-- two cores and a world that reserved nothing may run on one of them.
+-- And `second` runs as an ordinary user, which the kernel refuses any
+-- real-time policy to: it holds a reservation it could not have taken,
+-- because the floor gave it before the world became that user.
+--
+-- Nothing here measures how LATE a world was: the emulator is a
+-- program on somebody's host and its time is that host's. What it shows
+-- is the MECHANISM -- a core made a partition, a reservation the kernel
+-- admitted and reads back as given, and what it did to the worlds that
+-- have none. The latency is a board's to show, with a witness that is
+-- the next rung's (doc/REALTIME.md).
+--
+-- `control` stays, so that `second` asks for its time BESIDE a
+-- reservation the kernel already holds, and `second` waits for its word
+-- (READY) so that the order of the asking is a fact and not a race.
+
+DEFINE MACHINE qemu_deadline AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  CORES 2
+) RATIONALE "The smallest machine that shows a reservation: two cores, because core 0 is the machine's and a reserved world needs one of its own"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The machine may start worlds; the reserved ones never start another, and need not"
+
+DEFINE USER worker AS (
+  UID 2000
+) RATIONALE "An identity that could never take a reservation for itself -- the kernel refuses a real-time policy to an ordinary user -- and is given one by the floor before it becomes that user"
+
+DEFINE SERVICE control AS (
+  RUN ["/harb", "reserved", "--stay", "/run/control.ready"],
+  RESTART always,
+  READY "/run/control.ready",
+  PERIOD 1000,
+  DEADLINE 500,
+  RUNTIME 200,
+  CORE 1,
+  NEEDS [process]
+) RATIONALE "A control loop's shape: a short runtime early in every period. It says what it runs under, marks itself ready, and stays, so that the next reservation is admitted beside one the kernel holds"
+
+DEFINE SERVICE second AS (
+  RUN ["/harb", "reserved"],
+  RESTART never,
+  AFTER [control],
+  USER worker,
+  PERIOD 1000,
+  DEADLINE 1000,
+  RUNTIME 700,
+  CORE 1,
+  NEEDS [process]
+) RATIONALE "The rest of the core: with control's 200 it asks 900 of every 1000 us, which is all the kernel gives. It asks after control is ready, so the kernel admits it beside a reservation it already holds -- and it runs as an ordinary user, who is given the reservation and could not have taken it"
+
+DEFINE SERVICE loose AS (
+  RUN ["/harb", "reserved"],
+  RESTART never,
+  AFTER [second],
+  NEEDS [process]
+) RATIONALE "A world that reserved nothing, asked the same question: it runs under the ordinary policy on the one core left to such worlds, which is the partition seen from the outside"

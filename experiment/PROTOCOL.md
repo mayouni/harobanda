@@ -1,3 +1,150 @@
+# TIM-1 — a world is given its time, and every number copied from the kernel is read back at the act
+
+Rungs 1 and 2 of the real-time ladder (`doc/REALTIME.md`, STZ-OS-RULING-17
+of 2026-10-13), built the same day on the author's delegation ("take
+decisions on my behalf and continue"), after the repair PRI-1.
+
+## What was built
+
+- **The grammar** (`src/machine.zig`, `declarative/machine/fixtures.json`
+  213 -> 245 cases: A44-A51, R171-R194, the pin re-taken). `CORES` on a
+  hosted machine, 2 to 64, a Raspberry Pi 4's four; on a SERVICE a
+  reservation -- `PERIOD`, `DEADLINE`, `RUNTIME` in microseconds and the
+  `CORE` it runs on, the four together or none. Runtime no more than
+  deadline no more than period; a runtime of ten microseconds at least;
+  a period within the kernel's own bounds (below); core 0 never (it is
+  the machine's: PID 1, the watchdog's feed, every world that reserves
+  nothing); a core the machine has; no `CPU` ceiling beside a reservation;
+  and the reservations on one core together no more than the kernel
+  gives, COUNTED AS THE KERNEL COUNTS -- `bandwidthOf` is the kernel's
+  `to_ratio`, runtime over period in 2^20ths, truncated, because a bound
+  in millionths admits a set the kernel then refuses at the edge: two of
+  4750009 us in 10000000 us are 950000 ppm to one and 996148 to the
+  other. The refusal names the world whose reservation CROSSED the bound.
+- **The image** (`src/image.zig`): `CONFIG_SMP` and `NR_CPUS` from `CORES`,
+  and `-smp` for the emulator; from any reservation `CPUSETS`,
+  `CPU_ISOLATION`, `PREEMPT_RT` (mainline in the vendored 6.12 for x86 and
+  arm64; `EXPERT` is set by tinyconfig) and `HIGH_RES_TIMERS`; and per
+  board what counting the cores and keeping time need (`cores_cfg`): on
+  the PC `ACPI`, `HPET_TIMER` and the PM timer, for the two reasons below;
+  on the Pi nothing, its cpus are in its device tree and its timer is the
+  architecture's.
+- **PID 1** (`src/init.zig`): the TIMED line, worded once in `expect.zig`
+  -- `boot: timed -- the kernel is PREEMPT_RT and its timers resolve 1 ns,
+  as it says of itself` -- read from the version string and
+  `clock_getres`, never from the fragment (CON-1); the RESERVE line, the
+  declaration said once before any world runs; one cpuset partition PER
+  RESERVED CORE (`/sys/fs/cgroup/core-<n>`, `cpuset.cpus` then
+  `cpuset.cpus.partition=root`, read back as `root` or the worlds on it
+  are NOT STARTED with the kernel's word), the reserved worlds' groups
+  beneath it; the world joined to its group before the gate opens, and in
+  the child, after the gate and BEFORE `confine.apply` (since PRI-1 the
+  filter refuses the call), `sched_setattr(SCHED_DEADLINE, RESET_ON_FORK)`
+  -- the kernel's admission is the judge, and a refusal is NOT STARTED
+  with its reason (`DoesNotFit` for EBUSY, `Invalid`, `NoPrivilege`).
+  A USER world gets its reservation before it becomes that user.
+- **The witness** (`src/reserve.zig`, `harb reserved [--stay <ready-path>]`):
+  a world asks the kernel what it runs under -- `sched_getattr`,
+  `sched_getaffinity` -- and says it: `reserved: SCHED_DEADLINE -- 200 us
+  of every 1000 us, within 500 us, on core 1 and no other: as the kernel
+  reports it, and what this world spawns runs unreserved`, or `no
+  reservation -- this world runs under policy 0 on 1 core`. A report,
+  never an assertion. With `--stay` it marks its READY path and stays, so
+  that the next world asks BESIDE a reservation the kernel holds, after
+  this one's word: the order of the asking is a fact and not a race.
+- **The machine** `machines/qemu_deadline.machine`: two cores; `control`
+  (200/500/1000 on core 1, stays), `second` (700/1000/1000 on core 1, as
+  `worker` 2000), `loose` (nothing). Pinned at 22 lines. The tour's
+  lesson 11, with a BREAK IT that was run before it was promised.
+
+## What the kernel corrected, at the act -- five things, in the order found
+
+The analysis and the grammar were written from the kernel's SOURCE; the
+boot was the first time the kernel was ASKED. Every one of these was a
+number or a shape the floor had copied, and every one was caught by a
+line that exists to be read back (CON-1, NS-1).
+
+1. **`cpuset.cpus refused (RANGE)`**, and the diagnostic read `cpus
+   online [0]` on a `-smp 2` emulator with `NR_CPUS=2`. The loud boot
+   (`experiment/deadline_diag.sh`) says why: `found SMP MP-table ...
+   Processor #0 (Bootup-CPU) ... Processors: 1` -- the firmware's MP table
+   lists one processor whatever `-smp` says; the second cpu is only in the
+   ACPI tables, and the kernel had no ACPI. Derived now for the PC.
+2. **`timers resolve 4000000 ns`** on a kernel built with
+   `HIGH_RES_TIMERS=y`. The loud boot: `tsc: Marking TSC unstable due to
+   clocksource watchdog ... Switched to clocksource refined-jiffies` -- the
+   emulated TSC skews under TCG against the only watchdog a kernel without
+   ACPI has, and jiffies are not valid for high resolution. With ACPI the
+   HPET and the PM timer watch it and the TSC is kept.
+3. **Still 4000000 ns** after that, and the loud boot showed the TSC kept.
+   A `MUST_VERIFY` clocksource is valid for high resolution only after
+   the watchdog's first half-second, and PID 1 asked sooner. It asks
+   again, for up to three seconds, and says the last answer; a kernel
+   whose timers never turn fine still says 4000000 and differs from its
+   expectation.
+4. **`root invalid (Cpu list in cpuset.cpus not exclusive)`** for the
+   second world on core 1: a root partition's cpus are exclusive, so the
+   partition is one PER CORE and the worlds sit beneath it. `root` and
+   not `isolated`, read from the source before the boot: the kernel
+   admits a deadline task only if its cpus cover the root domain it
+   stands in (`kernel/sched/syscalls.c:664`), and every isolated core is
+   attached to the one default domain (`topology.c:2648`), so a task on
+   one of two isolated cores would be refused.
+5. **`the kernel refused its reservation (DoesNotFit)`** for `second` at
+   exactly 95 %, the share the kernel's own sysctl admits. 6.12 is the
+   kernel that gave the ordinary tasks a deadline SERVER of their own, 50
+   ms of every second (`fair.c:9073`, `deadline.c:1839`), and it is
+   accounted in the same `dl_bw` as a world's reservation and follows the
+   partition's root domain (`__dl_server_attach_root`,
+   `deadline.c:1880`). What a core gives reservations is 90 %. The court's
+   bound, A45, A47 and R188 moved; R194 is the 95 that was refused.
+
+And one found by reading before the act: the kernel bounds a period to
+`sched_deadline_period_min_us` 100 and `_max_us` 1 << 22 (`deadline.c:26`),
+where the grammar's first draft admitted ten seconds -- A50 would have
+been a machine whose world is NOT STARTED with `Invalid`. Two smaller
+ones: Zig 0.15.2's `std.posix.clock_getres` hands the clock enum to a
+parameter typed `i32` on Linux and does not compile for a Linux target
+(the raw call is used); and `std.posix.write` folds `NODEV` and `RANGE`
+into "Unexpected", which is the kernel's word thrown away --
+`writeKernelFileErrno` asks the kernel itself and the refusal line
+carries its errno by name.
+
+## Judged
+
+- The court: 245/245 (51 accepts, 194 rejects), the pin re-taken; `learn
+  --check` over 19 lessons; `docs --check`.
+- The tests: 106 on Linux, none skipped (`experiment/linux_test.sh`); the
+  three of `reserve.zig` include a child that takes a reservation, reads
+  it back as given and forks a child that runs unreserved, which only
+  root can ask (the Linux run is root).
+- The boot: `machines/qemu_deadline.machine`, 22 lines, the machine
+  judging itself a match; booted five times before it was right, each
+  time stopped by a line written to be read back.
+- The probe (`experiment/deadline_probe.sh`): the pin matched in a scratch
+  copy, then four things put wrong, each refused on the line that names
+  it -- the emulator handed ONE core for a machine declaring two (`RANGE`,
+  the worlds NOT STARTED); the court's bound put back to 95 and the
+  machine asking it (the kernel refuses `second`: `DoesNotFit`); the
+  partition CLAIMED and never made (convicted by the world's own witness,
+  `on core 0` with no `and no other`: it runs on the machine's cores);
+  the core given and the partition not (the kernel's rule: `NoPrivilege`).
+- Every pinned boot re-run against the final binary
+  (`experiment/regress.sh`), because `cgroupPrepare` and the standing
+  lines changed under every machine.
+
+## What is not built, by name
+
+The latency a loop actually sees (rung 3, `harb tick`); a world on
+several cores; the partition's `cpuset.cpus.exclusive`, which the
+kernel derives; a root world with `filesystem` may still write the
+kernel's scheduling sysctls under `/proc/sys` (SYS-1 refuses calls, not
+files); the fair server's share and the period bounds are the kernel's
+DEFAULTS read from its source, not from the running kernel; and a
+clockevent device that cannot do one-shot would leave the timed line at
+4000000 forever, which is a refusal the machine would print and the
+author would read, not one it has met.
+
 # PRI-1 — time on the processor is the floor's to give, and a world could take it
 
 The repair ruled first in STZ-OS-RULING-17 (2026-10-13), before any rung

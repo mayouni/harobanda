@@ -473,7 +473,29 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/priority_probe.sh
 
-# the guided tour: 18 lessons, each with a command, the lines
+# a world is given its time (TIM-1): two worlds reserved on
+# one core and a third with none, the kernel reading each
+# back -> zig-out/wsl/image_qemu_deadline.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os2_image.sh qemu_deadline
+
+# the reservation's boot probed: the pin, the emulator handed
+# one core, the court's bound put back to 95, a partition
+# claimed and not made, a core given without one (h1 m1 m2
+# m3 to run some) -> zig-out/wsl/deadline_probe.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/deadline_probe.sh
+
+# what the kernel says, loud, of its cpus, its clocksource
+# and its timers -> zig-out/wsl/deadline_diag.txt; and what
+# its source says of a deadline task's domain, its period's
+# bounds and the fair server -> deadline_kernel_read.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/deadline_diag.sh
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/deadline_kernel_read.sh
+
+# the guided tour: 19 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
 
@@ -509,6 +531,46 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A world is GIVEN its time, and every number the floor copies from
+  the kernel is read back at the act** (TIM-1): `CORES` on a hosted
+  machine; `PERIOD`, `DEADLINE`, `RUNTIME` and `CORE` on a SERVICE, the
+  four together or none, become `SCHED_DEADLINE` handed to the world in
+  PID 1's child after the gate and before the filter (PRI-1 refuses the
+  call to the world itself), with reset-on-fork so what it spawns runs
+  unreserved -- the reservation is the main thread's. Its core is a
+  cpuset partition ONE PER CORE (a root partition's cpus are exclusive,
+  so a second world on a core was refused its own; `root` and never
+  `isolated`, because a deadline task is admitted against the root
+  domain it stands in and every isolated core shares the default one),
+  read back as `root` or the worlds on it are NOT STARTED. The image
+  derives the timed kernel, and PID 1 reads it back ONCE, `boot: timed
+  -- the kernel is PREEMPT_RT and its timers resolve 1 ns`: that line
+  said 4 ms twice before it was true -- the PC's firmware lists one
+  processor in its MP table whatever `-smp` says, so the second core is
+  only in the ACPI tables; and the emulated TSC skews under TCG until the
+  kernel falls to jiffies, and once the HPET keeps it, a `MUST_VERIFY`
+  clocksource is valid for fine timers only after the watchdog's first
+  half-second, which PID 1 now waits for (bounded, 3 s). **Four numbers
+  the court had copied from the kernel were wrong at the act**: the court
+  counts a core's reservations as the kernel does (2^20ths, truncated),
+  because a bound in millionths admits a set the kernel refuses at the
+  edge; a period is 100 us to 4194304 us, the kernel's own sysctl
+  bounds, not "ten seconds"; and the share is **90 %**, not the 95 the
+  sysctl admits, because 6.12 holds 5 of every core in the SAME ledger
+  for the ordinary tasks' own deadline server -- the second of two worlds
+  asking 95 together was refused (EBUSY) by a kernel whose every other
+  number the court had right. A refusal names the world that CROSSED the
+  bound (the court first sent a reader to the first world on the core,
+  found by running the tour's BREAK IT before promising it). Judged by
+  `machines/qemu_deadline.machine` (22 lines: two reserved worlds, one
+  as a USER who could never have taken it, and one with none, left ONE
+  core), by `experiment/deadline_probe.sh` (the emulator handed one
+  core; the court's bound put back to 95; a partition claimed and not
+  made, convicted by the world's own witness; a core given without a
+  partition, refused by the kernel's rule), by 245 fixtures and the
+  tests on Linux. **An errno the standard library folds into
+  "Unexpected" is a kernel's word thrown away**: `NODEV` and `RANGE`
+  were both "Unexpected" until the write asked the kernel itself.
 - **Time on the processor is the floor's to give, never a world's to
   take** (PRI-1): SYS-1's list named the clock setters and not the
   scheduling calls, so a world that runs as the machine kept
@@ -1269,21 +1331,31 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   schedule the court sums per frame, on MicroRing's substrate, which is
   asked to take the kHz compiled loop its vision refuses by name); never
   the word "RTOS" on a page, because the loop stays the scheduler. Six
-  rungs, none built: 1 the timed kernel, 2 the reservation
-  (`PERIOD / DEADLINE / RUNTIME / CORE` on a SERVICE, `CORES` on a hosted
-  machine, `qemu_deadline` with a third world the kernel refuses), 3
-  `harb tick`, 4 the safe state in the BODY (a heartbeat brain-to-body;
-  PID 1's quarter-second loop cannot stop a motor), 5 the edge schedule
-  (`EVERY / PRIORITY / WORST`), 6 the robot as a fleet with a WIRE. The
-  repair came first (PRI-1, built the same day). **Next session: TIM-1,
-  the reservation**, fixtures first; then the witness; the cloud's front
-  (rung 3b) follows them. Every kernel the floor had built was
-  `PREEMPT_NONE` at HZ=250 with no high-resolution timers, and the
-  emulated PC has one core: a 1 ms loop cannot be written on today's
-  image, and TIM-1 derives `-smp` as well as the kernel. Haro's desk
-  holds one constraint from the ruling: the reservation is the world's
-  main thread's, since the kernel refuses a reserved task that forks or
-  spawns a thread unless its children fall back to normal scheduling.
+  rungs: **1 the timed kernel and 2 the reservation are built (TIM-1,
+  2026-10-13)** -- `CORES` on a hosted machine, `PERIOD / DEADLINE /
+  RUNTIME / CORE` on a SERVICE, `machines/qemu_deadline.machine` pinned
+  at 22 lines, the kernel's refusal shown by the probe's mutant and not
+  by the machine, because the court refuses it first; the four numbers
+  the kernel corrected are in the doctrine line above. 3 `harb tick`
+  (the latency witness: a world runs its declared period with an
+  absolute clock and reports how late it was; the emulator's number is
+  a host's and a board's is the one that counts), 4 the safe state in
+  the BODY (a heartbeat brain-to-body; PID 1's quarter-second loop
+  cannot stop a motor), 5 the edge schedule (`EVERY / PRIORITY / WORST`),
+  6 the robot as a fleet with a WIRE. The repair came first (PRI-1,
+  built the same day). **Next session: rung 3, `harb tick`**; the
+  cloud's front (rung 3b of the cloud ladder) follows the real-time
+  rungs by ruling 17. Haro's desk holds one constraint from the ruling:
+  the reservation is the world's main thread's, since the kernel refuses
+  a reserved task that forks or spawns a thread unless its children fall
+  back to normal scheduling -- which is how TIM-1 sets it (reset-on-fork),
+  so a reserved world may still declare `process`. Named seams of TIM-1:
+  a root world with `filesystem` could write the kernel's scheduling
+  sysctls under `/proc/sys` (SYS-1 refuses calls, not files); one core
+  per world, never several; the partition's `cpuset.cpus.exclusive` is
+  not written (the kernel derives it); and the fair server's share and
+  the period bounds are the kernel's DEFAULTS, read from its source and
+  not from the running kernel.
 - **Do not reopen ZIGCC-1** without a newer zig or an LLVM-shaped
   attempt: behind `HARB_CC=zigcc` the kernel builds with `make CC="zig
   cc"` and the image does NOT boot (it dies in the 16-bit setup code).
@@ -1308,7 +1380,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   as the first declared server world. Haro's runtime as the image's
   second binary. `makeen_box` gets its own `DOMAIN` at OS-5, when there
   is a NIC to serve. ~~The tour's boot lessons that need `stzr`~~ --
-  done (LRN-3): lessons 4-6 boot `qemu_egress`, and 10 and 17 say before
+  done (LRN-3): lessons 4-6 boot `qemu_egress`, and 10 and 18 say before
   their RUN what a reader without the runtime sees. ~~CONSOLE announced,
   never acted on~~ -- done (CON-1): the boot line follows it and PID 1
   asks the kernel; what remains is observing the card's witness on a
@@ -1338,7 +1410,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and
