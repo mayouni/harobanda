@@ -100,17 +100,28 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
    Current position by COLOUR ALONE, and hover left unstyled -- the pointer
    already becomes a hand, and painting hover in the current-position colour
    claims "you are here" about a place the reader is not. */
-.path{border-bottom:1px solid var(--line);background:var(--surface);}
+.path{border-bottom:1px solid var(--line);background:var(--surface);
+  position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--bar-h));z-index:39;}
 .path-in{max-width:1080px;margin:0 auto;padding:11px var(--gutter);
   display:flex;flex-wrap:wrap;gap:4px clamp(20px,3vw,34px);}
 .path a{font-size:18px;line-height:1.5;color:var(--muted);text-decoration:none;
-  white-space:nowrap;}
+  white-space:nowrap;position:relative;}
 .path a.here{color:var(--river);font-weight:700;}
-/* The author asked for bold on the current step. StzZui's
-   the-path-shows-every-depth says 'mark the current position by colour
-   alone'; this is an amendment to that rule, made knowingly, not an
-   oversight. Hover stays unstyled, which is the part of the rule that
-   guards against claiming 'you are here' about a place you are not. */
+.path a.here::after{content:"";position:absolute;left:0;right:0;bottom:-3px;
+  height:2px;border-radius:2px;background:var(--river);}
+/* The author asked for bold on the current step (2026-10-05), then for a
+   line under it as well, the same line the menu draws under its own
+   current entry, and for the strip to stay on screen under the menu when
+   the page scrolls (2026-10-14). StzZui's the-path-shows-every-depth says
+   'mark the current position by colour alone'; these are amendments to
+   that rule, made knowingly, not an oversight. Hover stays unstyled, which
+   is the part of the rule that guards against claiming 'you are here'
+   about a place you are not. The strip's top is the menu's height as CSS
+   computes it; app.js writes the measured height over it, so the two
+   bars meet with no gap at any zoom. */
+/* With two bars kept on screen, a jump to an anchor (the skip link) lands
+   under them unless the page says how much of its top is covered. */
+html:has(.path){scroll-padding-top:calc(var(--bar-h) + var(--path-h,50px));}
 
 /* ---------- pages ---------- */
 .pagehead{padding-top:clamp(40px,6vw,74px);padding-bottom:clamp(28px,4vw,46px);border-bottom:1px solid var(--line);}

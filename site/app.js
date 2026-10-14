@@ -9,6 +9,25 @@
   });
 })();
 
+/* Every page but the home has the section strip under the menu, and the strip
+   stays on screen when the page scrolls, directly under the menu. Its CSS top is
+   the menu's height as CSS computes it (--bar-h); this writes the menu's measured
+   height over that number, and the strip's own height beside it, so the two bars
+   meet with no gap at any zoom and a jump to an anchor lands below both. */
+(function () {
+  var path = document.querySelector('.path');
+  var bar = document.querySelector('.bar');
+  if (!path || !bar) return;
+  var root = document.documentElement;
+  var place = function () {
+    root.style.setProperty('--bar-h', bar.getBoundingClientRect().height + 'px');
+    root.style.setProperty('--path-h', path.getBoundingClientRect().height + 'px');
+  };
+  place();
+  window.addEventListener('resize', place);
+  window.addEventListener('load', place);
+})();
+
 /* The home page (the Softanza site's recipe): the photograph starts at the top of
    the browser, under the menu, and the menu is white letters over it until the
    reader has scrolled past it. CSS already pulls the picture up by --bar-h, so it
