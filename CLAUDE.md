@@ -510,6 +510,13 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/tick_diag.sh
 
+# the safe state's hosted half probed (SAFE-1): both reserved
+# boots against their pins, the seat's tests on Linux, and
+# four mutants that must be convicted (m1 .. m4 to run some)
+#   -> zig-out/wsl/safe_probe.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/safe_probe.sh
+
 # the guided tour: 20 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -546,6 +553,44 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A world is told when it runs past its time, and the floor holds the
+  word until the world listens** (SAFE-1): a reservation carries
+  `SCHED_FLAG_DL_OVERRUN`, so the kernel sends SIGXCPU at its next tick
+  after an overrun; the word is BLOCKED in the process that execs the
+  world (a mask survives an exec, and so does one pending signal), and a
+  world that wants it unblocks it with a handler (`reserve.listen`) or
+  without one and is ended by it, which the transcript says in those
+  words. Held, because between the reservation and the first instruction
+  lie the filter, the exec and the loading, all on the world's own budget
+  and, on an emulator, many periods of it: delivered then, the word ends
+  every reserved world before it runs (the probe's m2). **The kernel that
+  held every reservation could not say the word**: tinyconfig leaves
+  POSIX timers out and SIGXCPU is sent from that code, so every kernel
+  this desk had built throttled an overrun in silence -- found by the tick
+  machine's neighbour, which listens for the word BEFORE marking ready and
+  marked nothing for 180 s. The image derives `CONFIG_POSIX_TIMERS` for a
+  reserving machine now, and PID 1 reads it back before any reservation
+  (`timer_create`: ENOSYS is a kernel without it) and starts no reserved
+  world on a kernel that cannot say the word. **A reservation is taken in
+  the process that EXECS the world**: a world without `process` runs
+  behind a stand-in that forks it, and taken before that fork (TIM-1's
+  order) the reservation was the stand-in's -- reset-on-fork made the
+  world an ordinary task under a boot line that said otherwise. Found by
+  reading, as PRI-1 was; `qemu_deadline`'s `second` declares no `process`
+  since, and is judged behind its stand-in at every boot. **PID 1's look
+  is ONE number** (`machine.look_ms`, 250): PID 1 sleeps it and the court
+  refuses a HEALTH window below it, rounded up to the second -- a refusal
+  no whole-second window reaches today, which is the rule guarding the
+  constant, not a rule that fires. Judged by `qemu_tick` (the neighbour's
+  word line; the witness's count, N in the pin), by `qemu_deadline`, by
+  three Linux unit tests (the word counted; a deaf world ended by SIGXCPU;
+  the reservation behind a stand-in) and by `experiment/safe_probe.sh`
+  (four mutants: the flag dropped, the word not held, the old order, the
+  kernel without posix timers). Named seams: a world that never listens is
+  throttled in silence, as before, and the transcript says nothing of it;
+  `harb reserved --stay` does not listen; a reserved world's overrun count
+  is the emulator's; the body's half -- the heartbeat brain-to-body and
+  the body's act when it stops -- is rung 5 and 6's, on the edge.
 - **A promise is not a measurement, and a measurement from an emulator
   is the host's** (TCK-1): `harb tick` runs a world's declared period
   on an ABSOLUTE timer and says how late each wake was -- median, 99th,
@@ -1398,7 +1443,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   reserved world that overruns is signalled and the transcript says
   it), 5 the edge schedule (`EVERY / PRIORITY / WORST`), 6 the robot as
   a fleet with a WIRE. The repair came first (PRI-1, built the same
-  day). **Next session: rung 4's hosted half**, then the cloud's front
+  day). **Rung 4's hosted half is built (SAFE-1, 2026-10-14)**: the
+  kernel's word on an overrun, held until the world listens; the HEALTH
+  floor read from PID 1's own look; the reservation taken in the process
+  that execs; the kernel's posix timers derived and read back, because
+  the first kernel could not say the word. The body's half -- the
+  heartbeat brain-to-body, the body's act when the beat stops -- is
+  MicroRing's, with rungs 5 and 6. **Next session: the cloud's front**
   (rung 3b of the cloud ladder), which follows the real-time rungs by
   ruling 17; rungs 5 and 6 need MicroRing's desk and a body. Haro's desk holds one constraint from the ruling:
   the reservation is the world's main thread's, since the kernel refuses
@@ -1465,7 +1516,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

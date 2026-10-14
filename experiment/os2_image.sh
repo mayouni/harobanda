@@ -337,14 +337,15 @@ mkdir -p "$OUT" zig-out/wsl
   # wrote a normalised token into the middle of a word (FLT-1).
   # ... and a MEASUREMENT (TCK-1): a world that measured how late its wakes were says so in a line
   # beginning `tick: measured`, and its numbers are the machine's -- on the emulator, its host's. The
-  # SHAPE of that line is judged (the witness ran, said its median, its 99th, its worst, its step and
-  # its misses out of the periods it was asked), every number in it becomes N, and the raw transcript
+  # SHAPE of that line is judged (the witness ran, said its median, its 99th, its worst, its step,
+  # its misses out of the periods it was asked, and how many times the kernel signalled an overrun --
+  # SAFE-1), every number in it becomes N, and the raw transcript
   # keeps them for a reader. The pin holds no number, because a number only a board can give is not a
   # claim the emulator can make.
   sed -e 's/\r$//' "$OUT/transcript.txt" \
     | sed -n '/^.*boot: harb init/,$p' | sed -e '1s/^.*boot: harb init/boot: harb init/' \
     | sed -E 's/pid ([2-9]|[1-9][0-9]+)\b/pid N/g' \
-    | sed -E '/^tick: measured/ { s/[0-9]+ us/N us/g; s/[0-9]+ of ([0-9]+) past/N of \1 past/ }' \
+    | sed -E '/^tick: measured/ { s/[0-9]+ us/N us/g; s/[0-9]+ of ([0-9]+) past/N of \1 past/; s/signalled [0-9]+ times/signalled N times/ }' \
     | sed -e 's/hash=[0-9a-f]\{64\}/hash=H/g' -e 's/sig=[0-9a-f]\{128\}/sig=S/g' \
     | sed -e 's/ed25519 \([0-9a-f]\{64\}\)/ed25519 @@K@\1@@K@/g' -e 's/fingerprint \([0-9a-f]\{16\}\)/fingerprint @@K@\1@@K@/g' \
     | awk '{ while (match($0, /@@K@[0-9a-f]+@@K@/)) { fp = substr($0, RSTART + 4, RLENGTH - 8); if (!(fp in seen)) { n++; seen[fp] = "KEY" n } $0 = substr($0, 1, RSTART - 1) seen[fp] substr($0, RSTART + RLENGTH) } print }' \

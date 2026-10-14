@@ -79,17 +79,17 @@
       <div class="term-bar"><i></i><i></i><i></i><b>a timed machine, from its pins</b></div>
 <pre><span class="d"># the kernel, read back before any program runs</span>
 boot: timed -- the kernel is <span class="k">PREEMPT_RT</span> and its timers resolve <span class="k">1 ns</span>, as it says of itself
-boot: reserve -- control 200 us of every 1000 us, within 500 us, on core 1, second 700 us of every 1000 us, within 1000 us, on core 1; the kernel holds each reservation and refuses what does not fit
+boot: reserve -- control 200 us of every 1000 us, within 500 us, on core 1, second 700 us of every 1000 us, within 1000 us, on core 1; the kernel holds each reservation and refuses what does not fit, and signals a world that runs past its runtime once that world listens for it
 
 <span class="d"># two programs ask the kernel what they run under, from inside</span>
-reserved: SCHED_DEADLINE -- 200 us of every 1000 us, within 500 us, <span class="k">on core 1 and no other</span>: as the kernel reports it, and what this world spawns runs unreserved
+reserved: SCHED_DEADLINE -- 200 us of every 1000 us, within 500 us, <span class="k">on core 1 and no other</span>: as the kernel reports it, signalled if it runs past its runtime, and what this world spawns runs unreserved
 reserved: no reservation -- this world runs under policy 0 <span class="k">on 1 core</span>, and gets what is left
 
 <span class="d"># the witness, beside a program that burns the same core</span>
 tick: 1000 periods of 1000 us, deadline 500 us -- under SCHED_DEADLINE (200 us of every 1000 us), on core 1 and no other
-tick: measured -- woke late by <span class="k">N</span> us at the median, N us at the 99th, N us at the worst; the step took N us at the worst; N of 1000 past the deadline</pre>
+tick: measured -- woke late by <span class="k">N</span> us at the median, N us at the 99th, N us at the worst; the step took N us at the worst; N of 1000 past the deadline; signalled N times for running past its runtime</pre>
     </div>
-    <p class="cap">The first line is the kernel's own word about itself. The reserved program has core 1 and no other; the one with no reservation has the one other core. The last two lines are the witness, which runs its declared period on an absolute timer and says the median, the 99th, the worst and the misses: every <b>N</b> is a number on the screen and the letter N in the pin, because an emulator's time is the laptop's — on the one these pages were written on, about 400 microseconds late at the median and 20 milliseconds at the worst. A board gives the first number that counts.</p>
+    <p class="cap">The first line is the kernel's own word about itself. The reserved program has core 1 and no other; the one with no reservation has the one other core. The last two lines are the witness, which runs its declared period on an absolute timer and says the median, the 99th, the worst, the misses, and how many times the kernel signalled it for running past its runtime: every <b>N</b> is a number on the screen and the letter N in the pin, because an emulator's time is the laptop's — on the one these pages were written on, about 400 microseconds late at the median and 20 milliseconds at the worst. A board gives the first number that counts.</p>
     <p class="prose" style="margin-top:clamp(22px,3vw,32px)">Next: <a href="cloud-files.html">How it is written →</a> A cloud's three files and a program's four lines, what the court refuses, and what is left out on purpose.</p>
   </section>
 </main>

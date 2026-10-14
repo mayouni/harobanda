@@ -34,6 +34,20 @@
 -- `control` stays, so that `second` asks for its time BESIDE a
 -- reservation the kernel already holds, and `second` waits for its word
 -- (READY) so that the order of the asking is a fact and not a race.
+--
+-- `second` also declares no `process`, so it runs alone in a process
+-- table of its own, behind a stand-in process the floor forks for it --
+-- and it is still reserved, because the reservation is taken in the
+-- process that execs the world, not in the one that waits for it
+-- (SAFE-1). Taken a fork earlier, as it was before that seat, the
+-- stand-in held the time and the world ran with none, under a boot line
+-- that said otherwise; this machine is where that is judged.
+--
+-- And each reserved world reads back one more word of the kernel's: it
+-- is SIGNALLED if it runs past its runtime (SAFE-1). The floor holds
+-- that word until the world listens for it; these two never do, and
+-- never run past their time -- `control` sleeps, `second` prints and
+-- leaves. The neighbour of `qemu_tick` is the world that listens.
 
 DEFINE MACHINE qemu_deadline AS (
   PROFILE hosted,
@@ -70,9 +84,8 @@ DEFINE SERVICE second AS (
   PERIOD 1000,
   DEADLINE 1000,
   RUNTIME 700,
-  CORE 1,
-  NEEDS [process]
-) RATIONALE "The rest of the core: with control's 200 it asks 900 of every 1000 us, which is all the kernel gives. It asks after control is ready, so the kernel admits it beside a reservation it already holds -- and it runs as an ordinary user, who is given the reservation and could not have taken it"
+  CORE 1
+) RATIONALE "The rest of the core: with control's 200 it asks 900 of every 1000 us, which is all the kernel gives. It asks after control is ready, so the kernel admits it beside a reservation it already holds -- and it runs as an ordinary user, who is given the reservation and could not have taken it. It declares no process, so it runs alone in a table of its own behind a stand-in, and the reservation is still its own: taken in the process that execs, not in the one that waits"
 
 DEFINE SERVICE loose AS (
   RUN ["/harb", "reserved"],

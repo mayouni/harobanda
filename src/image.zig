@@ -491,7 +491,13 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
                 for (t.cores_cfg) |l| try w.print("{s}\n", .{l});
             }
             if (reserved) {
-                try w.print("CONFIG_CPUSETS=y\nCONFIG_CPU_ISOLATION=y\nCONFIG_PREEMPT_RT=y\nCONFIG_HIGH_RES_TIMERS=y\n", .{});
+                // ... and POSIX timers, which tinyconfig leaves out (SAFE-1): the kernel's word on
+                // an overrun, SIGXCPU, is sent from its CPU-timer code, so a kernel built without
+                // it holds a reservation, throttles a world that runs past its runtime, and never
+                // tells it. Found by the tick machine's neighbour, which listens for the word before
+                // it marks ready and marked nothing for 180 s on the first kernel derived here; PID
+                // 1 reads it back at every boot now (`posixTimersPresent`), before any reservation.
+                try w.print("CONFIG_CPUSETS=y\nCONFIG_CPU_ISOLATION=y\nCONFIG_PREEMPT_RT=y\nCONFIG_HIGH_RES_TIMERS=y\nCONFIG_POSIX_TIMERS=y\n", .{});
             }
             if (budgeted) {
                 try w.print("CONFIG_MEMCG=y\nCONFIG_CGROUP_SCHED=y\nCONFIG_FAIR_GROUP_SCHED=y\nCONFIG_CFS_BANDWIDTH=y\n", .{});

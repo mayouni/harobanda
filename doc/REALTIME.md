@@ -377,5 +377,28 @@ holds its shape and no number, and six readings of this desk stand in
 microseconds at the median, tens of milliseconds at the worst), the
 jiffy-per-period drift of a world with no timed kernel, and a BREAK IT
 whose number came out better without the reservation, which the lesson
-says rather than hides. Next: rung 4's hosted half, which is small, and
-then the cloud's front; rungs 5 and 6 need MicroRing's desk and a body.
+says rather than hides.
+
+**Rung 4's hosted half is built the next day (SAFE-1, 2026-10-14):** a
+reservation carries the kernel's word on an overrun (`SCHED_FLAG_DL_OVERRUN`,
+SIGXCPU at the next tick), the floor holds the word until the world listens
+for it -- delivered before that, it ended every reserved world during its
+own loading -- and what the world does with it is its own: `harb tick`
+counts it (the last number of its measured line, `N` in the pin), the
+reserved neighbour of `qemu_tick` listens, says so once and only then marks
+ready, and a world that listens without handling is ended by it, which the
+boot says in those words. The court refuses a `HEALTH` window below PID 1's
+look, read from the one constant PID 1 sleeps on (`machine.look_ms`), which
+no whole-second window reaches: the rule guards the constant. Two things
+the rung found that the analysis did not foresee: **the kernel that held
+every reservation could not say the word**, because tinyconfig leaves POSIX
+timers out and SIGXCPU is sent from that code -- the neighbour that waits
+for the word convicted the derivation on its first boot, the image derives
+`CONFIG_POSIX_TIMERS` now, and PID 1 reads it back before any reservation
+and starts no reserved world without it; and **a reservation taken before a
+stand-in's fork was the stand-in's**, so a reserved world without `process`
+ran as an ordinary task under a boot line that said otherwise -- it is taken
+in the process that execs now, and `qemu_deadline`'s `second` is judged
+behind its stand-in. The body's half -- the heartbeat from brain to body and
+the body's act when the beat stops -- is rung 5 and 6's, on the edge. Next:
+the cloud's front; rungs 5 and 6 need MicroRing's desk and a body.

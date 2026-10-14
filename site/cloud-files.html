@@ -71,7 +71,7 @@ DEFINE SERVICE control AS (
   NEEDS [process]
 ) RATIONALE "..."</pre>
     </div>
-    <p class="cap"><b>PERIOD</b> is how often the work comes round, in microseconds; <b>DEADLINE</b> by when, inside each period, it must be done; <b>RUNTIME</b> how much of the processor the kernel reserves for it every period; <b>CORE</b> which core, never core 0, the machine's own; <b>CORES</b>, on the machine, how many it has. From these the machine derives the kernel, the core set apart, and the reservation handed to the program before its first instruction. The program may not ask the kernel for any of this: the call that would is refused to every program.</p>
+    <p class="cap"><b>PERIOD</b> is how often the work comes round, in microseconds; <b>DEADLINE</b> by when, inside each period, it must be done; <b>RUNTIME</b> how much of the processor the kernel reserves for it every period; <b>CORE</b> which core, never core 0, the machine's own; <b>CORES</b>, on the machine, how many it has. From these the machine derives the kernel, the core set apart, and the reservation handed to the program before its first instruction. The program may not ask the kernel for any of this: the call that would is refused to every program. A program that runs past its runtime is told so by the kernel, with a signal it must ask to hear: it handles the word, or is ended by it.</p>
   </section>
 
   <section class="wrap block">

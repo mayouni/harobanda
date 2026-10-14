@@ -68,6 +68,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const machine = @import("machine.zig");
+const reserve = @import("reserve.zig");
 
 const linux = std.os.linux;
 
@@ -418,6 +419,9 @@ pub const Applied = struct {
     pids: bool = false, // the world is alone in a table of its own
     seccomp: bool = false, // a filter was installed
     trouble: ?[]const u8 = null,
+    /// the kernel refused the world's time (SAFE-1): said apart from `trouble`, because the line
+    /// PID 1 prints for it is a different sentence
+    reservation: ?reserve.TakeError = null,
 };
 
 /// Called in the CHILD, after the spawn gate and before the exec. Every
@@ -428,7 +432,7 @@ pub const Applied = struct {
 /// has), then the filter, then the caller drops to the declared USER and
 /// execs. A filter installed before the unshare would have to allow the
 /// unshare itself.
-pub fn apply(c: Confinement) Applied {
+pub fn apply(c: Confinement, reservation: ?machine.Reservation) Applied {
     if (builtin.os.tag != .linux) return .{ .trouble = "not linux" };
     var done = Applied{};
 
@@ -533,6 +537,28 @@ pub fn apply(c: Confinement) Applied {
                 done.trouble = @tagName(e);
             },
         }
+    }
+
+    // The time the kernel reserves for this world (TIM-1), taken HERE: in
+    // the process that will EXEC it -- the grandchild when the world has a
+    // table of its own, since the stand-in above forks it and RESET_ON_FORK
+    // makes what a reserved task forks an ordinary task. Taken before that
+    // fork, as it was until SAFE-1, the reservation was the stand-in's and
+    // the world ran unreserved under a boot line that said otherwise (found
+    // by reading, as PRI-1 was: no pinned world was reserved without
+    // `process`). Inside the partition PID 1 joined this child to before the
+    // gate opened, and before the filter below, which refuses the call to
+    // the world itself (PRI-1). The kernel's admission is the judge: a set
+    // that does not fit is refused, and a world whose reservation the kernel
+    // refused is not started (NS-1). The kernel's word on an overrun is held
+    // first, so that what follows -- the filter, the identity, the exec, the
+    // loading -- runs on the world's budget without the word ending it.
+    if (reservation) |r| {
+        reserve.holdOverruns();
+        reserve.take(r) catch |e| {
+            done.reservation = e;
+            return done;
+        };
     }
 
     {
@@ -739,7 +765,7 @@ test "the scheduling calls are the floor's refusals, by name (PRI-1)" {
 /// A child that took the priority gives it back before it answers.
 fn tryPriority(filtered: bool) u8 {
     if (filtered) {
-        const done = apply(.{ .network = true, .process = true, .threads = true });
+        const done = apply(.{ .network = true, .process = true, .threads = true }, null);
         if (done.trouble != null or !done.seccomp) return 3;
     }
     const fifo = linux.sched_param{ .priority = 1 };
@@ -807,4 +833,30 @@ test "the clone bit decides, and it decides the right way round" {
         try testing.expectEqual(linux.SECCOMP.RET.ALLOW, t[i + 1 + ins.jf].k);
     };
     try testing.expect(found);
+}
+
+/// What a child answers about a reservation behind a stand-in: it applies the envelope of a world
+/// with no `process` -- a table of its own, so THIS process becomes the stand-in and its child the
+/// world -- with a reservation, and the world reads back what it runs under. 0 when the world is
+/// reserved; 1 when it is not (the reservation stayed with the stand-in); 4 when the question cannot
+/// be asked here (no privilege for a namespace or a reservation); 3 when the envelope would not build.
+fn reservedBehindAStandIn() u8 {
+    const done = apply(.{ .network = true, .process = false, .threads = true }, reserve.test_res);
+    if (done.reservation) |e| return if (e == error.NoPrivilege) 4 else 3;
+    if (done.trouble != null) return 4;
+    if (!done.pids) return 3;
+    const r = reserve.readBack() catch return 3;
+    return if (r.policy == reserve.SCHED_DEADLINE) 0 else 1;
+}
+
+test "a reservation is the world's and not its stand-in's: taken in the process that execs (SAFE-1)" {
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    const pid = try std.posix.fork();
+    if (pid == 0) linux.exit(reservedBehindAStandIn());
+    var status: u32 = 0;
+    _ = linux.wait4(pid, &status, 0, null);
+    if (status & 0x7f != 0) return error.ChildKilled;
+    const answer: u8 = @intCast((status >> 8) & 0xff);
+    if (answer == 4) return error.SkipZigTest;
+    try testing.expectEqual(@as(u8, 0), answer);
 }

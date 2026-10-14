@@ -252,7 +252,7 @@ pub fn reserveLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
         try w.print("{s}{s} {d} us of every {d} us, within {d} us, on core {d}", .{ if (first) "" else ", ", s.name, r.runtime_us, r.period_us, r.deadline_us, r.core });
         first = false;
     };
-    try w.print("; the kernel holds each reservation and refuses what does not fit\n", .{});
+    try w.print("; the kernel holds each reservation and refuses what does not fit, and signals a world that runs past its runtime once that world listens for it\n", .{});
     return true;
 }
 

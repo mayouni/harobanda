@@ -1,3 +1,148 @@
+# SAFE-1 — a world is told when it runs past its time, and the floor holds the word until the world listens
+
+Rung 4's hosted half of the real-time ladder (`doc/REALTIME.md`,
+STZ-OS-RULING-17), built 2026-10-14 on the author's "so next". The
+ruling's sentence for it: *the court refuses a `HEALTH` window below what
+PID 1 can keep, a reserved world that overruns is signalled and the
+transcript says it, and the watchdog's role does not change.* Small, as
+the ruling said; it found two things the analysis did not foresee.
+
+## What was built
+
+- **The word on an overrun** (`src/reserve.zig`): the reservation's
+  attribute carries `SCHED_FLAG_DL_OVERRUN`, so the kernel sends the
+  task SIGXCPU at its next tick after it ran past its runtime in a
+  period. The flag is read back by the world (`reserved: SCHED_DEADLINE
+  -- ... as the kernel reports it, signalled if it runs past its
+  runtime, ...`), and `boot: reserve` promises it: `... and signals a
+  world that runs past its runtime once that world listens for it`.
+- **The word is HELD until the world listens** (`reserve.holdOverruns`,
+  called in the process that execs the world, before `take`): SIGXCPU
+  is blocked, and a mask survives an exec, as does one pending signal.
+  A world that wants the word unblocks it -- `reserve.listen`, with a
+  handler that counts (`overrunsHeard`) and a count that starts at
+  zero on the unblock, so a word pending from the world's own loading
+  is heard and dropped -- or unblocks it without a handler and is
+  ended by it. What it does with the word is the world's, as the
+  ruling says. Why held: between the reservation and the world's first
+  instruction lie the filter, the identity, the exec and the loading,
+  all on the world's own budget and, on an emulator, many periods of it;
+  delivered then, the word ends every reserved world before it runs
+  (the probe's m2: with the hold skipped, `control` of `qemu_deadline`
+  is ended by SIGXCPU during its own loading and PID 1 says so).
+- **The witnesses listen.** `harb tick` listens before its loop and
+  says, at the end of its measured line, `signalled N times for running
+  past its runtime` -- a number the pin does not hold (`os2_image.sh`
+  turns it into N with the others). `harb spin` under a reservation
+  runs past its runtime by construction, so it is the world that shows
+  the word ARRIVING: it listens, burns until the word comes, says `spin:
+  signalled for running past its runtime -- the kernel's word reached
+  it, and it goes on, held to what it was given`, and only then marks
+  its READY path -- so whatever PID 1 says next comes after that line
+  (BDG-1), and a reserved spinner that is never told never marks ready.
+  `harb reserved --stay` does not listen: it sleeps.
+- **The transcript says what ended a world** (`src/init.zig`): a
+  reserved world killed by signal 24 is reported as `killed by signal 24
+  -- SIGXCPU, the kernel's word that it ran past its runtime: it
+  listened for the word and did not handle it, so the word ended it`.
+- **The HEALTH floor is PID 1's look** (`machine.look_ms`, 250, and
+  `minHealthSecs`): PID 1 sleeps the constant between two looks at its
+  worlds, and the court refuses `HEALTH` below the look rounded up to
+  the second -- `HEALTH {d} is below what PID 1 can keep: it looks at its
+  worlds every 250 ms, so the smallest window is 1 s`. No whole-second
+  window reaches it today (the grammar's floor is 1 s, four looks); the
+  rule guards the constant, so that a slower loop refuses the windows
+  it can no longer keep without anybody remembering to change the court.
+- **The reservation is taken in the process that EXECS** (`confine.apply`
+  takes the reservation now, after the pid-namespace fork and before the
+  filter; `Applied.reservation` carries a refusal; PID 1 prints the
+  NOT STARTED line it always did).
+- **The timed kernel keeps POSIX timers** (`src/image.zig`,
+  `CONFIG_POSIX_TIMERS=y` for a reserving machine) and **PID 1 reads it
+  back** (`posixTimersPresent`: a `timer_create` deleted at once; ENOSYS
+  is a kernel without them): on such a kernel the boot says `boot: timed
+  -- but the kernel keeps no posix timers, so it could never say when a
+  world runs past its runtime: no reserved world starts on it`, and each
+  reserved world is NOT STARTED with the reason.
+- **The machines.** `machines/qemu_deadline.machine`: `second` declares
+  no `process` now, so it runs alone in a table of its own behind a
+  stand-in, and reads back SCHED_DEADLINE (23 lines pinned; the derived
+  `boot: confine -- second has no sight of the other worlds...` line
+  joined the pin, and the expectation is 17 lines). `machines/qemu_tick
+  .machine`, 24 lines pinned: the neighbour's word line, the witness's
+  count. Lessons 11 and 12 quote the new lines and say what they mean.
+  `site/realtime.html` quotes them (every quoted line a pin line);
+  `site/cloud-status.html` says the machine's half of rung 4 is built
+  and the body's is not; `site/cloud-files.html` says the word in one
+  sentence.
+
+## What was found
+
+1. **The kernel that held every reservation could not say the word.**
+   On the first boot of `qemu_tick` with the neighbour listening, it
+   printed its first line and marked nothing for 180 s, and the machine
+   never said ready. On WSL's full kernel the same code had just passed
+   its unit test. Read at the files: every kernel this desk has built --
+   seventeen of them, the timed ones included -- carries `POSIX_TIMERS is
+   not set`, because the image merges its fragment over tinyconfig, and
+   SIGXCPU for an overrun is sent from `kernel/time/posix-cpu-timers.c`
+   (`check_dl_overrun`, reached from the tick through
+   `run_posix_cpu_timers`), which that option compiles out. The kernel
+   throttled every overrun and told nobody, and TIM-1's and TCK-1's pins
+   could not see it, because nothing in them asked. The witness that
+   waits for the word BEFORE it marks ready is what convicted the
+   derivation, on its first boot, with no number in the pin; the probe's
+   m4 keeps that conviction, now by PID 1's read-back line.
+2. **A reservation taken before the stand-in's fork was the stand-in's.**
+   Found by reading `confine.apply` against the question "in which
+   process does the world's main thread begin": a world without
+   `process` gets a pid namespace, and `unshare(CLONE_NEWPID)` makes the
+   caller's CHILDREN the inhabitants, so the caller forks once more and
+   stays behind as a stand-in (PID-1). TIM-1 took the reservation in
+   PID 1's child before `apply`, with `RESET_ON_FORK` -- so the stand-in
+   held the time and the world it forked was an ordinary task, under a
+   `boot: reserve` line that said otherwise. No pinned world had a
+   reservation without `process` (both machines gave every reserved world
+   `process`, with a rationale saying they need not start another), so
+   no boot had shown it. `second` of `qemu_deadline` declares no
+   `process` since, and the probe's m3 puts the old order back: `second`
+   reads back `no reservation` and the pin refuses the boot.
+3. **Delivered before the world listens, the word is its end.** Reasoned
+   from the budget before any boot -- the loading of a static binary
+   under the emulator is many periods of 200 us -- and the reason the
+   word is held rather than armed; shown by the probe's m2
+   (convicted: `control` ended by SIGXCPU during its loading, PID 1's line says so).
+
+## Judged by
+
+`machines/qemu_tick.expected` (24 lines) and `machines/qemu_deadline
+.expected` (23 lines), matched twice each (the desk and the probe's
+copy); 113 unit tests on Linux as root, none skipped, three of them new
+(the word reaches a listening world and is counted; a world that listens
+without handling is ended by SIGXCPU; a reservation behind a stand-in is
+the world's) and one that the probe's kernel keeps posix timers; the
+court, 245/245; `experiment/safe_probe.sh`: both boots, the seat's tests,
+and four mutants -- m1 the flag dropped (the listening test fails), m2
+the word not held, m3 the old order, m4 the kernel without posix timers
+(PID 1 reads it back and starts no reserved world). `regress.sh` over
+the two reserved machines after the pins moved.
+
+## Named seams
+
+- A world that never listens is throttled in silence, as before SAFE-1,
+  and the transcript says nothing of it: the word is held for a world
+  that never asks. A floor-side count of overruns would need the kernel
+  to say them somewhere a parent can read, and `/proc/<pid>/sched` does
+  not.
+- The count `harb tick` reports is the loop's; the emulator's six of a
+  thousand are the emulator's, and the pin holds N.
+- `HEALTH` is whole seconds, so the floor's refusal is unreachable; a
+  finer window would need a unit the grammar does not have.
+- A posix-timers probe answers ENOSYS or not; a kernel with the code
+  and some other defect in it is not what it detects.
+- The body's half of the rung -- the heartbeat from brain to body and
+  the body's act when it stops -- is rung 5 and 6's, on the edge.
+
 # TCK-1 — a promise is not a measurement, and a measurement from an emulator is the host's
 
 Rung 3 of the real-time ladder (`doc/REALTIME.md`, STZ-OS-RULING-17), built

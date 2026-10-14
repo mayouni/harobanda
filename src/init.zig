@@ -35,7 +35,6 @@ const expect = @import("expect.zig");
 const journal = @import("journal.zig");
 const timeattest = @import("timeattest.zig");
 const timeserve = @import("timeserve.zig");
-const reserve = @import("reserve.zig");
 
 pub const Options = struct {
     rehearse: bool = false,
@@ -744,6 +743,30 @@ fn cgroupPrepare(m: *const machine.Machine, slots: []Slot, out: *std.Io.Writer) 
 }
 
 /// Whether any world of this machine is reserved time (TIM-1).
+/// Whether the kernel keeps POSIX timers, asked with a timer it deletes at once (SAFE-1): ENOSYS
+/// is a kernel built without them -- tinyconfig's default -- and on such a kernel the CPU-timer code
+/// that sends a reserved world the word on its overrun does not exist, so a reservation's promise
+/// of the word would be a line the kernel cannot keep. Read back at the act, never assumed from the
+/// fragment the image derived (CON-1).
+fn posixTimersPresent() bool {
+    const l = std.os.linux;
+    var id: i32 = 0;
+    const rc = l.syscall3(.timer_create, @intFromEnum(l.clockid_t.MONOTONIC), 0, @intFromPtr(&id));
+    switch (l.E.init(rc)) {
+        .SUCCESS => {
+            _ = l.syscall1(.timer_delete, @as(usize, @bitCast(@as(isize, id))));
+            return true;
+        },
+        .NOSYS => return false,
+        else => return true, // the call exists: whatever it refused, the code that sends the word is there
+    }
+}
+
+test "this kernel keeps posix timers, and the probe says so (SAFE-1)" {
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    try std.testing.expect(posixTimersPresent());
+}
+
 fn reservesTime(m: *const machine.Machine) bool {
     for (m.services) |s| if (s.reservation != null) return true;
     return false;
@@ -1021,6 +1044,9 @@ const Slot = struct {
     /// its core could not be made a partition of its own (TIM-1): the console said why, and the
     /// world is not started, because a reservation on a shared core is a promise the kernel does not keep
     partition_refused: bool = false,
+    /// the kernel keeps no posix timers (SAFE-1): it could never say when this world runs past its
+    /// runtime, which its reservation promises, so the world is not started
+    word_refused: bool = false,
 
     fn ready(self: Slot) bool {
         return switch (self.service.restart) {
@@ -1341,6 +1367,16 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         var mb: [96]u8 = undefined;
         const model = if (std.mem.indexOf(u8, ver, expect.timed_model) != null) expect.timed_model else std.fmt.bufPrint(&mb, "not {s} ({s})", .{ expect.timed_model, ver }) catch "not " ++ expect.timed_model;
         if (try expect.timedLine(led.w(), m, model, ns)) try led.echo();
+        // ... and whether it can SEND THE WORD on an overrun (SAFE-1). A kernel without POSIX
+        // timers holds a reservation and never says when it is overrun, and the reserve line
+        // below promises the word: so on such a kernel no reserved world starts (NS-1), and the
+        // boot says why here, before the promise, and differs from its expectation
+        if (!posixTimersPresent()) {
+            try led.say("boot: timed -- but the kernel keeps no posix timers, so it could never say when a world runs past its runtime: no reserved world starts on it\n", .{});
+            for (slots.items) |*sl| if (sl.service.reservation != null) {
+                sl.word_refused = true;
+            };
+        }
     }
     // the reservations, as declared (TIM-1): the kernel's acceptance of each is the start line that
     // follows, or the NOT STARTED that follows instead
@@ -1536,8 +1572,9 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         var status: u32 = 0;
         const rc = linux.wait4(-1, &status, if (polling) linux.W.NOHANG else 0, null);
         if (polling and rc == 0) {
-            // nothing exited: feed, wait a quarter second, look again
-            const ts: linux.timespec = .{ .sec = 0, .nsec = 250_000_000 };
+            // nothing exited: feed, wait one look (machine.look_ms, the
+            // number the court reads HEALTH's floor from -- SAFE-1), look again
+            const ts: linux.timespec = .{ .sec = machine.look_ms / 1000, .nsec = (machine.look_ms % 1000) * 1_000_000 };
             _ = linux.nanosleep(&ts, null);
             continue;
         }
@@ -1568,7 +1605,14 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             if (exited) {
                 try led.say(expect.fmt_exited, .{ c.service.name, pids, c.code });
             } else if (linux.W.IFSIGNALED(status)) {
-                try led.say("boot: {s} (pid {s}) killed by signal {d}\n", .{ c.service.name, pids, linux.W.TERMSIG(status) });
+                const sig = linux.W.TERMSIG(status);
+                if (c.service.reservation != null and sig == linux.SIG.XCPU) {
+                    // the kernel's word on an overrun, listened for and not
+                    // handled (SAFE-1): the transcript says what ended it
+                    try led.say(fmt_overrun_ended, .{ c.service.name, pids, sig });
+                } else {
+                    try led.say("boot: {s} (pid {s}) killed by signal {d}\n", .{ c.service.name, pids, sig });
+                }
             } else {
                 try led.say("boot: {s} (pid {s}) ended (status {d})\n", .{ c.service.name, pids, status });
             }
@@ -1702,6 +1746,13 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
                 progressed = true;
                 continue;
             }
+            if (s.word_refused) {
+                // the kernel could never tell it of an overrun, which its reservation promises (SAFE-1)
+                s.state = .never;
+                try led.say("boot: {s} -- NOT STARTED: the kernel keeps no posix timers and could never say when it runs past its runtime, which its reservation promises\n", .{s.service.name});
+                progressed = true;
+                continue;
+            }
             const started = spawn(gpa, s.service, s.held) catch |e| {
                 s.state = .never;
                 try led.say("boot: start {s} -- could not spawn: {s}\n", .{ s.service.name, @errorName(e) });
@@ -1737,6 +1788,10 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
 /// there is no privilege left to change the group with.
 const Started = struct { pid: i32, gate: std.posix.fd_t };
 
+/// A reserved world ended by the kernel's word on its overrun (SAFE-1): it
+/// listened for SIGXCPU and did not handle it. Worded once.
+const fmt_overrun_ended = "boot: {s} (pid {s}) killed by signal {d} -- SIGXCPU, the kernel's word that it ran past its runtime: it listened for the word and did not handle it, so the word ended it\n";
+
 fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Confinement) !Started {
     var argv = try gpa.alloc(?[*:0]const u8, svc.run.len + 1);
     defer gpa.free(argv);
@@ -1754,27 +1809,23 @@ fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Conf
         var latch: [1]u8 = undefined;
         _ = std.posix.read(gate[0], &latch) catch {}; // PID 1's word, or its death
         std.posix.close(gate[0]);
-        // The time the kernel reserves for this world (TIM-1): taken HERE,
-        // inside the partition PID 1 joined this child to before the gate
-        // opened, and before the filter below, which refuses the call to the
-        // world itself (PRI-1). The kernel's admission is the judge: a set
-        // that does not fit is refused, and a world whose reservation the
-        // kernel refused is not started -- the line it printed would be a
-        // promise the machine did not keep (NS-1).
-        if (svc.reservation) |r| {
-            reserve.take(r) catch |e| {
-                var msg: [320]u8 = undefined;
-                const line = std.fmt.bufPrint(&msg, "boot: {s} -- NOT STARTED: the kernel refused its reservation ({s}); a reservation the kernel does not hold is a promise the machine printed and did not keep\n", .{ svc.name, @errorName(e) }) catch "";
-                _ = std.posix.write(1, line) catch {};
-                std.posix.exit(125);
-            };
-        }
         // What the kernel will hold this world to, before it is a world
-        // at all: the namespace it cannot leave and the filter it cannot
-        // lift (NS-1). Both must happen BEFORE the exec, and the unshare
-        // before the drop to a declared USER, which is the last moment
-        // this child has the privilege to ask for a namespace.
-        const applied = confine.apply(held);
+        // at all: the namespace it cannot leave, the time it is given
+        // (TIM-1, taken in the process that execs -- SAFE-1), and the
+        // filter it cannot lift (NS-1). All of it must happen BEFORE the
+        // exec, and the unshare before the drop to a declared USER, which
+        // is the last moment this child has the privilege to ask for a
+        // namespace.
+        const applied = confine.apply(held, svc.reservation);
+        // A world whose reservation the kernel refused is not started: the
+        // line PID 1 printed for it would be a promise the machine did not
+        // keep (NS-1). The kernel's admission is the judge.
+        if (applied.reservation) |e| {
+            var msg: [320]u8 = undefined;
+            const line = std.fmt.bufPrint(&msg, "boot: {s} -- NOT STARTED: the kernel refused its reservation ({s}); a reservation the kernel does not hold is a promise the machine printed and did not keep\n", .{ svc.name, @errorName(e) }) catch "";
+            _ = std.posix.write(1, line) catch {};
+            std.posix.exit(125);
+        }
         // NOT `held.confined() and ...`: since SYS-1 every world carries
         // the floor's own refusals, so a world that declared everything
         // still has an envelope, and a failure to build it is still a

@@ -6,17 +6,18 @@ boot: mount devtmpfs at /dev -- done
 boot: mount cgroup2 at /sys/fs/cgroup -- done
 boot: grant process (effectful)
 boot: timed -- the kernel is PREEMPT_RT and its timers resolve 1 ns, as it says of itself
-boot: reserve -- neighbour 500 us of every 1000 us, within 1000 us, on core 1, tick 200 us of every 1000 us, within 500 us, on core 1; the kernel holds each reservation and refuses what does not fit
+boot: reserve -- neighbour 500 us of every 1000 us, within 1000 us, on core 1, tick 200 us of every 1000 us, within 500 us, on core 1; the kernel holds each reservation and refuses what does not fit, and signals a world that runs past its runtime once that world listens for it
 boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 boot: start neighbour -- pid N -- /harb spin --ready /run/neighbour.ready
 spin: on core 1 and no other, under SCHED_DEADLINE (500 us of every 1000 us): it burns what it was given and the kernel holds it there
+spin: signalled for running past its runtime -- the kernel's word reached it, and it goes on, held to what it was given
 boot: neighbour -- ready (/run/neighbour.ready)
 boot: start hog -- pid N -- /harb spin --ready /run/hog.ready
 spin: on core 0 and no other, under policy 0: it burns what the scheduler gives
 boot: hog -- ready (/run/hog.ready)
 boot: start tick -- pid N -- /harb tick 1000 --period 1000 --deadline 500
 tick: 1000 periods of 1000 us, deadline 500 us -- under SCHED_DEADLINE (200 us of every 1000 us), on core 1 and no other
-tick: measured -- woke late by N us at the median, N us at the 99th, N us at the worst; the step took N us at the worst; N of 1000 past the deadline
+tick: measured -- woke late by N us at the median, N us at the 99th, N us at the worst; the step took N us at the worst; N of 1000 past the deadline; signalled N times for running past its runtime
 boot: tick (pid N) exited 0
 boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
 boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would

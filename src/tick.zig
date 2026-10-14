@@ -10,7 +10,9 @@
 //!
 //! `harb spin` is the neighbour: it says where it runs, marks its READY path, and burns the processor
 //! until the machine ends -- a reserved one is held to its runtime by the kernel, an unreserved one
-//! takes what the scheduler gives, and the witness beside either shows which.
+//! takes what the scheduler gives, and the witness beside either shows which. A reserved one runs
+//! past its runtime by construction, so it is the one that shows the kernel's word on an overrun
+//! arriving (SAFE-1): it listens, says so once, and only then marks its path.
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -172,11 +174,14 @@ pub fn run(alloc: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
         try out.print("tick: {d} periods of {d} us, deadline {d} us -- NO RESERVATION: policy {d}, {s}, kept by nobody\n", .{ n, p, d, r.policy, core });
     }
     try out.flush();
+    // listen for the kernel's word on an overrun (SAFE-1): counted from here, so the loop's overruns
+    // and not the loading's; with no reservation nobody sends it, and the count stays 0
+    reserve.listen();
     const samples = try runLoop(alloc, n, p * 1000, d * 1000);
     defer alloc.free(samples);
     const s = try summarise(alloc, samples);
-    try out.print("tick: measured -- woke late by {d} us at the median, {d} us at the 99th, {d} us at the worst; the step took {d} us at the worst; {d} of {d} past the deadline\n", .{
-        s.late_median_ns / 1000, s.late_p99_ns / 1000, s.late_worst_ns / 1000, s.step_worst_ns / 1000, s.missed, s.periods,
+    try out.print("tick: measured -- woke late by {d} us at the median, {d} us at the 99th, {d} us at the worst; the step took {d} us at the worst; {d} of {d} past the deadline; signalled {d} times for running past its runtime\n", .{
+        s.late_median_ns / 1000, s.late_p99_ns / 1000, s.late_worst_ns / 1000, s.step_worst_ns / 1000, s.missed, s.periods, reserve.overrunsHeard(),
     });
     return 0;
 }
@@ -211,6 +216,21 @@ pub fn spin(args: []const []const u8, out: *std.Io.Writer) !u8 {
         try out.print("spin: {s}, under policy {d}: it burns what the scheduler gives\n", .{ core, r.policy });
     }
     try out.flush();
+    if (r.policy == reserve.SCHED_DEADLINE) {
+        // A world that burns runs past its runtime in its first period, and the kernel says so at
+        // its next tick (SAFE-1): listen, burn until the word comes, and say it BEFORE marking the
+        // path, so that whatever PID 1 says next comes after it and the transcript's order is a fact
+        // and not a race (BDG-1). A reserved spinner that is never told never marks ready, and the
+        // machine says so by never saying ready.
+        reserve.listen();
+        var y: u64 = 1;
+        while (reserve.overrunsHeard() == 0) {
+            y = y *% 6364136223846793005 +% 1442695040888963407;
+            std.mem.doNotOptimizeAway(y);
+        }
+        try out.print("spin: signalled for running past its runtime -- the kernel's word reached it, and it goes on, held to what it was given\n", .{});
+        try out.flush();
+    }
     if (ready) |path| {
         const f = std.fs.cwd().createFile(path, .{}) catch |e| {
             try out.print("spin: could not mark {s} ({s})\n", .{ path, @errorName(e) });

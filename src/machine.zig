@@ -180,6 +180,22 @@ pub const Reservation = struct {
     line: usize,
 };
 
+/// How often PID 1 looks at its worlds (SRV-1, HLT-1): the sleep between two
+/// looks of its loop, in milliseconds. The floor's finest promise about a
+/// world's liveness is one look, so the court refuses a HEALTH window below
+/// it (SAFE-1): a world that stopped refreshing is found no later than one
+/// window and one look after its last refresh, which is only a promise if a
+/// look fits inside a window. PID 1 sleeps this number and the court reads
+/// the same one; a change here moves both, which is the point of a number
+/// written once.
+pub const look_ms: u32 = 250;
+
+/// The smallest HEALTH window, in whole seconds, that holds one look: the
+/// look rounded up to the second.
+pub fn minHealthSecs(look: u32) u32 {
+    return (look + 999) / 1000;
+}
+
 /// A reservation's share of its core, COUNTED AS THE KERNEL COUNTS IT:
 /// `to_ratio` in kernel/sched, runtime over period in 2^20ths, truncated.
 /// Not parts per million, because a bound in another arithmetic admits a set
@@ -1553,6 +1569,7 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             if (ready == null) return ctx.refuse(c.line, "HEALTH is measured on the READY path, and {s} declares none: a world with nothing to refresh cannot be found wedged", .{d.name});
             const secs = try wantNumber(&ctx, c);
             if (secs == 0) return ctx.refuse(c.line, "HEALTH 0 is not a window: a world that never has to refresh is a world that can stop serving unnoticed", .{});
+            if (secs < minHealthSecs(look_ms)) return ctx.refuse(c.line, "HEALTH {d} is below what PID 1 can keep: it looks at its worlds every {d} ms, so the smallest window is {d} s", .{ secs, look_ms, minHealthSecs(look_ms) });
             if (secs > 3600) return ctx.refuse(c.line, "HEALTH {d} is longer than an hour: a window nobody would wait out is a promise the watchdog cannot keep", .{secs});
             health = @intCast(secs);
         }
@@ -2025,4 +2042,16 @@ test "a world keeps a mount only if it has the filesystem and has not narrowed i
     try t.expect(!m.services[0].grantsFilesystem());
     try t.expect(m.services[1].keeps("data") and m.services[1].keeps("logs")); // saying nothing keeps them all
     try t.expect(m.services[2].keeps("data") and !m.services[2].keeps("logs")); // SEES narrows
+}
+
+test "the smallest HEALTH window holds one of PID 1's looks, rounded up to the second (SAFE-1)" {
+    const t = std.testing;
+    try t.expectEqual(@as(u32, 1), minHealthSecs(250));
+    try t.expectEqual(@as(u32, 1), minHealthSecs(1000));
+    try t.expectEqual(@as(u32, 2), minHealthSecs(1001));
+    try t.expectEqual(@as(u32, 3), minHealthSecs(2500));
+    // whatever the look is, the floor it sets holds it
+    try t.expect(minHealthSecs(look_ms) * 1000 >= look_ms);
+    // and with a quarter-second look, HEALTH 1 is the smallest window the grammar admits
+    try t.expectEqual(@as(u32, 1), minHealthSecs(look_ms));
 }

@@ -11,6 +11,15 @@
 //! which is also the only way a deadline task may spawn at all: the reservation is the world's MAIN
 //! THREAD's, and a control loop lives there.
 //!
+//! A world that runs past its runtime in a period is told so (SAFE-1): the reservation carries
+//! `SCHED_FLAG_DL_OVERRUN`, so the kernel sends the task SIGXCPU at its next tick after an overrun,
+//! and the floor HOLDS that word -- blocked in the process that execs the world, a mask the exec
+//! keeps -- until the world listens for it (`listen`). Between the reservation and the world's first
+//! instruction lie the filter, the identity, the exec and the loading, all on the world's own budget
+//! and, on an emulator, many periods of it: delivered then, the word ended every reserved world
+//! before it ran. A world that listens with a handler counts the word and goes on; one that listens
+//! without a handler is ended by it; what it does with the word is the world's, as the ruling says.
+//!
 //! `harb reserved` is the witness: a world asks the kernel what it runs under and says it, as `own`
 //! asks what it may write. A report and not an assertion, because a world with no reservation is a
 //! true state too.
@@ -22,12 +31,16 @@ const machine = @import("machine.zig");
 
 pub const SCHED_DEADLINE: u32 = 6;
 pub const SCHED_FLAG_RESET_ON_FORK: u64 = 0x01;
+/// The kernel's word on an overrun (SAFE-1): with this flag a task that runs past its runtime in a
+/// period is sent SIGXCPU at its next tick, whose default is to end the task.
+pub const SCHED_FLAG_DL_OVERRUN: u64 = 0x04;
 
-/// The attribute the kernel is handed: the declaration's microseconds, as nanoseconds.
+/// The attribute the kernel is handed: the declaration's microseconds, as nanoseconds; resetting on
+/// fork; signalled on overrun.
 pub fn attrOf(r: machine.Reservation) linux.sched_attr {
     return .{
         .policy = SCHED_DEADLINE,
-        .flags = SCHED_FLAG_RESET_ON_FORK,
+        .flags = SCHED_FLAG_RESET_ON_FORK | SCHED_FLAG_DL_OVERRUN,
         .runtime = r.runtime_us * 1000,
         .deadline = r.deadline_us * 1000,
         .period = r.period_us * 1000,
@@ -58,6 +71,43 @@ pub fn take(r: machine.Reservation) TakeError!void {
     }
 }
 
+/// Hold the kernel's word on overruns until the world listens for it (SAFE-1). Called in the process
+/// that will exec the world, BEFORE `take`. A mask survives an exec, and so does one pending signal;
+/// a world that wants the word unblocks it -- `listen` -- with a handler in place, or without one and
+/// is ended by it.
+pub fn holdOverruns() void {
+    var set = std.posix.sigemptyset();
+    std.posix.sigaddset(&set, linux.SIG.XCPU);
+    std.posix.sigprocmask(linux.SIG.BLOCK, &set, null);
+}
+
+var overruns = std.atomic.Value(u32).init(0);
+
+fn onOverrun(_: c_int) callconv(.c) void {
+    _ = overruns.fetchAdd(1, .seq_cst);
+}
+
+/// Listen for the kernel's word: count each SIGXCPU and go on. The count starts at zero HERE -- a
+/// word pending from before the world listened (its own loading, on the emulator) is delivered on
+/// the unblock and dropped, so a witness counts the overruns of its loop and not of its start.
+pub fn listen() void {
+    const sa = std.posix.Sigaction{
+        .handler = .{ .handler = onOverrun },
+        .mask = std.posix.sigemptyset(),
+        .flags = 0,
+    };
+    std.posix.sigaction(linux.SIG.XCPU, &sa, null);
+    var set = std.posix.sigemptyset();
+    std.posix.sigaddset(&set, linux.SIG.XCPU);
+    std.posix.sigprocmask(linux.SIG.UNBLOCK, &set, null);
+    overruns.store(0, .seq_cst);
+}
+
+/// How many times the kernel said so since `listen`.
+pub fn overrunsHeard() u32 {
+    return overruns.load(.seq_cst);
+}
+
 /// What the kernel says the calling task runs under.
 pub const Reading = struct {
     policy: u32,
@@ -65,6 +115,8 @@ pub const Reading = struct {
     deadline_ns: u64,
     period_ns: u64,
     reset_on_fork: bool,
+    /// the kernel signals this task when it runs past its runtime (SAFE-1)
+    overrun_signalled: bool,
     /// the lowest core this task may run on, and how many it may run on
     core: u32,
     cores: u32,
@@ -100,6 +152,7 @@ pub fn readBack() !Reading {
         .deadline_ns = attr.deadline,
         .period_ns = attr.period,
         .reset_on_fork = (attr.flags & SCHED_FLAG_RESET_ON_FORK) != 0,
+        .overrun_signalled = (attr.flags & SCHED_FLAG_DL_OVERRUN) != 0,
         .core = lowest orelse 0,
         .cores = count,
     };
@@ -129,9 +182,10 @@ pub fn run(args: []const []const u8, out: *std.Io.Writer) !u8 {
         return 1;
     };
     if (r.policy == SCHED_DEADLINE) {
-        try out.print("reserved: SCHED_DEADLINE -- {d} us of every {d} us, within {d} us, on core {d}{s}: as the kernel reports it, and what this world spawns runs unreserved\n", .{
+        try out.print("reserved: SCHED_DEADLINE -- {d} us of every {d} us, within {d} us, on core {d}{s}: as the kernel reports it, {s} if it runs past its runtime, and what this world spawns runs unreserved\n", .{
             r.runtime_ns / 1000, r.period_ns / 1000, r.deadline_ns / 1000, r.core,
             if (r.cores == 1) " and no other" else "",
+            if (r.overrun_signalled) "signalled" else "NOT signalled",
         });
     } else {
         try out.print("reserved: no reservation -- this world runs under policy {d} on {d} core{s}, and gets what is left\n", .{ r.policy, r.cores, if (r.cores == 1) "" else "s" });
@@ -151,15 +205,16 @@ pub fn run(args: []const []const u8, out: *std.Io.Writer) !u8 {
 
 // ---- judged beside the code -------------------------------------------
 
-const test_res = machine.Reservation{ .period_us = 1000, .deadline_us = 500, .runtime_us = 200, .core = 1, .line = 0 };
+pub const test_res = machine.Reservation{ .period_us = 1000, .deadline_us = 500, .runtime_us = 200, .core = 1, .line = 0 };
 
-test "the attribute is the declaration in nanoseconds, resetting on fork (TIM-1)" {
+test "the attribute is the declaration in nanoseconds, resetting on fork, signalled on overrun (TIM-1, SAFE-1)" {
     const a = attrOf(test_res);
     try std.testing.expectEqual(SCHED_DEADLINE, a.policy);
     try std.testing.expectEqual(@as(u64, 200_000), a.runtime);
     try std.testing.expectEqual(@as(u64, 500_000), a.deadline);
     try std.testing.expectEqual(@as(u64, 1_000_000), a.period);
     try std.testing.expect(a.flags & SCHED_FLAG_RESET_ON_FORK != 0);
+    try std.testing.expect(a.flags & SCHED_FLAG_DL_OVERRUN != 0);
     try std.testing.expectEqual(@as(u32, 48), a.size);
 }
 
@@ -169,7 +224,7 @@ test "the attribute is the declaration in nanoseconds, resetting on fork (TIM-1)
 fn childTakesAndReadsBack() u8 {
     take(test_res) catch |e| return if (e == error.NoPrivilege) 4 else 1;
     const r = readBack() catch return 2;
-    if (r.policy != SCHED_DEADLINE or r.runtime_ns != 200_000 or r.deadline_ns != 500_000 or r.period_ns != 1_000_000 or !r.reset_on_fork) return 2;
+    if (r.policy != SCHED_DEADLINE or r.runtime_ns != 200_000 or r.deadline_ns != 500_000 or r.period_ns != 1_000_000 or !r.reset_on_fork or !r.overrun_signalled) return 2;
     // what it spawns is a normal task, which is the only way it may spawn at all
     const pid = std.posix.fork() catch return 3;
     if (pid == 0) {
@@ -210,4 +265,65 @@ test "the kernel's own arithmetic refuses a runtime longer than its deadline (TI
     if (builtin.os.tag != .linux) return error.SkipZigTest;
     // EINVAL comes before the privilege check in the kernel, so this holds for any caller
     try std.testing.expectEqual(@as(u8, 0), try inAChild(childAsksTheImpossible));
+}
+
+fn monotonicNs() u64 {
+    var ts: linux.timespec = .{ .sec = 0, .nsec = 0 };
+    _ = linux.clock_gettime(.MONOTONIC, &ts);
+    return @as(u64, @intCast(ts.sec)) * std.time.ns_per_s + @as(u64, @intCast(ts.nsec));
+}
+
+/// Burn the processor until the word is heard, or `ms` of wall time pass: true if heard.
+fn burnUntilHeardOr(ms: u64) bool {
+    const t0 = monotonicNs();
+    var x: u64 = 1;
+    while (overrunsHeard() == 0) {
+        x = x *% 6364136223846793005 +% 1442695040888963407;
+        std.mem.doNotOptimizeAway(x);
+        if (monotonicNs() - t0 > ms * std.time.ns_per_ms) return false;
+    }
+    return true;
+}
+
+/// 0 when the word came and was counted; 4 when no reservation can be taken here; 1 when a burning
+/// reserved task was never told in half a second of wall time; 3 when the reservation was refused.
+fn childListensAndBurns() u8 {
+    holdOverruns();
+    take(test_res) catch |e| return if (e == error.NoPrivilege) 4 else 3;
+    listen();
+    return if (burnUntilHeardOr(500)) 0 else 1;
+}
+
+test "the kernel's word on an overrun reaches a world that listens, and is counted (SAFE-1)" {
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    const answer = try inAChild(childListensAndBurns);
+    if (answer == 4) return error.SkipZigTest; // no privilege here: the question cannot be asked
+    try std.testing.expectEqual(@as(u8, 0), answer);
+}
+
+/// Listen with no handler: the word's default is to end the task. This child burns and does not
+/// come back -- or answers 1 after half a second, which means the word never came; 4 when no
+/// reservation can be taken here.
+fn childListensDeaf() u8 {
+    holdOverruns();
+    take(test_res) catch |e| return if (e == error.NoPrivilege) 4 else 3;
+    var set = std.posix.sigemptyset();
+    std.posix.sigaddset(&set, linux.SIG.XCPU);
+    std.posix.sigprocmask(linux.SIG.UNBLOCK, &set, null);
+    // nobody counts, so this runs its whole span and answers 1 -- unless the kernel ends it first
+    return if (burnUntilHeardOr(500)) 2 else 1;
+}
+
+test "a world that listens without handling is ended by the word, and the word is SIGXCPU (SAFE-1)" {
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    const pid = try std.posix.fork();
+    if (pid == 0) linux.exit(childListensDeaf());
+    var status: u32 = 0;
+    _ = linux.wait4(pid, &status, 0, null);
+    if (status & 0x7f == 0) {
+        const code: u8 = @intCast((status >> 8) & 0xff);
+        if (code == 4) return error.SkipZigTest;
+        return error.NotEndedByTheWord; // it burned on and answered
+    }
+    try std.testing.expectEqual(@as(u32, linux.SIG.XCPU), status & 0x7f);
 }

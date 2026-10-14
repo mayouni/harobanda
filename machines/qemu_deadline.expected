@@ -6,17 +6,18 @@ boot: mount devtmpfs at /dev -- done
 boot: mount cgroup2 at /sys/fs/cgroup -- done
 boot: grant process (effectful)
 boot: timed -- the kernel is PREEMPT_RT and its timers resolve 1 ns, as it says of itself
-boot: reserve -- control 200 us of every 1000 us, within 500 us, on core 1, second 700 us of every 1000 us, within 1000 us, on core 1; the kernel holds each reservation and refuses what does not fit
+boot: reserve -- control 200 us of every 1000 us, within 500 us, on core 1, second 700 us of every 1000 us, within 1000 us, on core 1; the kernel holds each reservation and refuses what does not fit, and signals a world that runs past its runtime once that world listens for it
+boot: confine -- second has no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
 boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 boot: start control -- pid N -- /harb reserved --stay /run/control.ready
-reserved: SCHED_DEADLINE -- 200 us of every 1000 us, within 500 us, on core 1 and no other: as the kernel reports it, and what this world spawns runs unreserved
+reserved: SCHED_DEADLINE -- 200 us of every 1000 us, within 500 us, on core 1 and no other: as the kernel reports it, signalled if it runs past its runtime, and what this world spawns runs unreserved
 boot: control -- ready (/run/control.ready)
 boot: start second -- pid N -- /harb reserved -- as worker (2000:2000)
-reserved: SCHED_DEADLINE -- 700 us of every 1000 us, within 1000 us, on core 1 and no other: as the kernel reports it, and what this world spawns runs unreserved
+reserved: SCHED_DEADLINE -- 700 us of every 1000 us, within 1000 us, on core 1 and no other: as the kernel reports it, signalled if it runs past its runtime, and what this world spawns runs unreserved
 boot: second (pid N) exited 0
 boot: start loose -- pid N -- /harb reserved
 reserved: no reservation -- this world runs under policy 0 on 1 core, and gets what is left
 boot: loose (pid N) exited 0
-boot: judge -- the boot matches its expectation (/etc/expected, 16 lines)
+boot: judge -- the boot matches its expectation (/etc/expected, 17 lines)
 boot: --halt-on-verdict: every service is ready and the boot is judged; the court ends what a real init never would
 boot: init halts the machine -- reboot(RESTART)
