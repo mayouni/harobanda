@@ -1,3 +1,116 @@
+# PORT-1 — a world binds the ports it declares, and no other
+
+The port half of the cloud's front (rung 3b of `doc/CLOUD.md`), built
+2026-10-14 on the author's "continue", after SAFE-1 the same night. The
+front needs a port below 1024 before it needs anything else, and that
+was the seam CLAUDE.md had named for it; the proxy that ends TLS waits
+on the author (below).
+
+## What was built
+
+- **The clause** `PORTS [443]` on a SERVICE (`src/machine.zig`): one to
+  eight TCP ports, 1 to 65535, a list of numbers -- a value the grammar
+  did not have (`number_list`, never mixed with words or strings). A
+  hosted machine's, because a port is the kernel's to give; a USER's,
+  because a world that is the machine may bind anything already, so a
+  port given to it is given to nobody; a world that needs `network`,
+  because a bind is a network act; one port once per world, and one
+  world per port on a machine (the second bind would fail at the act).
+  Fixtures A52-A53 and R195-R206; `PINNING.md` re-pinned, 259/259.
+- **The act** (`src/ports.zig`, in PID 1's spawn path): the kernel's
+  privilege for a port below 1024 is `CAP_NET_BIND_SERVICE`, ONE
+  capability for all of them, so a floor that gave it and nothing else
+  would let a world that declared 443 bind 80 under a line that named
+  one -- EGR-2's shape, a sentence true of less than it says. What makes
+  the line true is a **Landlock rule set** on the task that execs: TCP
+  bind handled, the declared ports allowed, every other refused with
+  EACCES, above 1024 as well as below (ABI 4 or later, which the vendored
+  6.12 has). It is set after the filter, whose no_new_privs it needs, and
+  on a world without `process` it is set in the grandchild the stand-in
+  forks, as the reservation is since SAFE-1. The capability is given only
+  when a declared port is below 1024: `PR_SET_KEEPCAPS` before the drop
+  of identity, then `capset` to the one capability and
+  `PR_CAP_AMBIENT_RAISE`, which an exec keeps even under no_new_privs. A
+  world the kernel cannot hold to its ports is NOT STARTED, with the
+  kernel's word (`no landlock`, or the refusal's name).
+- **The kernel** (`src/image.zig`): a machine with a PORTS clause derives
+  `CONFIG_SECURITY`, `CONFIG_SECURITY_NETWORK`, `CONFIG_SECURITY_LANDLOCK`
+  and `CONFIG_LSM="landlock"`, none of which tinyconfig has. PID 1 asks
+  the kernel its Landlock version at the world's start (the version
+  query is a syscall with no ruleset), so a kernel without it is read
+  back at the act and not assumed from the fragment (CON-1, and SAFE-1's
+  lesson of the same night).
+- **The line** `boot: ports -- front may bind 443 and no other port: the
+  kernel refuses the rest, and gives a port below 1024 only to a world
+  that declares it`, derived once in `src/expect.zig` and said before any
+  world runs.
+- **The witness** `harb bound <port>... [--not <port>]...`: run AS the
+  identity, it asks the kernel to bind each port it was told it may and
+  each it was told it may not, says each answer with the uid and the
+  kernel's word, and asserts: a wrong answer exits 1, PID 1's ledger says
+  so where the expectation says `exited 0`, and the machine's own judge
+  convicts the boot (JDG-1).
+- **The machine** `machines/qemu_ports.machine`, pinned at 24 lines on
+  its first boot, read line by line before it was pinned: a loopback to
+  bind on, two identities; `front` (uid 2010, `PORTS [443]`) binds 443
+  and is refused 80 and 8443; `plain` (uid 2011, no ports) binds 8443
+  and is refused 443. `front`'s 80 is the row that matters: the same
+  privilege, not declared, refused.
+
+## Judged by
+
+The pin, matched on the desk and in the probe's copy; fixtures 259/259
+with the court's other judges (learn, docs); 115 unit tests on Linux as
+root, none skipped, three new (a world held to one port binds it and is
+refused the next, by the kernel; the privilege survives the drop of
+identity and is raised; without it, the port is refused);
+`experiment/ports_probe.sh`: m1 the privilege not raised (`front`
+REFUSED 443), m2 the rule set not applied (`front` BOUND 8443), m3 the
+kernel derived without Landlock (`front -- NOT STARTED: the kernel cannot
+hold it to its ports (no landlock)`); `regress.sh` over every pinned
+boot, the new one included.
+
+## What waits: the proxy, the author's ruling
+
+`doc/PROVENANCE.md` reserves it: the front *waits on a ruling of its own
+in any case, which proxy terminates TLS.* The estate's rule (RingServ's
+`docs/TLS.md`, ruled by the Principal 2026-08-21): no repository vendors
+a TLS or crypto stack, and TLS ends at a proxy in front; RingServ names
+Caddy, nginx or Traefik and refuses to start on a public address itself.
+This desk's recommendation, for the author to take or reverse:
+
+- **Caddy**, pinned by the sha256 of its release tarball the way the
+  kernel is (`vendor/PIN.md`, fetched and verified by a script, never
+  committed), staged like RingServ (`machines/front.stage`), placed by a
+  front pack on the gateway machine of `cloud_links.fleet`, with `PORTS
+  [80, 443]` and a USER of its own, its key and certificates on a
+  declared mount (`STATE`), fronting the names the fleet declares.
+  Why Caddy of the three: it is the one that is a single static binary
+  with its own certificate management (an internal CA for the emulator,
+  ACME for the internet), so the image stays what it is -- a kernel and
+  static programs -- and the licence (Apache-2.0) is attached to the pin
+  as the kernel's is.
+- **What the judge would be**: the till of `cloud_links` asking
+  `https://commons.core.cloud/health` through the box and verifying the
+  front's certificate against a fingerprint the fleet file declares (as
+  `TIME_KEY` declares the authority's key), so that what anyone holding
+  the fleet file can check includes who the front is. The till's client
+  is Zig's own TLS client, which is a client and not a stack.
+- **What is not decided by this**: whether the front is the gateway box
+  itself or a machine of its own on the front link, and whether a
+  browser's trust (a public CA) is the emulator's business at all.
+
+## Named seams
+
+- TCP bind is held and nothing else: a UDP bind is anyone's, and connect
+  is not bind. A world that must not CONNECT anywhere is EGRESS's seat.
+- A pack may declare PORTS (it is a SERVICE clause), and the machine
+  that accepts the placement is what grants it; a machine-side clause
+  that says which ports a pack may ask for is not built.
+- Eight ports at most, and no ranges: a range is a perimeter.
+- The tour has no lesson for it yet; the README's and the site's words
+  do not change.
+
 # SAFE-1 — a world is told when it runs past its time, and the floor holds the word until the world listens
 
 Rung 4's hosted half of the real-time ladder (`doc/REALTIME.md`,

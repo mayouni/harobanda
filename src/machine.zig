@@ -297,6 +297,13 @@ pub const Service = struct {
     /// reports a refusal: at the line that wrote it, not at the declaration's
     state_line: usize = 0,
     ready_line: usize = 0,
+    /// the TCP ports this world may bind, AND NO OTHER (PORT-1): PID 1 holds the world to them
+    /// with a Landlock rule set before the exec, and gives it the kernel's one capability for a
+    /// port below 1024 only if it declares one. Empty is a world that binds what any ordinary
+    /// identity may: any port above 1024, and none below. Only an identity can be given a port
+    /// (a world that is the machine may bind anything already), and a bind is a network act.
+    ports: []const u16 = &.{},
+    ports_line: usize = 0,
     rationale: []const u8,
 
     /// Whether this world has the machine's declared storage in its tree at
@@ -874,6 +881,8 @@ const Value = union(enum) {
     number: u64,
     name_list: []const []const u8,
     string_list: []const []const u8,
+    /// a list of numbers (PORT-1: `PORTS [80, 443]`); an empty list parses as a name list
+    number_list: []const u64,
 };
 
 pub const Clause = struct {
@@ -911,7 +920,7 @@ pub const Decl = struct {
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
         .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD", "CLOCK", "TIME_FROM", "TIME_KEY", "CORES" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES", "STATE", "PERIOD", "DEADLINE", "RUNTIME", "CORE" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES", "STATE", "PERIOD", "DEADLINE", "RUNTIME", "CORE", "PORTS" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
@@ -950,6 +959,7 @@ fn parseValue(ctx: *Ctx) Error!Value {
         .lbracket => {
             var names: std.ArrayList([]const u8) = .{};
             var strings: std.ArrayList([]const u8) = .{};
+            var numbers: std.ArrayList(u64) = .{};
             while (true) {
                 const e = ctx.peek();
                 if (e.tag == .rbracket) {
@@ -960,7 +970,8 @@ fn parseValue(ctx: *Ctx) Error!Value {
                 switch (item.tag) {
                     .ident => try names.append(ctx.arena, item.text),
                     .string => try strings.append(ctx.arena, item.text),
-                    else => return ctx.refuse(item.line, "A list holds words or strings, found '{s}'", .{if (item.tag == .eof) "end of file" else item.text}),
+                    .number => try numbers.append(ctx.arena, std.fmt.parseInt(u64, item.text, 10) catch return ctx.refuse(item.line, "'{s}' is not a number", .{item.text})),
+                    else => return ctx.refuse(item.line, "A list holds words, strings or numbers, found '{s}'", .{if (item.tag == .eof) "end of file" else item.text}),
                 }
                 const sep = ctx.peek();
                 if (sep.tag == .comma) {
@@ -969,8 +980,10 @@ fn parseValue(ctx: *Ctx) Error!Value {
                     return ctx.refuse(sep.line, "Expected ',' or ']' in a list, found '{s}'", .{if (sep.tag == .eof) "end of file" else sep.text});
                 }
             }
-            if (names.items.len > 0 and strings.items.len > 0) return ctx.refuse(t.line, "A list is all words or all strings, never mixed", .{});
+            const kinds = @as(u8, @intFromBool(names.items.len > 0)) + @as(u8, @intFromBool(strings.items.len > 0)) + @as(u8, @intFromBool(numbers.items.len > 0));
+            if (kinds > 1) return ctx.refuse(t.line, "A list is all words, all strings or all numbers, never mixed", .{});
             if (strings.items.len > 0) return .{ .string_list = try strings.toOwnedSlice(ctx.arena) };
+            if (numbers.items.len > 0) return .{ .number_list = try numbers.toOwnedSlice(ctx.arena) };
             return .{ .name_list = try names.toOwnedSlice(ctx.arena) };
         },
         else => return ctx.refuse(t.line, "Expected a clause value, found '{s}'", .{if (t.tag == .eof) "end of file" else t.text}),
@@ -1048,6 +1061,15 @@ fn wantNumber(ctx: *Ctx, c: Clause) Error!u64 {
     return switch (c.value) {
         .number => |n| n,
         else => ctx.refuse(c.line, "Clause {s} takes a number", .{c.name}),
+    };
+}
+/// A list of numbers in brackets (PORT-1). An empty list reads as an empty name list, so it is
+/// accepted here as empty and refused by the clause that wants at least one.
+fn wantNumbers(ctx: *Ctx, c: Clause) Error![]const u64 {
+    return switch (c.value) {
+        .number_list => |l| l,
+        .name_list => |l| if (l.len == 0) &.{} else ctx.refuse(c.line, "Clause {s} takes a list of numbers ([80, 443]), not words", .{c.name}),
+        else => ctx.refuse(c.line, "Clause {s} takes a list of numbers ([80, 443])", .{c.name}),
     };
 }
 pub fn wantNames(ctx: *Ctx, c: Clause) Error![]const []const u8 {
@@ -1686,9 +1708,47 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             for (paths) |p| if (!plainPath(p)) return ctx.refuse(c.line, "STATE is an absolute path of plain names (\"/data/app\": letters, digits, '.', '_' and '-' between slashes), not '{s}': no relative path, no '.' or '..', no empty name and no trailing slash", .{p});
             state = paths;
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .tasks = tasks, .reservation = reservation, .user = user, .sees = sees, .state = state, .state_line = state_line, .ready_line = ready_line, .rationale = d.rationale });
+
+        // PORTS -- the TCP ports this world may bind, and no other (PORT-1). Read after USER and
+        // NEEDS: a port is given to an identity that is not the machine, and a bind is a network
+        // act. The kernel's privilege for a port below 1024 is one for all of them, so what makes
+        // "443 and no other" true is a rule set on the world, which PID 1 sets before the exec.
+        var ports: []const u16 = &.{};
+        var ports_line: usize = 0;
+        if (find(d, "PORTS")) |c| {
+            ports_line = c.line;
+            if (profile != .hosted) return ctx.refuse(c.line, "a port is the kernel's to give, and an edge machine has no kernel: {s} declares PORTS on a machine of PROFILE {s}", .{ d.name, @tagName(profile) });
+            if (user == null) return ctx.refuse(c.line, "{s} declares PORTS and no USER: a world with no declared identity is the machine itself and may bind any port already, so a port given to it is given to nobody; declare the USER that is to bind it", .{d.name});
+            var granted_net = false;
+            for (needs.items) |n| {
+                if (n == .network) granted_net = true;
+            }
+            if (!granted_net) return ctx.refuse(c.line, "{s} declares PORTS and needs no network: a bind is a network act, and a world kept off the network has nothing to bind", .{d.name});
+            const nums = try wantNumbers(&ctx, c);
+            if (nums.len == 0) return ctx.refuse(c.line, "an empty PORTS is not a declaration: a world that binds nothing declares none, and one that binds what any identity may above 1024 says nothing here", .{});
+            if (nums.len > 8) return ctx.refuse(c.line, "PORTS names {d} ports, and a world is given at most 8: a longer list is a range wearing a list's clothes", .{nums.len});
+            const list = try arena.alloc(u16, nums.len);
+            for (nums, 0..) |n, i| {
+                if (n == 0 or n > 65535) return ctx.refuse(c.line, "PORTS {d}: a port is 1 to 65535", .{n});
+                for (nums[0..i]) |e| if (e == n) {
+                    return ctx.refuse(c.line, "port {d} is already in {s}'s PORTS: saying it twice says nothing the once did not", .{ n, d.name });
+                };
+                list[i] = @intCast(n);
+            }
+            ports = list;
+        }
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .tasks = tasks, .reservation = reservation, .user = user, .sees = sees, .state = state, .state_line = state_line, .ready_line = ready_line, .ports = ports, .ports_line = ports_line, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
+
+    // PORT-1: no two worlds are given one port. The second bind would fail at the act, and a
+    // declaration the kernel cannot keep for both is refused before any boot, at the line of
+    // the world that asked second.
+    for (svc_slice, 0..) |s, i| for (s.ports) |p| {
+        for (svc_slice[0..i]) |o| for (o.ports) |q| if (q == p) {
+            return ctx.refuse(s.ports_line, "port {d} is declared by {s} and by {s}: one port is bound by one world, and a machine that promises it to two keeps it for one", .{ p, o.name, s.name });
+        };
+    };
 
     // TIM-1: the reservations on one core together ask no more than the
     // kernel gives (90 %, `reservable_bw`); the rest is the kernel's own.
@@ -2054,4 +2114,22 @@ test "the smallest HEALTH window holds one of PID 1's looks, rounded up to the s
     try t.expect(minHealthSecs(look_ms) * 1000 >= look_ms);
     // and with a quarter-second look, HEALTH 1 is the smallest window the grammar admits
     try t.expectEqual(@as(u32, 1), minHealthSecs(look_ms));
+}
+
+test "a list of numbers is a value of its own, never mixed with words or strings (PORT-1)" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    var r: Refusal = undefined;
+    const src =
+        \\DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+        \\DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "x"
+        \\DEFINE NETWORK lo AS (INTERFACE "lo", ADDRESS "127.0.0.1/8") RATIONALE "x"
+        \\DEFINE USER srv AS (UID 2000) RATIONALE "x"
+        \\DEFINE SERVICE s AS (RUN ["/s"], RESTART always, NEEDS [network], USER srv, PORTS [443, 80]) RATIONALE "x"
+    ;
+    const m = try declare(arena_state.allocator(), src, &r);
+    try t.expectEqual(@as(usize, 2), m.services[0].ports.len);
+    try t.expectEqual(@as(u16, 443), m.services[0].ports[0]);
+    try t.expectEqual(@as(u16, 80), m.services[0].ports[1]);
 }

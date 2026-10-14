@@ -31,6 +31,7 @@ const plan = @import("plan.zig");
 const netcfg = @import("netcfg.zig");
 const names = @import("names.zig");
 const confine = @import("confine.zig");
+const ports = @import("ports.zig");
 const expect = @import("expect.zig");
 const journal = @import("journal.zig");
 const timeattest = @import("timeattest.zig");
@@ -1384,6 +1385,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     _ = try expect.healthLine(led.w(), m);
     // what the kernel will refuse each world, said before any of them runs
     _ = try expect.confineLine(led.w(), m);
+    // the ports each world may bind, and no other (PORT-1): the kernel is asked at each start
+    _ = try expect.portsLine(led.w(), m);
     _ = try expect.floorLine(led.w(), m);
     try led.echo();
     // the directories the worlds own, made and handed over before any of them exists (OWN-1)
@@ -1844,15 +1847,40 @@ fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Conf
             _ = std.posix.write(1, line) catch {};
             std.posix.exit(125);
         }
+        // The ports this world may bind, and no other (PORT-1): a Landlock rule
+        // set on THIS task before the exec (it needs the no_new_privs the filter
+        // set), and for a port below 1024 the one capability the kernel has for
+        // them, kept through the drop of identity below and raised into the
+        // ambient set after it, which the exec keeps. A world the kernel cannot
+        // hold to its ports is not started: the ports line would be a promise
+        // the machine printed and did not keep (NS-1).
+        if (svc.ports.len > 0) {
+            if (ports.restrict(svc.ports)) |why| notStarted(svc.name, "the kernel cannot hold it to its ports", why);
+            if (ports.needsPrivilege(svc.ports)) {
+                if (ports.keepCaps()) |why| notStarted(svc.name, "the kernel would not keep its privilege through the drop of identity", why);
+            }
+        }
         if (svc.user) |u| {
             std.posix.setgid(u.gid) catch std.posix.exit(126);
             std.posix.setuid(u.uid) catch std.posix.exit(126);
+        }
+        if (svc.ports.len > 0 and ports.needsPrivilege(svc.ports)) {
+            if (ports.raiseBind()) |why| notStarted(svc.name, "the kernel would not give it the privilege for a port below 1024", why);
         }
         std.posix.execveZ(path, @ptrCast(argv.ptr), &envp) catch {};
         std.posix.exit(127); // the program was not there, or not runnable as this identity
     }
     std.posix.close(gate[0]);
     return .{ .pid = pid, .gate = gate[1] };
+}
+
+/// In the child, before the exec: a promise the machine printed that the
+/// kernel will not keep for this world (PORT-1). Say it and do not start.
+fn notStarted(name: []const u8, what: []const u8, why: []const u8) noreturn {
+    var msg: [320]u8 = undefined;
+    const line = std.fmt.bufPrint(&msg, "boot: {s} -- NOT STARTED: {s} ({s}); a port the machine promised and the kernel does not hold is a promise the machine printed and did not keep\n", .{ name, what, why }) catch "boot: a world could not be held to its ports\n";
+    _ = std.posix.write(1, line) catch {};
+    std.posix.exit(125);
 }
 
 /// Let the world run: everything PID 1 owed it first -- its group, its

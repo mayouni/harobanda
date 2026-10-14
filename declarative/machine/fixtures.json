@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once. Widened again 2026-10-05 (STATE, a world's own directory): A30-A35, R104-R138; a world that runs as an identity owns the directories it names and nothing else of the machine's, only an identity can own one, only where the machine can hand one over (under /run, or inside an ext4 or tmpfs mount the world keeps and that is not read-only, with every mount above it kept too), no two worlds own overlapping directories, a world's signal sits directly in its own directory and never in a neighbour's, the floor's own key and record are in no directory a world owns, and the paths the court compares are plain names of bounded length, so that no spelling reaches one file by two names. Two rules about mounts came with it, because a directory's holder is the innermost mount only if the outer one is declared first and no two share a mount point. Widened again 2026-10-05 (the time seat, TIME-1): A36-A43, R139-R170; time enters a record only as an authority's signed statement, so a machine declares the clock it HAS (a plain device path under /dev, and a key to sign with), a link it answers the time on (one, a static address, a port from 1024 to 65535, never a loopback, never asking anybody), or whom it asks and whose word it takes (a journal to date, an address and a port from 1 to 65535 each spelled one way, a way there, and one spelling of a key that is a key); and a clock is a real-time clock, not any device. The boundary cases are here because a probe with a mutated court found the first version of these fixtures judged none of them: A38-A40 and R159-R162 are what that probe asked for; A41-A43 and R164-R170 are what an independent review of the seat asked for. Widened again 2026-10-13 (the reservation, TIM-1): A44-A51, R171-R194; a world may ask the kernel for time it will get every period -- a PERIOD, a DEADLINE and a RUNTIME in microseconds and the CORE it runs on, the four together -- and a hosted machine says how many CORES it has (2 to 64; a Raspberry Pi 4 has four); the runtime fits the deadline and the deadline the period, a runtime of ten microseconds at least and a period within the kernel's own bounds (100 us to 4194304 us), core 0 is the machine's, the reservations on one core sum to no more than the 90 per cent the kernel gives (it admits 95 and holds 5 for the ordinary tasks' own deadline server), counted as the kernel counts it, and a world with a reservation declares no CPU ceiling. The kernel judges the same set again at the act, and refuses what does not fit.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once. Widened again 2026-10-05 (STATE, a world's own directory): A30-A35, R104-R138; a world that runs as an identity owns the directories it names and nothing else of the machine's, only an identity can own one, only where the machine can hand one over (under /run, or inside an ext4 or tmpfs mount the world keeps and that is not read-only, with every mount above it kept too), no two worlds own overlapping directories, a world's signal sits directly in its own directory and never in a neighbour's, the floor's own key and record are in no directory a world owns, and the paths the court compares are plain names of bounded length, so that no spelling reaches one file by two names. Two rules about mounts came with it, because a directory's holder is the innermost mount only if the outer one is declared first and no two share a mount point. Widened again 2026-10-05 (the time seat, TIME-1): A36-A43, R139-R170; time enters a record only as an authority's signed statement, so a machine declares the clock it HAS (a plain device path under /dev, and a key to sign with), a link it answers the time on (one, a static address, a port from 1024 to 65535, never a loopback, never asking anybody), or whom it asks and whose word it takes (a journal to date, an address and a port from 1 to 65535 each spelled one way, a way there, and one spelling of a key that is a key); and a clock is a real-time clock, not any device. The boundary cases are here because a probe with a mutated court found the first version of these fixtures judged none of them: A38-A40 and R159-R162 are what that probe asked for; A41-A43 and R164-R170 are what an independent review of the seat asked for. Widened again 2026-10-13 (the reservation, TIM-1): A44-A51, R171-R194; a world may ask the kernel for time it will get every period -- a PERIOD, a DEADLINE and a RUNTIME in microseconds and the CORE it runs on, the four together -- and a hosted machine says how many CORES it has (2 to 64; a Raspberry Pi 4 has four); the runtime fits the deadline and the deadline the period, a runtime of ten microseconds at least and a period within the kernel's own bounds (100 us to 4194304 us), core 0 is the machine's, the reservations on one core sum to no more than the 90 per cent the kernel gives (it admits 95 and holds 5 for the ordinary tasks' own deadline server), counted as the kernel counts it, and a world with a reservation declares no CPU ceiling. The kernel judges the same set again at the act, and refuses what does not fit. Widened again 2026-10-14 (the ports a world may bind, PORT-1): A52-A53, R195-R206; a world that runs as an identity and speaks on the network may be given the TCP ports it will bind -- one to eight of them, 1 to 65535, a list of numbers and nothing else -- and no other: the kernel holds it to them with a rule set, and gives a port below 1024 only to a world that declares it; only an identity can be given a port, a world kept off the network has nothing to bind, and one port is bound by one world.",
   "accepts": [
     {
       "id": "A1",
@@ -1002,6 +1002,38 @@
             "runtime": 10,
             "core": 1
           }
+        }
+      }
+    },
+    {
+      "id": "A52",
+      "name": "a world is given a port below 1024, and no other",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [443]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 1,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 1,
+          "users": 1
+        }
+      }
+    },
+    {
+      "id": "A53",
+      "name": "two worlds, each given its own ports, one of them above 1024 only",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE USER other AS (UID 2001) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [80, 443]) RATIONALE \"x\"\nDEFINE SERVICE t AS (RUN [\"/t\"], RESTART always, NEEDS [network], USER other, PORTS [8210]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 2,
+          "capabilities": 1,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 1,
+          "users": 2
         }
       }
     }
@@ -2170,6 +2202,78 @@
       "name": "and 95 per cent, which the kernel's sysctl says it admits, is refused for the 5 the ordinary tasks' server holds in the same ledger: two worlds asking it together were refused the second at the act",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, CORES 2) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE loop AS (RUN [\"/app/loop\"], RESTART always, PERIOD 1000, DEADLINE 500, RUNTIME 200, CORE 1, NEEDS [process]) RATIONALE \"x\"\nDEFINE SERVICE second AS (RUN [\"/app/second\"], RESTART always, PERIOD 1000, DEADLINE 1000, RUNTIME 750, CORE 1, NEEDS [process]) RATIONALE \"x\"\n",
       "refusal": "the kernel gives reservations 90 % of a core"
+    },
+    {
+      "id": "R195",
+      "name": "a port is the kernel's to give, and an edge machine has no kernel",
+      "source": "DEFINE MACHINE s AS (PROFILE edge, ARCH thumbv7em, KERNEL none) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE loop AS (RUN [\"loop\"], RESTART always, NEEDS [network], PORTS [443]) RATIONALE \"x\"\n",
+      "refusal": "a port is the kernel's to give, and an edge machine has no kernel"
+    },
+    {
+      "id": "R196",
+      "name": "only an identity can be given a port: a world that is the machine may bind anything already",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], PORTS [443]) RATIONALE \"x\"\n",
+      "refusal": "declares PORTS and no USER"
+    },
+    {
+      "id": "R197",
+      "name": "a bind is a network act: a world kept off the network has nothing to bind",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, USER srv, PORTS [443]) RATIONALE \"x\"\n",
+      "refusal": "declares PORTS and needs no network"
+    },
+    {
+      "id": "R198",
+      "name": "an empty PORTS is not a declaration",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS []) RATIONALE \"x\"\n",
+      "refusal": "an empty PORTS is not a declaration"
+    },
+    {
+      "id": "R199",
+      "name": "port 0 is no port",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [0]) RATIONALE \"x\"\n",
+      "refusal": "a port is 1 to 65535"
+    },
+    {
+      "id": "R200",
+      "name": "and 65536 is past the last one",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [65536]) RATIONALE \"x\"\n",
+      "refusal": "a port is 1 to 65535"
+    },
+    {
+      "id": "R201",
+      "name": "a port named twice by one world says nothing the once did not",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [443, 443]) RATIONALE \"x\"\n",
+      "refusal": "is already in s's PORTS"
+    },
+    {
+      "id": "R202",
+      "name": "one port is bound by one world: two worlds given the same port is a promise kept for one",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE USER other AS (UID 2001) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [443]) RATIONALE \"x\"\nDEFINE SERVICE t AS (RUN [\"/t\"], RESTART always, NEEDS [network], USER other, PORTS [443]) RATIONALE \"x\"\n",
+      "refusal": "port 443 is declared by s and by t"
+    },
+    {
+      "id": "R203",
+      "name": "a world is given at most eight ports: a longer list is a range wearing a list's clothes",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [1, 2, 3, 4, 5, 6, 7, 8, 9]) RATIONALE \"x\"\n",
+      "refusal": "a world is given at most 8"
+    },
+    {
+      "id": "R204",
+      "name": "PORTS takes numbers, not words",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [https]) RATIONALE \"x\"\n",
+      "refusal": "takes a list of numbers"
+    },
+    {
+      "id": "R205",
+      "name": "and a list, not one bare number",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS 443) RATIONALE \"x\"\n",
+      "refusal": "takes a list of numbers"
+    },
+    {
+      "id": "R206",
+      "name": "a list is all words, all strings or all numbers, never mixed",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [443, https]) RATIONALE \"x\"\n",
+      "refusal": "never mixed"
     }
   ]
 }

@@ -85,7 +85,7 @@ file says where it runs, and the court says whether the two agree.
 |---|---|---|
 | a server world | worlds serve and signal (SRV-1) but stand in for the real ones | the Commons, RingServ or stzAppServer as a declared `SERVICE` reading `/etc/machine` |
 | machines reaching each other | **built (FWD-1):** `FORWARD` on a machine, `LINKS` and `ROUTE` in the fleet, names across the links a box is the way between; two links, one forwarder, plain HTTP | a chain of forwarders (transit), a way that is one-way (needs the packet filter of rung 6), a forwarder's own hardware addresses |
-| a front | TLS is ruled to a proxy in front; no clause | a front pack: the names it fronts, its key on a declared mount |
+| a front | TLS is ruled to a proxy in front; **the port half built (PORT-1):** a world binds the ports it declares and no other, and is given a port below 1024 only if it declares one | the proxy itself, which waits on the author's ruling of which one; a front pack: the names it fronts, its key on a declared mount |
 | time | **built (TIME-1), in the emulator:** a fleet's one time authority signs that an entry of a record existed no later than a time it read from a clock it has; the asking machine keeps the statement beside its record; ruling 07: attested, never assumed | a board's real clock (OS-5), authenticated network time as a source (NTS), a lower bound |
 | rollout | an A/B trial per box, self-judged | waves over the set, and the set's own commit |
 | reach per world | `EGRESS` writes routes; worlds with `network` share them | per-world egress, and the packet filter |
@@ -178,8 +178,11 @@ fleet declares. *Judge:* a request from outside the front link reaches
 the Commons through the front and nothing else, and the journal's time
 is the authority's. *Buys:* a solution reachable from the internet
 with a declared surface. *Status:* the time half is BUILT (TIME-1,
-2026-10-05), in the emulator, with its limits named below; the front is
-not built, and TLS stays out of the floor by ruling.
+2026-10-05), in the emulator, with its limits named below; of the front,
+the port is built (PORT-1, 2026-10-14: a world is held to the ports it
+declares, and given a port below 1024 only if it declares one) and the
+proxy waits on the author's ruling of which one; TLS stays out of the
+floor by ruling.
 
 *The time half, as built.* `CLOCK` on a machine names the clock it HAS (a
 device), `TIME_AUTHORITY` on one of its links makes it that link's time

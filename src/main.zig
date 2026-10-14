@@ -32,6 +32,7 @@ const pack = @import("pack.zig");
 const ready = @import("ready.zig");
 const get = @import("get.zig");
 const own = @import("own.zig");
+const ports = @import("ports.zig");
 const reserve = @import("reserve.zig");
 const tick = @import("tick.zig");
 const timeattest = @import("timeattest.zig");
@@ -63,6 +64,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb reserved [--stay <ready-path>]         (what time does this world run under, on which core? it asks the kernel, from inside it)
         \\  harb tick   <periods> --period <us> --deadline <us>   (run the period on an absolute timer and say how late each wake was; from inside a world)
         \\  harb spin   [--ready <path>]                (say where this world runs, then burn the processor until the machine ends; the witness's neighbour)
+        \\  harb bound  <port>... [--not <port>]...     (may this world bind these ports, and not those? it asks the kernel, as the identity it runs as)
         \\  harb reach  <a.b.c.d>                       (does this machine know a way there? from inside it)
         \\  harb confined [iface] [path...]             (what can this WORLD see and do? from inside one)
         \\  harb swarm  [n]                             (ask for n tasks and say where the kernel stopped; from inside a world)
@@ -250,6 +252,12 @@ pub fn main() !u8 {
         // The neighbour a witness is measured beside: it says where it runs
         // and burns the processor until the machine ends
         return tick.spin(args[2..], out);
+    }
+    if (std.mem.eql(u8, verb, "bound")) {
+        // The witness of the PORTS seat (PORT-1): a world asks the kernel, as
+        // the identity it runs as, to bind each port it was told it may and
+        // each it was told it may not, and asserts the answers
+        return ports.run(args[2..], out);
     }
     if (std.mem.eql(u8, verb, "journal")) {
         // The record read back and checked, from inside the machine that

@@ -1,0 +1,24 @@
+boot: harb init -- machine qemu_ports (hosted / x86_64 / qemu_pc) -- pid 1
+boot: console /dev/ttyS0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: grant network (effectful)
+boot: network loopback -- lo up 127.0.0.1/8
+boot: confine -- front has no sight of the other worlds and no way to start one, plain has no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
+boot: ports -- front may bind 443 and no other port: the kernel refuses the rest, and gives a port below 1024 only to a world that declares it
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+boot: start front -- pid N -- /harb bound 443 --not 80 --not 8443 -- as given (2010:2010)
+bound: 443 -- bound as uid 2010: the kernel let this world bind it
+bound: 80 -- refused (ACCES) as uid 2010: the kernel did not let this world bind it
+bound: 8443 -- refused (ACCES) as uid 2010: the kernel did not let this world bind it
+bound: every answer was the one this world was told to expect
+boot: front (pid N) exited 0
+boot: start plain -- pid N -- /harb bound 8443 --not 443 -- as ordinary (2011:2011)
+bound: 8443 -- bound as uid 2011: the kernel let this world bind it
+bound: 443 -- refused (ACCES) as uid 2011: the kernel did not let this world bind it
+bound: every answer was the one this world was told to expect
+boot: plain (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)

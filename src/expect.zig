@@ -256,6 +256,32 @@ pub fn reserveLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// The ports each world may bind, and no other (PORT-1): said before any world runs, as the
+/// kernel is asked to hold it at each world's start -- a Landlock rule set on the world (the
+/// declared ports allowed, every other refused) and, for a port below 1024, the one capability
+/// the kernel has for them, raised into the world's ambient set after its identity is dropped.
+/// A world the kernel cannot hold to it is NOT STARTED, which is what makes this line a promise.
+pub fn portsLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    var any = false;
+    for (m.services) |s| {
+        if (s.ports.len > 0) any = true;
+    }
+    if (!any) return false;
+    try w.print("boot: ports -- ", .{});
+    var first = true;
+    for (m.services) |s| {
+        if (s.ports.len == 0) continue;
+        try w.print("{s}{s} may bind ", .{ if (first) "" else "; ", s.name });
+        for (s.ports, 0..) |p, i| {
+            const sep = if (i == 0) "" else if (i + 1 == s.ports.len) " and " else ", ";
+            try w.print("{s}{d}", .{ sep, p });
+        }
+        first = false;
+    }
+    try w.print(" and no other port: the kernel refuses the rest, and gives a port below 1024 only to a world that declares it\n", .{});
+    return true;
+}
+
 pub fn budgetLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     var any = false;
     for (m.services) |s| {
@@ -503,6 +529,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
     _ = try reserveLine(w, m);
     _ = try healthLine(w, m);
     _ = try confineLine(w, m);
+    _ = try portsLine(w, m);
     _ = try floorLine(w, m);
     _ = try stateLine(w, m);
     // every service starts; a one-shot is ready when it has exited 0, a

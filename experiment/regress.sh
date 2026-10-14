@@ -22,7 +22,7 @@ LOG=zig-out/wsl/regress.txt
 mkdir -p zig-out/wsl
 rm -f "$LOG"
 WANT="$*"
-MACHINES="qemu_hello qemu_egress qemu_confine qemu_budget qemu_identity qemu_own qemu_forward qemu_deadline qemu_tick fleet_temoin makeen_qemu makeen_box"
+MACHINES="qemu_hello qemu_egress qemu_confine qemu_budget qemu_identity qemu_own qemu_forward qemu_deadline qemu_tick qemu_ports fleet_temoin makeen_qemu makeen_box"
 SCENES="guarantees names fleet time cloud links"
 (
   # A GATE THAT IS NOT IN THE LIST REPORTS AS NOTHING (PX): the first run of this script was asked for three

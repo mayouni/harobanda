@@ -517,6 +517,12 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/safe_probe.sh
 
+# a world held to the ports it declares (PORT-1): the pinned
+# boot, and three mutants that must be convicted (m1 .. m3)
+#   -> zig-out/wsl/ports_probe.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/ports_probe.sh
+
 # the guided tour: 20 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -553,6 +559,34 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A world binds the ports it declares, and no other** (PORT-1): `PORTS
+  [443]` on a SERVICE that has a USER and needs `network`. The kernel's
+  privilege for a port below 1024 is ONE capability for all of them, so a
+  floor that gave it and nothing else would let a world that declared 443
+  bind 80 under a line that named one (EGR-2's shape): the world is held
+  to its declared ports by a Landlock rule set -- TCP bind handled, the
+  declared ports allowed, every other port refused with EACCES, above
+  1024 too -- set on the task that execs, after the filter whose
+  no_new_privs it needs; and `CAP_NET_BIND_SERVICE` is kept through the
+  drop of identity and raised into the ambient set only when a declared
+  port is below 1024. The image derives Landlock and its socket hooks for
+  such a machine (tinyconfig has none), and PID 1 asks the kernel its
+  Landlock version at the world's start and does not start a world the
+  kernel cannot hold. `harb bound` is the witness, run AS the identity:
+  it binds what it was told it may and is refused what it was told it
+  may not, or exits 1 and the machine's own judge convicts the boot.
+  Judged by `machines/qemu_ports.machine` (24 lines: 443 bound, 80 and
+  8443 refused to the world given 443; 8443 bound and 443 refused to an
+  ordinary identity), by fixtures A52-A53 and R195-R206, by three unit
+  tests on Linux (the rule set holds a world to one port; the privilege
+  survives the drop and is refused without it) and by
+  `experiment/ports_probe.sh` (the privilege not raised, the rule set
+  not applied, the kernel derived without Landlock). A list of numbers
+  is a value of the grammar since this seat. Named seams: TCP bind is
+  held and nothing else (a UDP bind is anyone's); a pack may declare
+  PORTS and the machine that accepts the placement grants it; the front
+  this port is for waits on the author's ruling of which proxy ends
+  TLS; no lesson of the tour yet.
 - **A world is told when it runs past its time, and the floor holds the
   word until the world listens** (SAFE-1): a reservation carries
   `SCHED_FLAG_DL_OVERRUN`, so the kernel sends SIGXCPU at its next tick
@@ -1449,9 +1483,20 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   that execs; the kernel's posix timers derived and read back, because
   the first kernel could not say the word. The body's half -- the
   heartbeat brain-to-body, the body's act when the beat stops -- is
-  MicroRing's, with rungs 5 and 6. **Next session: the cloud's front**
-  (rung 3b of the cloud ladder), which follows the real-time rungs by
-  ruling 17; rungs 5 and 6 need MicroRing's desk and a body. Haro's desk holds one constraint from the ruling:
+  MicroRing's, with rungs 5 and 6. **The front's port half is built
+  (PORT-1, 2026-10-14)**: `PORTS` on a SERVICE, the world held to them
+  by a Landlock rule set and given the kernel's privilege for a port
+  below 1024 only if it declares one -- what any front needs before it
+  exists. **What waits is the proxy that terminates TLS, which is the
+  author's ruling** (`doc/PROVENANCE.md`: the front waits on a ruling of
+  its own, which proxy; the estate's rule, RingServ's `docs/TLS.md`, is
+  that no repository vendors a TLS stack and TLS ends at a proxy in
+  front, and it names Caddy, nginx or Traefik). This desk's
+  recommendation and its reasons are in `experiment/PROTOCOL.md`
+  (PORT-1): Caddy, pinned by the digest of its release like the kernel,
+  because it is the one of the three that is a single static binary
+  with its own certificate management. Rungs 5 and 6 need MicroRing's
+  desk and a body. Haro's desk holds one constraint from the ruling:
   the reservation is the world's main thread's, since the kernel refuses
   a reserved task that forks or spawns a thread unless its children fall
   back to normal scheduling -- which is how TIM-1 sets it (reset-on-fork),
@@ -1495,8 +1540,10 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   each world a directory closed to the others, so the exchange disk of
   `site/secure-design.html` is a picture of an envelope and not yet a
   hand-over); what is already INSIDE a directory when its owner's number
-  changes; a `/tmp` for an identity; and the one capability the front of
-  rung 3 will need, a port below 1024.
+  changes; a `/tmp` for an identity; and ~~the one capability the front of
+  rung 3 will need, a port below 1024~~ -- built (PORT-1): a world binds
+  the ports it declares and no other; what remains of the front is the
+  proxy, the author's ruling.
 - **Waiting on the author.** Delegated 2026-09-27 ("do what waits on me
   on my behalf") and ruled in `doc/PROVENANCE.md` as STZ-OS-RULING-03..08:
   retirement's three choices, the MIRROR (a private release, restored
@@ -1516,7 +1563,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

@@ -1,0 +1,67 @@
+-- qemu_ports.machine -- the machine that holds a world to the ports it declares.
+--
+-- Two worlds, each an identity of its own and neither the machine. The
+-- first declares PORTS [443]: it may bind 443, a port below 1024 the kernel
+-- gives only to a task with the one capability there is for them, and no
+-- other port, above 1024 or below. The second declares no ports: it may
+-- bind whatever any ordinary identity may -- any port above 1024 -- and
+-- is refused 443 by the kernel's oldest rule.
+--
+-- Each world asks the kernel, from inside itself and as the identity it
+-- runs as (`harb bound`), to bind what it was told it may and what it was
+-- told it may not, and the answers should form a table that only the
+-- declarations below explain:
+--
+--              443                 80                  8443
+--   front      bound               refused (ACCES)     refused (ACCES)
+--   plain      refused (ACCES)     --                  bound
+--
+-- `front`'s 80 is the row that matters: the capability the kernel has for
+-- ports below 1024 is one for all of them, so a floor that gave it and
+-- nothing else would let a world that declared 443 bind 80 as well, under
+-- a line that named one port. A Landlock rule set on the world -- the
+-- declared ports allowed, TCP bind handled, everything else refused --
+-- is what makes the line true, and 8443 is the same rule read above
+-- 1024: a world given its ports is given no other.
+--
+-- The witness asserts: a wrong answer exits 1, PID 1's ledger says so
+-- where the expectation says `exited 0`, the machine's own judge convicts
+-- the boot (JDG-1), and the world AFTER never starts.
+
+DEFINE MACHINE qemu_ports AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "The smallest machine that shows a port given: a loopback to bind on, two identities, and the ports one of them declares"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "A world that binds a port speaks on the network, and the machine lets its worlds"
+
+DEFINE NETWORK loopback AS (
+  INTERFACE "lo",
+  ADDRESS "127.0.0.1/8"
+) RATIONALE "The machine's own loopback: enough for a bind, and no route leaves the machine by it"
+
+DEFINE USER given AS (
+  UID 2010
+) RATIONALE "The identity that is given a port below 1024, and could never have taken it"
+
+DEFINE USER ordinary AS (
+  UID 2011
+) RATIONALE "An identity given nothing, which binds what any ordinary identity may"
+
+DEFINE SERVICE front AS (
+  RUN ["/harb", "bound", "443", "--not", "80", "--not", "8443"],
+  NEEDS [network],
+  USER given,
+  PORTS [443]
+) RATIONALE "Given 443 and no other port: it binds 443, and is refused 80 -- the same privilege, not declared -- and 8443, no privilege at all, not declared either"
+
+DEFINE SERVICE plain AS (
+  RUN ["/harb", "bound", "8443", "--not", "443"],
+  AFTER [front],
+  NEEDS [network],
+  USER ordinary
+) RATIONALE "Given no port: it binds 8443, as any identity may, and is refused 443 by the kernel's own rule, which is what the first world's grant is measured against"

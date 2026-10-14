@@ -5,8 +5,19 @@
 `fixtures.json` sha256:
 
 ```
-ccfeff69ad36db5e55f9f698232a34f833bf03a48db6cc28dc2b4c42690ece9c
+b0a62e87ecbeb6a46a61cd1974ac5294a5ea49736e57439141905f0041b5e905
 ```
+
+(Before the ports of 2026-10-14 (PORT-1):
+`ccfeff69ad36db5e55f9f698232a34f833bf03a48db6cc28dc2b4c42690ece9c`,
+245/245; the widening added A52-A53 and R195-R206 -- a world that runs as
+an identity and speaks on the network may be given the TCP ports it will
+bind, one to eight, 1 to 65535, as a list of numbers (R204-R206), and no
+other: only an identity can be given one (R196), a world kept off the
+network has nothing to bind (R197), an empty list is no declaration (R198),
+a port is 1 to 65535 (R199, R200), one port is named once by one world
+(R201) and bound by one world (R202), and an edge machine has no kernel to
+give one (R195).)
 
 (Before the reservation of 2026-10-13 (TIM-1):
 `d997ac95d938759201218c0de6a9b926cd5d419a8afb3982d52e469cf065e77d`,

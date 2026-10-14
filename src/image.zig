@@ -502,6 +502,15 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             if (budgeted) {
                 try w.print("CONFIG_MEMCG=y\nCONFIG_CGROUP_SCHED=y\nCONFIG_FAIR_GROUP_SCHED=y\nCONFIG_CFS_BANDWIDTH=y\n", .{});
             }
+            // a world held to the ports it declares needs Landlock's network rules (PORT-1): the
+            // security framework, its socket hooks and Landlock itself, which tinyconfig leaves
+            // out; PID 1 asks the kernel for its Landlock version at the world's start and does
+            // not start the world on a kernel without it
+            var ported = false;
+            for (m.services) |s| {
+                if (s.ports.len > 0) ported = true;
+            }
+            if (ported) try w.print("CONFIG_SECURITY=y\nCONFIG_SECURITY_NETWORK=y\nCONFIG_SECURITY_LANDLOCK=y\nCONFIG_LSM=\"landlock\"\n", .{});
             // the pids controller is what holds a TASKS ceiling (THR-1)
             if (counted) try w.print("CONFIG_CGROUP_PIDS=y\n", .{});
             // ... and the kernel that can hold a world to what it did NOT
