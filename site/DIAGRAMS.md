@@ -118,6 +118,7 @@ no change. Diagram 3 is drawn here at both widths.
 | 11 | `harobanda-diagram-11.png` | security | after the page's opening, 21% | **live** (added 2026-09-29; redrawn 2026-10-13, its label reads `30 calls` since PRI-1) |
 | 12 | `harobanda-diagram-12.png` | cloud | after the page's opening, 23% | **live** (added 2026-10-05) |
 | 13 | `harobanda-diagram-13.png` | realtime | after the page's opening, 16% | **live** (added 2026-10-13, on the author's yes) |
+| 14 | `harobanda-diagram-14.png` | datacenters, resilience | the post: under *The position*, 45%; the subject page: after the page's opening, 12% | **live** (added 2026-10-18, on the author's suggestion; one image on two pages, the post and its subject page) |
 
 **The register is complete: thirteen diagrams, and every page's first diagram is
 inside its first third.** The site has since grown to nine pages. Two of them
@@ -452,6 +453,47 @@ apart and nowhere else, because that is what a reservation adds to a machine.
 **Seen by:** the session that drew it, on both renders, 2026-10-13: the first wide render's second
 legend line crossed the lower edge of the core 1 box, which no fit check sees because `fit` measures
 width; the box was made taller and the drawing read again. The author's eye is the last gate.
+
+---
+
+## 13 · A cloud that fits in a room — `datacenters.html`, `resilience.html`
+
+The first blog post (2026-10-18) read the year's strikes on data centers against the fleet file, and the
+author asked for an expressive diagram of the solution architecture, in the family's style. One image
+on two pages: the post, where it frames the position, and the Security section's resilience page, where
+it frames the proof.
+
+**The sentence it must make true:** *a resilient cloud is many small declared machines in many rooms,
+each judging its own boot and keeping its own record, joined by links the fleet file names, so that
+losing a room is losing what the file says was in it -- and what the file will say next (a territory, a
+mirror, the roll call) is ordered and not built.*
+
+**Composition.** A hall as ONE strip across the top, in the old taupe: `a hall` -- `data, compute,
+reach: one place` -- and a brick chip, `ONE STRIKE, ALL LOST`; one place is enough to lose all three.
+Under it the fleet file as a band with the one orange mark: `The fleet file` -- `which boxes, on which
+links, who is the way between, who dates the records, which key is out`. Under the file, with an arrow
+each, three rooms as three machines in the blue-grey: `room A` (one file, own key; judges its boot;
+keeps its record), `room B` (one file, own key; the way between the two links), and `room C`, struck --
+in the neutral fill with a brick `STRUCK` chip: `lost: what the file says, and nothing more`. A dashed
+arrow from A to B, `a mirror · ordered`, this family's mark for absence. A last band, `NEXT, ORDERED`:
+territory, a mirror, the roll call, in the page's own words.
+
+**Exact labels.** Kicker: `HAROBANDA — A CLOUD THAT FITS IN A ROOM`. No quotation from a pinned boot
+(the picture states an architecture, not a transcript), so no pin check; every word of the last band is
+the resilience page's (DOC-2). The narrow drawing (`narrow14.py`) is the same argument as a column: the
+hall, then `MANY ROOMS`, the file, the three rooms, a note for the links and the mirror, then the band.
+
+**Must not.** No map, no drone, no flames: the strike is a chip, and the loss is a grey room. No cloud
+icon and no server rack: a room is a machine, drawn like every machine on this site. The orange mark is
+on the fleet file and nowhere else, because that is what makes many rooms one cloud; brick is used once,
+on the strike. No hall-versus-rooms count: the picture shows one of each shape, and the page says
+"many".
+
+**Seen by:** the session that drew it, on both renders, 2026-10-18: the first wide render's rooms were
+too short for their third line, which sat on the box's edge, and its last band ran past the canvas,
+because a wire drawn under the rooms took the room -- neither seen by any fit check. The rooms were
+made taller, the wire folded into the file band's own words, and the drawing read again. The author's
+eye is the last gate.
 
 ---
 
