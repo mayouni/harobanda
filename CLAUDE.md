@@ -1487,16 +1487,20 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   (PORT-1, 2026-10-14)**: `PORTS` on a SERVICE, the world held to them
   by a Landlock rule set and given the kernel's privilege for a port
   below 1024 only if it declares one -- what any front needs before it
-  exists. **What waits is the proxy that terminates TLS, which is the
-  author's ruling** (`doc/PROVENANCE.md`: the front waits on a ruling of
-  its own, which proxy; the estate's rule, RingServ's `docs/TLS.md`, is
-  that no repository vendors a TLS stack and TLS ends at a proxy in
-  front, and it names Caddy, nginx or Traefik). This desk's
-  recommendation and its reasons are in `experiment/PROTOCOL.md`
-  (PORT-1): Caddy, pinned by the digest of its release like the kernel,
-  because it is the one of the three that is a single static binary
-  with its own certificate management. Rungs 5 and 6 need MicroRing's
-  desk and a body. Haro's desk holds one constraint from the ruling:
+  exists. **The proxy is ruled: Caddy (STZ-OS-RULING-18, 2026-10-18,
+  the author's word)** -- vendored by the digest of its release like the
+  kernel, staged like RingServ, placed by a front pack with `PORTS [80,
+  443]`, an identity and a `STATE` for its keys; the seat decides whether
+  it sits on the gateway of `cloud_links.fleet` or on a machine of its
+  own. **And the five declarations of `site/resilience.html` are ordered
+  (STZ-OS-RULING-19, the same word: "go ahead with implementing them
+  all")**, in this order after the front: TERRITORY on a member, the
+  MIRROR (a declared copy of a world's directory on another member,
+  verified by the fleet's keys -- CLOUD.md's "no distributed filesystem"
+  amended beside its text), the roll call (who has written a record
+  since), the loss drill (a scene that destroys a member mid-run), and the
+  source mirror last (ruling 04's shape; it needs a place for a private
+  release). Rungs 5 and 6 need MicroRing's desk and a body. Haro's desk holds one constraint from the ruling:
   the reservation is the world's main thread's, since the kernel refuses
   a reserved task that forks or spawns a thread unless its children fall
   back to normal scheduling -- which is how TIM-1 sets it (reset-on-fork),

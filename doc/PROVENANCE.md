@@ -77,6 +77,52 @@ ruling can be one-meaning-per-word:
   Two names for one thing, recorded here so that they never coexist
   silently; the desk's rename is his to order.
 
+## The rulings of 2026-10-18 (the author's own words)
+
+Asked two things after the first blog post (*Data centers at war*) and
+its subject page (`site/resilience.html`): which program terminates TLS
+in front of a cloud, a choice `STZ-OS-RULING-17` had reserved for him;
+and whether any of the five declarations the page names as missing is to
+be built. He answered both in one line: *"Caddy, and go ahead with
+implementing them all."*
+
+**STZ-OS-RULING-18 — Caddy terminates TLS at the front.** The estate's
+rule (RingServ's `docs/TLS.md`, ruled by the Principal 2026-08-21: no
+repository vendors a TLS or crypto stack, and TLS ends at a proxy in
+front) stands; the proxy is Caddy. It is vendored the way the kernel is
+-- a release pinned by the sha256 of its archive in `vendor/PIN.md`,
+fetched and verified by a script, never committed -- staged like
+RingServ, and placed by a front pack on a machine of the fleet with the
+ports it needs (`PORTS [80, 443]`, PORT-1), an identity of its own, and
+its keys and certificates on a directory it owns (`STATE`). What it
+fronts is what the fleet declares. The licence (Apache-2.0) is attached
+to the pin as the kernel's is. Not decided by this: whether the front is
+the gateway box of `cloud_links.fleet` or a machine of its own on the
+front link, which the seat decides by what the scene can judge.
+
+**STZ-OS-RULING-19 — the five declarations of the resilience page are
+ordered, all of them.** `TERRITORY` on a fleet member (where a machine
+physically is, so a localisation law is a line the court reads); a
+`MIRROR` (a declared copy of a world's own directory on another member,
+over a link the fleet names, verified by the fleet's keys -- the floor
+copies and verifies files between declared places, and what a consistent
+copy is stays the application's); the roll call (the cloud's witness read
+as who has written a record since, with a time on it); a source mirror
+(the kernel, the toolchain and every pinned program restored from a
+mirror inside the estate, the shape `STZ-OS-RULING-04` already rules);
+and the loss drill (a scene that destroys a member while the fleet runs,
+and shows the rest serve, re-judge themselves and say what was lost).
+The mirror reverses one sentence of `doc/CLOUD.md` ("no distributed
+filesystem at the floor"): a mirror of declared directories is ordered,
+a distributed filesystem is still not, and the sentence is amended beside
+its text, never rewritten. The order this desk takes, open to his
+reversal: the front first, because it was the ladder's next rung before
+the post was written; then territory, the mirror, the roll call, the
+loss drill, and the source mirror last, because it needs a place to hold
+a private release.
+
+Not touched by these rulings: the Pi kit and OS-5, parked.
+
 ## The ruling of 2026-10-13 (taken on the author's behalf, at his word)
 
 The author opened a direction: allow Harobanda to support real-time
