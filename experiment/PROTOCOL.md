@@ -41,13 +41,14 @@ and every seam below says so.
   because the floor has none).
 - **`src/mirroraudit.zig`** -- `harb mirror check` inside the keeper (the kept
   listing against the key it was told, every file against its digest; `--wait`,
-  and `--fresh` to wait for an attempt made after it began, so that a copy left
-  by an earlier boot is not mistaken for one that followed the source; a copy is
+  and `--fresh` to wait for an attempt made after it began and say what it came
+  to (the exit is the copy's), `--follow` to exit 1 unless that attempt reached
+  the source; a copy is
   read twice before it is convicted, because a swap can land between two reads)
   and `harb mirror verify <fleet> <mirror> <listing> <dir>` on a host with the
   fleet file and no secret.
 - **The machine grammar** (`src/machine.zig`, `declarative/machine/GRAMMAR.md`,
-  312/312): `MIRROR_OF`, `MIRROR_FOR` and `MIRROR_SERVER` (a clause of a NETWORK)
+  317/317): `MIRROR_OF`, `MIRROR_FOR` and `MIRROR_SERVER` (a clause of a NETWORK)
   on the machine that gives; `MIRROR_FROM`, `MIRROR_KEY`, `MIRROR_INTO` and
   `MIRROR_EVERY` on the one that keeps; a machine gives or keeps, never both
   (R211), and both sign, so both need an `IDENTITY`. The directory must lie in
@@ -85,9 +86,10 @@ exists:
 
 ```
 boot: mirror -- lan gives the files of /data/ledger on
-    10.30.0.1:7400, to the one device whose key it was told
-    and to nobody else; the listing is signed with this
-    device's key, and only the files ledger owns are given
+    10.30.0.1:7400, only to a request signed by the one
+    device whose key it was told; the listing is signed with
+    this device's key and cut for that device alone, and
+    only the files ledger owns are given
 boot: mirror -- takes the files at 10.30.0.1:7400 into
     /data/copy every 5 s, when the listing verifies against
     the key it was told; a copy replaces the last one only
@@ -162,15 +164,62 @@ the last attempt.
   turned a Zig string literal into one with a line end in it twice; both were
   found by the compiler and repaired. Anything with a backslash in it is written
   with the file tools.
+- **An independent read-only review found eight things in work that had passed
+  every gate**, and each has the case that now convicts it
+  (`experiment/mirror_probe.sh`, u32-u40 and c43-c46) or is a seam below.
+  (1) A record cut short was installed over a good one: a pull that could not
+  write `D.manifest.new` whole (a full disk) left it beside a copy it did not
+  describe, and the next recovery read "record waiting, no staging place, copy
+  present" -- the mark of a swap whose last rename was cut -- and renamed it over
+  `D.manifest`. A record that waited is installed now only if it IS the copy's
+  (`describesCopy`: it parses, and the directory is exactly what it lists), and
+  is removed before the staging place and by a pull that stops before its swap.
+  (2) A lone `MIRROR_FOR` -- an identity, a key to give a copy to, and nothing
+  to give -- unwrapped a clause that was not there, so `harb check` panicked on
+  a declaration one typo writes (R254).
+  (3) Every flush was thrown away: `fsync` of a file, of the staging place, of
+  the record and of the directory above, all discarded, and then the new copy was
+  promoted and the old one deleted, so a flush that failed broke "the last
+  complete copy, or none". Each is asked for now and a failure is a pull that
+  FAILED before the swap; the previous copy is dropped only once the directory is
+  flushed; a line about an attempt that cannot be written no longer leaves the
+  one before it standing as this one's. No test can make a flush fail, so these
+  are asked for and not convicted (a seam).
+  (4) `--fresh` was satisfied by any attempt, a silent one included, so a source
+  that was down gave exit 0 beside a stale copy under a document that said the
+  flag told "followed the source" from "the copy that was there". `--fresh` says
+  what it does now (waits for an attempt made after it began; the exit is the
+  copy's, the attempt's outcome is the line beside it) and `--follow` is the
+  question the document had asked: exit 1 unless that attempt came to `ok`.
+  (5) The source capped entries (4096) and not bytes, the keeper refuses a
+  listing over 1 MiB, so a thousand files with long paths were served and refused
+  for ever, the source believing it had served. The source says so and gives
+  nothing.
+  (6) `JOURNAL "/data/record"` with `MIRROR_INTO "/data/record.time"` passed the
+  court, and the first pull deleted the statements that date the record; a MOUNT
+  at a name the copy makes was not asked either. The court knows
+  `machine.journal_family` (held equal to the floor's own by a test) and every
+  mount (R255-R257, A60 as the neighbour that stays accepted).
+  (7) Two claims were stronger than the exchange. The request is signed over
+  the two nonces and bound to neither the source nor the connection, so a host
+  at the source's address can relay the real source's challenge to the keeper and
+  the keeper's request back, and read the copy that follows; integrity holds (the
+  keeper verifies the source's signature and every digest) and confidentiality
+  does not, and "to the one device ... and to nobody else" said otherwise. The
+  boot line says what is checked now, the pin follows it, and the seam is named.
+  (8) No generations, named below. And a small one: the walk examined a
+  directory and opened it without looking at what it had opened, as it does for a
+  file; it does now (a race, convicted by no test).
 
 ## What is judged, and by what
 
-114 fleet fixtures (FA17-FA21 and FR74-FR93 new) and 312 machine fixtures (A54-A59
-and R210-R253 new); 16 tests on Linux, none skipped (`experiment/mirror_unit.sh`:
+114 fleet fixtures (FA17-FA21 and FR74-FR93 new) and 317 machine fixtures (A54-A60
+and R210-R257 new); 23 tests on Linux, none skipped (`experiment/mirror_unit.sh`:
 a walk that gives what the world owns and says what it cannot, a copy over a real
 socket pair that follows the source and keeps the last one that verified, a source
 that replays, lies about a file's bytes or stops half way, a swap cut short at
-each step, a file another identity owns); `experiment/os12_mirror.sh`, two
+each step and a record that waited, a listing too long for a keeper, a file
+another identity owns, the audit's `--follow`); `experiment/os12_mirror.sh`, two
 machines on one wire, enrolment by hand, ten rounds read off both disks -- the
 declared copy (a ledger of a few hundred kilobytes, equal file for file to the
 source's disk), the changed directory, an impostor with a forged file, a stranger,
@@ -178,17 +227,29 @@ a symbolic link, the machine's own key as a hard link, the source gone, a pull c
 short at two steps, a copy changed on the disk, and both machines with no disk --
 then three audits that must pass and eight cases that must be refused, pinned at
 545 lines (`machines/mirror.expected`); and `experiment/mirror_probe.sh`, which
-puts one bug at a time into a scratch copy of the source (32 of the tests' files
-and 60 of the rules of the two grammars) and requires each to be convicted by the
+puts one bug at a time into a scratch copy of the source (41 of the tests' files
+and 64 of the rules of the two grammars) and requires each to be convicted by the
 case named for its rule.
 
 ## Named seams
 
 - **One mirror per machine.** A machine gives or keeps, once; a chain of copies
   and a fan of keepers are refused (FR77-FR79).
-- **The bytes cross the link in the clear** after both ends have proved who they
-  are: integrity is the source's key, access is the keeper's key, and
-  confidentiality is the link's.
+- **The bytes cross the link in the clear, and the exchange is bound to nothing
+  but its two nonces.** A change on the way is caught (the signature and every
+  digest are the source's), and what is given is given to a request signed by the
+  keeper's key; but a host that sits at the source's address can relay the real
+  source's challenge to the keeper and the keeper's request back, and read the
+  copy that follows. Confidentiality is the link's, and so is the choice of a
+  link nobody else is on.
+- **No generations.** The copy is the last COMPLETE one, which can also be the
+  last EMPTY one: one pull of a directory a world has emptied, or encrypted,
+  replaces the copy and deletes the previous one within `MIRROR_EVERY`. A keeper
+  that keeps more than one is not built.
+- **A flush that fails is asked for and said, and no test makes one fail.** Every
+  `fsync` of a pull is read, and a failure ends the pull before the swap with the
+  copy it had; there is no filesystem here that refuses a flush on demand, so no
+  mutant turns one back into a discard.
 - **A source serves one connection at a time**, and waits up to fifteen seconds for
   an asker to prove who it is: a host on the link that holds connections open can
   keep the keeper waiting, with no limit on how often anybody may ask (the time
@@ -209,8 +270,8 @@ case named for its rule.
   keep a world from using them against the machine.
 - **Only regular files and directories are carried**; a pipe, a socket, a device
   or a directory on another filesystem makes the directory unmirrorable, loudly.
-  The filesystem-boundary check and the walk's second look at a file's owner while
-  it is streamed (a race) are judged by no test.
+  The filesystem-boundary check and the walk's second looks -- at a file's owner while
+  it is streamed, at a directory once it is open -- are races, judged by no test.
 - **A mirror that stops mirroring does not stop the machine's watchdog**, and a
   keeper that is refused for ever is told by `harb mirror check`, not by a verdict.
 - **What is consistent is the application's.** The floor copies files; a database

@@ -111,7 +111,7 @@ srcenrol: boot: grant filesystem (effectful)
 srcenrol: boot: grant network (effectful)
 srcenrol: boot: network lan -- eth0 up 10.30.0.1/24
 srcenrol: boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint FP1
-srcenrol: boot: mirror -- lan gives the files of /data/ledger on 10.30.0.1:7400, to the one device whose key it was told and to nobody else; the listing is signed with this device's key, and only the files ledger owns are given
+srcenrol: boot: mirror -- lan gives the files of /data/ledger on 10.30.0.1:7400, only to a request signed by the one device whose key it was told; the listing is signed with this device's key and cut for that device alone, and only the files ledger owns are given
 srcenrol: boot: confine -- enrol has no network of its own, ledger has no network of its own and no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
 srcenrol: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 srcenrol: boot: state -- ledger owns /data/ledger as clerk (2000:2000); each made, then read back as that identity's, mode 0700
@@ -167,7 +167,7 @@ source1: boot: grant filesystem (effectful)
 source1: boot: grant network (effectful)
 source1: boot: network lan -- eth0 up 10.30.0.1/24
 source1: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP1
-source1: boot: mirror -- lan gives the files of /data/ledger on 10.30.0.1:7400, to the one device whose key it was told and to nobody else; the listing is signed with this device's key, and only the files ledger owns are given
+source1: boot: mirror -- lan gives the files of /data/ledger on 10.30.0.1:7400, only to a request signed by the one device whose key it was told; the listing is signed with this device's key and cut for that device alone, and only the files ledger owns are given
 source1: boot: confine -- enrol has no network of its own, ledger has no network of its own and no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
 source1: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 source1: boot: state -- ledger owns /data/ledger as clerk (2000:2000); each made, then read back as that identity's, mode 0700
@@ -254,7 +254,7 @@ impostor: boot: grant filesystem (effectful)
 impostor: boot: grant network (effectful)
 impostor: boot: network lan -- eth0 up 10.30.0.1/24
 impostor: boot: identity -- ed25519, custody a file at /data/device.key -- created on this device, fingerprint FP3
-impostor: boot: mirror -- lan gives the files of /data/ledger on 10.30.0.1:7400, to the one device whose key it was told and to nobody else; the listing is signed with this device's key, and only the files ledger owns are given
+impostor: boot: mirror -- lan gives the files of /data/ledger on 10.30.0.1:7400, only to a request signed by the one device whose key it was told; the listing is signed with this device's key and cut for that device alone, and only the files ledger owns are given
 impostor: boot: confine -- enrol has no network of its own, ledger has no network of its own and no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
 impostor: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
 impostor: boot: state -- ledger owns /data/ledger as clerk (2000:2000); each made, then read back as that identity's, mode 0700

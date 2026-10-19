@@ -65,6 +65,9 @@ pub const max_line: usize = 512;
 /// that must name the same files.
 pub const kept_manifest_suffix = ".manifest";
 pub const kept_last_suffix = ".last";
+/// The first word of the line a puller keeps when its attempt came to a copy that verified (the others are `silent`,
+/// `refused`, `unverified` and `failed`): `harb mirror check --follow` asks for this one, and the puller writes it.
+pub const attempt_ok = "ok";
 
 // ---- spelling ----------------------------------------------------------------------------------------
 
@@ -284,6 +287,10 @@ pub fn build(alloc: std.mem.Allocator, pair: Ed25519.KeyPair, puller: [16]u8, no
     try w.writeAll("end\n");
     const sig = try pair.sign(aw.written(), null);
     try w.print("sig={x}\n", .{&sig.toBytes()});
+    // the keeper reads no more than `max_manifest_bytes` of listing, whatever its entries said (`parse`): a listing longer
+    // than that is never built, so that it is never served in a form the keeper always refuses, with the source believing
+    // it served and nobody told why nothing arrives
+    if (aw.written().len > max_manifest_bytes) return error.ListingTooLarge;
     return aw.toOwnedSlice();
 }
 
@@ -625,6 +632,22 @@ test "a manifest that was changed, or is not this source's, or is not for this p
     // not a manifest
     try t.expect(verify(arena, "", src.public_key, puller, test_nonce_b).bad == .malformed);
     try t.expect(verify(arena, "GET / HTTP/1.0\r\n\r\n", src.public_key, puller, test_nonce_b).bad == .malformed);
+}
+
+test "a listing longer than a keeper will read is refused where it is cut, and one that fits is cut (MIR-1)" {
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const a = arena_state.allocator();
+    const pair = try testPair(7);
+    // a thousand files whose paths are a thousand bytes: well inside the entries a listing may carry, and over the bytes
+    const deep = ("A" ** 250) ++ "/" ++ ("B" ** 250) ++ "/" ++ ("C" ** 250) ++ "/" ++ ("f" ** 246);
+    const entries = try a.alloc(Entry, 1000);
+    for (entries, 0..) |*e, i| e.* = .{ .kind = .file, .path = try std.fmt.allocPrint(a, "{s}{d:0>4}", .{ deep, i }), .size = 1, .digest = digestOf("x") };
+    try std.testing.expectError(error.ListingTooLarge, build(a, pair, [_]u8{1} ** 16, [_]u8{2} ** nonce_len, "/data/app", entries));
+    // the same entries, fewer: a listing of the size a keeper reads is cut, and is not longer than it
+    const fits = try build(a, pair, [_]u8{1} ** 16, [_]u8{2} ** nonce_len, "/data/app", entries[0..900]);
+    try std.testing.expect(fits.len <= max_manifest_bytes);
+    try std.testing.expect(fits.len > max_manifest_bytes / 2);
 }
 
 test "a manifest has one spelling, and a path that could lead anywhere is not one (MIR-1)" {

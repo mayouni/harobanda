@@ -334,7 +334,8 @@ Two machines are the two ends, and a machine is one end or the other, never both
   and TCP port it is given on (`MIRROR_SERVER`, a clause of a NETWORK). The
   directory must lie in the `STATE` of a world that runs as an identity (R223), so
   that the court knows whose it is; on a disk that survives the power (R224) and
-  keeps owners, which is ext4 (R225). The source signs, with its device key, a
+  keeps owners, which is ext4 (R225); a key with no directory to give is refused,
+  never unwrapped (R254). The source signs, with its device key, a
   listing of every entry it gives and the digest of each file, and sends the bytes
   after it
 - **the keeper** says whom it takes from and whose word it takes (`MIRROR_FROM`, an
@@ -343,7 +344,8 @@ Two machines are the two ends, and a machine is one end or the other, never both
   30 when it says nothing; R246, R247). The copy is kept on an ext4 disk that is
   writable, not at the root of the disk (R236-R240), where no world owns the place
   and where none of the names the floor makes beside the copy can land on the key,
-  the record or a world's directory (R241-R245)
+  the record, the statements that date it, a mount or a world's directory
+  (R241-R245, R255-R257)
 
 Both ends SIGN -- the source its listing, the keeper its request -- so both need an
 `IDENTITY` (R212), and a key is one spelling of 32 bytes that is a key (R221, R222,
@@ -357,7 +359,7 @@ descriptor, and the source gives a file only if the WORLD owns it: a hard link t
 file of the machine's is a regular file with another owner, and is refused for it. A
 pipe, a socket and a device are refused; so is a directory on another filesystem.
 Whatever is wrong with one name makes the whole directory unmirrorable, and the
-source says which -- to the device it gives to, and to nobody else.
+source says which -- to a request signed by the device it gives to.
 
 **A copy is the last COMPLETE one, or none.** The keeper receives into a place of its
 own beside the copy, holds each file to the digest the signed listing states while
@@ -370,19 +372,23 @@ secret can verify the copy for as long as it is kept.
 
 What it says at boot, once the child that does it exists (a line that says where
 the machine is, is said only after asking): `boot: mirror -- lan gives the files of
-/data/ledger on 10.30.0.1:7400, to the one device whose key it was told ...`, or
+/data/ledger on 10.30.0.1:7400, only to a request signed by the one device whose key it was told ...`, or
 `boot: mirror -- takes the files at 10.30.0.1:7400 into /data/copy every 5 s ...`.
 The witnesses are `harb mirror check` (inside the keeper: the kept listing against
 the key it was told, every file against its digest, `--fresh` to wait for an attempt
-made after it began) and `harb mirror verify` (anywhere: the fleet file, the listing
-and the directory). The rules are R210-R250 (A54-A59 accept a source, a keeper at
-its default, shortest and longest pace, a directory inside a STATE and a name beside
-other names); the pair is the fleet's, `declarative/fleet/GRAMMAR.md`. It is judged by
+made after it began and say what it came to, `--follow` to exit 1 unless that attempt
+reached the source) and `harb mirror verify` (anywhere: the fleet file, the listing
+and the directory). The rules are R210-R257 (A54-A60 accept a source, a keeper at
+its default, shortest and longest pace, a directory inside a STATE, a name beside
+other names and a copy beside a journal); the pair is the fleet's, `declarative/fleet/GRAMMAR.md`. It is judged by
 `experiment/os12_mirror.sh` (two machines on one wire, enrolment by hand, and the
 negatives) and its rules by a probe that mutates each in a scratch copy
 (`experiment/mirror_probe.sh`). Named seams: one mirror per machine; the bytes
-cross the link in the clear after both ends have proved who they are (integrity is
-the source's key, access is the keeper's key, confidentiality is the link's); every
+cross the link in the clear and the exchange is bound to nothing but its two
+nonces (integrity is the source's key; a host at the source's address can relay the
+challenge and the request and read the copy that follows; confidentiality is the
+link's); the copy is the last COMPLETE one, which can also be the last empty one
+(no generations); every
 pull moves every byte, and needs room for a second copy while it swaps; a source
 that rolls its own directory back is its own word, since freshness reaches no
 further than the request; there is no restore verb yet; the children are the

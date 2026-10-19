@@ -17,7 +17,11 @@
 #              of the directory followed / a link in it taken for a file / a link not named / a file that is not the
 #              world's given / a pipe given / a name that cannot be carried given / entries unsorted / a listing not held
 #              to the request / a file's bytes not held to their digest / a swap cut short not undone, not finished, and
-#              not cleaned up / a refusal's words that could start a line
+#              not cleaned up / a record that waited finished though it is not the copy's, or though the staging place
+#              still stands / a line about an attempt that cannot be kept leaving the older one standing / a listing longer
+#              than a keeper reads cut all the same, or not said to be / `--follow` taking any attempt for a followed one,
+#              not consulted, or not implying `--fresh` / an attempt from before the witness began counted / a refusal's
+#              words that could start a line
 #   courts   the machine, fleet and pack courts, then mutants of the machine grammar's mirror rules and of the fleet's,
 #              each convicted by the fixture named for its rule (a refusal that is computed and not returned, a condition
 #              dropped, a bound moved). A mutant that makes the court CRASH on the case is convicted too, and the probe
@@ -26,10 +30,14 @@
 #
 # What it does not reach, and says: the filesystem boundary of the walk (a directory on another filesystem than the one it
 # lies in) needs a second filesystem a unit test cannot make; the walk's second look at a file's owner while it is being
-# streamed is a race, which a test cannot win on purpose; and the read-back of what the puller wrote is caught first by the
-# per-file digest, so removing it changes nothing a test can see -- it is what a disk that lies about a write would be
-# convicted by, and no test has such a disk. The scene (experiment/os12_mirror.sh) boots the rest, and its negatives are
-# read off two machines' disks.
+# streamed, and at a directory once it is open, are races, which a test cannot win on purpose; the read-back of what the
+# puller wrote is caught first by the per-file digest, so removing it changes nothing a test can see -- it is what a disk
+# that lies about a write would be convicted by, and no test has such a disk; and the same disk is the one that would make
+# a flush FAIL, which is why the puller asks for the result of every flush it makes and no mutant turns one back into a
+# discard -- there is no filesystem here that refuses a flush on demand. The record that waited is removed before the
+# staging place, and by a pull that stops before its swap: with `describesCopy` asking whether it is the copy's, the order
+# and the cleanup change nothing a test can see, and are kept as cheap hygiene, not as rules. The scene
+# (experiment/os12_mirror.sh) boots the rest, and its negatives are read off two machines' disks.
 #
 #   wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/mirror_probe.sh [units|courts|all]
 #
@@ -54,7 +62,7 @@ rm -f "$LOG"
   cd "$S" || exit 1
   grep -q 'pub fn attempt' src/mirrorserve.zig || { echo "src/mirrorserve.zig has no attempt: nothing to probe"; exit 1; }
   verdict=0
-  MR=src/mirror.zig; SV=src/mirrorserve.zig; MC=src/machine.zig; FL=src/fleet.zig
+  MR=src/mirror.zig; SV=src/mirrorserve.zig; MA=src/mirroraudit.zig; MC=src/machine.zig; FL=src/fleet.zig
 
   # ---- the tests ------------------------------------------------------------------------------------
   utest() { # $1 = label, $2 = the file whose tests are run ; leaves the output in $S/$1.txt and the status in RC
@@ -85,7 +93,7 @@ rm -f "$LOG"
 
   if [ "$MODE" = units ] || [ "$MODE" = all ]; then
     echo "=== the production source, on Linux (uid $(id -u)) ==="
-    for f in $MR $SV; do
+    for f in $MR $MA $SV; do
       utest production "$f"
       if [ "$RC" -ne 0 ]; then echo "THE PRODUCTION SOURCE FAILS ITS OWN TESTS ($f)"; verdict=1; fi
       # the tests must have RUN, not been skipped: a skip is no witness
@@ -132,11 +140,22 @@ rm -f "$LOG"
 
     # a swap cut short at any step
     umutant "u28: a copy set aside and not put back" $SV 's#if (!exists(into) and exists(old)) cwd\.rename(old, into) catch {};#if (false and !exists(into) and exists(old)) cwd.rename(old, into) catch {};#' $SV "a swap cut short"
-    umutant "u29: a record that waited for its copy is not finished" $SV 's#if (exists(man_new) and !exists(new) and exists(into)) cwd\.rename(man_new, man) catch {};#if (false and exists(man_new) and !exists(new) and exists(into)) cwd.rename(man_new, man) catch {};#' $SV "a swap cut short"
+    umutant "u29: a record that waited for its copy is not finished" $SV 's#if (exists(man_new) and !exists(new) and exists(into) and describesCopy(alloc, man_new, into)) cwd\.rename(man_new, man) catch {};#if (false and exists(man_new) and !exists(new) and exists(into) and describesCopy(alloc, man_new, into)) cwd.rename(man_new, man) catch {};#' $SV "a swap cut short"
     umutant "u30: a pull that was never finished is not cleaned up" $SV '/^    cwd\.deleteTree(new) catch {};$/d' $SV "a swap cut short"
 
     # what is written on the wire cannot be a second line
     umutant "u31: a refusal's words may carry a line end" $SV 's#= if (c < 0x20 or c == 0x7f) \x27?\x27 else c;#= c;#' $SV "an outcome is one line"
+
+    # what the independent review found, each with the case that now convicts it
+    umutant "u32: a record that waited is finished though it is not the copy's" $SV 's# and describesCopy(alloc, man_new, into)##' $SV "a swap cut short"
+    umutant "u33: a record that waited is finished though the staging place still stands" $SV 's#if (exists(man_new) and !exists(new) and exists(into) and describesCopy#if (exists(man_new) and exists(into) and describesCopy#' $SV "a swap cut short"
+    umutant "u34: a line that cannot be kept leaves the older one standing" $SV '/^        std\.fs\.cwd()\.deleteFile(last) catch {};$/d' $SV "cannot be kept does not leave an older one standing"
+    umutant "u35: a listing longer than a keeper reads is cut all the same" $MR '/if (aw\.written()\.len > max_manifest_bytes) return error\.ListingTooLarge;/d' $MR "a listing longer than a keeper will read"
+    umutant "u36: a directory whose listing is too long is not said to be" $SV 's#if (e == error\.ListingTooLarge) {#if (false and e == error.ListingTooLarge) {#' $SV "listing would be longer than a keeper reads is refused by the source"
+    umutant "u37: an attempt that reached nobody is taken for a followed one" $MA '/^fn cameToOk/,/^}/{/^    if (!std\.mem\.startsWith/d;s/^    return line\.len == .*/    _ = line;\n    return true;/}' $MA "the word of an attempt that came to a copy"
+    umutant "u38: --follow is not consulted" $MA 's#if (opts\.follow and !(if (last) |l| cameToOk(l) else false)) {#if (false and opts.follow and !(if (last) |l| cameToOk(l) else false)) {#' $MA "only --follow asks whether the attempt reached the source"
+    umutant "u39: --follow does not imply --fresh" $MA '/o\.follow = true;/{n;d}' $MA "the arguments of check are read in any order"
+    umutant "u40: an attempt made before the witness began counts" $MA 's#return st\.mtime >= began;#_ = began;\n    return st.mtime >= 0;#' $MA "only --follow asks whether the attempt reached the source"
   fi
 
   # ---- the courts -----------------------------------------------------------------------------------
@@ -182,7 +201,7 @@ rm -f "$LOG"
     cmutant "c3: a mirror signed by nobody" $MC '/const sign_key = identity orelse return/s#orelse return ctx\.refuse(.*$#orelse "/data/device.key";#' machine R212
     cmutant "c4: a copy given to whoever asks" $MC '/const fc = for_c orelse return/s#orelse return ctx\.refuse(.*$#orelse of;#' machine R213
     cmutant "c5: a directory to give and no link to give it on" $MC "/const net = server_net orelse return/ $NU" machine R214
-    cmutant "c6: a link that gives a copy of nothing" $MC "/const of = of_c orelse return/ $NU" machine R215
+    cmutant "c6: a link that gives a copy of nothing" $MC '/says MIRROR_SERVER and this machine declares no MIRROR_OF/d' machine R215
     cmutant "c7: a source on a leased address" $MC "/asks for its own address by dhcp, and the address a copy is asked of/$NR" machine R216
     cmutant "c8: a port below 1024" $MC '/MIRROR_SERVER is the TCP port/s/port < 1024 or //' machine R217
     cmutant "c9: a source on a loopback" $MC "/which nobody else can ask: a mirror's source gives its copy on a link/$NR" machine R218
@@ -219,6 +238,12 @@ rm -f "$LOG"
     cmutant "c40: a mirror in a machine file" $MC 's/\.MACHINE, \.SERVICE, \.CAPABILITY, \.MOUNT, \.PIN, \.NETWORK, \.USER, \.PEER => false,/.MACHINE, .SERVICE, .CAPABILITY, .MOUNT, .PIN, .NETWORK, .USER, .PEER, .MIRROR => false,/; s/\.RESIDENCY, \.MIRROR => true,/.RESIDENCY => true,/' machine R250
     cmutant "c41: a path that is not plain names, for a copy" $MC "/MIRROR_INTO is an absolute path of plain names/$NR" machine R252
     cmutant "c42: a copy kept in a directory the machine mounts itself" $MC 's/for (implicit_mounts) |imp| if (within(into, imp)) return ctx\.refuse(ic\.line,/for (implicit_mounts) |imp| if (false and within(into, imp)) return ctx.refuse(ic.line,/' machine R253
+
+    # what the independent review found
+    cmutant "c43: a lone key is read as a directory it is not" $MC '/a key to give a copy to and nothing to give/s/for_c\.?\.line/of_c.?.line/' machine R254
+    cmutant "c44: a copy made where the time statements are kept" $MC 's/if (within(kept, name)) return ctx\.refuse(ic\.line,/if (false and within(kept, name)) return ctx.refuse(ic.line,/' machine R255
+    cmutant "c45: only the mount's own name is kept off, not a mount inside the copy" $MC 's/for (mount_slice) |mt| if (within(mt\.at, name)) return ctx\.refuse(ic\.line,/for (mount_slice) |mt| if (std.mem.eql(u8, mt.at, name)) return ctx.refuse(ic.line,/' machine R257
+    cmutant "c46: a copy made where a disk is mounted" $MC 's/for (mount_slice) |mt| if (within(mt\.at, name)) return ctx\.refuse(ic\.line,/for (mount_slice) |mt| if (false and within(mt.at, name)) return ctx.refuse(ic.line,/' machine R256
 
     cmutant "f1: a copy from a member nobody declared" $FL "/no MEMBER {s} is declared: a copy is given by a machine of this fleet/$NR" fleet FR74
     cmutant "f2: a copy to a member nobody declared" $FL "/no MEMBER {s} is declared: a copy is kept by a machine of this fleet/$NR" fleet FR75

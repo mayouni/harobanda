@@ -494,8 +494,8 @@ zig-out\bin\harb.exe mirror verify `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/mirror_unit.sh
 
-# the mirror's mutants that must be convicted: 32 of the
-# tests' files, 60 of the grammars' rules
+# the mirror's mutants that must be convicted: 41 of the
+# tests' files, 64 of the grammars' rules
 #   -> zig-out/wsl/mirror_probe_<mode>.txt
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/mirror_probe.sh units
@@ -651,7 +651,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   keeper's); a pipe, a socket, a device and a directory on another
   filesystem are refused; a link is named as a link whoever made it; one
   bad name makes the whole directory unmirrorable, and the source says
-  which, to the device it gives to and to nobody else. **The wire**: the
+  which, to a request signed by the device it gives to. **The wire**: the
   source sends a challenge, the keeper answers with a request signed by
   its device key over both nonces, and only a request that verifies under
   the key the source was declared to give to is answered (anything else
@@ -668,34 +668,51 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   time in it, since the floor has none), so that a holder of the source's
   public key can check the copy for as long as it is kept: `harb mirror
   check` inside the keeper (`--fresh` waits for an attempt made after it
-  began; a copy is read twice before it is convicted, because a swap can
-  land between two reads) and `harb mirror verify <fleet> <mirror>
+  began and prints what it came to, the exit being the copy's; `--follow`
+  also exits 1 unless that attempt reached the source; a copy is read
+  twice before it is convicted, because a swap can land between two
+  reads) and `harb mirror verify <fleet> <mirror>
   <listing> <dir>` anywhere, with no secret. `machine.mirror_family` is
   the ONE list of the seven names the floor makes for a copy, kept off
-  the key, the record and every world's place (R241-R245). **A promise
+  the key, the record, the statements beside it, every mount and every
+  world's place (R241-R245, R255-R257). **A promise
   the machine cannot keep is not made** (NS-1): a keeper whose disk the
   kernel refused would have made `/data/copy` in RAM, reported `ok`, and
   lost it with the power, and a source would have announced a directory
   its world was never given -- both say why and start nothing, and the
   boot differs from its expectation (round 10). Judged by the machine
-  court (312/312: A54-A59, R210-R253), the fleet court (114/114: FA17-FA21,
-  FR74-FR93), 16 tests on Linux with none skipped (`experiment/mirror_unit.sh`:
+  court (317/317: A54-A60, R210-R257), the fleet court (114/114: FA17-FA21,
+  FR74-FR93), 23 tests on Linux with none skipped (`experiment/mirror_unit.sh`:
   a walk, a copy over a real socket pair, a source that replays, lies or
-  stops half way, a swap cut at each step, a file another identity owns),
+  stops half way, a swap cut at each step and a record that waited, a file
+  another identity owns, a listing too long for a keeper, the audit's
+  `--follow`),
   `experiment/os12_mirror.sh` (two machines on one wire, enrolment by
   hand, ten rounds read off BOTH disks and pinned at 545 lines in
-  `machines/mirror.expected`) and `experiment/mirror_probe.sh` (32 mutants
-  of the tests' files and 60 of the grammars' rules, each convicted by
+  `machines/mirror.expected`) and `experiment/mirror_probe.sh` (41 mutants
+  of the tests' files and 64 of the grammars' rules, each convicted by
   the case named for it). **The scene's first run was invalid, and a
   comparison said so**: `debugfs` refuses to write to a disk a machine
   was ended on until `e2fsck` replays its journal, the directory PID 1
   had made for the world was not on that disk, and the world's `note` is
   not flushed when the machine is ended -- the one file two readbacks
   cannot agree on, left out of the counts and still held to its listing
-  by `mirror verify`; a seed that did not take now stops the scene. Named
-  seams: one mirror per machine; the bytes cross the link in the clear
-  after both ends have proved who they are (integrity is the source's
-  key, access the keeper's, confidentiality the link's); a source serves
+  by `mirror verify`; a seed that did not take now stops the scene. **A
+  read-only review then found eight things in work that had passed every
+  gate**: a record cut short by a full disk that recovery installed over
+  the good one, a lone `MIRROR_FOR` that crashed the court, every flush
+  discarded before the old copy was dropped, a `--fresh` that a silent
+  attempt satisfied, a listing no keeper would read, a copy that could be
+  made over the statements that date the record or over a mount, and two
+  claims stronger than the exchange; each has the case that convicts it,
+  or is a seam below (`experiment/PROTOCOL.md`). Named seams: one mirror
+  per machine; the bytes cross the link in the clear and the exchange is
+  bound to nothing but its two nonces (integrity is the source's key; a
+  host at the source's address can relay the challenge and the request
+  and read the copy that follows; confidentiality is the link's); a copy
+  is the last COMPLETE one, which can also be the last EMPTY one -- no
+  generations; a flush that fails is asked for and reported, and no test
+  makes one fail; a source serves
   one connection at a time, with no limit on how often anybody may ask;
   every pull moves
   every byte and needs room for a second copy; no freshness beyond the

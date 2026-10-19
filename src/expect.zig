@@ -177,7 +177,7 @@ pub fn mirrorLines(w: *std.Io.Writer, m: *const machine.Machine) !bool {
                 .dhcp => continue,
             };
             var ib: [16]u8 = undefined;
-            try w.print("boot: mirror -- {s} gives the files of {s} on {s}:{d}, to the one device whose key it was told and to nobody else; the listing is signed with this device's key, and only the files {s} owns are given\n", .{ n.name, mo.dir, fmtIp(&ib, at.ip), port, mo.world });
+            try w.print("boot: mirror -- {s} gives the files of {s} on {s}:{d}, only to a request signed by the one device whose key it was told; the listing is signed with this device's key and cut for that device alone, and only the files {s} owns are given\n", .{ n.name, mo.dir, fmtIp(&ib, at.ip), port, mo.world });
             any = true;
         }
     }

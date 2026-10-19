@@ -77,7 +77,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member> | front <name>]   (machines judged together; one device's record checked by another; a door, by name and root)
         \\  harb time   verify <file.fleet> <statements> [<record>]   (what the fleet's time authority said about a record, checked with the key the fleet holds)
-        \\  harb mirror check [file.machine] [--wait N] [--fresh]   (is the copy this machine keeps the source's word? every file against the listing the source signed; from inside the machine)
+        \\  harb mirror check [file.machine] [--wait N] [--fresh | --follow]   (is the copy this machine keeps the source's word? every file against the listing the source signed, from inside the machine; --follow also asks that the attempt just made reached the source)
         \\  harb mirror verify <file.fleet> <mirror> <listing> <dir>   (the same, with the fleet's two keys and nothing else: the listing the keeper kept and the directory it keeps, checked from anywhere)
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
         \\  harb place  <file.machine> <file.pack>... [--after <world>] [--out <file>]   (a solution's services, placed on a machine and judged as one; --after orders them after one of its worlds)
@@ -411,7 +411,7 @@ pub fn main() !u8 {
         // `check` from inside the machine that keeps it, and `verify` from anywhere, with the fleet file and no secret
         if (args.len >= 3 and std.mem.eql(u8, args[2], "verify")) return mirroraudit.verify(arena, args[3..], out);
         if (args.len < 3 or !std.mem.eql(u8, args[2], "check")) {
-            try out.print("harb: mirror takes a verb: check [file.machine] [--wait N] [--fresh] | verify <file.fleet> <mirror> <listing> <dir>\n", .{});
+            try out.print("harb: mirror takes a verb: check [file.machine] [--wait N] [--fresh | --follow] | verify <file.fleet> <mirror> <listing> <dir>\n", .{});
             return 1;
         }
         const path = firstPathBefore(args[3..]) orelse "/etc/machine";

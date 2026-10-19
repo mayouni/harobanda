@@ -427,6 +427,11 @@ pub const mirror_every_max: u32 = 86400;
 /// no others, and a test in mirror.zig holds the names it uses to this list.
 pub const mirror_family = [_][]const u8{ "", ".new", ".old", ".manifest", ".manifest.new", ".last", ".last.new" };
 
+/// The files the floor keeps BESIDE the JOURNAL, by the suffix each is given: the statements that date its entries
+/// (`timeattest.kept_suffix`, which this file cannot import and a test in mirrorserve.zig holds equal). The court keeps
+/// a copy's names off them as it keeps them off the record itself.
+pub const journal_family = [_][]const u8{".time"};
+
 /// A number as an endpoint spells it: digits and nothing else, no sign, no separator and no leading zero.
 /// `parseInt` takes `+7000`, `7_000` and `07000` for 7000, and then one endpoint has several spellings, each a
 /// different text in a transcript and in a comparison made on text.
@@ -572,8 +577,9 @@ pub const Network = struct {
     /// ADDRESS (the address that is asked is not a lease), a CLOCK and an IDENTITY.
     time_authority: ?u16 = null,
     /// the TCP port this machine gives the copy of its directory on, on this link (MIR-1): it is the
-    /// SOURCE of a mirror, and gives the files of its MIRROR_OF to the one device named by MIRROR_FOR and to
-    /// nobody else. Needs a static ADDRESS (the address that is asked is not a lease) and an IDENTITY.
+    /// SOURCE of a mirror, and gives the files of its MIRROR_OF to a request signed by the one device named by
+    /// MIRROR_FOR (a relay on the link can still read what is given: nothing here is encrypted). Needs a static ADDRESS
+    /// (the address that is asked is not a lease) and an IDENTITY.
     mirror_server: ?u16 = null,
     rationale: []const u8,
 };
@@ -2052,8 +2058,13 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             const sign_key = identity orelse return ctx.refuse(first_line, "a mirror is signed by this device (the source signs what it gives, the destination signs that it asks), and this machine declares no IDENTITY: a copy nobody signed is anybody's", .{});
 
             if (gives) {
-                const net = server_net orelse return ctx.refuse(of_c.?.line, "MIRROR_OF is the directory this machine gives, and no NETWORK of it declares MIRROR_SERVER: on what link would it give it?", .{});
-                const of = of_c orelse return ctx.refuse(net.line, "{s} says MIRROR_SERVER and this machine declares no MIRROR_OF: what would it give?", .{net.name});
+                // which of the three clauses is missing decides what is said, and MIRROR_OF may be the missing one when only a
+                // key was declared: nothing here unwraps a clause that is not there
+                const of = of_c orelse {
+                    if (server_net) |n| return ctx.refuse(n.line, "{s} says MIRROR_SERVER and this machine declares no MIRROR_OF: what would it give?", .{n.name});
+                    return ctx.refuse(for_c.?.line, "MIRROR_FOR names the one device a copy is given to, and this machine declares no MIRROR_OF: a key to give a copy to and nothing to give", .{});
+                };
+                const net = server_net orelse return ctx.refuse(of.line, "MIRROR_OF is the directory this machine gives, and no NETWORK of it declares MIRROR_SERVER: on what link would it give it?", .{});
                 const fc = for_c orelse return ctx.refuse(of.line, "MIRROR_OF is the directory this machine gives, and it declares no MIRROR_FOR: a copy of a world's directory given to whoever asks is that directory given to the link", .{});
                 if (isLoopback(net)) return ctx.refuse(net.line, "{s} is a loopback, which nobody else can ask: a mirror's source gives its copy on a link", .{net.name});
                 const dir = try wantString(&ctx, of);
@@ -2104,6 +2115,14 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
                     const name = std.fmt.bufPrint(&buf, "{s}{s}", .{ into, suffix }) catch unreachable;
                     if (within(sign_key, name)) return ctx.refuse(ic.line, "the copy at MIRROR_INTO {s} makes {s}, which is where IDENTITY {s} is: the floor's own key is not a place a copy may be made", .{ into, name, sign_key });
                     if (journal) |rec| if (within(rec, name)) return ctx.refuse(ic.line, "the copy at MIRROR_INTO {s} makes {s}, which is where JOURNAL {s} is: the floor's own record is not a place a copy may be made", .{ into, name, rec });
+                    // what the floor keeps beside the record is the record's too: the first pull would delete the statements that date it
+                    if (journal) |rec| for (journal_family) |beside| {
+                        var jb: [max_path + 16]u8 = undefined;
+                        const kept = std.fmt.bufPrint(&jb, "{s}{s}", .{ rec, beside }) catch unreachable;
+                        if (within(kept, name)) return ctx.refuse(ic.line, "the copy at MIRROR_INTO {s} makes {s}, which is where the time statements of JOURNAL {s} are kept ({s}): the floor's own record is not a place a copy may be made", .{ into, name, rec, kept });
+                    };
+                    // and a place a disk is mounted on is not a name a copy is swapped in under: it cannot be renamed, and what is on it is not the copy's
+                    for (mount_slice) |mt| if (within(mt.at, name)) return ctx.refuse(ic.line, "the copy at MIRROR_INTO {s} makes {s}, which is where MOUNT {s} is mounted, or holds it: a copy is swapped in whole by renames, and a place a disk is mounted on cannot be", .{ into, name, mt.name });
                     for (svc_slice) |sv| for (sv.state) |s| if (within(name, s) or within(s, name)) {
                         return ctx.refuse(ic.line, "the copy at MIRROR_INTO {s} makes {s}, which overlaps {s}, the STATE of {s}: the owner of a directory can replace what is in it, so a copy is kept where no world owns the place", .{ into, name, s, sv.name });
                     };

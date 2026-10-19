@@ -4,7 +4,7 @@
 # The seat's tests that need a kernel -- the walk that follows no link, the files streamed over a socket between a
 # source and a puller, the swap that a power cut can interrupt at any step -- cannot run on the Windows host
 # (`zig build test` skips them there). `experiment/linux_test.sh` runs the whole suite and takes minutes; this runs
-# the two files of the seat and nothing else, which is the inner loop (PX): edit, run, read.
+# the three files of the seat and nothing else, which is the inner loop (PX): edit, run, read.
 #
 #   wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/mirror_unit.sh
 #
@@ -25,7 +25,7 @@ rm -f "$LOG"
   cp -r "$R/src" "$S/src" || { echo "copy failed"; exit 1; }
   cd "$S" || exit 1
   verdict=0
-  for f in src/mirror.zig src/mirrorserve.zig; do
+  for f in src/mirror.zig src/mirrorserve.zig src/mirroraudit.zig; do
     echo "=== zig test $f, on Linux (uid $(id -u)) ==="
     "$Z" test "$f" > "$S/out.txt" 2>&1
     rc=$?

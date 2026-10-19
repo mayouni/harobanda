@@ -284,11 +284,14 @@ the machine's own device key under another name (its bytes are found on no
 disk of the keeper's), the source gone, a pull cut short at two different
 steps, a copy changed on the keeper's disk, and both machines with the
 disk behind the copy refused by the kernel -- plus eight refusals on the host;
-by 16 tests on Linux (a real socket pair, a source that replays, lies or
-stops half way) and a probe that convicts each mutant of them and of the
-two grammars' rules (`experiment/mirror_probe.sh`). *Not built:* more than
-one mirror per machine; confidentiality on the link (the bytes cross in the
-clear after both ends have proved who they are); a delta (every pull moves
+by 23 tests on Linux (a real socket pair, a source that replays, lies or
+stops half way, a swap cut at each step) and a probe that convicts each
+mutant of them and of the two grammars' rules
+(`experiment/mirror_probe.sh`). *Not built:* more than one mirror per
+machine; confidentiality on the link (the bytes cross in the clear, and a
+host at the source's address can relay the exchange and read the copy);
+generations (the copy is the last complete one, which can also be the last
+empty one); a delta (every pull moves
 every byte, and needs room for a second copy while it swaps); freshness
 beyond the request (a source that rolls its own directory back is its own
 word); a restore verb; a confinement of the two children, which are the

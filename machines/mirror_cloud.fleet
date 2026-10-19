@@ -33,7 +33,7 @@ DEFINE MEMBER annex AS (
   KEY "abababababababababababababababababababababababababababababababab",
   HARDWARE "52:54:00:12:37:02",
   TERRITORY warehouse
-) RATIONALE "The machine that keeps the copy, standing in the warehouse, enrolled so that the source can be shown to give the copy to it and to nobody else"
+) RATIONALE "The machine that keeps the copy, standing in the warehouse, enrolled so that the source can be shown to give the copy to its key and to no other key"
 
 DEFINE MIRROR ledger_copy AS (
   FROM depot,

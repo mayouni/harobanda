@@ -266,7 +266,7 @@ pub const lessons = [_]Lesson{
         .run = "zig build court -j2",
         .look = &.{
             "ok   pin -- declarative/machine/fixtures.json is the file declarative/machine/PINNING.md names (sha256 ...)",
-            "312/312 -- 59 accepts, 253 rejects, 0 failures     (the machine grammar)",
+            "317/317 -- 60 accepts, 257 rejects, 0 failures     (the machine grammar)",
             "114/114 -- 21 accepts, 93 rejects, 0 failures        (the fleet grammar)",
             "learn -- 20 lessons: every path they name is present, ...",
             "",

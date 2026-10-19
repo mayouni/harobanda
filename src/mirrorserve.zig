@@ -44,6 +44,7 @@ const machine = @import("machine.zig");
 const mirror = @import("mirror.zig");
 const journal = @import("journal.zig");
 const timeserve = @import("timeserve.zig");
+const timeattest = @import("timeattest.zig");
 
 const linux = std.os.linux;
 const posix = std.posix;
@@ -285,6 +286,9 @@ const Walker = struct {
                 try self.list.append(self.alloc, .{ .kind = .dir, .path = rel });
                 const child = posix.openat(fd, ent.name, open_dir, 0) catch |e| return self.refuse("{s} could not be opened: {s}", .{ rel, @errorName(e) });
                 defer posix.close(child);
+                // the directory that was opened is the one that was examined, and still the world's
+                const cst = posix.fstat(child) catch |e| return self.refuse("{s} could not be examined: {s}", .{ rel, @errorName(e) });
+                if (!linux.S.ISDIR(cst.mode) or cst.ino != st.ino or cst.dev != st.dev or cst.uid != self.uid) return self.refuse("{s} changed while it was being examined", .{rel});
                 try self.walk(child, rel, depth + 1);
             } else if (linux.S.ISREG(st.mode)) {
                 const ffd = posix.openat(fd, ent.name, open_file, 0) catch |e| return self.refuse("{s} could not be opened: {s}", .{ rel, @errorName(e) });
@@ -357,7 +361,17 @@ fn handle(conn: *Conn, alloc: std.mem.Allocator, pair: Ed25519.KeyPair, of: mach
         return;
     }
     const puller_fp = journal.fingerprintOf(req.key);
-    const text = mirror.build(alloc, pair, puller_fp, req.b, of.dir, sc.entries) catch return;
+    const text = mirror.build(alloc, pair, puller_fp, req.b, of.dir, sc.entries) catch |e| {
+        // a listing longer than the keeper will read is said here, to the one device that asked, and not served in a form it
+        // would always refuse: the source thinking it served and the keeper saying "longer than a listing can be" is a copy
+        // that never arrives and a reason nobody was told
+        if (e == error.ListingTooLarge) {
+            var buf: [200]u8 = undefined;
+            const msg = std.fmt.bufPrint(&buf, "mirror-refused the listing of this directory would be longer than {d} bytes, which a listing is not", .{mirror.max_manifest_bytes}) catch return;
+            conn.sendLine(msg, stall_ms) catch {};
+        }
+        return;
+    };
     conn.sendAll(text, stall_ms) catch return;
 
     // the bytes, in the order the signed listing states them, each held to the digest it was signed with as it goes
@@ -421,7 +435,7 @@ pub const Outcome = union(enum) {
     pub fn line(self: Outcome, buf: []u8) []const u8 {
         var sw: [300]u8 = undefined;
         return (switch (self) {
-            .ok => |o| std.fmt.bufPrint(buf, "ok files={d} dirs={d} bytes={d}", .{ o.files, o.dirs, o.bytes }),
+            .ok => |o| std.fmt.bufPrint(buf, "{s} files={d} dirs={d} bytes={d}", .{ mirror.attempt_ok, o.files, o.dirs, o.bytes }),
             .silent => |w| std.fmt.bufPrint(buf, "silent {s}", .{safeWords(&sw, w)}),
             .refused => |w| std.fmt.bufPrint(buf, "refused {s}", .{safeWords(&sw, w)}),
             .unverified => |w| std.fmt.bufPrint(buf, "unverified {s}", .{safeWords(&sw, w)}),
@@ -446,8 +460,13 @@ fn exists(path: []const u8) bool {
 ///
 ///   the copy is missing and `.old` is there      -> the first rename happened and the second did not: put it back
 ///   the copy is there, `.manifest.new` is there, and the staging place is not -> the second rename happened and the
-///                                                   third did not: finish it (the new record describes the new copy)
+///                                                   third did not: finish it -- but only if that record IS the copy's
+///                                                   (`describesCopy`): a pull that could not write it whole, or flush
+///                                                   it, leaves the same names and a record that describes nothing
 ///   anything else that is left over               -> a pull that was not finished: remove it, and pull again
+///
+/// The record that waited goes BEFORE the staging place: a cut between the two removals must leave the state that the
+/// next recovery reads as "a pull that was not finished", never the one it reads as a swap to finish.
 pub fn recover(alloc: std.mem.Allocator, into: []const u8) void {
     const cwd = std.fs.cwd();
     const new = named(alloc, into, ".new") catch return;
@@ -456,17 +475,31 @@ pub fn recover(alloc: std.mem.Allocator, into: []const u8) void {
     const man_new = named(alloc, into, ".manifest.new") catch return;
     const last_new = named(alloc, into, ".last.new") catch return;
     if (!exists(into) and exists(old)) cwd.rename(old, into) catch {};
-    if (exists(man_new) and !exists(new) and exists(into)) cwd.rename(man_new, man) catch {};
-    cwd.deleteTree(new) catch {};
+    if (exists(man_new) and !exists(new) and exists(into) and describesCopy(alloc, man_new, into)) cwd.rename(man_new, man) catch {};
     cwd.deleteFile(man_new) catch {};
+    cwd.deleteTree(new) catch {};
     cwd.deleteFile(last_new) catch {};
     if (exists(into)) cwd.deleteTree(old) catch {};
 }
 
-fn syncDir(path: []const u8) void {
-    const fd = posix.openat(fdcwd(), path, .{ .ACCMODE = .RDONLY, .DIRECTORY = true, .CLOEXEC = true }, 0) catch return;
+/// Whether the file at `man_path` is a listing, and the directory `into` is exactly what it lists: every entry there with
+/// the size and digest it says, and nothing else. Its signature is not asked again: this machine's own puller wrote it
+/// after verifying it, and what recovery wants to know is whether it is the record OF THIS COPY.
+fn describesCopy(alloc: std.mem.Allocator, man_path: []const u8, into: []const u8) bool {
+    const text = std.fs.cwd().readFileAlloc(alloc, man_path, mirror.max_manifest_bytes + 1) catch return false;
+    const listing = mirror.parse(alloc, text) catch return false;
+    var dir = std.fs.cwd().openDir(into, .{ .iterate = true }) catch return false;
+    defer dir.close();
+    const rep = mirror.verifyCopy(alloc, dir, listing) catch return false;
+    return rep.problem == null;
+}
+
+/// Flush a directory: its entries (a rename, a new name) are not durable until it is. A directory that could not be
+/// flushed is said, because a swap whose entries a power cut can take back is not yet a swap.
+fn syncDir(path: []const u8) !void {
+    const fd = try posix.openat(fdcwd(), path, .{ .ACCMODE = .RDONLY, .DIRECTORY = true, .CLOEXEC = true }, 0);
     defer posix.close(fd);
-    posix.fsync(fd) catch {};
+    try posix.fsync(fd);
 }
 
 /// Replace `path` with `bytes`, whole or not at all: written beside it, flushed, renamed over it.
@@ -486,10 +519,15 @@ pub fn record(alloc: std.mem.Allocator, into: []const u8, out: Outcome) void {
     var buf: [400]u8 = undefined;
     const text = std.fmt.allocPrint(alloc, "{s}\n", .{out.line(&buf)}) catch return;
     const last = named(alloc, into, mirror.kept_last_suffix) catch return;
-    replaceFile(alloc, last, text) catch return;
+    // a line that cannot be written must not leave the one before it standing: an "ok" about an earlier attempt, read as
+    // this one's, is the one thing this file must not say
+    replaceFile(alloc, last, text) catch {
+        std.fs.cwd().deleteFile(last) catch {};
+        return;
+    };
     // the rename is in the directory, and a directory is flushed on its own: a line a power cut can take back is a line
     // that says "ok" about a copy it was cut before
-    if (std.fs.path.dirnamePosix(into)) |parent| syncDir(parent);
+    if (std.fs.path.dirnamePosix(into)) |parent| syncDir(parent) catch {};
 }
 
 /// Ask once. Everything a pull does is here, and it returns what it came to.
@@ -582,7 +620,9 @@ pub fn attempt(alloc: std.mem.Allocator, pair: Ed25519.KeyPair, from: machine.Mi
             var d: [32]u8 = undefined;
             h.final(&d);
             if (!std.mem.eql(u8, &d, &e.digest)) return .{ .unverified = std.fmt.allocPrint(alloc, "{s} does not match the digest the source signed for it", .{e.path}) catch "a file does not match its digest" };
-            posix.fsync(wfd) catch {};
+            // a file that could not be flushed is not on the disk yet, and the read-back below is served from what was
+            // just written: the pull stops here, with the copy it had
+            posix.fsync(wfd) catch |er| return .{ .failed = std.fmt.allocPrint(alloc, "{s} cannot be flushed: {s}", .{ e.path, @errorName(er) }) catch "a file cannot be flushed" };
         },
     };
 
@@ -590,24 +630,29 @@ pub fn attempt(alloc: std.mem.Allocator, pair: Ed25519.KeyPair, from: machine.Mi
     const sd = std.fs.Dir{ .fd = stage };
     const rep = mirror.verifyCopy(alloc, sd, m) catch |e| return .{ .failed = std.fmt.allocPrint(alloc, "the copy could not be read back: {s}", .{@errorName(e)}) catch "the copy could not be read back" };
     if (rep.problem) |why| return .{ .unverified = std.fmt.allocPrint(alloc, "what was written does not match the listing: {s}", .{why}) catch "what was written does not match the listing" };
-    posix.fsync(stage) catch {};
+    posix.fsync(stage) catch |er| return .{ .failed = std.fmt.allocPrint(alloc, "the staging place cannot be flushed: {s}", .{@errorName(er)}) catch "the staging place cannot be flushed" };
 
     // the swap
     const old = named(alloc, from.into, ".old") catch return .{ .failed = "out of memory" };
     const man = named(alloc, from.into, mirror.kept_manifest_suffix) catch return .{ .failed = "out of memory" };
     const man_new = named(alloc, from.into, ".manifest.new") catch return .{ .failed = "out of memory" };
+    // the record that waits for the copy goes with a pull that stops before the swap: a half-written one left beside the
+    // copy is the state `recover` reads as a swap to finish. (Declared after the staging place's own, so it runs first.)
+    defer if (!keep) std.fs.cwd().deleteFile(man_new) catch {};
     {
         const f = std.fs.cwd().createFile(man_new, .{ .truncate = true, .mode = 0o600 }) catch |e| return .{ .failed = std.fmt.allocPrint(alloc, "{s} cannot be made: {s}", .{ man_new, @errorName(e) }) catch "the record cannot be made" };
         defer f.close();
         f.writeAll(text.items) catch |e| return .{ .failed = std.fmt.allocPrint(alloc, "{s} cannot be written: {s}", .{ man_new, @errorName(e) }) catch "the record cannot be written" };
-        f.sync() catch {};
+        f.sync() catch |e| return .{ .failed = std.fmt.allocPrint(alloc, "{s} cannot be flushed: {s}", .{ man_new, @errorName(e) }) catch "the record cannot be flushed" };
     }
     keep = true; // from here the staging place is the copy's to become, and recovery owns what is left
     const cwd = std.fs.cwd();
     if (exists(from.into)) cwd.rename(from.into, old) catch |e| return .{ .failed = std.fmt.allocPrint(alloc, "{s} cannot be set aside: {s}", .{ from.into, @errorName(e) }) catch "the old copy cannot be set aside" };
     cwd.rename(new, from.into) catch |e| return .{ .failed = std.fmt.allocPrint(alloc, "the copy cannot be put in place: {s}", .{@errorName(e)}) catch "the copy cannot be put in place" };
     cwd.rename(man_new, man) catch |e| return .{ .failed = std.fmt.allocPrint(alloc, "the record cannot be put in place: {s}", .{@errorName(e)}) catch "the record cannot be put in place" };
-    if (std.fs.path.dirnamePosix(from.into)) |parent| syncDir(parent);
+    // the previous copy is dropped only once the swap is durable: if the directory cannot be flushed, `.old` stays, and a
+    // power cut leaves either copy whole (`recover` reads which)
+    if (std.fs.path.dirnamePosix(from.into)) |parent| syncDir(parent) catch |e| return .{ .failed = std.fmt.allocPrint(alloc, "the swap was made and could not be flushed: {s}", .{@errorName(e)}) catch "the swap could not be flushed" };
     cwd.deleteTree(old) catch {};
     return .{ .ok = .{ .files = rep.files, .dirs = rep.dirs, .bytes = rep.bytes } };
 }
@@ -642,6 +687,13 @@ test "the names the floor makes for a copy are names the court knows (MIR-1)" {
         };
         try std.testing.expect(ok);
     }
+}
+
+test "what the court keeps a copy's names off is what the floor keeps beside the record (MIR-1)" {
+    // the statements that date the record's entries are kept in a file of this name beside it (PID 1 writes it, `harb journal`
+    // reads it); the court cannot import the module that says so, so the two are held equal here
+    try std.testing.expectEqual(@as(usize, 1), machine.journal_family.len);
+    try std.testing.expectEqualStrings(timeattest.kept_suffix, machine.journal_family[0]);
 }
 
 test "an outcome is one line with no time in it, and a refusal's words cannot start a second line (MIR-1)" {
@@ -907,6 +959,18 @@ test "a source gives its directory to the one device it was told and a puller ke
     try std.testing.expect(std.mem.startsWith(u8, last, "silent "));
 }
 
+/// A signed listing of a copy that holds one file, `f`, with `content`: the record a pull keeps for it. `salt` makes two
+/// records of one copy that are not the same bytes (a record is cut for one request, and no two requests are alike).
+fn listingOf(alloc: std.mem.Allocator, content: []const u8, salt: u8) ![]u8 {
+    const pair = try pairOf(0x71);
+    var digest: [32]u8 = undefined;
+    Sha256.hash(content, &digest, .{});
+    const entries = [_]mirror.Entry{.{ .kind = .file, .path = "f", .size = content.len, .digest = digest }};
+    var nonce: [mirror.nonce_len]u8 = undefined;
+    @memset(&nonce, salt);
+    return mirror.build(alloc, pair, journal.fingerprintOf(pair.public_key.toBytes()), nonce, "/data/app", &entries);
+}
+
 test "a swap cut short is finished or undone, whichever step the power left it at (MIR-1)" {
     if (builtin.os.tag != .linux) return error.SkipZigTest;
     var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
@@ -916,41 +980,78 @@ test "a swap cut short is finished or undone, whichever step the power left it a
     defer tmp.cleanup();
     const base = try tmp.dir.realpathAlloc(arena, ".");
     const into = try std.fmt.allocPrint(arena, "{s}/c", .{base});
+    // the records of the two copies, and a second record of the new one: another request's, the same copy
+    const old_rec = try listingOf(arena, "old", 0x11);
+    const new_rec = try listingOf(arena, "new", 0x12);
+    const new_rec_b = try listingOf(arena, "new", 0x13);
 
     // after the copy was set aside and before the new one was put in place: put the old one back
     try put(tmp.dir, "c.old/f", "old");
     try put(tmp.dir, "c.new/f", "new");
-    try put(tmp.dir, "c.manifest", "old record");
-    try put(tmp.dir, "c.manifest.new", "new record");
+    try put(tmp.dir, "c.manifest", old_rec);
+    try put(tmp.dir, "c.manifest.new", new_rec);
     recover(arena, into);
     try std.testing.expectEqualStrings("old", try readAll(arena, tmp.dir, "c/f"));
-    try std.testing.expectEqualStrings("old record", try readAll(arena, tmp.dir, "c.manifest"));
+    try std.testing.expectEqualStrings(old_rec, try readAll(arena, tmp.dir, "c.manifest"));
     for ([_][]const u8{ "c.old", "c.new", "c.manifest.new" }) |gone| try std.testing.expectError(error.FileNotFound, tmp.dir.access(gone, .{}));
 
     // after the new copy was put in place and before its record was: the record is finished, the old copy is dropped
     try tmp.dir.deleteTree("c");
     try put(tmp.dir, "c/f", "new");
     try put(tmp.dir, "c.old/f", "old");
-    try put(tmp.dir, "c.manifest.new", "new record");
+    try put(tmp.dir, "c.manifest.new", new_rec);
     recover(arena, into);
     try std.testing.expectEqualStrings("new", try readAll(arena, tmp.dir, "c/f"));
-    try std.testing.expectEqualStrings("new record", try readAll(arena, tmp.dir, "c.manifest"));
+    try std.testing.expectEqualStrings(new_rec, try readAll(arena, tmp.dir, "c.manifest"));
     for ([_][]const u8{ "c.old", "c.manifest.new" }) |gone| try std.testing.expectError(error.FileNotFound, tmp.dir.access(gone, .{}));
 
-    // a pull that was never finished: the staging place and the record that was waiting for it are removed, the copy is untouched
+    // a pull that was never finished: the staging place and the record that was waiting for it are removed, the copy and its
+    // record are untouched -- even when the waiting record is a whole one that describes this very copy, because while the
+    // staging place is there the second rename has not happened
     try put(tmp.dir, "c.new/f", "half");
-    try put(tmp.dir, "c.manifest.new", "record of a half");
+    try put(tmp.dir, "c.manifest.new", new_rec_b);
     try put(tmp.dir, "c.last.new", "x");
     recover(arena, into);
     try std.testing.expectEqualStrings("new", try readAll(arena, tmp.dir, "c/f"));
-    try std.testing.expectEqualStrings("new record", try readAll(arena, tmp.dir, "c.manifest"));
+    try std.testing.expectEqualStrings(new_rec, try readAll(arena, tmp.dir, "c.manifest"));
     for ([_][]const u8{ "c.new", "c.manifest.new", "c.last.new" }) |gone| try std.testing.expectError(error.FileNotFound, tmp.dir.access(gone, .{}));
+
+    // a pull that stopped before its swap and could not take its record away: the staging place is gone and the copy is the
+    // old one's still, so the record waiting beside it is the NEXT copy's and not this one's. Installed, it would say a
+    // copy is what it is not; it is removed, and the record the copy has is the one it keeps
+    try put(tmp.dir, "c.manifest.new", old_rec);
+    recover(arena, into);
+    try std.testing.expectEqualStrings(new_rec, try readAll(arena, tmp.dir, "c.manifest"));
+    try std.testing.expectError(error.FileNotFound, tmp.dir.access("c.manifest.new", .{}));
+
+    // and one that was cut short by a write that could not finish is no record at all
+    try put(tmp.dir, "c.manifest.new", new_rec_b[0 .. new_rec_b.len / 2]);
+    recover(arena, into);
+    try std.testing.expectEqualStrings(new_rec, try readAll(arena, tmp.dir, "c.manifest"));
+    try std.testing.expectError(error.FileNotFound, tmp.dir.access("c.manifest.new", .{}));
 
     // after everything but dropping the old copy
     try put(tmp.dir, "c.old/f", "older");
     recover(arena, into);
     try std.testing.expectError(error.FileNotFound, tmp.dir.access("c.old", .{}));
     try std.testing.expectEqualStrings("new", try readAll(arena, tmp.dir, "c/f"));
+}
+
+test "a line about an attempt that cannot be kept does not leave an older one standing (MIR-1)" {
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const into = try std.fmt.allocPrint(arena, "{s}/c", .{try tmp.dir.realpathAlloc(arena, ".")});
+    record(arena, into, .{ .ok = .{ .files = 1, .dirs = 0, .bytes = 3 } });
+    try std.testing.expectEqualStrings("ok files=1 dirs=0 bytes=3\n", try readAll(arena, tmp.dir, "c.last"));
+    // the place the line is written first is taken by a directory: this attempt's line cannot be kept
+    try tmp.dir.makeDir("c.last.new");
+    record(arena, into, .{ .silent = "nobody answered" });
+    // and the line of the attempt before is not left to say "ok" about this one
+    try std.testing.expectError(error.FileNotFound, tmp.dir.access("c.last", .{}));
 }
 
 test "a file inside the world's directory that another identity owns is refused, whatever its name (MIR-1)" {
@@ -1000,6 +1101,33 @@ test "a file longer than a copy can carry is refused before it is read (MIR-1)" 
     try std.testing.expect(sc.problem != null);
     try std.testing.expect(std.mem.indexOf(u8, sc.problem.?, "huge.bin is longer than the") != null);
     try std.testing.expectEqual(@as(usize, 0), sc.entries.len);
+}
+
+test "a directory whose listing would be longer than a keeper reads is refused by the source, in words (MIR-1)" {
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var src = std.testing.tmpDir(.{});
+    defer src.cleanup();
+    var dst = std.testing.tmpDir(.{});
+    defer dst.cleanup();
+    // a thousand small files whose paths are a thousand bytes long: fewer entries than a listing carries, more bytes than a
+    // keeper reads of one
+    const deep = ("A" ** 250) ++ "/" ++ ("B" ** 250) ++ "/" ++ ("C" ** 250) ++ "/" ++ ("f" ** 246);
+    for (0..1000) |i| try put(src.dir, try std.fmt.allocPrint(arena, "{s}{d:0>4}", .{ deep, i }), "x");
+    const src_path = try src.dir.realpathAlloc(arena, ".");
+    const into = try std.fmt.allocPrint(arena, "{s}/copy", .{try dst.dir.realpathAlloc(arena, ".")});
+    const source = try pairOf(0x91);
+    const puller = try pairOf(0x92);
+    const of = machine.MirrorOf{ .dir = src_path, .for_text = "", .for_key = puller.public_key.toBytes(), .world = "app", .uid = linux.getuid(), .gid = linux.getgid(), .line = 1 };
+    var server = try TestSource.start(of, source);
+    defer server.stop();
+    const from = machine.MirrorFrom{ .text = "127.0.0.1", .ip = 0x7f000001, .port = server.port, .key_text = "", .key = source.public_key.toBytes(), .into = into, .every = 5, .line = 1 };
+    const out = attempt(arena, puller, from);
+    try std.testing.expect(out == .refused);
+    try std.testing.expect(std.mem.indexOf(u8, out.refused, "would be longer than") != null);
+    try std.testing.expectError(error.FileNotFound, std.fs.cwd().access(into, .{}));
 }
 
 /// What a source that is not honest does after it has been asked by the one device it gives to.

@@ -23,6 +23,8 @@ const machine = @import("machine.zig");
 const mirror = @import("mirror.zig");
 const journal = @import("journal.zig");
 const Ed25519 = std.crypto.sign.Ed25519;
+const Sha256 = std.crypto.hash.sha2.Sha256;
+const builtin = @import("builtin");
 
 fn exists(path: []const u8) bool {
     std.fs.cwd().access(path, .{}) catch return false;
@@ -95,14 +97,25 @@ fn readCopy(arena: std.mem.Allocator, from: machine.MirrorFrom, man_path: []cons
     return .{ .held = .{ .listing = listing, .rep = rep } };
 }
 
-/// What `harb mirror check` was asked: how long to wait, and whether the copy it judges must have been confirmed by an
-/// attempt made AFTER the witness began. Without `fresh` a copy left by an earlier boot is judged as it stands, which
-/// is what a witness of a copy that outlives the source wants; with it the witness waits for the puller to ask once
-/// more, so that "the copy follows the source" is told from "the copy is the one that was there".
+/// What `harb mirror check` was asked: how long to wait, and two ways of asking after the attempt the puller made.
+///
+/// Without either, a copy left by an earlier boot is judged as it stands, which is what a witness of a copy that outlives
+/// the source wants. With `fresh` the witness waits for the puller to ask once more and then says what that attempt came
+/// to -- `ok`, or `silent`, `refused`, `unverified`, `failed` -- beside the copy it judged: the exit code is the COPY's,
+/// and a source that was down shows in the line and not in the code. With `follow` the attempt must also have reached the
+/// source and come to `ok`, or the exit is 1: that is "the copy follows the source", told from "the copy is the one that
+/// was there".
 pub const Options = struct {
     wait_s: u32 = 0,
     fresh: bool = false,
+    follow: bool = false,
 };
+
+/// Whether the line a puller keeps is that of an attempt that came to a verified copy.
+fn cameToOk(line: []const u8) bool {
+    if (!std.mem.startsWith(u8, line, mirror.attempt_ok)) return false;
+    return line.len == mirror.attempt_ok.len or line[mirror.attempt_ok.len] == ' ';
+}
 
 /// Whether the line the puller keeps about its last attempt was written no earlier than `began` (nanoseconds since the
 /// epoch, the clock the file's modification time is read from).
@@ -112,11 +125,13 @@ fn attemptedSince(arena: std.mem.Allocator, into: []const u8, began: i128) bool 
     return st.mtime >= began;
 }
 
-/// `harb mirror check [<machine>] [--wait N] [--fresh]`: is the copy this machine keeps the source's word? Waits up to N
-/// seconds for the first copy to arrive (a boot's first pull is a moment after the network comes up), or with `--fresh`
-/// for the next attempt, and then says what there is. Exit 0 only for a copy that verifies.
+/// `harb mirror check [<machine>] [--wait N] [--fresh | --follow]`: is the copy this machine keeps the source's word? Waits
+/// up to N seconds for the first copy to arrive (a boot's first pull is a moment after the network comes up), or with
+/// `--fresh` for the next attempt, and then says what there is. Exit 0 only for a copy that verifies, and with `--follow`
+/// only for one that the attempt just made brought from the source.
 pub fn check(arena: std.mem.Allocator, m: machine.Machine, opts: Options, out: *std.Io.Writer) !u8 {
     const began = std.time.nanoTimestamp();
+    const fresh = opts.fresh or opts.follow;
     const from = m.mirror_from orelse {
         try out.print("mirror: {s} declares no MIRROR_FROM, so it keeps no copy to check\n", .{m.name});
         return 1;
@@ -138,10 +153,10 @@ pub fn check(arena: std.mem.Allocator, m: machine.Machine, opts: Options, out: *
     const man_path = try std.fmt.allocPrint(arena, "{s}{s}", .{ from.into, mirror.kept_manifest_suffix });
     var waited: u32 = 0;
     while (waited < opts.wait_s) : (waited += 1) {
-        if (if (opts.fresh) attemptedSince(arena, from.into, began) else exists(man_path)) break;
+        if (if (fresh) attemptedSince(arena, from.into, began) else exists(man_path)) break;
         std.Thread.sleep(std.time.ns_per_s);
     }
-    if (opts.fresh and !attemptedSince(arena, from.into, began)) {
+    if (fresh and !attemptedSince(arena, from.into, began)) {
         try out.print("mirror: no attempt was made in the {d} s this witness waited: the puller is not running, or one pull takes longer than that\n", .{opts.wait_s});
         return 1;
     }
@@ -169,16 +184,26 @@ pub fn check(arena: std.mem.Allocator, m: machine.Machine, opts: Options, out: *
             try out.print("mirror: the listing was signed by {s} for this device ({s}), and verifies against the key this machine was told\n", .{ &h.listing.source, &me });
         },
     }
-    if (lastAttempt(arena, from.into)) |l| try out.print("mirror: last attempt -- {s}\n", .{l});
+    const last = lastAttempt(arena, from.into);
+    if (last) |l| try out.print("mirror: last attempt -- {s}\n", .{l});
+    if (opts.follow and !(if (last) |l| cameToOk(l) else false)) {
+        try out.print("mirror: --follow asked whether the copy follows the source, and the attempt made since this witness began did not bring it: the copy above is the source's word as of an earlier pull\n", .{});
+        return 1;
+    }
     return 0;
 }
 
-/// Read `harb mirror check`'s arguments: `--wait N` and `--fresh`, in any order, beside an optional machine file.
+/// Read `harb mirror check`'s arguments: `--wait N`, `--fresh` and `--follow` (which is `--fresh` and more), in any order,
+/// beside an optional machine file.
 pub fn optionsOf(args: []const []const u8) Options {
     var o = Options{};
     var i: usize = 0;
     while (i < args.len) : (i += 1) {
         if (std.mem.eql(u8, args[i], "--fresh")) o.fresh = true;
+        if (std.mem.eql(u8, args[i], "--follow")) {
+            o.follow = true;
+            o.fresh = true;
+        }
         if (std.mem.eql(u8, args[i], "--wait") and i + 1 < args.len) o.wait_s = std.fmt.parseInt(u32, args[i + 1], 10) catch 0;
     }
     return o;
@@ -243,4 +268,119 @@ pub fn verify(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.W
     try summary(out, args[3], rep);
     try out.print("mirror: the listing was signed by {s} for {s}, the two keys this fleet holds, and no secret took part\n", .{ &listing.source, &listing.puller });
     return 0;
+}
+
+// ---- tests ---------------------------------------------------------------------------------------------
+
+fn pairOf(byte: u8) !Ed25519.KeyPair {
+    var seed: [Ed25519.KeyPair.seed_length]u8 = undefined;
+    @memset(&seed, byte);
+    return Ed25519.KeyPair.generateDeterministic(seed);
+}
+
+test "the arguments of check are read in any order, and --follow is --fresh and more (MIR-1)" {
+    const o = optionsOf(&.{ "--wait", "60", "--follow" });
+    try std.testing.expectEqual(@as(u32, 60), o.wait_s);
+    try std.testing.expect(o.follow and o.fresh);
+    const f = optionsOf(&.{ "--fresh", "/etc/machine", "--wait", "5" });
+    try std.testing.expect(f.fresh and !f.follow);
+    try std.testing.expectEqual(@as(u32, 5), f.wait_s);
+    const none = optionsOf(&.{});
+    try std.testing.expect(!none.fresh and !none.follow and none.wait_s == 0);
+}
+
+test "the word of an attempt that came to a copy is the puller's own, whole (MIR-1)" {
+    try std.testing.expect(cameToOk("ok files=4 dirs=2 bytes=300066"));
+    try std.testing.expect(cameToOk("ok"));
+    try std.testing.expect(!cameToOk("okay"));
+    try std.testing.expect(!cameToOk("silent nobody answered at 10.30.0.1:7400"));
+    try std.testing.expect(!cameToOk("refused ok"));
+    try std.testing.expect(!cameToOk(""));
+}
+
+/// Say `line` as the line about the last attempt, `delay_ms` from now: the puller of a machine, from a thread.
+const LateLine = struct {
+    fn run(path: []const u8, line: []const u8, delay_ms: u64) void {
+        std.Thread.sleep(delay_ms * std.time.ns_per_ms);
+        std.fs.cwd().writeFile(.{ .sub_path = path, .data = line }) catch {};
+    }
+};
+
+test "check judges the copy as it stands, and only --follow asks whether the attempt reached the source (MIR-1)" {
+    // the file modification time `--fresh` reads is the kernel's, and the tests that read it run where it is
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    var arena_state = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var tmp = std.testing.tmpDir(.{});
+    defer tmp.cleanup();
+    const base = try tmp.dir.realpathAlloc(arena, ".");
+
+    // the disk of a keeper after a pull: the device's key, the copy, and the listing the copy was verified against
+    const source = try pairOf(0x41);
+    const device = try pairOf(0x42);
+    var seed: [Ed25519.KeyPair.seed_length]u8 = undefined;
+    @memset(&seed, 0x42);
+    try tmp.dir.writeFile(.{ .sub_path = "device.key", .data = &seed });
+    try tmp.dir.makePath("copy");
+    try tmp.dir.writeFile(.{ .sub_path = "copy/f", .data = "data" });
+    var digest: [32]u8 = undefined;
+    Sha256.hash("data", &digest, .{});
+    const entries = [_]mirror.Entry{.{ .kind = .file, .path = "f", .size = 4, .digest = digest }};
+    var nonce: [mirror.nonce_len]u8 = undefined;
+    @memset(&nonce, 3);
+    const listing = try mirror.build(arena, source, journal.fingerprintOf(device.public_key.toBytes()), nonce, "/data/app", &entries);
+    try tmp.dir.writeFile(.{ .sub_path = "copy.manifest", .data = listing });
+
+    // the machine that keeps it, declared by the court, and then pointed at this directory
+    const declared = try std.fmt.allocPrint(arena,
+        \\DEFINE MACHINE k AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY "/data/device.key", MIRROR_FROM "10.30.0.9:7400", MIRROR_KEY "{x}", MIRROR_INTO "/data/copy") RATIONALE "x"
+        \\DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "x"
+        \\DEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE "x"
+        \\DEFINE MOUNT data AS (AT "/data", FS ext4, DEVICE "/dev/vda", OPTIONS [rw]) RATIONALE "x"
+        \\DEFINE NETWORK lan AS (INTERFACE "eth0", ADDRESS "10.30.0.2/24") RATIONALE "x"
+        \\
+    , .{&source.public_key.toBytes()});
+    var refusal = machine.Refusal{};
+    var m = try machine.declare(arena, declared, &refusal);
+    m.identity = try std.fmt.allocPrint(arena, "{s}/device.key", .{base});
+    const into = try std.fmt.allocPrint(arena, "{s}/copy", .{base});
+    m.mirror_from.?.into = into;
+    const last = try std.fmt.allocPrint(arena, "{s}.last", .{into});
+
+    // without --fresh: the copy as it stands, at once, and no attempt asked of
+    {
+        var aw = std.Io.Writer.Allocating.init(arena);
+        const code = try check(arena, m, .{}, &aw.writer);
+        try std.testing.expectEqual(@as(u8, 0), code);
+        try std.testing.expect(std.mem.indexOf(u8, aw.written(), "every file matches the digest the source signed") != null);
+    }
+    // --follow with an attempt that came to a copy: followed
+    {
+        const t = try std.Thread.spawn(.{}, LateLine.run, .{ last, "ok files=1 dirs=0 bytes=4\n", 300 });
+        defer t.join();
+        var aw = std.Io.Writer.Allocating.init(arena);
+        const code = try check(arena, m, .{ .wait_s = 5, .follow = true }, &aw.writer);
+        try std.testing.expectEqual(@as(u8, 0), code);
+        try std.testing.expect(std.mem.indexOf(u8, aw.written(), "last attempt -- ok files=1") != null);
+    }
+    // the source is down: the same copy, an attempt that reached nobody. --fresh says so and exits for the COPY; --follow
+    // exits 1, because the copy is not the source's word as of now
+    for ([_]bool{ false, true }) |follow| {
+        const t = try std.Thread.spawn(.{}, LateLine.run, .{ last, "silent nobody answered at 10.30.0.9:7400\n", 300 });
+        defer t.join();
+        var aw = std.Io.Writer.Allocating.init(arena);
+        const code = try check(arena, m, .{ .wait_s = 5, .fresh = !follow, .follow = follow }, &aw.writer);
+        try std.testing.expectEqual(@as(u8, if (follow) 1 else 0), code);
+        try std.testing.expect(std.mem.indexOf(u8, aw.written(), "last attempt -- silent nobody answered") != null);
+        try std.testing.expectEqual(follow, std.mem.indexOf(u8, aw.written(), "--follow asked whether the copy follows the source") != null);
+    }
+    // no attempt at all in the time asked for: said, whichever of the two was asked
+    try tmp.dir.deleteFile("copy.last");
+    for ([_]bool{ false, true }) |follow| {
+        var aw = std.Io.Writer.Allocating.init(arena);
+        const code = try check(arena, m, .{ .wait_s = 1, .fresh = !follow, .follow = follow }, &aw.writer);
+        try std.testing.expectEqual(@as(u8, 1), code);
+        try std.testing.expect(std.mem.indexOf(u8, aw.written(), "no attempt was made in the 1 s") != null);
+    }
 }

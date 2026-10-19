@@ -11,9 +11,10 @@
 --
 -- The witness below is a service of this machine, and it is the one that matters: `harb mirror check` re-reads the
 -- kept listing and every file of the copy from the machine's own disk and says whether the copy is the source's word.
--- `--fresh` makes it wait for an attempt made after it began, so that a copy left by an earlier boot is not mistaken
--- for one that has just followed the source. It exits 1 when there is no copy that verifies, and so the machine's
--- own judge convicts a boot that did not get one.
+-- `--fresh` makes it wait for an attempt made after it began, so that the line it prints about the last attempt is this
+-- boot's and not an earlier one's; the exit is the COPY's, and a source that was down shows in that line (`--follow`
+-- is the question that also exits 1 unless the attempt reached the source). It exits 1 when there is no copy that
+-- verifies, and so the machine's own judge convicts a boot that did not get one.
 --
 -- MIRROR_KEY below is a placeholder, as the fleet's enrolment of the source is: a key a device makes on its own first
 -- boot is not a thing a design can state (see mirror_source.machine).

@@ -30,7 +30,7 @@ DEFINE MACHINE mirror_source AS (
   IDENTITY "/data/device.key",
   MIRROR_OF "/data/ledger",
   MIRROR_FOR "abababababababababababababababababababababababababababababababab"
-) RATIONALE "A machine whose world keeps a ledger, and that gives the files of it, signed, to the one device it was told and to nobody else"
+) RATIONALE "A machine whose world keeps a ledger, and that gives the files of it, signed, to a request signed by the one device it was told"
 
 DEFINE CAPABILITY process AS (
   GRANT yes

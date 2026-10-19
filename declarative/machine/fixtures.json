@@ -1168,6 +1168,27 @@
           "every": 30
         }
       }
+    },
+    {
+      "id": "A60",
+      "name": "a copy is kept beside a journal that is not near it: the record and the copy are two names in one directory",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\", JOURNAL \"/data/record\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "mirror_from": {
+          "from": "10.30.0.9:7400",
+          "into": "/data/copy",
+          "every": 30
+        }
+      }
     }
   ],
   "rejects": [
@@ -2688,6 +2709,30 @@
       "name": "a copy is not kept in a place the machine mounts itself",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/proc/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
       "refusal": "which the machine mounts itself"
+    },
+    {
+      "id": "R254",
+      "name": "a key to give a copy to and nothing to give: a lone MIRROR_FOR is refused, never unwrapped",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "a key to give a copy to and nothing to give"
+    },
+    {
+      "id": "R255",
+      "name": "the statements that date the journal's entries are kept beside it, and a copy may not be made where the first pull would delete them",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/record.time\", JOURNAL \"/data/record\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "the time statements of JOURNAL /data/record"
+    },
+    {
+      "id": "R256",
+      "name": "a place a disk is mounted on is not a name a copy is swapped in under: the set-aside copy cannot be a mount",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT stale AS (AT \"/data/copy.old\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "is mounted, or holds it"
+    },
+    {
+      "id": "R257",
+      "name": "nor is a mount inside the copy: renaming a directory that holds one is renaming the disk's place",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT inner AS (AT \"/data/copy/x\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "is mounted, or holds it"
     }
   ]
 }
