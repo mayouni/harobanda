@@ -1,4 +1,4 @@
-# fleet v0.4 — the grammar of a set of machines
+# fleet v0.5 — the grammar of a set of machines
 
 ## Why there is a second file and not a bigger one
 
@@ -80,6 +80,20 @@ memory -- is free to stand anywhere, and the court says so (FA14, FA16).
 What the court reads is the DECLARATION: the box in the wrong country is
 refused where it is declared, before anything boots, and not found where it
 is plugged in.
+
+### DEFINE MIRROR — a copy of a world's directory (MIR-1, fleet v0.5)
+
+| clause | value | obligation |
+|---|---|---|
+| `FROM` | ident | required (FR92) — the member that gives the directory: a member of this fleet (FR74), whose machine declares a `MIRROR_OF` (FR80). A word and not a string (FR93) |
+| `TO` | ident | required — the member that keeps the copy: a member of this fleet (FR75), not the same one (FR76), whose machine declares a `MIRROR_FROM` (FR81) |
+
+A MIRROR is a declaration of its own, as ROUTE and FRONT are, because why a directory
+is copied -- so that the loss of one machine is not the loss of what it held -- is the
+fact an auditor reading this file will need. And it is the fleet's, because which two
+machines are the two ends of one copy is a fact about a SET: the source says only whom
+it gives to (a key) and the keeper only whom it takes from (an address, a port and a key),
+and each is faultless alone while the pair does not meet.
 
 ### DEFINE FRONT — the door of a link (FRONT-2, fleet v0.3)
 
@@ -448,8 +462,50 @@ The mirror that comes next (STZ-OS-RULING-19) is held by it with no new
 rule: a mirror is a copy of a directory on a disk of another member, and a
 member that holds a copy keeps a disk.
 
+## Copies: the pair is held to each other before anything boots (MIR-1)
+
+The court holds the two ends to each other (`checkMirrors`), and each refusal is a
+case where every machine of the fleet is faultless alone:
+
+- **the address.** The keeper asks the address and port the source gives on (FR82,
+  FR83), or it would ask somebody who is not the source
+- **the two keys.** Both ends are enrolled (FR84, FR85); the keeper takes the word of
+  the key the source is enrolled as (FR86); the source gives to the key the keeper is
+  enrolled as (FR87). Enrolled, because a listing and a request are checked against keys
+  the fleet holds and not against what a machine says of itself
+- **a way there.** Where the fleet names wires, the keeper is on the source's link or on
+  one a ROUTE joins to it (FR88; FA19 accepts the routed case)
+- **one copy per machine.** A machine gives one copy (FR77) and keeps one (FR78), and
+  one that keeps a copy gives none (FR79): a chain of copies would make a machine both
+  the original of one and the copy of another, and nothing here says what the loss of the
+  middle one is
+- **no copy the fleet never named.** A machine that gives its directory to a key is the
+  FROM of a MIRROR (FR89), and one that takes a copy from an address is the TO of one
+  (FR90), or the set holds a copy nobody was declared to keep
+- **where it is kept.** A keeper keeps a disk, so the RESIDENCY a fleet already has holds
+  it: a copy into another territory than the one the data stays in is refused by the rule
+  that holds every member that keeps a disk (FR91), and the mirror needed no rule of its
+  own for it. A fleet with no RESIDENCY puts the two where it likes, and the roll says
+  where each stands
+
+The roll names the copy: `mirror ledger_copy -- depot gives /data/ledger to annex, which
+keeps it in /data/copy and asks every 5 s, in warehouse`. What anyone holding only this
+file can check of a copy is `harb mirror verify <fleet> <mirror> <listing> <dir>`: the
+listing against the key the fleet holds for the source and for the device it was cut for,
+and every file against the digest the listing carries. No secret takes part.
+
 ## Named seams (stated, not hidden)
 
+- **Copies.** A MIRROR pairs two members, once on each side: a machine gives
+  one copy and keeps one, and a chain or a fan is refused (FR77-FR79). The
+  fleet judges the pair's declarations against each other -- the address, the
+  two enrolled keys, a way there -- and never the copy: that is a boot's, and
+  `harb mirror verify` reads it with the fleet's two keys and no secret. The
+  directory is the SOURCE machine's declaration (`MIRROR_OF`), so the fleet
+  does not say which world's records are copied beyond naming the machine; a
+  keeper's territory is held by a RESIDENCY only if the fleet declares one
+  (FR91). A copy outlives its source only while the fleet still enrols the
+  key that signed it (RET-1: a retired key is trusted through one entry).
 - **Territory.** It is the operator's word, never observed: the floor has no
   way to tell a room from a country, so what the court judges is that the
   DECLARATION is consistent -- every disk is declared and declared where the

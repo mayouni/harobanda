@@ -220,6 +220,28 @@ pub const Residency = struct {
     rationale: []const u8,
 };
 
+/// A copy of one member's world's directory, kept on another (MIR-1, fleet v0.5, STZ-OS-RULING-19): the member that
+/// gives it and the member that keeps it.
+///
+/// A declaration of its own, as ROUTE and FRONT are, because why a directory is copied -- so that the loss of one
+/// machine is not the loss of what it held -- is the fact an auditor reading this file will need. And it is the
+/// fleet's, because which two machines are the two ends of one copy is a fact about a SET: the source says only
+/// who it gives to (a key) and the keeper only whom it takes from (an address and a key), and each is faultless
+/// alone while the pair does not meet. The court holds the pair to each other before any boot -- the address, the
+/// two keys, a way there -- and a copy kept in another territory than the one the data stays in is refused by the
+/// RESIDENCY it already holds the keeper to, because the keeper keeps a disk.
+pub const Mirror = struct {
+    name: []const u8,
+    line: usize,
+    /// the member that gives, and the line that named it
+    from: []const u8,
+    from_line: usize,
+    /// the member that keeps, and the line that named it
+    to: []const u8,
+    to_line: usize,
+    rationale: []const u8,
+};
+
 pub const Fleet = struct {
     name: []const u8,
     line: usize,
@@ -240,6 +262,8 @@ pub const Fleet = struct {
     /// where the data stays, if the fleet says (TERR-1); a fleet that says nothing is one whose
     /// members' territories are information, and nothing holds them to anything
     residency: ?Residency = null,
+    /// the copies: which member gives a directory of a world to which member that keeps it (MIR-1)
+    mirrors: []const Mirror = &.{},
     /// the member whose word about the time the fleet takes (TIME-1, STZ-OS-RULING-07): enrolled
     /// like any member, so what it signs is checked with a public key by anyone who holds this file.
     /// Null is a fleet that has no time, and whose records are ORDERED and UNDATED.
@@ -589,6 +613,34 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         residency = .{ .name = d.name, .line = d.line, .territory = try machine.wantIdent(&ctx, tc), .rationale = d.rationale };
     };
 
+    // ---- the copies (MIR-1) ------------------------------------------
+    //
+    // What is read here is what each declaration says alone: that both ends are members of this fleet, that they are
+    // two machines, and that no machine is an end of two copies. What the pair says of each other (the address, the two
+    // keys, a way there, and that every machine that gives or takes is named) is `checkMirrors`'s, once the set exists.
+    var mirrors: std.ArrayList(Mirror) = .{};
+    for (decls.items) |d| if (d.kind == .MIRROR) {
+        const fc = try machine.required(&ctx, d, "FROM");
+        const from = try machine.wantIdent(&ctx, fc);
+        const tc = try machine.required(&ctx, d, "TO");
+        const to = try machine.wantIdent(&ctx, tc);
+        var have_from = false;
+        var have_to = false;
+        for (members.items) |m| {
+            if (std.mem.eql(u8, m.name, from)) have_from = true;
+            if (std.mem.eql(u8, m.name, to)) have_to = true;
+        }
+        if (!have_from) return ctx.refuse(fc.line, "MIRROR {s} is FROM {s}, and no MEMBER {s} is declared: a copy is given by a machine of this fleet", .{ d.name, from, from });
+        if (!have_to) return ctx.refuse(tc.line, "MIRROR {s} is TO {s}, and no MEMBER {s} is declared: a copy is kept by a machine of this fleet", .{ d.name, to, to });
+        if (std.mem.eql(u8, from, to)) return ctx.refuse(tc.line, "MIRROR {s} copies {s} to itself: a copy kept where the original is, is lost with it", .{ d.name, from });
+        for (mirrors.items) |o| {
+            if (std.mem.eql(u8, o.from, from)) return ctx.refuse(fc.line, "{s} already gives its copy to {s} (MIRROR {s}): a machine gives one copy", .{ from, o.to, o.name });
+            if (std.mem.eql(u8, o.to, to)) return ctx.refuse(tc.line, "{s} already keeps the copy of {s} (MIRROR {s}): a machine keeps one copy", .{ to, o.from, o.name });
+            if (std.mem.eql(u8, o.from, to) or std.mem.eql(u8, o.to, from)) return ctx.refuse(d.line, "MIRROR {s} and MIRROR {s} join {s} and {s} in a chain: a machine that gives a copy keeps none, and one that keeps a copy gives none", .{ d.name, o.name, from, to });
+        }
+        try mirrors.append(arena, .{ .name = d.name, .line = d.line, .from = from, .from_line = fc.line, .to = to, .to_line = tc.line, .rationale = d.rationale });
+    };
+
     // ---- the time authority (TIME-1) ---------------------------------
     var time_authority: ?[]const u8 = null;
     var time_line: usize = fd.line;
@@ -606,6 +658,7 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         .routes = try routes.toOwnedSlice(arena),
         .fronts = try fronts.toOwnedSlice(arena),
         .residency = residency,
+        .mirrors = try mirrors.toOwnedSlice(arena),
         .time_authority = time_authority,
         .time_line = time_line,
         .rationale = fd.rationale,
@@ -702,9 +755,75 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
 
     try checkRoutes(&ctx, f);
     try checkTime(&ctx, f);
+    try checkMirrors(&ctx, f);
     try checkResidency(&ctx, f);
 
     return f;
+}
+
+// ---- the copies (MIR-1) ---------------------------------------------------
+
+/// The link a source gives its copy on: the network that declares MIRROR_SERVER.
+fn mirrorLink(m: machine.Machine) ?machine.Network {
+    for (m.networks) |n| if (n.mirror_server != null) return n;
+    return null;
+}
+
+/// The facts about a copy that no single machine can know: that the two ends are each other's -- the keeper asks the
+/// address and port the source gives on, takes the word of the source's key, and is the device the source gives to
+/// -- that both are enrolled, so a listing and a request are checked against keys the fleet holds; that there is a way
+/// from one to the other; and that no machine gives or takes a copy the fleet never named. Each is a case where
+/// every machine of the fleet is faultless alone.
+fn checkMirrors(ctx: *machine.Ctx, f: Fleet) machine.Error!void {
+    for (f.mirrors) |mr| {
+        const sm = f.member(mr.from).?;
+        const dm = f.member(mr.to).?;
+        const of = sm.machine.mirror_of orelse return ctx.refuse(mr.from_line, "MIRROR {s} is FROM {s}, whose machine declares no MIRROR_OF: it has no directory to give", .{ mr.name, mr.from });
+        const mf = dm.machine.mirror_from orelse return ctx.refuse(mr.to_line, "MIRROR {s} is TO {s}, whose machine declares no MIRROR_FROM: it takes no copy", .{ mr.name, mr.to });
+        const wire = mirrorLink(sm.machine).?; // the machine court refuses a MIRROR_OF with no link to give it on
+        const at = switch (wire.address) {
+            .static => |s| s,
+            .dhcp => unreachable, // ... and a MIRROR_SERVER on a leased address
+        };
+        if (mf.ip != at.ip or mf.port != wire.mirror_server.?) {
+            return ctx.refuse(mr.to_line, "{s} asks {s} for the copy, and {s} gives it on {s}:{d}: it would ask somebody who is not the source", .{ mr.to, mf.text, mr.from, at.text[0 .. std.mem.indexOfScalar(u8, at.text, '/') orelse at.text.len], wire.mirror_server.? });
+        }
+        const skey = sm.key orelse return ctx.refuse(mr.from_line, "{s} is the source of MIRROR {s} and has no KEY: a listing nobody can check against a key is a claim and not a copy, so the source is enrolled like every member whose word is checked", .{ mr.from, mr.name });
+        const dkey = dm.key orelse return ctx.refuse(mr.to_line, "{s} keeps the copy of MIRROR {s} and has no KEY: the source gives it to a key, and a member with none cannot be shown to be that device", .{ mr.to, mr.name });
+        if (!std.mem.eql(u8, &mf.key, &skey.toBytes())) {
+            return ctx.refuse(mr.to_line, "{s} takes the word of the key {s}, and {s} is enrolled as {s}: the word it takes is not the source's", .{ mr.to, mf.key_text, mr.from, sm.key_text.? });
+        }
+        if (!std.mem.eql(u8, &of.for_key, &dkey.toBytes())) {
+            return ctx.refuse(mr.from_line, "{s} gives the copy to the key {s}, and {s} is enrolled as {s}: it would give the copy to somebody who is not the keeper", .{ mr.from, of.for_text, mr.to, dm.key_text.? });
+        }
+        // a way from the keeper to the source: its link, or one a ROUTE joins to it -- judged only where the fleet names wires
+        if (f.links.len > 0) {
+            var reach = false;
+            for (dm.machine.networks) |n| {
+                if (machine.isLoopback(n)) continue;
+                if (std.mem.eql(u8, n.name, wire.name) or f.joined(n.name, wire.name)) reach = true;
+            }
+            if (!reach) return ctx.refuse(mr.to_line, "{s} asks {s} for a copy, which gives it on {s}, and {s} is on no link that is {s} or that a ROUTE joins to it: a question with no way there", .{ mr.to, mr.from, wire.name, mr.to, wire.name });
+        }
+    }
+    // no copy the fleet never named: a machine that gives its directory to a key, or takes one from an address, is
+    // an end of a MIRROR, or the set holds a copy nobody was declared to keep
+    for (f.members) |m| {
+        if (m.machine.mirror_of) |of| {
+            var named = false;
+            for (f.mirrors) |mr| if (std.mem.eql(u8, mr.from, m.name)) {
+                named = true;
+            };
+            if (!named) return ctx.refuse(m.line, "{s} gives the files of {s} to a key, and no MIRROR names it FROM: a copy the fleet never declared is one nobody was declared to keep", .{ m.name, of.dir });
+        }
+        if (m.machine.mirror_from) |mf| {
+            var named = false;
+            for (f.mirrors) |mr| if (std.mem.eql(u8, mr.to, m.name)) {
+                named = true;
+            };
+            if (!named) return ctx.refuse(m.line, "{s} takes a copy from {s}, and no MIRROR names it TO: a copy the fleet never declared is a copy it cannot hold to its rules", .{ m.name, mf.text });
+        }
+    }
 }
 
 // ---- where the data stays (TERR-1) ---------------------------------------

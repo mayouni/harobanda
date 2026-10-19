@@ -250,6 +250,50 @@ pub fn run(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.Write
                 if (got == null or @as(i64, got.?) != want) why = try std.fmt.allocPrint(arena, "time_authority of {s}: expected {d}", .{ e.key_ptr.*, want });
             }
         }
+        // the mirror seat (MIR-1): the directory a machine gives and whose it is, the port it gives it on, and where a
+        // machine takes a copy from, keeps it, and how often. A key is not asserted here: it is the value the fixture wrote
+        if (expect.get("mirror_of")) |ov| {
+            const want = ov.object;
+            if (m.mirror_of) |mo| {
+                if (str(want.get("dir"))) |w| if (!std.mem.eql(u8, mo.dir, w)) {
+                    why = try std.fmt.allocPrint(arena, "mirror_of dir: expected {s} got {s}", .{ w, mo.dir });
+                };
+                if (str(want.get("world"))) |w| if (!std.mem.eql(u8, mo.world, w)) {
+                    why = try std.fmt.allocPrint(arena, "mirror_of world: expected {s} got {s}", .{ w, mo.world });
+                };
+                if (int(want.get("uid"))) |w| if (@as(i64, @intCast(mo.uid)) != w) {
+                    why = try std.fmt.allocPrint(arena, "mirror_of uid: expected {d} got {d}", .{ w, mo.uid });
+                };
+            } else why = try std.fmt.allocPrint(arena, "mirror_of: expected one and the machine gives no copy", .{});
+        }
+        if (expect.get("mirror_server")) |tv| {
+            var it = tv.object.iterator();
+            while (it.next()) |e| {
+                var got: ?u16 = null;
+                for (m.networks) |n| if (std.mem.eql(u8, n.name, e.key_ptr.*)) {
+                    got = n.mirror_server;
+                };
+                const want: i64 = switch (e.value_ptr.*) {
+                    .integer => |i| i,
+                    else => -1,
+                };
+                if (got == null or @as(i64, got.?) != want) why = try std.fmt.allocPrint(arena, "mirror_server of {s}: expected {d}", .{ e.key_ptr.*, want });
+            }
+        }
+        if (expect.get("mirror_from")) |fv| {
+            const want = fv.object;
+            if (m.mirror_from) |mf| {
+                if (str(want.get("from"))) |w| if (!std.mem.eql(u8, mf.text, w)) {
+                    why = try std.fmt.allocPrint(arena, "mirror_from: expected {s} got {s}", .{ w, mf.text });
+                };
+                if (str(want.get("into"))) |w| if (!std.mem.eql(u8, mf.into, w)) {
+                    why = try std.fmt.allocPrint(arena, "mirror_from into: expected {s} got {s}", .{ w, mf.into });
+                };
+                if (int(want.get("every"))) |w| if (@as(i64, @intCast(mf.every)) != w) {
+                    why = try std.fmt.allocPrint(arena, "mirror_from every: expected {d} got {d}", .{ w, mf.every });
+                };
+            } else why = try std.fmt.allocPrint(arena, "mirror_from: expected one and the machine takes no copy", .{});
+        }
         if (why) |w| {
             failures += 1;
             try out.print("  FAIL {s} {s} -- {s}\n", .{ id, name, w });
@@ -383,6 +427,25 @@ pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.
         };
         if (str(expect.get("front_host"))) |w| if (f.fronts.len == 0 or !std.mem.eql(u8, f.fronts[0].host, w)) {
             why = try std.fmt.allocPrint(arena, "front_host: expected {s} got {s}", .{ w, if (f.fronts.len == 0) "none" else f.fronts[0].host });
+        };
+        // the copies (MIR-1, fleet v0.5): how many, and which member gives to which, by the name of each --
+        // read, because a MIRROR the parser dropped would still leave the fleet accepted
+        if (int(expect.get("mirrors"))) |w| if (@as(i64, @intCast(f.mirrors.len)) != w) {
+            why = try std.fmt.allocPrint(arena, "mirrors: expected {d} got {d}", .{ w, f.mirrors.len });
+        };
+        if (expect.get("mirror_pairs")) |pv| if (pv == .object) {
+            var it = pv.object.iterator();
+            while (it.next()) |e| {
+                var got: []const u8 = "none";
+                for (f.mirrors) |mr| if (std.mem.eql(u8, mr.name, e.key_ptr.*)) {
+                    got = try std.fmt.allocPrint(arena, "{s}>{s}", .{ mr.from, mr.to });
+                };
+                const want = switch (e.value_ptr.*) {
+                    .string => |s| s,
+                    else => "none",
+                };
+                if (!std.mem.eql(u8, got, want)) why = try std.fmt.allocPrint(arena, "mirror {s}: expected {s} got {s}", .{ e.key_ptr.*, want, got });
+            }
         };
         // where the data stays and where each member stands (TERR-1, fleet v0.4): the residency's
         // territory, or null for none, and each named member's territory -- read, because a

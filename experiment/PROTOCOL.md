@@ -1,3 +1,225 @@
+# MIR-1 — a copy of a world's directory is the source's word, or it is not kept
+
+The second of the five declarations of the resilience page after the cloud's
+front (STZ-OS-RULING-19, "go ahead with implementing them all"; the order this
+desk takes is the front, territory, the mirror, the roll call, the loss drill,
+the source mirror), built 2026-10-19 on the author's "continue with the
+mirror". It is the one addition that changes what the floor is: until this seat
+the floor moved no data between machines, and it now moves exactly this -- the
+files of ONE directory a world owns, from the machine that gives them to the
+machine that keeps them, held to a listing the giver signed on the way in and
+read back from the disk once written. What makes a copy CONSISTENT (a database
+copied while it is written is a copy of a torn file) stays the application's,
+and every seam below says so.
+
+## What was built
+
+- **`src/mirror.zig`** -- the messages and their judgement, no kernel, as
+  `timeattest.zig` is the statement and its judgement. A LISTING
+  (`mirror v1 source= puller= nonce= dir= files= bytes=`, then `dir` and
+  `file <sha256> <size> <path>` lines in path order, `end`, `sig=`) signed by the
+  source over the exact bytes before the `sig=` line, cut for ONE device and ONE
+  request (a replay is refused for its nonce, another source's for its
+  fingerprint); a challenge and a request (`mirror-request key= a= b= sig=`,
+  signed over both nonces); `verifyCopy`, which reads a directory against a
+  listing -- every entry there with the size and digest it says, nothing else,
+  no link anywhere. One spelling of every field, so that nothing off a wire is
+  read leniently; a path that is not plain (`..`, a control byte, a backslash,
+  a name too long) makes a directory unmirrorable and never a listing ambiguous.
+- **`src/mirrorserve.zig`** -- what touches a kernel. The source's child
+  accepts one connection at a time, asks who it is before it tells it anything
+  (a request that does not verify under the key the machine was declared to give
+  to is closed on, without a word), walks the directory, hashes every file,
+  signs the listing and streams the bytes. The keeper's child asks every
+  `MIRROR_EVERY` seconds, receives into `D.new`, holds each file to the digest
+  the signature covers as it is written, reads the whole of it back from the
+  disk against the listing, and swaps it in with renames (`D.old`,
+  `D.manifest.new`); `recover` runs at the start of every pull and finishes or
+  undoes whichever step the power left. Beside the copy it keeps the signed
+  listing it was verified against (`D.manifest`) and one line about its last
+  attempt (`D.last`: ok, silent, refused, unverified, failed -- no time in it,
+  because the floor has none).
+- **`src/mirroraudit.zig`** -- `harb mirror check` inside the keeper (the kept
+  listing against the key it was told, every file against its digest; `--wait`,
+  and `--fresh` to wait for an attempt made after it began, so that a copy left
+  by an earlier boot is not mistaken for one that followed the source; a copy is
+  read twice before it is convicted, because a swap can land between two reads)
+  and `harb mirror verify <fleet> <mirror> <listing> <dir>` on a host with the
+  fleet file and no secret.
+- **The machine grammar** (`src/machine.zig`, `declarative/machine/GRAMMAR.md`,
+  312/312): `MIRROR_OF`, `MIRROR_FOR` and `MIRROR_SERVER` (a clause of a NETWORK)
+  on the machine that gives; `MIRROR_FROM`, `MIRROR_KEY`, `MIRROR_INTO` and
+  `MIRROR_EVERY` on the one that keeps; a machine gives or keeps, never both
+  (R211), and both sign, so both need an `IDENTITY`. The directory must lie in
+  the `STATE` of a world that runs as an identity (so the court knows whose it
+  is), on ext4 (the only filesystem that keeps owners and modes); the keeper
+  keeps the copy on a writable ext4 disk, not at its root, and
+  `machine.mirror_family` is the ONE list of the seven names the floor makes for
+  a copy, kept off the key, the record and every world's place.
+- **Fleet v0.5** (`src/fleet.zig`, `declarative/fleet/GRAMMAR.md`, 114/114): a
+  seventh kind, `MIRROR` (FROM, TO), and the court holds the pair to each other
+  before anything boots -- the address and port the keeper asks, the two enrolled
+  keys (the keeper takes the word of the source's, the source gives to the
+  keeper's), a way there, one copy per machine, no chain, and no machine that
+  gives or takes a copy the file never named. A keeper in another territory than
+  the one the data stays in is refused by the RESIDENCY that already holds every
+  member that keeps a disk (FR91): the mirror needed no rule of its own for it.
+- **PID 1** (`src/init.zig`): `serveMirror` and `pullMirror`, forked and never
+  exec'd, given nothing of PID 1's but their stdio and their socket
+  (`closeInherited`, WDG-1); the line that says they work is said only once the
+  child EXISTS (CON-1); a machine that gives or takes keeps PID 1 alive, with a
+  sentence that fits ("is still taking a copy from ...").
+- **The roll** (`harb fleet`) names the copy: `mirror ledger_copy -- depot gives
+  /data/ledger to annex, which keeps it in /data/copy and asks every 5 s, in
+  warehouse`.
+- **The smallest copy**: `machines/mirror_source.machine` (a world, `harb own`,
+  keeps a ledger), `machines/mirror_keeper.machine` (whose witness is
+  `harb mirror check --wait 60 --fresh`) and `machines/mirror_cloud.fleet`, with
+  placeholder keys that the scene replaces in copies, as it does for the time
+  seat.
+
+## What the boot says
+
+One line from each end, derived from the declaration and said once the child
+exists:
+
+```
+boot: mirror -- lan gives the files of /data/ledger on
+    10.30.0.1:7400, to the one device whose key it was told
+    and to nobody else; the listing is signed with this
+    device's key, and only the files ledger owns are given
+boot: mirror -- takes the files at 10.30.0.1:7400 into
+    /data/copy every 5 s, when the listing verifies against
+    the key it was told; a copy replaces the last one only
+    when every file has matched its digest
+```
+
+(each is one line in the transcript; the keys are not in them, because a
+fingerprint is made on the device and a line derived from the declaration cannot
+know it). The witness says what the copy is: `mirror: /data/copy -- 4 files, 2
+directories, 300066 bytes: every file matches the digest the source signed, and
+nothing else is there`, the fingerprints the listing was signed by and for, and
+the last attempt.
+
+## What was found while building it
+
+- **The walk is where the danger is, and it was designed before it was written.**
+  The floor reads a world's directory as root and the world owns that directory,
+  so a floor that followed a link would hand the machine's own key to the first
+  copy anyone pulled; and a HARD link needs no link-following at all -- it is a
+  regular file, in the world's own directory, whose owner is the machine. So the
+  walk opens every name with `O_NOFOLLOW` from a descriptor and gives a file only
+  if the WORLD owns it. Round 6 of the scene boots the attack (`ln` of the
+  device key into the world's directory, on the disk) and finds the key's bytes
+  on no disk of the keeper's; the source says `mykey belongs to uid 0 and the
+  world's is 2000`. The first version of the walk asked the owner before the
+  kind, so a link the world itself made was reported as a wrong owner; a link is
+  now named as a link whoever made it.
+- **A refused mount would have kept the copy in RAM and said it was kept.** Found
+  by reading the no-disk transcript of the first image run: with the disk behind
+  `/data` refused, PID 1 still "created" the device key (on the initial
+  filesystem, in RAM) and said both mirror lines. A keeper in that state would
+  make `/data/copy` in memory, report `ok`, and lose it with the power -- the one
+  thing a copy is for; a source would announce a directory its world was never
+  given. Both now say why and start nothing (NS-1: a promise the machine cannot
+  keep is not made), the boot differs from its expectation, and round 10 of the
+  scene boots both with no disk. The witness notices too: `check --fresh` on a
+  keeper whose puller is not running says `no attempt was made in the 60 s this
+  witness waited`.
+- **The scene's first run was invalid, and a comparison said so.** `debugfs`
+  refuses to write to a disk a machine was ended on until its journal is
+  replayed (`e2fsck -fy` first), and the directory PID 1 had made for the world
+  was not on that disk at all -- the kernel had not written it before the
+  machine was ended. The seeds did not take, the comparison of the two disks
+  said `no`, and a check that stops the scene when a seed did not take was added
+  so that a comparison of nothing with nothing cannot pass. The one file the two
+  readbacks cannot agree on is the `note` the world writes at every boot: the
+  guest has not flushed it when the machine is ended, so the source's disk holds
+  it empty and the keeper -- which read it from the live machine -- holds six
+  bytes. It is left out of the counts and the comparisons, said so in the
+  output, and still held to its listing by the host's `mirror verify`.
+- **The first Linux run found two things the Windows host cannot.** A directory
+  opened without `iterate` is a path-only descriptor, and `Dir.walk` on it
+  answers EBADF, which the standard library calls `unreachable`; and `O_DIRECTORY`
+  with `O_NOFOLLOW` on a link answers ENOTDIR, not ELOOP, so a test that named
+  the error was wrong and one that says "refused, whichever way the kernel words
+  it" is right.
+- **The first fixtures were green at once**, which is when a court deserves
+  doubt, and got the probe. Its mutants asked for three more machine cases
+  (R251-R253: an uppercase source key, a destination that is not plain names,
+  one inside a directory the machine mounts itself) and for a root-only test that
+  chowns a file inside the world's directory to another identity -- the owner
+  check was convicted by nothing, because the walk asks the owner of the
+  directory itself first. A USER and a SERVICE share one namespace, which the
+  first fixtures learned by being refused for it.
+- **A checkpoint that runs against a copy being replaced is a flaky one.** The
+  keeper replaces the copy with renames, so `check` reads a copy twice before it
+  convicts one: a listing read before a swap and a directory read after it is a
+  mismatch nothing is wrong with. A copy that is really wrong is wrong a second
+  later too (round 9 changes a byte of a copy on the disk, with nothing there to
+  heal it, and the witness and the machine's own judge convict it).
+- **`\\n` in a shell heredoc is a real newline in this environment, again**, and
+  turned a Zig string literal into one with a line end in it twice; both were
+  found by the compiler and repaired. Anything with a backslash in it is written
+  with the file tools.
+
+## What is judged, and by what
+
+114 fleet fixtures (FA17-FA21 and FR74-FR93 new) and 312 machine fixtures (A54-A59
+and R210-R253 new); 16 tests on Linux, none skipped (`experiment/mirror_unit.sh`:
+a walk that gives what the world owns and says what it cannot, a copy over a real
+socket pair that follows the source and keeps the last one that verified, a source
+that replays, lies about a file's bytes or stops half way, a swap cut short at
+each step, a file another identity owns); `experiment/os12_mirror.sh`, two
+machines on one wire, enrolment by hand, ten rounds read off both disks -- the
+declared copy (a ledger of a few hundred kilobytes, equal file for file to the
+source's disk), the changed directory, an impostor with a forged file, a stranger,
+a symbolic link, the machine's own key as a hard link, the source gone, a pull cut
+short at two steps, a copy changed on the disk, and both machines with no disk --
+then three audits that must pass and eight cases that must be refused, pinned at
+545 lines (`machines/mirror.expected`); and `experiment/mirror_probe.sh`, which
+puts one bug at a time into a scratch copy of the source (32 of the tests' files
+and 60 of the rules of the two grammars) and requires each to be convicted by the
+case named for its rule.
+
+## Named seams
+
+- **One mirror per machine.** A machine gives or keeps, once; a chain of copies
+  and a fan of keepers are refused (FR77-FR79).
+- **The bytes cross the link in the clear** after both ends have proved who they
+  are: integrity is the source's key, access is the keeper's key, and
+  confidentiality is the link's.
+- **A source serves one connection at a time**, and waits up to fifteen seconds for
+  an asker to prove who it is: a host on the link that holds connections open can
+  keep the keeper waiting, with no limit on how often anybody may ask (the time
+  authority's seam too). Nothing it sends before that proof is more than a
+  challenge.
+- **A file the world makes is read as root, bounded**: past the room a copy has left
+  it is refused, before it is read when its size says so (a test judges that) and as
+  it grows when it does not (no test can race a writer).
+- **Every pull moves every byte** and needs room for a second copy while it
+  swaps; there is no delta. Limits: 4096 entries, 1 GiB, 64 levels.
+- **No freshness beyond the request.** A source that rolls its own directory back
+  is its own word; a keeper that is not asking holds the last copy, and says so
+  (`harb mirror check` prints the last attempt beside the copy).
+- **No restore verb.** The copy is root's, closed (0700), with the listing beside
+  it; putting it back where a world can use it is a person's act today.
+- **The two children are the floor's own code running as root and are not
+  confined**; the walk's own rules (no link, only the world's files) are what
+  keep a world from using them against the machine.
+- **Only regular files and directories are carried**; a pipe, a socket, a device
+  or a directory on another filesystem makes the directory unmirrorable, loudly.
+  The filesystem-boundary check and the walk's second look at a file's owner while
+  it is streamed (a race) are judged by no test.
+- **A mirror that stops mirroring does not stop the machine's watchdog**, and a
+  keeper that is refused for ever is told by `harb mirror check`, not by a verdict.
+- **What is consistent is the application's.** The floor copies files; a database
+  that is written while it is read is a copy of a torn file, and the floor cannot
+  know what torn means for it.
+- **A copy that outlives its source is checked against the source's KEY**, so a
+  source whose key is replaced (a rebuilt card) is a source the old listing no
+  longer verifies against unless the fleet still enrols the old one (RET-1).
+
 # TERR-1 — where the data stays is a line the court reads, and the box in the wrong country is refused where it is declared
 
 The first of the five declarations of the resilience page after the cloud's

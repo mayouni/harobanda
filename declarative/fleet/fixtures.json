@@ -1,6 +1,6 @@
 {
   "grammar": "fleet",
-  "version": "0.4",
+  "version": "0.5",
   "accepts": [
     {
       "id": "FA1",
@@ -264,6 +264,109 @@
           "depot": "tn",
           "store": "fr",
           "scratch": null
+        }
+      }
+    },
+    {
+      "id": "FA17",
+      "name": "a copy: one member gives a directory of a world, another keeps it, each enrolled as the key the other holds, on one link",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 2,
+        "link": "lan",
+        "routes": 0,
+        "mirrors": 1,
+        "mirror_pairs": {
+          "copy": "depot>annex"
+        }
+      }
+    },
+    {
+      "id": "FA18",
+      "name": "a copy kept where the data stays: the keeper keeps a disk and stands in the territory the fleet's data stays in",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\nDEFINE RESIDENCY records AS (\n  TERRITORY tn\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 2,
+        "link": "lan",
+        "routes": 0,
+        "mirrors": 1,
+        "mirror_pairs": {
+          "copy": "depot>annex"
+        },
+        "residency": "tn",
+        "territories": {
+          "depot": "tn",
+          "annex": "tn"
+        }
+      }
+    },
+    {
+      "id": "FA19",
+      "name": "a copy across two links, through the way between them: the keeper asks an address on the other link, and a route joins the two",
+      "source": "DEFINE FLEET c AS (LINKS [front, core]) RATIONALE \"x\"\nDEFINE MEMBER box AS (\n  DECLARATION \"box.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\nDEFINE ROUTE through_box AS (\n  BETWEEN [front, core],\n  THROUGH box\n) RATIONALE \"x\"\n",
+      "files": {
+        "box.machine": "DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"10.10.0.1/24\") RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth1\", ADDRESS \"10.20.0.1/24\") RATIONALE \"x\"\n",
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS \"10.20.0.2/24\", GATEWAY \"10.20.0.1\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.20.0.2:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"10.10.0.2/24\", GATEWAY \"10.10.0.1\") RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 3,
+        "links": [
+          "front",
+          "core"
+        ],
+        "routes": 1,
+        "mirrors": 1,
+        "mirror_pairs": {
+          "copy": "depot>annex"
+        }
+      }
+    },
+    {
+      "id": "FA20",
+      "name": "a fleet may hold a machine that gives or takes nothing beside a copy: the third member is nobody's end",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MEMBER odd AS (\n  DECLARATION \"plain.machine\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+        "plain.machine": "DEFINE MACHINE plain AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.3/24\") RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 3,
+        "link": "lan",
+        "routes": 0,
+        "mirrors": 1,
+        "mirror_pairs": {
+          "copy": "depot>annex"
+        }
+      }
+    },
+    {
+      "id": "FA21",
+      "name": "two copies in one fleet, each between its own pair: a machine gives one and keeps none",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MEMBER depot2 AS (\n  DECLARATION \"depot2.machine\",\n  KEY \"f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex2 AS (\n  DECLARATION \"annex2.machine\",\n  KEY \"af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\nDEFINE MIRROR copy2 AS (\n  FROM depot2,\n  TO annex2\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+        "depot2.machine": "DEFINE MACHINE depot2 AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.5/24\", MIRROR_SERVER 7401) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex2.machine": "DEFINE MACHINE annex2 AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.5:7401\", MIRROR_KEY \"f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.6/24\") RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 4,
+        "link": "lan",
+        "routes": 0,
+        "mirrors": 2,
+        "mirror_pairs": {
+          "copy": "depot>annex",
+          "copy2": "depot2>annex2"
         }
       }
     }
@@ -993,6 +1096,207 @@
         "sensor.machine": "DEFINE MACHINE sensor AS (PROFILE edge, ARCH thumbv8m, KERNEL none, BOARD pico2) RATIONALE \"x\"\nDEFINE MOUNT log AS (AT \"/log\", FS littlefs, DEVICE \"flash0\") RATIONALE \"x\"\n"
       },
       "refusal": "a member that keeps a disk stands where the data stays"
+    },
+    {
+      "id": "FR74",
+      "name": "a copy is given by a machine of the fleet: FROM names a member that is not declared",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM ghost,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "no MEMBER ghost is declared"
+    },
+    {
+      "id": "FR75",
+      "name": "... and so is the one that keeps it",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO ghost\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "no MEMBER ghost is declared"
+    },
+    {
+      "id": "FR76",
+      "name": "a copy kept where the original is, is lost with it: one member is both ends",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO depot\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n"
+      },
+      "refusal": "copies depot to itself"
+    },
+    {
+      "id": "FR77",
+      "name": "a machine gives one copy: a second MIRROR from the same source would name two keepers for one directory",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex2 AS (\n  DECLARATION \"annex2.machine\",\n  KEY \"f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\nDEFINE MIRROR copy2 AS (\n  FROM depot,\n  TO annex2\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+        "annex2.machine": "DEFINE MACHINE annex2 AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.7/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "already gives its copy"
+    },
+    {
+      "id": "FR78",
+      "name": "a machine keeps one copy: a second MIRROR to the same keeper would put two directories in one place",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER depot2 AS (\n  DECLARATION \"depot2.machine\",\n  KEY \"f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\nDEFINE MIRROR copy2 AS (\n  FROM depot2,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "depot2.machine": "DEFINE MACHINE depot2 AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.5/24\", MIRROR_SERVER 7401) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "already keeps the copy"
+    },
+    {
+      "id": "FR79",
+      "name": "a chain of copies: a machine that keeps a copy gives none, and one that gives keeps none",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MEMBER odd AS (\n  DECLARATION \"plain.machine\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\nDEFINE MIRROR copy2 AS (\n  FROM annex,\n  TO odd\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+        "plain.machine": "DEFINE MACHINE plain AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.3/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "in a chain"
+    },
+    {
+      "id": "FR80",
+      "name": "a member that gives nothing is no source: its machine declares no MIRROR_OF",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "declares no MIRROR_OF"
+    },
+    {
+      "id": "FR81",
+      "name": "a member that takes nothing is no keeper: its machine declares no MIRROR_FROM",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "declares no MIRROR_FROM"
+    },
+    {
+      "id": "FR82",
+      "name": "the keeper asks a port the source does not give on: faultless alone, and it would ask somebody who is not the source",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7401\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "somebody who is not the source"
+    },
+    {
+      "id": "FR83",
+      "name": "... and an address",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "somebody who is not the source"
+    },
+    {
+      "id": "FR84",
+      "name": "a source nobody can check: a listing against no enrolled key is a claim and not a copy",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "has no KEY"
+    },
+    {
+      "id": "FR85",
+      "name": "a keeper nobody can show to be the device: the source gives its copy to a key, and a member with none cannot be it",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "keeps the copy of MIRROR copy and has no KEY"
+    },
+    {
+      "id": "FR86",
+      "name": "the keeper takes the word of another key than the source's: the word it takes is not the source's",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "the word it takes is not the source's"
+    },
+    {
+      "id": "FR87",
+      "name": "the source gives to another key than the keeper's: it would give the copy to somebody who is not the keeper",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "somebody who is not the keeper"
+    },
+    {
+      "id": "FR88",
+      "name": "two links and no way between them: the keeper asks an address it has a gateway for and no route joins the links",
+      "source": "DEFINE FLEET c AS (LINKS [front, core]) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK core AS (INTERFACE \"eth0\", ADDRESS \"10.20.0.2/24\", GATEWAY \"10.20.0.1\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.20.0.2:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS \"10.10.0.2/24\", GATEWAY \"10.10.0.1\") RATIONALE \"x\"\n"
+      },
+      "refusal": "a question with no way there"
+    },
+    {
+      "id": "FR89",
+      "name": "a copy the fleet never declared: a machine that gives a directory to a key is the end of a MIRROR, or the set holds a copy nobody was declared to keep",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "no MIRROR names it FROM"
+    },
+    {
+      "id": "FR90",
+      "name": "... and a machine that takes one",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex2 AS (\n  DECLARATION \"annex2.machine\",\n  KEY \"f80cccdce4ae1c07ae208a2adf99a310ae4207e0306fa0236110b06827bbb8d0\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+        "annex2.machine": "DEFINE MACHINE annex2 AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.7/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "no MIRROR names it TO"
+    },
+    {
+      "id": "FR91",
+      "name": "a copy into another territory than the one the data stays in is refused by the rule the fleet already holds every disk to: the keeper keeps a disk",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\",\n  TERRITORY fr\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM depot,\n  TO annex\n) RATIONALE \"x\"\nDEFINE RESIDENCY records AS (\n  TERRITORY tn\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "a member that keeps a disk stands where the data stays"
+    },
+    {
+      "id": "FR92",
+      "name": "a MIRROR names both its ends: one without a FROM is a copy from nowhere",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "FROM is required"
+    },
+    {
+      "id": "FR93",
+      "name": "a member is named by a word and not a string",
+      "source": "DEFINE FLEET c AS (LINK lan) RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"depot.machine\",\n  KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\"\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"annex.machine\",\n  KEY \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\"\n) RATIONALE \"x\"\nDEFINE MIRROR copy AS (\n  FROM \"depot\",\n  TO annex\n) RATIONALE \"x\"\n",
+      "files": {
+        "depot.machine": "DEFINE MACHINE depot AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"2012cb90ca60e8e5d8daf66e2272d2233e0486d557e8c66141ed8920177d7eb7\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+        "annex.machine": "DEFINE MACHINE annex AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.1:7400\", MIRROR_KEY \"c050c5637a44fa8629fff3cccce2300cb362a63d99d95fc54145266f4332445a\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n"
+      },
+      "refusal": "takes a word"
     }
   ]
 }

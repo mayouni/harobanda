@@ -379,6 +379,54 @@ pub const TimeFrom = struct {
     line: usize,
 };
 
+/// The one directory a machine gives a copy of, and the one device it gives it to (MIR-1, STZ-OS-RULING-19).
+/// The directory is a WORLD'S: it lies in the STATE of a world that runs as an identity, so the court knows whose
+/// it is, and the floor holds every file it gives to that identity -- a file the world does not own is not the
+/// world's to give, whatever it is linked to.
+pub const MirrorOf = struct {
+    /// the directory, as written: plain names, inside a world's STATE, on a disk that keeps it
+    dir: []const u8,
+    /// the public key of the one device the copy is given to, as written (64 lowercase hex) and as bytes
+    for_text: []const u8,
+    for_key: [32]u8,
+    /// the world whose directory it is, and the identity every file of it must belong to
+    world: []const u8,
+    uid: u32,
+    gid: u32,
+    line: usize,
+};
+
+/// Where a machine takes a copy from, whose word it takes, and where it keeps it (MIR-1). The key is a fact the
+/// machine holds so that a listing is refused at the door when it is not the source's; that it IS the key of the
+/// member the fleet pairs this machine with is a fact about a set, and the fleet court judges it.
+pub const MirrorFrom = struct {
+    /// `a.b.c.d:port`, as written
+    text: []const u8,
+    ip: u32,
+    port: u16,
+    /// the source's Ed25519 public key, as written (64 lowercase hex) and as bytes
+    key_text: []const u8,
+    key: [32]u8,
+    /// the directory the copy is kept in, and the seconds between two pulls
+    into: []const u8,
+    every: u32,
+    line: usize,
+};
+
+/// Seconds between two pulls when nothing is said, and the bounds of what may be: a pull moves every byte of the
+/// directory, so a period shorter than a few seconds is a machine that does nothing else, and one longer than a
+/// day is a copy that is not one.
+pub const mirror_every_default: u32 = 30;
+pub const mirror_every_min: u32 = 5;
+pub const mirror_every_max: u32 = 86400;
+
+/// The names the floor makes for ONE copy, each a suffix of MIRROR_INTO: the copy itself, the place it is received
+/// into, the copy it replaces for the length of a swap, the signed listing it was verified against (the commit
+/// record) with its own staging name, and the line about the last attempt with its own. The one list: the court
+/// keeps every one of them out of a world's hands and the floor's own files, the puller makes exactly these and
+/// no others, and a test in mirror.zig holds the names it uses to this list.
+pub const mirror_family = [_][]const u8{ "", ".new", ".old", ".manifest", ".manifest.new", ".last", ".last.new" };
+
 /// A number as an endpoint spells it: digits and nothing else, no sign, no separator and no leading zero.
 /// `parseInt` takes `+7000`, `7_000` and `07000` for 7000, and then one endpoint has several spellings, each a
 /// different text in a transcript and in a comparison made on text.
@@ -523,6 +571,10 @@ pub const Network = struct {
     /// entry it was asked about existed no later than that reading. Needs a static
     /// ADDRESS (the address that is asked is not a lease), a CLOCK and an IDENTITY.
     time_authority: ?u16 = null,
+    /// the TCP port this machine gives the copy of its directory on, on this link (MIR-1): it is the
+    /// SOURCE of a mirror, and gives the files of its MIRROR_OF to the one device named by MIRROR_FOR and to
+    /// nobody else. Needs a static ADDRESS (the address that is asked is not a lease) and an IDENTITY.
+    mirror_server: ?u16 = null,
     rationale: []const u8,
 };
 
@@ -669,6 +721,13 @@ pub const Machine = struct {
     /// authority's; that it IS the fleet's authority's key is a fact about a set, and the
     /// fleet court judges it (TIME-1).
     time_from: ?TimeFrom = null,
+    /// the directory of a world this machine gives a copy of, and the one device it gives it to (MIR-1):
+    /// a mirror's SOURCE. The link it gives it on is the NETWORK that declares MIRROR_SERVER. Null is a
+    /// machine that gives no copy, as every machine was before this seat.
+    mirror_of: ?MirrorOf = null,
+    /// where this machine takes a copy from and where it keeps it (MIR-1): a mirror's DESTINATION. A
+    /// machine gives a copy or takes one, never both.
+    mirror_from: ?MirrorFrom = null,
     /// how many cores this machine has (TIM-1): the number the emulator is
     /// handed, and the number a board has. One when nothing is said, which
     /// is every hosted machine before this seat; a reservation needs a
@@ -891,7 +950,7 @@ pub const Clause = struct {
     value: Value,
 };
 
-pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER, RETIREMENT, ROUTE, FRONT, RESIDENCY };
+pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER, RETIREMENT, ROUTE, FRONT, RESIDENCY, MIRROR };
 
 /// Which file a kind belongs in -- one language, two files (FLT-1).
 ///
@@ -905,7 +964,7 @@ pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER,
 pub fn belongsToFleet(kind: Kind) bool {
     return switch (kind) {
         .MACHINE, .SERVICE, .CAPABILITY, .MOUNT, .PIN, .NETWORK, .USER, .PEER => false,
-        .FLEET, .MEMBER, .RETIREMENT, .ROUTE, .FRONT, .RESIDENCY => true,
+        .FLEET, .MEMBER, .RETIREMENT, .ROUTE, .FRONT, .RESIDENCY, .MIRROR => true,
     };
 }
 
@@ -919,12 +978,12 @@ pub const Decl = struct {
 
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
-        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD", "CLOCK", "TIME_FROM", "TIME_KEY", "CORES" },
+        .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD", "CLOCK", "TIME_FROM", "TIME_KEY", "CORES", "MIRROR_OF", "MIRROR_FOR", "MIRROR_FROM", "MIRROR_KEY", "MIRROR_INTO", "MIRROR_EVERY" },
         .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES", "STATE", "PERIOD", "DEADLINE", "RUNTIME", "CORE", "PORTS" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
-        .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS", "EGRESS", "DOMAIN", "TIME_AUTHORITY" },
+        .NETWORK => &.{ "INTERFACE", "ADDRESS", "GATEWAY", "DNS", "EGRESS", "DOMAIN", "TIME_AUTHORITY", "MIRROR_SERVER" },
         .USER => &.{ "UID", "GID" },
         .PEER => &.{ "NETWORK", "HARDWARE", "ADDRESS" },
         .FLEET => &.{ "LINK", "LINKS", "TIME_AUTHORITY" },
@@ -933,6 +992,7 @@ fn allowedClauses(kind: Kind) []const []const u8 {
         .ROUTE => &.{ "BETWEEN", "THROUGH" },
         .FRONT => &.{ "MEMBER", "LINK", "ROOT" },
         .RESIDENCY => &.{"TERRITORY"},
+        .MIRROR => &.{ "FROM", "TO" },
     };
 }
 
@@ -1482,7 +1542,16 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             if (port < 1024 or port > 65535) return ctx.refuse(c.line, "TIME_AUTHORITY is the UDP port this machine answers the time on, 1024 to 65535, not {d}", .{port});
             time_authority = @intCast(port);
         }
-        try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .domain = domain, .time_authority = time_authority, .rationale = d.rationale });
+        // MIRROR_SERVER -- this machine gives the copy of its directory on this link (MIR-1). What it needs
+        // that is not on this network (a MIRROR_OF, a MIRROR_FOR, an IDENTITY) is checked once all of them are read.
+        var mirror_server: ?u16 = null;
+        if (find(d, "MIRROR_SERVER")) |c| {
+            if (address == .dhcp) return ctx.refuse(c.line, "{s} asks for its own address by dhcp, and the address a copy is asked of is not a lease: a mirror's source declares a static ADDRESS", .{d.name});
+            const port = try wantNumber(&ctx, c);
+            if (port < 1024 or port > 65535) return ctx.refuse(c.line, "MIRROR_SERVER is the TCP port this machine gives a copy on, 1024 to 65535, not {d}", .{port});
+            mirror_server = @intCast(port);
+        }
+        try nets.append(arena, .{ .name = d.name, .line = d.line, .interface = iface, .address = address, .gateway = gateway, .egress = egress, .dns = try dns.toOwnedSlice(arena), .domain = domain, .time_authority = time_authority, .mirror_server = mirror_server, .rationale = d.rationale });
     };
 
     // a loopback is a network the machine declares and not a way to anywhere:
@@ -1955,6 +2024,101 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             };
         }
     }
+    // MIRROR_OF, MIRROR_FOR, MIRROR_SERVER, MIRROR_FROM, MIRROR_KEY, MIRROR_INTO and MIRROR_EVERY -- a copy of a
+    // world's directory on another machine (MIR-1, STZ-OS-RULING-19). Read here and not beside the clauses of time,
+    // because every rule about them is a fact about another declaration: whose directory it is (a SERVICE's STATE),
+    // what the disk under it keeps (a MOUNT), what the machine signs with (IDENTITY) and where the link goes (a NETWORK).
+    // Which two machines are the two ends of one copy is a fact about a set, and the fleet court judges it.
+    var mirror_of: ?MirrorOf = null;
+    var mirror_from: ?MirrorFrom = null;
+    {
+        const of_c = find(md, "MIRROR_OF");
+        const for_c = find(md, "MIRROR_FOR");
+        const from_c = find(md, "MIRROR_FROM");
+        const key_c = find(md, "MIRROR_KEY");
+        const into_c = find(md, "MIRROR_INTO");
+        const every_c = find(md, "MIRROR_EVERY");
+        var server_net: ?Network = null;
+        for (nets.items) |n| if (n.mirror_server != null) {
+            if (server_net) |first| return ctx.refuse(n.line, "{s} gives a copy too, and {s} already does: a machine gives its copy on one link", .{ n.name, first.name });
+            server_net = n;
+        };
+        const gives = of_c != null or for_c != null or server_net != null;
+        const takes = from_c != null or key_c != null or into_c != null or every_c != null;
+        if (gives or takes) {
+            const first_line = if (of_c) |c| c.line else if (for_c) |c| c.line else if (from_c) |c| c.line else if (key_c) |c| c.line else if (into_c) |c| c.line else if (every_c) |c| c.line else server_net.?.line;
+            if (profile != .hosted) return ctx.refuse(first_line, "a mirror is a hosted machine's declaration; a machine of PROFILE {s} keeps its data in its own substrate", .{@tagName(profile)});
+            if (gives and takes) return ctx.refuse(first_line, "this machine declares both ends of a mirror, MIRROR_OF and MIRROR_FROM: a machine gives a copy or takes one, and a machine that did both would be its own cloud", .{});
+            const sign_key = identity orelse return ctx.refuse(first_line, "a mirror is signed by this device (the source signs what it gives, the destination signs that it asks), and this machine declares no IDENTITY: a copy nobody signed is anybody's", .{});
+
+            if (gives) {
+                const net = server_net orelse return ctx.refuse(of_c.?.line, "MIRROR_OF is the directory this machine gives, and no NETWORK of it declares MIRROR_SERVER: on what link would it give it?", .{});
+                const of = of_c orelse return ctx.refuse(net.line, "{s} says MIRROR_SERVER and this machine declares no MIRROR_OF: what would it give?", .{net.name});
+                const fc = for_c orelse return ctx.refuse(of.line, "MIRROR_OF is the directory this machine gives, and it declares no MIRROR_FOR: a copy of a world's directory given to whoever asks is that directory given to the link", .{});
+                if (isLoopback(net)) return ctx.refuse(net.line, "{s} is a loopback, which nobody else can ask: a mirror's source gives its copy on a link", .{net.name});
+                const dir = try wantString(&ctx, of);
+                if (!plainPath(dir)) return ctx.refuse(of.line, "MIRROR_OF is an absolute path of plain names (\"/data/ringserv\"), not '{s}': the court asks whose directory it is, and a spelling that reaches one directory by two names would answer for the wrong one", .{dir});
+                const for_text = try wantString(&ctx, fc);
+                if (for_text.len != 64 or !lowerHex(for_text)) return ctx.refuse(fc.line, "MIRROR_FOR is the public key of the one device the copy is given to, 64 lowercase hex, not '{s}'", .{for_text});
+                var for_key: [32]u8 = undefined;
+                _ = std.fmt.hexToBytes(&for_key, for_text) catch return ctx.refuse(fc.line, "MIRROR_FOR is the public key of the one device the copy is given to, 64 lowercase hex, not '{s}'", .{for_text});
+                _ = std.crypto.sign.Ed25519.PublicKey.fromBytes(for_key) catch return ctx.refuse(fc.line, "MIRROR_FOR is an Ed25519 public key, and '{s}' is 64 hex that no key is written as: a copy given to a key nobody holds is given to nobody", .{for_text});
+                // whose directory it is: the world whose STATE holds it
+                var owner: ?*const Service = null;
+                for (svc_slice) |*sv| for (sv.state) |s| if (within(dir, s)) {
+                    owner = sv;
+                };
+                const world = owner orelse return ctx.refuse(of.line, "MIRROR_OF {s} lies in no world's STATE: a mirror gives a WORLD'S directory, and a directory no world owns is the machine's own", .{dir});
+                // a copy that dies with the power is not a copy, and what a disk keeps is judged by the same
+                // answer the STATE rule asks (`holderOf`), never a second reading
+                const holder = holderOf(mount_slice, dir) orelse return ctx.refuse(of.line, "MIRROR_OF {s} lies in RAM (under /run), which dies with the power: a copy is made of a directory that survives, and a world that wants one keeps its STATE inside an ext4 MOUNT", .{dir});
+                if (holder.fs != .ext4) return ctx.refuse(of.line, "MIRROR_OF {s} lies inside MOUNT {s}, a {s} filesystem: the floor gives only the files a world OWNS, and only ext4 keeps owners", .{ dir, holder.name, @tagName(holder.fs) });
+                for (svc_slice) |sv| for (sv.ports) |p| if (p == net.mirror_server.?) {
+                    return ctx.refuse(of.line, "MIRROR_SERVER {d} is a port {s} declares in PORTS: one port is bound by one program, and the floor's mirror would never get it", .{ p, sv.name });
+                };
+                mirror_of = .{ .dir = dir, .for_text = for_text, .for_key = for_key, .world = world.name, .uid = world.user.?.uid, .gid = world.user.?.gid, .line = of.line };
+            } else {
+                const from = from_c orelse return ctx.refuse((key_c orelse into_c orelse every_c.?).line, "this machine declares what it takes a copy into and whose word it takes, and no MIRROR_FROM: from where?", .{});
+                const kc = key_c orelse return ctx.refuse(from.line, "MIRROR_FROM names whom this machine takes a copy from, and it declares no MIRROR_KEY: a listing from anyone on the wire would be taken for the source's", .{});
+                const ic = into_c orelse return ctx.refuse(from.line, "MIRROR_FROM names whom this machine takes a copy from, and it declares no MIRROR_INTO: where would it keep it?", .{});
+                const text = try wantString(&ctx, from);
+                const hp = parseHostPort(text) orelse return ctx.refuse(from.line, "MIRROR_FROM is the source's address and port (\"10.30.0.1:7400\"), not '{s}'", .{text});
+                const key_text = try wantString(&ctx, kc);
+                if (key_text.len != 64 or !lowerHex(key_text)) return ctx.refuse(kc.line, "MIRROR_KEY is the source's Ed25519 public key as 64 lowercase hex, not '{s}'", .{key_text});
+                var key: [32]u8 = undefined;
+                _ = std.fmt.hexToBytes(&key, key_text) catch return ctx.refuse(kc.line, "MIRROR_KEY is the source's Ed25519 public key as 64 lowercase hex, not '{s}'", .{key_text});
+                _ = std.crypto.sign.Ed25519.PublicKey.fromBytes(key) catch return ctx.refuse(kc.line, "MIRROR_KEY is the source's Ed25519 public key, and '{s}' is 64 hex that no key is written as", .{key_text});
+                if (countLinks(nets.items) == 0) return ctx.refuse(from.line, "MIRROR_FROM asks over a network, and this machine declares none (a loopback is not a way to anywhere)", .{});
+                if (!hasWayTo(nets.items, hp.ip)) return ctx.refuse(from.line, "MIRROR_FROM asks {s}, and this machine has no way there: it is on none of its links' own prefixes, and no link has a GATEWAY to carry it (as a default route, or for an EGRESS destination that covers it: a route to another network is written through a gateway, and with none declared none is written), so the copy could never be asked for", .{text});
+                const into = try wantString(&ctx, ic);
+                if (!plainPath(into)) return ctx.refuse(ic.line, "MIRROR_INTO is an absolute path of plain names (\"/data/copy\"), not '{s}': the court asks which directories are near it, and a spelling that reaches one directory by two names would answer for the wrong one", .{into});
+                for (implicit_mounts) |imp| if (within(into, imp)) return ctx.refuse(ic.line, "MIRROR_INTO {s} is inside {s}, which the machine mounts itself: not a place a copy may be kept", .{ into, imp });
+                const holder = holderOf(mount_slice, into) orelse return ctx.refuse(ic.line, "MIRROR_INTO {s} is in no MOUNT: a copy kept in RAM dies with the power, and a copy is the thing that is there when the source is not", .{into});
+                if (into.len == holder.at.len) return ctx.refuse(ic.line, "MIRROR_INTO {s} is the place itself, not a directory in it: the copy is swapped in whole, beside its own record, and that cannot be done to the root of a MOUNT", .{into});
+                if (holder.fs != .ext4) return ctx.refuse(ic.line, "MIRROR_INTO {s} is inside MOUNT {s}, a {s} filesystem: a copy of a world's directory is kept closed to everyone but the machine, and only ext4 keeps the modes that do it", .{ into, holder.name, @tagName(holder.fs) });
+                for (holder.options) |o| if (o == .ro) return ctx.refuse(ic.line, "MIRROR_INTO {s} is inside MOUNT {s}, which is read-only: nothing can be kept on it", .{ into, holder.name });
+                // the names the floor makes for the copy are the copy's too (`mirror_family`), and none of them is a
+                // world's place or the floor's own file
+                for (mirror_family) |suffix| {
+                    var buf: [max_path + 16]u8 = undefined;
+                    const name = std.fmt.bufPrint(&buf, "{s}{s}", .{ into, suffix }) catch unreachable;
+                    if (within(sign_key, name)) return ctx.refuse(ic.line, "the copy at MIRROR_INTO {s} makes {s}, which is where IDENTITY {s} is: the floor's own key is not a place a copy may be made", .{ into, name, sign_key });
+                    if (journal) |rec| if (within(rec, name)) return ctx.refuse(ic.line, "the copy at MIRROR_INTO {s} makes {s}, which is where JOURNAL {s} is: the floor's own record is not a place a copy may be made", .{ into, name, rec });
+                    for (svc_slice) |sv| for (sv.state) |s| if (within(name, s) or within(s, name)) {
+                        return ctx.refuse(ic.line, "the copy at MIRROR_INTO {s} makes {s}, which overlaps {s}, the STATE of {s}: the owner of a directory can replace what is in it, so a copy is kept where no world owns the place", .{ into, name, s, sv.name });
+                    };
+                }
+                var every: u32 = mirror_every_default;
+                if (every_c) |ec| {
+                    const n = try wantNumber(&ctx, ec);
+                    if (n < mirror_every_min or n > mirror_every_max) return ctx.refuse(ec.line, "MIRROR_EVERY is the seconds between two pulls, {d} to {d}, not {d}: a pull moves every byte of the directory", .{ mirror_every_min, mirror_every_max, n });
+                    every = @intCast(n);
+                }
+                mirror_from = .{ .text = text, .ip = hp.ip, .port = hp.port, .key_text = key_text, .key = key, .into = into, .every = every, .line = from.line };
+            }
+        }
+    }
+
     var mount_paths: std.ArrayList([]const u8) = .{};
     for (mount_slice) |mt| try mount_paths.append(arena, mt.at);
     const mount_path_slice = try mount_paths.toOwnedSlice(arena);
@@ -1986,6 +2150,8 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
         .journal = journal,
         .clock = clock,
         .time_from = time_from,
+        .mirror_of = mirror_of,
+        .mirror_from = mirror_from,
         .cores = cores,
         .forward = forward,
         .rationale = md.rationale,

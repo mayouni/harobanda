@@ -1,9 +1,9 @@
 """Diagram 14, narrow.
 
 The wide one (diagram14.py) sets a hall as one strip, the fleet file under it,
-and three rooms side by side on the links the file names, with a dashed mirror
-between two of them. A column has no beside, so the order becomes sequence: the
-hall, the file, room A, room B, room C struck, the wire and the mirror as a
+and three rooms side by side on the links the file names, with a solid copy
+arrow between two of them (dashed, the mark for absence, until MIR-1). A column has no beside, so the order becomes sequence: the
+hall, the file, room A, room B, room C struck, the wire and the copy as a
 note, then what the file will say next. Every fact is the wide drawing's, in
 the same words.
 
@@ -50,10 +50,9 @@ c.box("room B", "the same, and the way between the two links", "machine")
 c.gap(8)
 c.box("room C, struck", "lost: what the file says was here, and nothing more", "kern")
 c.gap(8)
-c.note("The links the file names join the rooms. A mirror from A to B is ordered, not built.", MUTED)
+c.note("The links the file names join the rooms. A's files are kept on B, and verified.", MUTED)
 c.gap(16)
 
-c.strip_items("NEXT, ORDERED", ["a mirror: A's files kept on B, and verified",
-                                "the roll call: who has written a record since",
+c.strip_items("NEXT, ORDERED", ["the roll call: who has written a record since",
                                 "the loss drill: one box lost, the rest serve"])
 c.render("harobanda-diagram-14-narrow.png")

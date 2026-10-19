@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once. Widened again 2026-10-05 (STATE, a world's own directory): A30-A35, R104-R138; a world that runs as an identity owns the directories it names and nothing else of the machine's, only an identity can own one, only where the machine can hand one over (under /run, or inside an ext4 or tmpfs mount the world keeps and that is not read-only, with every mount above it kept too), no two worlds own overlapping directories, a world's signal sits directly in its own directory and never in a neighbour's, the floor's own key and record are in no directory a world owns, and the paths the court compares are plain names of bounded length, so that no spelling reaches one file by two names. Two rules about mounts came with it, because a directory's holder is the innermost mount only if the outer one is declared first and no two share a mount point. Widened again 2026-10-05 (the time seat, TIME-1): A36-A43, R139-R170; time enters a record only as an authority's signed statement, so a machine declares the clock it HAS (a plain device path under /dev, and a key to sign with), a link it answers the time on (one, a static address, a port from 1024 to 65535, never a loopback, never asking anybody), or whom it asks and whose word it takes (a journal to date, an address and a port from 1 to 65535 each spelled one way, a way there, and one spelling of a key that is a key); and a clock is a real-time clock, not any device. The boundary cases are here because a probe with a mutated court found the first version of these fixtures judged none of them: A38-A40 and R159-R162 are what that probe asked for; A41-A43 and R164-R170 are what an independent review of the seat asked for. Widened again 2026-10-13 (the reservation, TIM-1): A44-A51, R171-R194; a world may ask the kernel for time it will get every period -- a PERIOD, a DEADLINE and a RUNTIME in microseconds and the CORE it runs on, the four together -- and a hosted machine says how many CORES it has (2 to 64; a Raspberry Pi 4 has four); the runtime fits the deadline and the deadline the period, a runtime of ten microseconds at least and a period within the kernel's own bounds (100 us to 4194304 us), core 0 is the machine's, the reservations on one core sum to no more than the 90 per cent the kernel gives (it admits 95 and holds 5 for the ordinary tasks' own deadline server), counted as the kernel counts it, and a world with a reservation declares no CPU ceiling. The kernel judges the same set again at the act, and refuses what does not fit. Widened again 2026-10-14 (the ports a world may bind, PORT-1): A52-A53, R195-R206; a world that runs as an identity and speaks on the network may be given the TCP ports it will bind -- one to eight of them, 1 to 65535, a list of numbers and nothing else -- and no other: the kernel holds it to them with a rule set, and gives a port below 1024 only to a world that declares it; only an identity can be given a port, a world kept off the network has nothing to bind, and one port is bound by one world.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once. Widened again 2026-10-05 (STATE, a world's own directory): A30-A35, R104-R138; a world that runs as an identity owns the directories it names and nothing else of the machine's, only an identity can own one, only where the machine can hand one over (under /run, or inside an ext4 or tmpfs mount the world keeps and that is not read-only, with every mount above it kept too), no two worlds own overlapping directories, a world's signal sits directly in its own directory and never in a neighbour's, the floor's own key and record are in no directory a world owns, and the paths the court compares are plain names of bounded length, so that no spelling reaches one file by two names. Two rules about mounts came with it, because a directory's holder is the innermost mount only if the outer one is declared first and no two share a mount point. Widened again 2026-10-05 (the time seat, TIME-1): A36-A43, R139-R170; time enters a record only as an authority's signed statement, so a machine declares the clock it HAS (a plain device path under /dev, and a key to sign with), a link it answers the time on (one, a static address, a port from 1024 to 65535, never a loopback, never asking anybody), or whom it asks and whose word it takes (a journal to date, an address and a port from 1 to 65535 each spelled one way, a way there, and one spelling of a key that is a key); and a clock is a real-time clock, not any device. The boundary cases are here because a probe with a mutated court found the first version of these fixtures judged none of them: A38-A40 and R159-R162 are what that probe asked for; A41-A43 and R164-R170 are what an independent review of the seat asked for. Widened again 2026-10-13 (the reservation, TIM-1): A44-A51, R171-R194; a world may ask the kernel for time it will get every period -- a PERIOD, a DEADLINE and a RUNTIME in microseconds and the CORE it runs on, the four together -- and a hosted machine says how many CORES it has (2 to 64; a Raspberry Pi 4 has four); the runtime fits the deadline and the deadline the period, a runtime of ten microseconds at least and a period within the kernel's own bounds (100 us to 4194304 us), core 0 is the machine's, the reservations on one core sum to no more than the 90 per cent the kernel gives (it admits 95 and holds 5 for the ordinary tasks' own deadline server), counted as the kernel counts it, and a world with a reservation declares no CPU ceiling. The kernel judges the same set again at the act, and refuses what does not fit. Widened again 2026-10-14 (the ports a world may bind, PORT-1): A52-A53, R195-R206; a world that runs as an identity and speaks on the network may be given the TCP ports it will bind -- one to eight of them, 1 to 65535, a list of numbers and nothing else -- and no other: the kernel holds it to them with a rule set, and gives a port below 1024 only to a world that declares it; only an identity can be given a port, a world kept off the network has nothing to bind, and one port is bound by one world. Widened again 2026-10-19 (the mirror, MIR-1): A54-A59, R210-R249; a machine gives the copy of a world's directory or takes one, never both, and says which with a key it is told: the source declares the directory (inside a world's STATE, on a disk that keeps owners), the one device it is given to and the link it is given on (a TCP port from 1024 to 65535, a static address, never a loopback, one link); the destination declares whom it takes from, whose word it takes, where it keeps the copy (on a disk that keeps modes, writable, not the root of the disk, not in a world's place, and not where any name the floor makes for the copy would land on the key or the record) and how often it asks (5 seconds to a day). Both ends sign, so both need an IDENTITY, and an address and a key are each one spelling of a key that is one.",
   "accepts": [
     {
       "id": "A1",
@@ -1034,6 +1034,138 @@
           "pins": 0,
           "networks": 1,
           "users": 2
+        }
+      }
+    },
+    {
+      "id": "A54",
+      "name": "a machine gives the copy of a world's directory: the directory, the one device it is given to, and the link it is given on",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 1,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 1
+        },
+        "mirror_of": {
+          "dir": "/data/app",
+          "world": "app",
+          "uid": 2000
+        },
+        "mirror_server": {
+          "lan": 7400
+        }
+      }
+    },
+    {
+      "id": "A55",
+      "name": "a machine takes a copy: whom from, whose word, where it keeps it, and the pace it has when it says none",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "mirror_from": {
+          "from": "10.30.0.9:7400",
+          "into": "/data/copy",
+          "every": 30
+        }
+      }
+    },
+    {
+      "id": "A56",
+      "name": "the shortest pace a pull may have, and the source named by the gateway that carries the question",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"192.168.77.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 5) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\", GATEWAY \"10.30.0.254\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "mirror_from": {
+          "from": "192.168.77.9:7400",
+          "into": "/data/copy",
+          "every": 5
+        }
+      }
+    },
+    {
+      "id": "A57",
+      "name": "the longest pace, and a copy kept deeper than the first directory of a disk",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/mirror/app\", MIRROR_EVERY 86400) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "mirror_from": {
+          "from": "10.30.0.9:7400",
+          "into": "/data/mirror/app",
+          "every": 86400
+        }
+      }
+    },
+    {
+      "id": "A58",
+      "name": "a mirror may give less than a world's whole directory: a directory inside its STATE",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app/db\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 1,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 1
+        },
+        "mirror_of": {
+          "dir": "/data/app/db",
+          "world": "app",
+          "uid": 2000
+        },
+        "mirror_server": {
+          "lan": 7400
+        }
+      }
+    },
+    {
+      "id": "A59",
+      "name": "a copy is kept beside the files of other things the disk holds: the key and the copy are two names in one directory",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/copy-key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 0,
+          "capabilities": 2,
+          "mounts": 1,
+          "pins": 0,
+          "networks": 1,
+          "users": 0
+        },
+        "mirror_from": {
+          "from": "10.30.0.9:7400",
+          "into": "/data/copy",
+          "every": 30
         }
       }
     }
@@ -2292,6 +2424,270 @@
       "name": "where a machine stands is the deployment's, never the design's: a machine file takes no TERRITORY, as it takes no HARDWARE address of its own",
       "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, TERRITORY tn) RATIONALE \"x\"\n",
       "refusal": "Unknown clause 'TERRITORY' for MACHINE"
+    },
+    {
+      "id": "R210",
+      "name": "a mirror is a hosted machine's declaration: an edge machine keeps its data in its own substrate",
+      "source": "DEFINE MACHINE s AS (PROFILE edge, ARCH thumbv7em, KERNEL none, MIRROR_OF \"/data/app\") RATIONALE \"x\"\n",
+      "refusal": "a mirror is a hosted machine's declaration"
+    },
+    {
+      "id": "R211",
+      "name": "a machine gives a copy or takes one: both ends in one declaration is a machine that would be its own cloud",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "a machine gives a copy or takes one"
+    },
+    {
+      "id": "R212",
+      "name": "a copy is signed by the device that gives it: with no IDENTITY it is anybody's",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, MIRROR_OF \"/data/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "declares no IDENTITY"
+    },
+    {
+      "id": "R213",
+      "name": "a copy given to whoever asks is a world's directory given to the link: MIRROR_OF names the one device it is for",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "declares no MIRROR_FOR"
+    },
+    {
+      "id": "R214",
+      "name": "a directory to give and no link to give it on",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "declares MIRROR_SERVER"
+    },
+    {
+      "id": "R215",
+      "name": "a link that gives a copy of nothing",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "declares no MIRROR_OF"
+    },
+    {
+      "id": "R216",
+      "name": "the address a copy is asked of is not a lease: a source on dhcp",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS dhcp, MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "asks for its own address by dhcp"
+    },
+    {
+      "id": "R217",
+      "name": "a port below 1024 is the kernel's one privilege for all of them: a mirror's source gives on a port above it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 80) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "1024 to 65535"
+    },
+    {
+      "id": "R218",
+      "name": "a loopback is nobody else's link: a copy given there is given to no one",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "is a loopback, which nobody else can ask"
+    },
+    {
+      "id": "R219",
+      "name": "a machine gives its copy on one link",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE NETWORK wan AS (INTERFACE \"eth1\", ADDRESS \"10.40.0.1/24\", MIRROR_SERVER 7401) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "gives a copy too"
+    },
+    {
+      "id": "R220",
+      "name": "the directory is plain names the court can compare: a trailing slash reaches one directory by two spellings",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app/\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "an absolute path of plain names"
+    },
+    {
+      "id": "R221",
+      "name": "a key is one spelling: uppercase hex is a second text for the same device",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"ABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABAB\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "64 lowercase hex"
+    },
+    {
+      "id": "R222",
+      "name": "a key is a key: 64 hex that no Ed25519 public key is written as is a copy given to nobody",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "MIRROR_FOR is an Ed25519 public key, and"
+    },
+    {
+      "id": "R223",
+      "name": "a mirror gives a WORLD'S directory: one that no world owns is the machine's own",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/other\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "lies in no world's STATE"
+    },
+    {
+      "id": "R224",
+      "name": "a copy of a directory that dies with the power is not a copy: a world's STATE in RAM",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/run/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/run/app\"]) RATIONALE \"x\"\n",
+      "refusal": "lies in RAM"
+    },
+    {
+      "id": "R225",
+      "name": "... nor is one on a filesystem that keeps no owners: the floor gives only the files a world owns",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/scratch/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT scratch AS (AT \"/scratch\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/scratch/app\"]) RATIONALE \"x\"\n",
+      "refusal": "the floor gives only the files a world OWNS"
+    },
+    {
+      "id": "R226",
+      "name": "one port is bound by one program: the mirror's port is a port a world declares",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_OF \"/data/app\", MIRROR_FOR \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem, network], USER appid, STATE [\"/data/app\"], PORTS [7400]) RATIONALE \"x\"\n",
+      "refusal": "is a port app declares in PORTS"
+    },
+    {
+      "id": "R227",
+      "name": "a source that answers with no key to hold its word to is a copy taken from whoever is on the wire",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "declares no MIRROR_KEY"
+    },
+    {
+      "id": "R228",
+      "name": "a copy with nowhere to be kept",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "declares no MIRROR_INTO"
+    },
+    {
+      "id": "R229",
+      "name": "a place to keep a copy, and nobody to take it from",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "no MIRROR_FROM"
+    },
+    {
+      "id": "R230",
+      "name": "the pace of a pull is the taking end's: a MIRROR_EVERY alone says nothing",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_EVERY 60) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "no MIRROR_FROM"
+    },
+    {
+      "id": "R231",
+      "name": "an address and a port are one spelling: a leading zero names the same port in a second text",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:07400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "is the source's address and port"
+    },
+    {
+      "id": "R232",
+      "name": "a key is one spelling: a short one is not 64 hex",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "64 lowercase hex"
+    },
+    {
+      "id": "R233",
+      "name": "a key is a key: 64 hex that no public key is written as would be taken for the source's and never verify anything",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "MIRROR_KEY is the source's Ed25519 public key, and"
+    },
+    {
+      "id": "R234",
+      "name": "a source off every link, with no gateway to carry the question: the copy could never be asked for",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"192.168.77.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "has no way there"
+    },
+    {
+      "id": "R235",
+      "name": "a loopback is not a way to anywhere: a machine whose only network is one cannot take a copy from another",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\n",
+      "refusal": "declares none"
+    },
+    {
+      "id": "R236",
+      "name": "a copy is kept on a disk: a directory in no MOUNT is not on one",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/var/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "is in no MOUNT"
+    },
+    {
+      "id": "R237",
+      "name": "the copy is swapped in whole beside its own record, which cannot be done to the root of a disk",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "is the place itself"
+    },
+    {
+      "id": "R238",
+      "name": "a copy of a world's directory is kept closed to everyone but the machine: a filesystem that keeps no modes cannot",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/card/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT card AS (AT \"/card\", FS vfat, DEVICE \"/dev/mmcblk0p1\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "only ext4 keeps the modes"
+    },
+    {
+      "id": "R239",
+      "name": "... and one in RAM is the thing that is not there when the source is not",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/scratch/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT scratch AS (AT \"/scratch\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "only ext4 keeps the modes"
+    },
+    {
+      "id": "R240",
+      "name": "nothing can be kept on a disk that is read-only",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/store/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT store AS (AT \"/store\", FS ext4, DEVICE \"/dev/vdb\", OPTIONS [ro]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "which is read-only"
+    },
+    {
+      "id": "R241",
+      "name": "a copy is kept where no world owns the place: the owner of a directory can replace what is in it",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/app/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app\"]) RATIONALE \"x\"\n",
+      "refusal": "the owner of a directory can replace what is in it"
+    },
+    {
+      "id": "R242",
+      "name": "... and the names the floor makes beside the copy are the copy's too: its record would sit in the world's directory",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/app\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\nDEFINE USER appid AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE app AS (RUN [\"/app\"], RESTART always, NEEDS [filesystem], USER appid, STATE [\"/data/app.last\"]) RATIONALE \"x\"\n",
+      "refusal": "the owner of a directory can replace what is in it"
+    },
+    {
+      "id": "R243",
+      "name": "the floor's own key is not a place a copy may be made: a name the floor makes beside the copy is the key's",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/copy.last\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "is where IDENTITY"
+    },
+    {
+      "id": "R244",
+      "name": "... nor is the floor's own record",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\", JOURNAL \"/data/copy.manifest\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "is where JOURNAL"
+    },
+    {
+      "id": "R245",
+      "name": "... nor is a directory the key lives in",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/keys/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/keys\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "is where IDENTITY"
+    },
+    {
+      "id": "R246",
+      "name": "a pull moves every byte of the directory: a pace under five seconds is a machine that does nothing else",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 4) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "the seconds between two pulls"
+    },
+    {
+      "id": "R247",
+      "name": "... and one over a day is a copy that is not one",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\", MIRROR_EVERY 86401) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "the seconds between two pulls"
+    },
+    {
+      "id": "R248",
+      "name": "MIRROR_SERVER is a clause of a network, by the clause menu",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_SERVER 7400) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\") RATIONALE \"x\"\n",
+      "refusal": "Unknown clause 'MIRROR_SERVER' for MACHINE"
+    },
+    {
+      "id": "R249",
+      "name": "MIRROR_FROM is a clause of a machine, by the clause menu",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.1/24\", MIRROR_FROM \"10.30.0.9:7400\") RATIONALE \"x\"\n",
+      "refusal": "Unknown clause 'MIRROR_FROM' for NETWORK"
+    },
+    {
+      "id": "R250",
+      "name": "a MIRROR belongs to a fleet file: which two machines are the ends of one copy is a fact about a set, and no machine can say it",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE MIRROR copy AS (FROM a, TO b) RATIONALE \"x\"\n",
+      "refusal": "MIRROR belongs to a fleet file, not a machine file"
+    },
+    {
+      "id": "R251",
+      "name": "a key is one spelling: an uppercase one is a second text for the same source",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"ABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABABAB\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "64 lowercase hex"
+    },
+    {
+      "id": "R252",
+      "name": "a directory is plain names the court can compare: a trailing slash reaches one directory by two spellings",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy/\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "an absolute path of plain names"
+    },
+    {
+      "id": "R253",
+      "name": "a copy is not kept in a place the machine mounts itself",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/proc/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
+      "refusal": "which the machine mounts itself"
     }
   ]
 }

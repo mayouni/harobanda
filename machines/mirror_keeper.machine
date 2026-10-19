@@ -1,0 +1,68 @@
+-- mirror_keeper.machine -- a machine that keeps the copy of a directory it does not own (MIR-1).
+--
+-- The taking end of a mirror. It asks the source it was declared to ask (MIRROR_FROM, an address and a port) every
+-- few seconds (MIRROR_EVERY) for the files of a directory, and keeps them in a place of its own (MIRROR_INTO)
+-- only if the listing it is sent verifies against the key it was told (MIRROR_KEY) and every file it receives
+-- matches the digest that listing was signed with. It receives into a staging place beside the copy, reads what it
+-- wrote back from the disk against the listing, and only then swaps it in with renames: a power cut at any step
+-- leaves the last COMPLETE copy, or none, and the next pull knows how to finish or undo the one that was cut.
+-- Beside the copy it keeps the signed listing it was verified against and one line about its last attempt, so that
+-- "nobody answered" and "an answer was refused" are told apart from "everything is as it was".
+--
+-- The witness below is a service of this machine, and it is the one that matters: `harb mirror check` re-reads the
+-- kept listing and every file of the copy from the machine's own disk and says whether the copy is the source's word.
+-- `--fresh` makes it wait for an attempt made after it began, so that a copy left by an earlier boot is not mistaken
+-- for one that has just followed the source. It exits 1 when there is no copy that verifies, and so the machine's
+-- own judge convicts a boot that did not get one.
+--
+-- MIRROR_KEY below is a placeholder, as the fleet's enrolment of the source is: a key a device makes on its own first
+-- boot is not a thing a design can state (see mirror_source.machine).
+
+DEFINE MACHINE mirror_keeper AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  IDENTITY "/data/device.key",
+  MIRROR_FROM "10.30.0.1:7400",
+  MIRROR_KEY "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  MIRROR_INTO "/data/copy",
+  MIRROR_EVERY 5
+) RATIONALE "A machine that keeps a verified copy of another machine's world's directory, taking nobody's word for what is in it but the source's"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The witness is a process"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The copy is a directory of a declared disk, and the key is a file on it"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "The copy is asked for over a link"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where the copy and the key live: a partition that survives the power, which is what a copy is for"
+
+DEFINE NETWORK lan AS (
+  INTERFACE "eth0",
+  ADDRESS "10.30.0.2/24"
+) RATIONALE "The link the source is on, and a static address of its own"
+
+DEFINE SERVICE enrol AS (
+  RUN ["/harb", "attest", "--export"],
+  RESTART never,
+  NEEDS [process, filesystem]
+) RATIONALE "The device publishing who it is, so that a fleet can enrol it and the source can be told whom to give the copy to"
+
+DEFINE SERVICE check AS (
+  RUN ["/harb", "mirror", "check", "--wait", "60", "--fresh"],
+  RESTART never,
+  AFTER [enrol],
+  NEEDS [process, filesystem]
+) RATIONALE "The copy read back from inside the machine that keeps it: the kept listing against the key it was told, and every file against the digest the listing carries"

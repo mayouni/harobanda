@@ -1,0 +1,78 @@
+-- mirror_source.machine -- a machine that gives the files of one world's directory to one other device (MIR-1).
+--
+-- A world keeps its records in a directory of its own (OWN-1), and the machine it runs on is one machine: lose it
+-- and the records go with it. STZ-OS-RULING-19 orders the answer a fleet can give -- a copy of that directory kept
+-- on ANOTHER member, over a link the fleet names, verified by the fleet's keys. The floor copies and verifies files
+-- between declared places; what makes a copy CONSISTENT stays the application's (a database copied while it is
+-- written is a copy of a torn file, and the floor cannot know what torn means for it).
+--
+-- This is the giving end. It declares three things and nothing else: the directory (MIRROR_OF, which must lie in
+-- the STATE of a world, so that the court knows whose it is), the one device it gives it to (MIRROR_FOR, that
+-- device's public key -- a copy given to whoever asks would be the world's directory given to the link), and the
+-- link and the TCP port it gives it on (MIRROR_SERVER, on a NETWORK). It signs, with its own device key, a listing
+-- of every file it gives and the digest of each, and sends the bytes after it; it gives only the files the WORLD
+-- owns and follows no link, because the floor reads this directory as root and the world can put anything in it.
+--
+-- The world here is `harb own`, which writes one file in its directory and reads it back, so that a stranger can
+-- boot this machine with nothing on the image but `harb`. experiment/os12_mirror.sh puts more in the directory, from
+-- outside, owned by the world's identity.
+--
+-- MIRROR_FOR below is the placeholder every machine file of this kind carries: a key a device makes on its own first
+-- boot is not a thing a design can state. The scene boots the keeper, reads the public half it publishes, and writes
+-- it here and in the fleet's enrolment of the keeper, in COPIES -- which is what enrolment is (FLT-1). The two places
+-- that must agree are judged together by the fleet court, and agree here by being the same placeholder.
+
+DEFINE MACHINE mirror_source AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0",
+  IDENTITY "/data/device.key",
+  MIRROR_OF "/data/ledger",
+  MIRROR_FOR "abababababababababababababababababababababababababababababababab"
+) RATIONALE "A machine whose world keeps a ledger, and that gives the files of it, signed, to the one device it was told and to nobody else"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The witness is a process"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The ledger is a directory of a declared disk, and the key is a file on it"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "The copy is given over a link"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where the ledger and the key live: a partition that survives the power, and the only kind of place whose files have owners the floor can hold the copy to"
+
+DEFINE NETWORK lan AS (
+  INTERFACE "eth0",
+  ADDRESS "10.30.0.1/24",
+  MIRROR_SERVER 7400
+) RATIONALE "The link the copy is given on: a static address, because the address a copy is asked of is not a lease"
+
+DEFINE USER clerk AS (
+  UID 2000
+) RATIONALE "The identity the ledger's world runs as: it owns /data/ledger, and the floor gives only the files this identity owns"
+
+DEFINE SERVICE enrol AS (
+  RUN ["/harb", "attest", "--export"],
+  RESTART never,
+  NEEDS [process, filesystem]
+) RATIONALE "The device publishing who it is, so that a fleet can enrol it and say whose a listing is"
+
+DEFINE SERVICE ledger AS (
+  RUN ["/harb", "own", "/data/ledger"],
+  RESTART never,
+  AFTER [enrol],
+  NEEDS [filesystem],
+  SEES [data],
+  USER clerk,
+  STATE ["/data/ledger"]
+) RATIONALE "The world whose directory is given: it writes a file in the place it owns and asks the kernel that it may write nowhere else"

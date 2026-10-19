@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Resilience — Harobanda</title>
-<meta name="description" content="A cloud that survives the loss of a room: eight things a designer can already write into a fleet file and the court reads, four declarations the file cannot make yet and should, and what is not claimed.">
+<meta name="description" content="A cloud that survives the loss of a room: nine things a designer can already write into a fleet file and the court reads, three declarations the file cannot make yet and should, and what is not claimed.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -46,21 +46,22 @@
   <section class="wrap pagehead">
     <p class="eyebrow">Resilience</p>
     <h1>A cloud that survives the loss of a room.</h1>
-    <p class="lead">A hall struck, a link cut, a supplier out of reach: the threats of 2026 are physical, and the answer is in how many rooms a solution runs in and what each room's file says. Eight things a designer can already write into a fleet file and the court reads, four declarations the file cannot make yet, and what is not claimed. The position that asked for this page is <a href="datacenters.html">in the blog</a>.</p>
+    <p class="lead">A hall struck, a link cut, a supplier out of reach: the threats of 2026 are physical, and the answer is in how many rooms a solution runs in and what each room's file says. Nine things a designer can already write into a fleet file and the court reads, three declarations the file cannot make yet, and what is not claimed. The position that asked for this page is <a href="datacenters.html">in the blog</a>.</p>
   </section>
 
   <section class="wrap block">
     <div class="figure">
-      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-14.png" alt="A cloud that fits in a room. At the top, one strip: a hall, where data, compute and reach sit in one place, with a brick chip, one strike, all lost. Beneath it the fleet file, with the one orange mark: which boxes, on which links, who is the way between, who dates the records, where data stays, which key is out. Under the file, three rooms as three machines: room A, one file and its own key, judges its boot, keeps its record; room B, the same, and the way between the two links; room C, struck, in grey: lost is what the file says, and nothing more. A dashed arrow from A to B: a mirror, ordered. A last band, next, ordered: a mirror, A's files kept on B and verified; the roll call, who has written a record since; the loss drill, one box lost and the rest serve." width="1376" height="768">
-      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-14-narrow.png" alt="A cloud that fits in a room, as a column. A hall: data, compute and reach in one place, one strike and all three are lost. Then many rooms: the fleet file, with the orange mark, which boxes, on which links, who is the way between, who dates the records, where data stays, which key is out; room A, one file and its own key, judging its boot and keeping its record; room B, the same and the way between the two links; room C, struck: lost is what the file says was here, and nothing more. The links the file names join the rooms; a mirror from A to B is ordered, not built. Last, next, ordered: a mirror, the roll call, the loss drill." width="640" height="1956">
+      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-14.png" alt="A cloud that fits in a room. At the top, one strip: a hall, where data, compute and reach sit in one place, with a brick chip, one strike, all lost. Beneath it the fleet file, with the one orange mark: which boxes, on which links, who is the way between, who dates the records, where data stays, which key is out. Under the file, three rooms as three machines: room A, one file and its own key, judges its boot, keeps its record; room B, the same, and the way between the two links; room C, struck, in grey: lost is what the file says, and nothing more. A solid arrow from A to B: A's files, kept on B. A last band, next, ordered: the roll call, who has written a record since; the loss drill, one box lost and the rest serve." width="1376" height="768">
+      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-14-narrow.png" alt="A cloud that fits in a room, as a column. A hall: data, compute and reach in one place, one strike and all three are lost. Then many rooms: the fleet file, with the orange mark, which boxes, on which links, who is the way between, who dates the records, where data stays, which key is out; room A, one file and its own key, judging its boot and keeping its record; room B, the same and the way between the two links; room C, struck: lost is what the file says was here, and nothing more. The links the file names join the rooms; A's files are kept on B, and verified. Last, next, ordered: the roll call, the loss drill." width="640" height="1916">
     </div>
     <div class="sec-head prose">
       <p class="eyebrow">Today</p>
-      <h2>Eight things a designer can write, and the court reads.</h2>
+      <h2>Nine things a designer can write, and the court reads.</h2>
     </div>
     <div class="fam">
       <div class="fam-row"><span class="nm">Where a box sits</span><span class="rl"><b>A member of a fleet is one machine on one link</b>, with the hardware address the box answers to. Every member's place is a fact the court reads, and one the fleet's roll shows.</span><span class="stage now">built · emulated</span></div>
       <div class="fam-row"><span class="nm">Where the data stays</span><span class="rl"><b>A member says where it stands, and the fleet says where the data stays.</b> A box that keeps a disk anywhere else is refused before anything boots; a till that keeps none can stand anywhere. The place is the operator's word and is never observed: whoever enrols a box vouches for where it is.</span><span class="stage now">built · judged by the court</span></div>
+      <div class="fam-row"><span class="nm">A copy</span><span class="rl"><b>One member gives the files of a program's own directory, another keeps them</b>, over a link the fleet names. The keeper holds every file to a list the giver signed, keeps the last complete copy or none, and anyone holding the fleet file can check it with no secret. The giver follows no link and gives only the files the program owns, so the machine's own key cannot ride along; and a copy kept in another country than the data stays in is refused by the rule that already holds every disk.</span><span class="stage now">built · emulated</span></div>
       <div class="fam-row"><span class="nm">The way between</span><span class="rl"><b>One box says it is the way between two links, and the fleet says it was meant.</b> A forwarder no route goes through is a door nobody agreed to, and is refused.</span><span class="stage now">built · emulated</span></div>
       <div class="fam-row"><span class="nm">What a box reaches</span><span class="rl"><b>A machine knows no way to anywhere it was not told.</b> A box in a room can be told nothing but its own link, and the boot line says so after reading the routes back.</span><span class="stage now">built · emulated</span></div>
       <div class="fam-row"><span class="nm">Who is the door</span><span class="rl"><b>One member ends TLS for the devices of a network</b>, by the name it has there and under a root the fleet names by its fingerprint. A device trusts the root it was given and nothing else, and the fingerprint its question prints is the one the file declares.</span><span class="stage now">built · emulated</span></div>
@@ -73,13 +74,12 @@
   <section class="wrap block">
     <div class="sec-head prose">
       <p class="eyebrow">The analysis</p>
-      <h2>Four things the file cannot say yet.</h2>
+      <h2>Three things the file cannot say yet.</h2>
     </div>
     <div class="prose" style="margin-bottom:clamp(22px,3vw,30px)">
-      <p>Read against the year's losses, the floor was missing five declarations, and the first, where the data stays, is written (above). Each is small to write and costly to leave out; none of the four below exists today, and all four are ordered or ruled, in the order below.</p>
+      <p>Read against the year's losses, the floor was missing five declarations, and the first two, where the data stays and the copy, are written (above). Each is small to write and costly to leave out; none of the three below exists today, and all three are ordered or ruled, in the order below.</p>
     </div>
     <div class="fam">
-      <div class="fam-row"><span class="nm">A mirror</span><span class="rl"><b>A declared copy of a program's own directory on another member</b>, over a link the fleet names, verified by the fleet's keys, so that a destroyed box loses nothing a mirror held. Today the floor moves no data between machines; a copy elsewhere is the application's to make. This is the one addition that changes what the floor is, and the one the lost region asks for most: the floor would copy and verify files between declared places, and what a consistent copy is would stay the application's.</span><span class="stage open">ordered · not built</span></div>
       <div class="fam-row"><span class="nm">The roll call</span><span class="rl"><b>Who has written a record since.</b> The cloud's last step, a program that collects every member's signed record, read as a roll: a member that has stopped writing is a fact of the set with a time on it, not a silence somebody notices later.</span><span class="stage open">ordered · not built</span></div>
       <div class="fam-row"><span class="nm">A source mirror</span><span class="rl"><b>The kernel, the toolchain and every pinned program restored from a mirror inside the estate</b>, so that a cloud is rebuilt with no outside network at all. Ruled already; the kernel's mirror is named as the next step of that ruling and is not done.</span><span class="stage open">ruled · not built</span></div>
       <div class="fam-row"><span class="nm">The loss drill</span><span class="rl"><b>A scene that destroys a member while the fleet runs</b>, and shows the rest serve, re-judge themselves and say what was lost. Today every scene builds a fleet and none breaks one; the emulator's version of a drone is the test this page owes.</span><span class="stage open">ordered · not built</span></div>
@@ -93,7 +93,7 @@
     </div>
     <ul class="honest two">
       <li><b>Everything built ran in an emulator.</b> No box of this design stands in any room yet; the first board is still parked on its hardware.</li>
-      <li><b>The floor moves no data between machines today.</b> A copy elsewhere is the application's to make, and the mirror above is a proposal.</li>
+      <li><b>The floor moves one kind of data between machines</b>: the files of a declared directory, to a declared machine, checked. What a consistent copy of a database is stays the program's to make, and nothing here restores one yet.</li>
       <li><b>A declared reach is routing, not a filter.</b> A box knows no way out; nothing here stops a way in, and the packet filter is a later step.</li>
       <li><b>The intelligence is a direction on these pages.</b> The confinement it would run under is built; the modules are not on these machines yet.</li>
       <li><b>A small box is as resilient as its room.</b> Its power and its link are the room's; resilience here is about how many rooms, not about one.</li>

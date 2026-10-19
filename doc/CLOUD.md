@@ -240,6 +240,61 @@ enrols it); a limit on how often the authority answers, or a confinement of
 the process that does; and a board's real clock, which is OS-5's to show --
 the emulator's clock is a fixed base that runs with the virtual machine.
 
+*The mirror, as built (MIR-1, 2026-10-19, STZ-OS-RULING-19).* A world's
+records are a directory of its own (OWN-1), and the machine it runs on is
+one machine. A MIRROR is a declared copy of that directory on another
+member, over a link the fleet names, verified by the fleet's keys. The
+machine that gives declares the directory (`MIRROR_OF`, which must lie in
+the `STATE` of a world, so the court knows whose it is), the one device it
+is given to (`MIRROR_FOR`, that device's public key) and the link and TCP
+port it is given on (`MIRROR_SERVER`, a clause of a NETWORK); the machine
+that keeps declares whom it takes from and whose word (`MIRROR_FROM`,
+`MIRROR_KEY`), where it keeps the copy (`MIRROR_INTO`) and how often it
+asks (`MIRROR_EVERY`), and a machine gives or keeps, never both. The fleet's
+`MIRROR` (FROM, TO) pairs the two ends and the court holds the pair to
+each other before anything boots: the address and port, the two enrolled
+keys, a way there, and that no machine gives or takes a copy the file
+never named. A keeper in another territory than the one the data stays in
+is refused by the RESIDENCY the fleet already holds every disk to; the
+mirror needed no rule of its own for it.
+The source sends a challenge, the keeper answers with a request signed by
+its device key over both nonces, and only a request that verifies under the
+key the source was declared to give to is answered; anything else is
+closed on, without a word. The answer is a LISTING the source signs (every
+entry and the digest of every file, sorted, one spelling of each field,
+cut for one device and one request) and then the bytes, each held to the
+digest the signature covers as it is written. The walk of the directory
+follows no link and gives only the files the WORLD owns, because the floor
+reads the directory as root and the world can put anything in it: a hard
+link to the machine's own key is a regular file with another owner, and is
+refused for it. The keeper receives into a place of its own, reads what it
+wrote back against the listing, and swaps it in with renames, so that a
+power cut at any step leaves the last COMPLETE copy or none, and beside the
+copy it keeps the signed listing it was verified against and one line
+about its last attempt. `harb mirror check` (inside the keeper) and
+`harb mirror verify` (anywhere, with the fleet file and no secret) re-read
+the copy against the listing.
+*Judged* by `experiment/os12_mirror.sh`: two machines on one wire,
+enrolled by hand, a ledger of a few hundred kilobytes copied and read back
+from both disks, a changed directory followed, and the negatives -- an
+impostor answering from the source's address with a good signature of its
+own and a forged file, a keeper that is not the device the source gives to,
+a symbolic link in the directory, a file in the world's directory that is
+the machine's own device key under another name (its bytes are found on no
+disk of the keeper's), the source gone, a pull cut short at two different
+steps, a copy changed on the keeper's disk, and both machines with the
+disk behind the copy refused by the kernel -- plus eight refusals on the host;
+by 16 tests on Linux (a real socket pair, a source that replays, lies or
+stops half way) and a probe that convicts each mutant of them and of the
+two grammars' rules (`experiment/mirror_probe.sh`). *Not built:* more than
+one mirror per machine; confidentiality on the link (the bytes cross in the
+clear after both ends have proved who they are); a delta (every pull moves
+every byte, and needs room for a second copy while it swaps); freshness
+beyond the request (a source that rolls its own directory back is its own
+word); a restore verb; a confinement of the two children, which are the
+floor's own code running as root; and anything but regular files and
+directories.
+
 **Rung 4 -- an image a provider's machine boots.** An EFI stub or a
 boot loader, the two slots on a disk, a `BOARD` for a generic virtio
 virtual machine, `HARDWARE` being the address the provider gives.
@@ -289,6 +344,11 @@ secret; stzn renders the verdicts as the page an auditor reads.
   ordered and will be the floor's. A distributed filesystem is still
   not: the floor copies and verifies files between declared places, and
   what a consistent copy IS stays the application's.*
+  *Built 2026-10-19 (MIR-1): `MIRROR_OF`, `MIRROR_FOR` and `MIRROR_SERVER`
+  on the machine that gives, `MIRROR_FROM`, `MIRROR_KEY`, `MIRROR_INTO` and
+  `MIRROR_EVERY` on the one that keeps, and fleet v0.5's `MIRROR` that pairs
+  them; the sentence above is true of what was built, and still true of
+  everything else.*
 - **No knowledge of where a box really is.** The floor has no way to tell a
   room from a country. `TERRITORY` on a member says where it stands and
   `RESIDENCY` says where the fleet's data stays (TERR-1, 2026-10-19,
@@ -300,8 +360,8 @@ secret; stzn renders the verdicts as the page an auditor reads.
   law is the fleet's whole, because a fleet does not yet say which world
   runs on which member, so it binds every writable persistent disk; one
   territory per fleet, and no law that keeps a machine OUT of a place.
-- **No second grammar.** A cloud is fleet v0.4 -- routes, doors, residency,
-  placement, rollout added to the kinds a fleet file may contain -- never a
+- **No second grammar.** A cloud is fleet v0.5 -- routes, doors, residency,
+  copies, placement, rollout added to the kinds a fleet file may contain -- never a
   third file. A file is judged by which kinds it may contain.
   *Amended 2026-10-04, the day it was written, when rung 1's first
   session read the code (PLC-1): the sentence is true of the SET and

@@ -35,6 +35,9 @@ const own = @import("own.zig");
 const ports = @import("ports.zig");
 const reserve = @import("reserve.zig");
 const tick = @import("tick.zig");
+const mirror = @import("mirror.zig");
+const mirroraudit = @import("mirroraudit.zig");
+const mirrorserve = @import("mirrorserve.zig");
 const timeattest = @import("timeattest.zig");
 const timeaudit = @import("timeaudit.zig");
 const timeserve = @import("timeserve.zig");
@@ -74,6 +77,8 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member> | front <name>]   (machines judged together; one device's record checked by another; a door, by name and root)
         \\  harb time   verify <file.fleet> <statements> [<record>]   (what the fleet's time authority said about a record, checked with the key the fleet holds)
+        \\  harb mirror check [file.machine] [--wait N] [--fresh]   (is the copy this machine keeps the source's word? every file against the listing the source signed; from inside the machine)
+        \\  harb mirror verify <file.fleet> <mirror> <listing> <dir>   (the same, with the fleet's two keys and nothing else: the listing the keeper kept and the directory it keeps, checked from anywhere)
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
         \\  harb place  <file.machine> <file.pack>... [--after <world>] [--out <file>]   (a solution's services, placed on a machine and judged as one; --after orders them after one of its worlds)
         \\  harb court  --pack [declarative/pack/fixtures.json]
@@ -91,6 +96,24 @@ fn usage(out: *std.Io.Writer) !void {
 /// and said FileNotFound about a flag (FLT-1).
 fn firstPath(args: []const []const u8) ?[]const u8 {
     for (args) |a| if (!std.mem.startsWith(u8, a, "--")) return a;
+    return null;
+}
+
+/// The first argument that is neither a flag nor the value of one that takes a value (`--wait 30`): a verb with an
+/// optional file AND a flag with an argument must not read the 30 as a file name.
+fn firstPathBefore(args: []const []const u8) ?[]const u8 {
+    var skip = false;
+    for (args) |a| {
+        if (skip) {
+            skip = false;
+            continue;
+        }
+        if (std.mem.eql(u8, a, "--wait")) {
+            skip = true;
+            continue;
+        }
+        if (!std.mem.startsWith(u8, a, "--")) return a;
+    }
     return null;
 }
 
@@ -383,6 +406,18 @@ pub fn main() !u8 {
         }
         return timeaudit.run(arena, args[3..], out);
     }
+    if (std.mem.eql(u8, verb, "mirror")) {
+        // A copy of a world's directory, read back and judged by something that never held the secret (MIR-1):
+        // `check` from inside the machine that keeps it, and `verify` from anywhere, with the fleet file and no secret
+        if (args.len >= 3 and std.mem.eql(u8, args[2], "verify")) return mirroraudit.verify(arena, args[3..], out);
+        if (args.len < 3 or !std.mem.eql(u8, args[2], "check")) {
+            try out.print("harb: mirror takes a verb: check [file.machine] [--wait N] [--fresh] | verify <file.fleet> <mirror> <listing> <dir>\n", .{});
+            return 1;
+        }
+        const path = firstPathBefore(args[3..]) orelse "/etc/machine";
+        const m = (try load(arena, path, out)) orelse return 1;
+        return mirroraudit.check(arena, m, mirroraudit.optionsOf(args[3..]), out);
+    }
     if (std.mem.eql(u8, verb, "attest")) {
         // The witness of the IDENTITY seat, as `reach` is EGRESS's and
         // `id` is USER's: it uses the device's own key and shows both
@@ -631,6 +666,14 @@ pub fn main() !u8 {
                 try out.print("{s}{s}", .{ if (n == 1) "" else if (n == total) " and " else ", ", m.name });
             }
             try out.print(", the member{s} that keep{s} a disk\n", .{ if (total == 1) "" else "s", if (total == 1) "s" else "" });
+        }
+        // the copies (MIR-1): who gives a directory of a world to whom, where it is kept, and how often it is asked for
+        for (f.mirrors) |mr| {
+            const sm = f.member(mr.from).?;
+            const dm = f.member(mr.to).?;
+            try out.print("  mirror {s} -- {s} gives {s} to {s}, which keeps it in {s} and asks every {d} s", .{ mr.name, mr.from, sm.machine.mirror_of.?.dir, mr.to, dm.machine.mirror_from.?.into, dm.machine.mirror_from.?.every });
+            if (dm.territory) |where| try out.print(", in {s}", .{where});
+            try out.print("\n", .{});
         }
         // the one member whose word about the time the fleet takes (TIME-1)
         if (f.time_authority) |ta| try out.print("  time -- the word of {s}, and of nobody else, is what dates this fleet's records\n", .{ta});
@@ -1188,6 +1231,9 @@ test {
     _ = own;
     _ = reserve;
     _ = tick;
+    _ = mirror;
+    _ = mirroraudit;
+    _ = mirrorserve;
     _ = timeattest;
     _ = timeaudit;
     _ = timeserve;

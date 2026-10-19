@@ -13,7 +13,7 @@
 #   wsl -d Ubuntu -- bash /mnt/d/GitHub/harobanda/experiment/regress.sh [name...]
 #
 # Names: a machine under machines/ with a pin, or a scene -- guarantees, names, fleet, time, cloud,
-# links. With no name it runs everything, about half an hour, one heavy job at a time. Log:
+# links, front, mirror. With no name it runs everything, about forty minutes, one heavy job at a time. Log:
 # zig-out/wsl/regress.txt, this run's or absent. Exit 0 only if every boot that ran matched its pin;
 # what was skipped is printed by name.
 set -u
@@ -23,7 +23,7 @@ mkdir -p zig-out/wsl
 rm -f "$LOG"
 WANT="$*"
 MACHINES="qemu_hello qemu_egress qemu_confine qemu_budget qemu_identity qemu_own qemu_forward qemu_deadline qemu_tick qemu_ports fleet_temoin makeen_qemu makeen_box"
-SCENES="guarantees names fleet time cloud links front"
+SCENES="guarantees names fleet time mirror cloud links front"
 (
   # A GATE THAT IS NOT IN THE LIST REPORTS AS NOTHING (PX): the first run of this script was asked for three
   # names and ran two, because the third machine was pinned after the list was written and the script said
@@ -57,6 +57,7 @@ SCENES="guarantees names fleet time cloud links front"
   if wanted names; then one names zig-out/wsl/names.txt bash experiment/os6_names.sh; else skip names "not named"; fi
   if wanted fleet; then one fleet zig-out/wsl/fleet.txt bash experiment/os7_fleet.sh; else skip fleet "not named"; fi
   if wanted time; then one time zig-out/wsl/time.txt bash experiment/os10_time.sh; else skip time "not named"; fi
+  if wanted mirror; then one mirror zig-out/wsl/mirror.txt bash experiment/os12_mirror.sh; else skip mirror "not named"; fi
   for s in cloud:os9_cloud.sh links:os8_links.sh front:os11_front.sh; do
     n=${s%%:*}; f=${s#*:}
     if ! wanted "$n"; then skip "$n" "not named"

@@ -476,6 +476,32 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/time_scene_probe.sh
 
+# the mirror (MIR-1): a world's directory kept on another
+# machine -- two machines on one wire, enrolled by hand, a
+# ledger copied and read back from both disks, then the
+# negatives: an impostor, a stranger, a link, the machine's
+# own key as a hard link, a copy changed on its disk, and no
+# disk (about twelve minutes) -> zig-out/wsl/mirror.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os12_mirror.sh
+
+# what anyone holding only the fleet file can check of a copy
+zig-out\bin\harb.exe mirror verify `
+  <file.fleet> <mirror> <listing> <dir>
+
+# the mirror's tests on Linux, in seconds, none skipped
+#   -> zig-out/wsl/mirror_unit.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/mirror_unit.sh
+
+# the mirror's mutants that must be convicted: 32 of the
+# tests' files, 60 of the grammars' rules
+#   -> zig-out/wsl/mirror_probe_<mode>.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/mirror_probe.sh units
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/mirror_probe.sh courts
+
 # every unit test, on Linux, none skipped
 #   -> zig-out/wsl/linux_test.txt
 wsl -d Ubuntu -- bash `
@@ -596,6 +622,87 @@ Linux and Zig analyses only the taken side, so a Windows build proves
 nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
+
+- **A copy of a world's directory is the source's word, or it is not
+  kept** (MIR-1, STZ-OS-RULING-19): until this seat the floor moved no
+  data between machines, and it now moves exactly this -- the files of
+  ONE directory a world owns, from the machine that gives them to the one
+  that keeps them. A machine GIVES (`MIRROR_OF`, which must lie in the
+  `STATE` of a world that runs as an identity so the court knows whose it
+  is, on ext4; `MIRROR_FOR`, the public key of the one device it is given
+  to; `MIRROR_SERVER`, a clause of a NETWORK) or KEEPS (`MIRROR_FROM`,
+  `MIRROR_KEY`, `MIRROR_INTO`, `MIRROR_EVERY`), never both (R211), and
+  both sign, so both need an `IDENTITY`. Fleet v0.5's `MIRROR` (FROM, TO)
+  pairs the ends and the court holds the pair to each other before any
+  boot: the address and port, the two enrolled keys (the keeper takes the
+  word of the source's, the source gives to the keeper's), a way there,
+  one copy per machine, no chain, and no machine that gives or takes a
+  copy the file never named (FR74-FR93). A keeper in another territory
+  than the one the data stays in is refused by the RESIDENCY the fleet
+  already holds every disk to (FR91): the mirror needed no rule of its
+  own. **The walk is the dangerous part and follows no link**: the floor
+  reads the directory as root, the world can put anything in it, and a
+  floor that followed a link would hand the machine's own key to the
+  first copy anyone pulled. Every name is opened with `O_NOFOLLOW` from a
+  descriptor; a file is given only if the WORLD owns it, so a HARD link
+  to the machine's own key -- a regular file, in the world's own
+  directory, owned by the machine -- is refused for its owner (round 6 of
+  the scene boots it and finds the key's bytes on no disk of the
+  keeper's); a pipe, a socket, a device and a directory on another
+  filesystem are refused; a link is named as a link whoever made it; one
+  bad name makes the whole directory unmirrorable, and the source says
+  which, to the device it gives to and to nobody else. **The wire**: the
+  source sends a challenge, the keeper answers with a request signed by
+  its device key over both nonces, and only a request that verifies under
+  the key the source was declared to give to is answered (anything else
+  is closed on, without a word); the answer is a LISTING the source signs
+  (every entry and the digest of every file, sorted, one spelling of each
+  field, cut for ONE device and ONE request -- a replay is refused for
+  its nonce, another source's for its fingerprint) and then the bytes,
+  each held to the digest the signature covers as it is written. **A copy
+  is the last COMPLETE one, or none**: received into `D.new`, read back
+  from the disk against the listing, swapped in by renames and recovered
+  at every pull whichever step the power left it at; beside the copy the
+  keeper keeps the signed listing it was verified against and one line
+  about its last attempt (ok, silent, refused, unverified, failed -- no
+  time in it, since the floor has none), so that a holder of the source's
+  public key can check the copy for as long as it is kept: `harb mirror
+  check` inside the keeper (`--fresh` waits for an attempt made after it
+  began; a copy is read twice before it is convicted, because a swap can
+  land between two reads) and `harb mirror verify <fleet> <mirror>
+  <listing> <dir>` anywhere, with no secret. `machine.mirror_family` is
+  the ONE list of the seven names the floor makes for a copy, kept off
+  the key, the record and every world's place (R241-R245). **A promise
+  the machine cannot keep is not made** (NS-1): a keeper whose disk the
+  kernel refused would have made `/data/copy` in RAM, reported `ok`, and
+  lost it with the power, and a source would have announced a directory
+  its world was never given -- both say why and start nothing, and the
+  boot differs from its expectation (round 10). Judged by the machine
+  court (312/312: A54-A59, R210-R253), the fleet court (114/114: FA17-FA21,
+  FR74-FR93), 16 tests on Linux with none skipped (`experiment/mirror_unit.sh`:
+  a walk, a copy over a real socket pair, a source that replays, lies or
+  stops half way, a swap cut at each step, a file another identity owns),
+  `experiment/os12_mirror.sh` (two machines on one wire, enrolment by
+  hand, ten rounds read off BOTH disks and pinned at 545 lines in
+  `machines/mirror.expected`) and `experiment/mirror_probe.sh` (32 mutants
+  of the tests' files and 60 of the grammars' rules, each convicted by
+  the case named for it). **The scene's first run was invalid, and a
+  comparison said so**: `debugfs` refuses to write to a disk a machine
+  was ended on until `e2fsck` replays its journal, the directory PID 1
+  had made for the world was not on that disk, and the world's `note` is
+  not flushed when the machine is ended -- the one file two readbacks
+  cannot agree on, left out of the counts and still held to its listing
+  by `mirror verify`; a seed that did not take now stops the scene. Named
+  seams: one mirror per machine; the bytes cross the link in the clear
+  after both ends have proved who they are (integrity is the source's
+  key, access the keeper's, confidentiality the link's); a source serves
+  one connection at a time, with no limit on how often anybody may ask;
+  every pull moves
+  every byte and needs room for a second copy; no freshness beyond the
+  request; no restore verb; the two children are the floor's own code
+  running as root, not confined; only regular files and directories; a
+  mirror that stops mirroring does not stop the watchdog; and what makes
+  a copy CONSISTENT is the application's.
 
 - **Where the data stays is a line the court reads, and the box in the
   wrong country is refused where it is declared** (TERR-1,
@@ -1548,6 +1655,16 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 - **Invoke WSL scripts from PowerShell, never from the Bash tool** —
   git-bash rewrites `/mnt/d/...` into `C:/Git/mnt/...`
   (`MSYS_NO_PATHCONV=1 wsl.exe ...` is the workaround if you must).
+- **A machine ended mid-run is a power cut, and its disk says so**
+  (MIR-1): `debugfs -w` refuses to write to the image of a machine the
+  scene ended until `e2fsck -fy` has replayed its journal; a directory
+  PID 1 made a moment before the end may not be on the disk at all (the
+  kernel has not written it); and a file a world wrote a moment before
+  the end is empty on it -- the guest has not flushed. A scene that seeds
+  or compares such a disk replays it first, makes what it needs, and
+  stops when a seed did not take: a comparison of nothing with nothing
+  passes. And `pkill -f` from inside `wsl ... bash -c "..."` matches that
+  very command line and ends it (exit 15): put it in a script file.
 
 ## Next steps (author-ordered, one per session)
 
@@ -1690,10 +1807,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   (STZ-OS-RULING-19, the same word: "go ahead with implementing them
   all")**, in this order after the front: **TERRITORY on a member, built
   (TERR-1, 2026-10-19: fleet v0.4, `TERRITORY` on a member and a
-  `RESIDENCY` for the fleet, judged by the court before any boot)**, the
-  MIRROR (a declared copy of a world's directory on another member,
-  verified by the fleet's keys -- CLOUD.md's "no distributed filesystem"
-  amended beside its text), the roll call (who has written a record
+  `RESIDENCY` for the fleet, judged by the court before any boot)**, **the
+  MIRROR, built (MIR-1, 2026-10-19: fleet v0.5's `MIRROR` and the
+  machine's `MIRROR_OF` / `MIRROR_FROM`, a declared copy of a world's
+  directory on another member, verified by the fleet's keys, judged by
+  two machines on one wire and the negatives read off their disks --
+  CLOUD.md's "no distributed filesystem" amended beside its text)**,
+  the roll call (who has written a record
   since), the loss drill (a scene that destroys a member mid-run), and the
   source mirror last (ruling 04's shape; it needs a place for a private
   release). Rungs 5 and 6 need MicroRing's desk and a body. Haro's desk holds one constraint from the ruling:
@@ -1766,7 +1886,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: TERR-1, NAV-1, FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: MIR-1, TERR-1, NAV-1, FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

@@ -161,6 +161,33 @@ pub fn timeLines(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return any;
 }
 
+/// What a machine that gives or takes a copy of a world's directory says it does (MIR-1): the directory and the link
+/// it is given on and to whom, or whom the copy is taken from, into where, and how often. Worded ONCE here, like every
+/// judged line -- init prints it once the child that does it EXISTS (CON-1: a line that says where the machine is is
+/// said only after asking), and derive() writes it. Every word is the declaration's: the keys a mirror holds are not
+/// in the line, because a fingerprint is made on the device and a line derived from the declaration cannot know it.
+/// A machine that gives and takes nothing says nothing, and its transcript is what it always was.
+pub fn mirrorLines(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    var any = false;
+    if (m.mirror_of) |mo| {
+        for (m.networks) |n| {
+            const port = n.mirror_server orelse continue;
+            const at = switch (n.address) {
+                .static => |s| s,
+                .dhcp => continue,
+            };
+            var ib: [16]u8 = undefined;
+            try w.print("boot: mirror -- {s} gives the files of {s} on {s}:{d}, to the one device whose key it was told and to nobody else; the listing is signed with this device's key, and only the files {s} owns are given\n", .{ n.name, mo.dir, fmtIp(&ib, at.ip), port, mo.world });
+            any = true;
+        }
+    }
+    if (m.mirror_from) |mf| {
+        try w.print("boot: mirror -- takes the files at {s} into {s} every {d} s, when the listing verifies against the key it was told; a copy replaces the last one only when every file has matched its digest\n", .{ mf.text, mf.into, mf.every });
+        any = true;
+    }
+    return any;
+}
+
 /// This device's own name, said once. The FINGERPRINT is the one thing
 /// a declaration cannot know -- it is made on the device, from the
 /// device's own randomness, and a machine that could derive it from its
@@ -524,6 +551,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
     };
     _ = try identityLine(w, m);
     _ = try timeLines(w, m);
+    _ = try mirrorLines(w, m);
     _ = try budgetLine(w, m);
     _ = try timedLine(w, m, timed_model, timed_res_ns);
     _ = try reserveLine(w, m);

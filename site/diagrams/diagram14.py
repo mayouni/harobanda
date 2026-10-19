@@ -5,17 +5,18 @@ Brief: site/DIAGRAMS.md section 13. The sentence it must make true: a resilient
 cloud is many small declared machines in many rooms, each judging its own boot
 and keeping its own record, joined by links the fleet file names, so that
 losing a room is losing what the file says was in it -- and what the file will
-say next (a mirror, the roll call, the loss drill) is ordered and not built; where
-the data stays is written already (TERR-1) and is on the file's own list.
+say next (the roll call, the loss drill) is ordered and not built; where the data
+stays (TERR-1) and the copy of a room's files (MIR-1) are written already and are on the file's own list.
 
 It is containment and topology, which is what a diagram is for here: a hall as
 ONE strip, where data, compute and reach sit in one place and one strike takes
 all three; beneath it the fleet file, and under the file three rooms as three
 machines on the links the file names, one of them the way between, one of them
 struck. The orange accent is used once, on the fleet file, because that is
-what makes many rooms one cloud. Brick is used once, on the strike. The mirror
-is dashed, this family's mark for absence: it is ordered and not built, and the
-last band says so in the page's own words (DOC-2).
+what makes many rooms one cloud. Brick is used once, on the strike. The copy
+from room A to room B is a solid arrow since 2026-10-19 (MIR-1): it was dashed,
+this family's mark for absence, while it was ordered and not built. The last band
+says what is still ahead in the page's own words (DOC-2).
 
 The phone gets a different drawing of the same argument: narrow14.py.
 
@@ -35,9 +36,8 @@ FILE = ("The fleet file", ["which boxes, on which links, who is the way between,
 ROOMS = [("room A", ["one file, own key", "judges its boot", "keeps its record"], "machine"),
          ("room B", ["one file, own key", "the way between", "the two links"], "machine"),
          ("room C", ["lost: what the", "file says, and", "nothing more"], "struck")]
-MIRROR = "a mirror · ordered"
-NEXT = ("NEXT, ORDERED", ["a mirror: A's files kept on B, and verified",
-                          "the roll call: who has written a record since",
+MIRROR = "A's files, kept on B"
+NEXT = ("NEXT, ORDERED", ["the roll call: who has written a record since",
                           "the loss drill: one box lost, the rest serve"])
 
 img, d = canvas(14)
@@ -88,10 +88,10 @@ for (title, subs, style), x in zip(ROOMS, xs):
         text(d, x + 26, BY + 78 + i*34, fit(f_read, ln, bw - 52, "room sub"), f_read, s_ink)
     arrow_down(d, x + bw/2, FY + FH + 4, BY - 6, HAIR, 2.4)
 
-# ---- the mirror, ordered and not built: dashed, this family's mark for absence ----------
+# ---- the copy, built: a solid line (it was dashed, this family's mark for absence, until MIR-1) ----------
 MY = BY + BH + 14
 ax0, ax1 = xs[0] + bw/2, xs[1] + bw/2
-dashed(d, [(ax0*S, MY*S), (ax1*S, MY*S)], NEW_LINE, int(2.2*S))
+d.line([(ax0*S, MY*S), (ax1*S, MY*S)], fill=NEW_LINE, width=int(2.2*S))
 hw = int(2.2*S)
 d.line([((ax1 - 9)*S, (MY - 9)*S), (ax1*S, MY*S)], fill=NEW_LINE, width=hw)
 d.line([(ax1*S, MY*S), ((ax1 - 9)*S, (MY + 9)*S)], fill=NEW_LINE, width=hw)

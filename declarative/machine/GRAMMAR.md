@@ -76,17 +76,18 @@ clause outside its kind's table is refused naming the allowed set
 
 ## The kinds
 
-`FLEET`, `MEMBER`, `RETIREMENT`, `ROUTE`, `FRONT` and `RESIDENCY` are
+`FLEET`, `MEMBER`, `RETIREMENT`, `ROUTE`, `FRONT`, `RESIDENCY` and `MIRROR` are
 kinds of this same language and are refused in a machine file by name
-(R85-R87, R102, R207, R208): a machine declares what ONE machine is, and
+(R85-R87, R102, R207, R208, R250): a machine declares what ONE machine is, and
 no machine can say who else is in its estate, which keys it has held,
 which links are joined, which member the devices of a link are to trust
-as their door, or where the fleet's data stays. Nor does a machine say
+as their door, where the fleet's data stays, or which two machines are the
+ends of one copy. Nor does a machine say
 where IT stands: `TERRITORY` is a clause of a MEMBER and not of a
 machine (R209), for the reason its hardware address is -- a machine file
 is a design that images many devices, and where one of them stands is a
 fact its deployment learns. They are the fleet grammar's,
-`declarative/fleet/GRAMMAR.md` (FLT-1, RET-1, FWD-1, FRONT-2, TERR-1).
+`declarative/fleet/GRAMMAR.md` (FLT-1, RET-1, FWD-1, FRONT-2, TERR-1, MIR-1).
 Which file a kind belongs
 in is one EXHAUSTIVE switch, `belongsToFleet`, asked by both parsers --
 never a condition that names the kinds, which is how a new one walks
@@ -109,6 +110,12 @@ RETIREMENT was not refused for a wrong reason, it was ACCEPTED.
 | `CLOCK` | string, a device path (`"/dev/rtc0"`) | optional, hosted only (R139) — the battery-backed clock this machine HAS, as the hardware it is: a plain path under `/dev` (R140-R142, R159) that is a real-time clock, `/dev/rtc` or `/dev/rtc` and a number -- reading a device opens it, and some devices are armed by being opened (R164) -- and an `IDENTITY` to sign with (R143), because a clock is read to SIGN what the machine is asked, and a time nobody signed is the epoch wearing a date's authority. A clock that no `NETWORK` of the machine reads as its time authority attests nothing (R144). Read when the machine is asked, never kept: the floor has no time of its own (TIME-1) |
 | `TIME_FROM` | string `"a.b.c.d:port"` | optional, hosted only, with `TIME_KEY` (R151, R152) — whom this machine asks, after it has written an entry of its journal, how late that entry can be: an address and a port from 1 to 65535, each number spelled one way, with no sign, no separator and no leading zero (R153, R154, R162, R166, R167), a `JOURNAL` to date (R156), a network to ask over (R157) and a way there: the address is on a static link's own prefix, or that link has a GATEWAY and no EGRESS list, or an EGRESS destination covers it and that link has a GATEWAY to carry it (a route to another network is written through one, and with none declared none is written), or the link asks by dhcp, whose lease is the way (R168-R170; A41-A43). A machine that is itself a time authority asks nobody (R150) |
 | `TIME_KEY` | string, 64 lowercase hex | optional, hosted only, with `TIME_FROM` — whose word this machine takes: the authority's Ed25519 public key, one spelling of 32 bytes (R155). An answer from anyone else on the wire is refused at the door, and the fleet court holds this key to the one the fleet enrols the authority as (FR58) |
+| `MIRROR_OF` | string, an absolute path | optional, hosted only (R210) — the directory of a world this machine gives a copy of: plain names (R220), inside the `STATE` of a world that runs as an identity (R223), on a disk that survives the power (R224) and keeps owners (R225). Comes with `MIRROR_FOR` and a `NETWORK` that declares `MIRROR_SERVER` (R213, R214, R215), and an `IDENTITY` to sign with (R212). A machine gives a copy or takes one, never both (R211) |
+| `MIRROR_FOR` | string, 64 lowercase hex | optional, with `MIRROR_OF` — the public key of the ONE device the copy is given to: one spelling of 32 bytes that is a key (R221, R222). A copy given to whoever asks would be a world's directory given to the link |
+| `MIRROR_FROM` | string `"a.b.c.d:port"` | optional, hosted only, with `MIRROR_KEY` and `MIRROR_INTO` (R227-R229) — whom this machine takes a copy from: an address and a port, each number spelled one way (R231), a network to ask over (R235) and a way there (R234) |
+| `MIRROR_KEY` | string, 64 lowercase hex | optional, with `MIRROR_FROM` — whose word this machine takes: the source's Ed25519 public key (R232, R233). A listing from anyone else on the wire is refused at the door, and the fleet court holds this key to the one the fleet enrols the source as (FR86) |
+| `MIRROR_INTO` | string, an absolute path | optional, with `MIRROR_FROM` — where the copy is kept: plain names, on a disk that is writable (R240) and ext4 (R238, R239), in a MOUNT (R236) and not the root of one (R237), and where no name the floor makes for the copy (`machine.mirror_family`: the copy, its staging place, the copy it replaces for the length of a swap, the kept listing with its staging name, and the line about the last attempt with its own) lands on the key (R243), the record (R244), a directory a world owns (R241, R242) or a directory the key lives in (R245) |
+| `MIRROR_EVERY` | number, seconds | optional, with `MIRROR_FROM` — how often the copy is asked for: 5 to 86400, 30 when nothing is said (R246, R247). Alone it says nothing (R230) |
 | `SLOTS` | string, the boot partition's device (`"/dev/mmcblk0p1"`) | optional — the machine updates A/B: two slots on that partition, `config.txt` naming the committed one and, under `[tryboot]`, the other; PID 1 reads which slot it booted (`harb.slot=` on the cmdline), arms the watchdog, and commits a trial only once every service has started. Needs a board whose firmware can try a slot (`rpi4`; R41); an absolute device path (R42) |
 | `CONSOLE` | string, a device | optional; defaults `/dev/console`, `uart0`, `logcat` by profile. **Hosted: a port the board HAS** (R91-R94) -- `qemu_pc` `/dev/ttyS0`..`/dev/ttyS3`, `qemu_virt` `/dev/ttyAMA0`, `rpi4` `/dev/ttyS1` (the mini-UART on the header pins; its PL011 goes to Bluetooth) -- or nothing, which is the kernel's own `/dev/console` and on the board is its first port (A25, A26). The kernel's boot line follows it: the card's `cmdline.txt` and the emulator's line both name the port, and the emulator listens on that port and no other. PID 1 then asks the kernel which device its console really is (`TIOCGDEV`) and says the declared line only when they agree; otherwise it says both, and the boot differs from its file (CON-1). Edge and touch: the substrate's; this repository neither boots nor narrates them, and does not check them |
 
@@ -309,6 +316,80 @@ for an answer, once, after the verdict; and the authority answers any
 datagram that asks, with no limit on how often, from a process that is
 not confined (it is given nothing of PID 1's but its stdio and its socket).
 
+#### A copy of a world's directory — the mirror (MIR-1)
+
+A world keeps its records in a directory of its own (OWN-1), and the machine it
+runs on is one machine: lose it and the records go with it. STZ-OS-RULING-19
+orders what a fleet can answer with: **a declared copy of a world's directory on
+another member, over a link the fleet names, verified by the fleet's keys.** The
+floor copies and verifies files between declared places. What makes a copy
+CONSISTENT stays the application's: a database copied while it is being written
+is a copy of a torn file, and the floor cannot know what torn means for it.
+
+Two machines are the two ends, and a machine is one end or the other, never both
+(R211):
+
+- **the source** says what it gives and to whom: the directory (`MIRROR_OF`), the
+  one device it is given to (`MIRROR_FOR`, that device's public key), and the link
+  and TCP port it is given on (`MIRROR_SERVER`, a clause of a NETWORK). The
+  directory must lie in the `STATE` of a world that runs as an identity (R223), so
+  that the court knows whose it is; on a disk that survives the power (R224) and
+  keeps owners, which is ext4 (R225). The source signs, with its device key, a
+  listing of every entry it gives and the digest of each file, and sends the bytes
+  after it
+- **the keeper** says whom it takes from and whose word it takes (`MIRROR_FROM`, an
+  address and a port; `MIRROR_KEY`, the source's public key), where it keeps the
+  copy (`MIRROR_INTO`) and how often it asks (`MIRROR_EVERY`, 5 seconds to a day,
+  30 when it says nothing; R246, R247). The copy is kept on an ext4 disk that is
+  writable, not at the root of the disk (R236-R240), where no world owns the place
+  and where none of the names the floor makes beside the copy can land on the key,
+  the record or a world's directory (R241-R245)
+
+Both ends SIGN -- the source its listing, the keeper its request -- so both need an
+`IDENTITY` (R212), and a key is one spelling of 32 bytes that is a key (R221, R222,
+R232, R233). An address and a port are each written one way (R231).
+
+**The dangerous part is the walk, and it follows no link.** The floor reads a
+world's directory as root, and the world can put anything in it. A floor that
+followed a link there would hand the machine's own key to the first copy anyone
+pulled. So every name below the directory is opened with `O_NOFOLLOW` from a
+descriptor, and the source gives a file only if the WORLD owns it: a hard link to a
+file of the machine's is a regular file with another owner, and is refused for it. A
+pipe, a socket and a device are refused; so is a directory on another filesystem.
+Whatever is wrong with one name makes the whole directory unmirrorable, and the
+source says which -- to the device it gives to, and to nobody else.
+
+**A copy is the last COMPLETE one, or none.** The keeper receives into a place of its
+own beside the copy, holds each file to the digest the signed listing states while
+it writes it, reads the whole of what it wrote back from the disk against the
+listing, and only then swaps it in with renames. A power cut between two of them
+leaves a state the next pull finishes or undoes. Beside the copy it keeps the signed
+listing it was verified against and one line about its last attempt (`ok`, `silent`,
+`refused`, `unverified`, `failed`), so a reader with the source's public key and no
+secret can verify the copy for as long as it is kept.
+
+What it says at boot, once the child that does it exists (a line that says where
+the machine is, is said only after asking): `boot: mirror -- lan gives the files of
+/data/ledger on 10.30.0.1:7400, to the one device whose key it was told ...`, or
+`boot: mirror -- takes the files at 10.30.0.1:7400 into /data/copy every 5 s ...`.
+The witnesses are `harb mirror check` (inside the keeper: the kept listing against
+the key it was told, every file against its digest, `--fresh` to wait for an attempt
+made after it began) and `harb mirror verify` (anywhere: the fleet file, the listing
+and the directory). The rules are R210-R250 (A54-A59 accept a source, a keeper at
+its default, shortest and longest pace, a directory inside a STATE and a name beside
+other names); the pair is the fleet's, `declarative/fleet/GRAMMAR.md`. It is judged by
+`experiment/os12_mirror.sh` (two machines on one wire, enrolment by hand, and the
+negatives) and its rules by a probe that mutates each in a scratch copy
+(`experiment/mirror_probe.sh`). Named seams: one mirror per machine; the bytes
+cross the link in the clear after both ends have proved who they are (integrity is
+the source's key, access is the keeper's key, confidentiality is the link's); every
+pull moves every byte, and needs room for a second copy while it swaps; a source
+that rolls its own directory back is its own word, since freshness reaches no
+further than the request; there is no restore verb yet; the children are the
+floor's own code running as root and not confined; only empty directories and
+regular files are carried; and a mirror that stops mirroring does not stop the
+machine's watchdog.
+
 ### DEFINE NETWORK — one interface, one way to an address
 
 | clause | value | obligation |
@@ -320,6 +401,7 @@ not confined (it is given nothing of PID 1's but its stdio and its socket).
 | `DNS` | string list | optional, static only — the servers; a dhcp network learns them |
 | `DOMAIN` | string | optional, static only — the name this link answers to, which makes this machine the link's own SERVER of addresses and names (`"makeen"`). A dhcp link is refused (R77): a machine that asks for its own address is not the one that hands them out. A domain is lowercase labels, digits and the hyphen, separated by dots. One machine answers for a domain once (R103): two links under one name would make a name on either a name on both, and a machine that is the way between them could never be asked for the far one by its full name |
 | `TIME_AUTHORITY` | number, a UDP port | optional (TIME-1) — this machine answers the time on this link: `time? entry=<digest>` is answered with a statement it signs with its device key, that the entry with that digest existed no later than the time its `CLOCK` reads. 1024 to 65535 (R147, R160, R161), on a static address because the address a time question goes to is not a lease (R146), on one link (R148) that is not a loopback (R149), from a `CLOCK` it declares (R145), and asking nobody (R150). A clause of a NETWORK and not of a MACHINE (R158) |
+| `MIRROR_SERVER` | number, a TCP port | optional (MIR-1) — this machine gives the copy of its `MIRROR_OF` on this link: 1024 to 65535 (R217), on a static address because the address a copy is asked of is not a lease (R216), on one link (R219) that is not a loopback (R218), and not a port a world declares in `PORTS` (R226). A clause of a NETWORK and not of a MACHINE (R248) |
 
 A NETWORK needs the `network` capability granted (R36: silence is
 refusal, as for a service). A NETWORK is to the wire what a MOUNT is to

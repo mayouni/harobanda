@@ -1,0 +1,41 @@
+-- mirror_cloud.fleet -- two machines on one wire, one of which keeps the other's world's directory (MIR-1, fleet v0.5).
+--
+-- The loss of one machine must not be the loss of what it held, and STZ-OS-RULING-19 gives the fleet the means: a
+-- MIRROR, a declared copy of a world's directory on another member, over a link the fleet names, verified by the
+-- fleet's keys. Each machine says only its own end -- the source whom it gives to (a key), the keeper whom it takes
+-- from (an address, a port and a key) -- and each is faultless alone while the pair does not meet. The court holds
+-- the pair to each other before anything boots: the keeper asks the address and port the source gives on, takes the
+-- word of the source's enrolled key, is the device the source gives to, and has a way there; and no machine gives
+-- or takes a copy this file never named (FR74-FR93).
+--
+-- TERRITORY says where each member physically stands. Here they stand apart on purpose -- the copy is worth having
+-- because it is not in the room the original is in -- and no RESIDENCY holds them together. A fleet whose data must
+-- stay in one place says so with a RESIDENCY, and a keeper standing anywhere else is refused by the rule that already
+-- holds every member that keeps a disk (FR91): the mirror needed no rule of its own for it.
+--
+-- KEY below is a placeholder for each, as it is in machines/time_cloud.fleet: a device makes its own key on its first
+-- boot and a file in a repository cannot know it. experiment/os12_mirror.sh boots both, reads the public halves they
+-- publish and writes them in COPIES of this file and of the two machine files, which is what enrolment is.
+
+DEFINE FLEET boutique AS (
+  LINK lan
+) RATIONALE "A shop's till machine and the machine in the warehouse that keeps a copy of its ledger"
+
+DEFINE MEMBER depot AS (
+  DECLARATION "mirror_source.machine",
+  KEY "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  HARDWARE "52:54:00:12:37:01",
+  TERRITORY shop
+) RATIONALE "The machine whose world keeps the ledger, standing in the shop, enrolled so that the listing it signs can be checked by anyone holding this file"
+
+DEFINE MEMBER annex AS (
+  DECLARATION "mirror_keeper.machine",
+  KEY "abababababababababababababababababababababababababababababababab",
+  HARDWARE "52:54:00:12:37:02",
+  TERRITORY warehouse
+) RATIONALE "The machine that keeps the copy, standing in the warehouse, enrolled so that the source can be shown to give the copy to it and to nobody else"
+
+DEFINE MIRROR ledger_copy AS (
+  FROM depot,
+  TO annex
+) RATIONALE "The shop's ledger is kept in the warehouse too: the shop burning down must not take the records with it"

@@ -5,10 +5,24 @@
 `fixtures.json` sha256:
 
 ```
-17c8ecddae2253e7854a10e84ea5de7f7929128df9fef230489794ee87d5c558
+65b901c51d0168bb6d3fa959efd9c080aef9fbb4efdefb123d2e27a3d1f50a80
 ```
 
-(Before where the data stays of 2026-10-19 (TERR-1):
+(Before the mirror of 2026-10-19 (MIR-1):
+`17c8ecddae2253e7854a10e84ea5de7f7929128df9fef230489794ee87d5c558`,
+262/262; the widening added A54-A59 and R210-R253 -- a machine gives the
+copy of a world's directory (`MIRROR_OF`, `MIRROR_FOR`, and `MIRROR_SERVER`
+on a network) or takes one (`MIRROR_FROM`, `MIRROR_KEY`, `MIRROR_INTO` and
+an optional `MIRROR_EVERY`), never both, and signs either way. The source's
+directory is a world's own (inside its STATE, on a disk that keeps owners
+and survives the power), the copy is given to one key on one link, and the
+destination keeps it where no world owns the place and where no name the
+floor makes for it can land on the key or the record. R248-R249 hold the
+clause menu: the port is a network's, the source's address a machine's;
+R250 holds the kind: a `MIRROR` is a fleet's, in a machine file it is refused by name.
+R251-R253 are what the probe's mutants asked for: an uppercase key is a second text for
+the same source, and a directory is plain names, and not one the machine mounts itself.
+Before where the data stays of 2026-10-19 (TERR-1):
 `51cc25d6f0ca09339d08e54d5bb565efadc924265f780b43ce3c6b038132f62c`,
 260/260; the widening added R208-R209 -- a `RESIDENCY` in a machine file
 is refused by name, as the other fleet kinds are (R207 and before), and so
@@ -199,7 +213,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **262/262** — 53 accepts with structural expectations, 209 rejects with expected refusal fragments (260/260 before RESIDENCY, and the row not kept in step with the seats between 213/213 and there: the pin above is the one judged, PIN-1; 213/213 after TIME, 173/173 before TIME; 132/132 before STATE; 120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **312/312** — 59 accepts with structural expectations, 253 rejects with expected refusal fragments (262/262 before the mirror, 260/260 before RESIDENCY, and the row not kept in step with the seats between 213/213 and there: the pin above is the one judged, PIN-1; 213/213 after TIME, 173/173 before TIME; 132/132 before STATE; 120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):

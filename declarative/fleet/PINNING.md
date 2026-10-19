@@ -1,14 +1,29 @@
-# fleet v0.4 — pinning and the conformance scoreboard
+# fleet v0.5 — pinning and the conformance scoreboard
 
 ## The pin
 
 `fixtures.json` sha256:
 
 ```
-097850a29eed81c4d385b0c15eee2df9f8599b3d1a66967119631e95b551e0cc
+64f81ce0edbf324c7dd4d9c6d46f2fdc9e390c2c91a5399dac2778d2e4e8a94f
 ```
 
-(Before where the data stays of 2026-10-19 (TERR-1, fleet v0.4):
+(Before the mirror of 2026-10-19 (MIR-1, fleet v0.5):
+`097850a29eed81c4d385b0c15eee2df9f8599b3d1a66967119631e95b551e0cc`,
+89/89; the widening added FA17-FA21 and FR74-FR93 and gave the fleet its
+seventh kind, `MIRROR` -- the member that gives a directory of a world
+and the member that keeps it. Each reject is a case where every machine
+of the fleet is faultless alone: the keeper asks a port or an address the
+source does not give on, takes the word of a key that is not the source's,
+or is not the device the source gives to; either end is not enrolled, or
+has no way to the other; a machine gives or takes a copy no MIRROR names;
+and a keeper in another territory than the one the data stays in is
+refused by the RESIDENCY that already holds every member that keeps a
+disk (FR91) -- a mirror needed no new rule for it. The first run of the
+new cases was green at once, which is when a court deserves doubt, and
+got a probe: each rule's mutant is convicted by the case named for it
+(`experiment/mirror_probe.sh`).
+Before where the data stays of 2026-10-19 (TERR-1, fleet v0.4):
 `eecc9ced012e51138a71cd71404d3cf3de2bfdafddd5dc18576ded0ca7e0547a`,
 79/79; the widening added FA14-FA16 and FR67-FR73, gave `MEMBER` its
 `TERRITORY` and the fleet its sixth kind, `RESIDENCY` -- the territory
@@ -63,7 +78,7 @@ grammar's own `PINNING.md` requires of itself.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **89/89** — 16 accepts, 73 rejects (79/79 before RESIDENCY; 71/71 before FRONT; 32/32 before ROUTE; the first run of the ROUTE widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
+| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **114/114** — 21 accepts, 93 rejects (89/89 before MIRROR; 79/79 before RESIDENCY; 71/71 before FRONT; 32/32 before ROUTE; the first run of the ROUTE widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
 
 `zig build court` runs BOTH grammars: the machine fixtures first, the
 fleet fixtures after. One step, two courts, because a fleet is no better

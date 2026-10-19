@@ -34,6 +34,7 @@ const confine = @import("confine.zig");
 const ports = @import("ports.zig");
 const expect = @import("expect.zig");
 const journal = @import("journal.zig");
+const mirrorserve = @import("mirrorserve.zig");
 const timeattest = @import("timeattest.zig");
 const timeserve = @import("timeserve.zig");
 
@@ -418,6 +419,80 @@ fn serveTime(m: *const machine.Machine, id: Identity, led: *Ledger, out: *std.Io
         return n.name;
     }
     return null;
+}
+
+// ---- a copy of a world's directory, given and taken (MIR-1) ---------------------------------------
+//
+// A machine can GIVE the files of one world's directory to one other device, or TAKE them from a machine that gives.
+// Neither is a world, and neither is confined: this is the machine being what it said it was, like the authority of
+// time. Each is a child that is forked and never exec'd, and both say nothing -- what the puller did is told by the
+// line beside the copy, and `harb mirror check` reads it.
+
+/// Become this machine's link's source of a copy, once there is a key to sign with. The socket is taken BEFORE the
+/// fork so that "this machine could not give the copy it declared" is said by the machine, in order, in the transcript
+/// that is judged; and the line that says it gives is said only once the server EXISTS (CON-1): a fork that failed
+/// would otherwise leave a ledger that matches its expectation and a machine that gives nobody anything.
+fn serveMirror(m: *const machine.Machine, id: Identity, unmounted: []const []const u8, led: *Ledger, out: *std.Io.Writer) !?[]const u8 {
+    const of = m.mirror_of orelse return null;
+    // a promise the machine cannot keep is not made (NS-1): a world whose disk the kernel refused was not given its
+    // directory, and a source that said it gave the files of one would answer every asker that it has none
+    for (unmounted) |at| if (machine.within(of.dir, at)) {
+        try out.print("boot: mirror -- this machine cannot give {s}: the mount it lies on was refused by the kernel, and a world that was not given its directory has nothing to give\n", .{of.dir});
+        return null;
+    };
+    for (m.networks) |n| {
+        const port = n.mirror_server orelse continue;
+        const at = switch (n.address) {
+            .static => |s| s,
+            .dhcp => continue,
+        };
+        const fd = mirrorserve.listen(at.ip, port, n.interface) catch |e| {
+            try out.print("boot: mirror -- {s} could not give a copy on port {d}: {s}\n", .{ n.name, port, @errorName(e) });
+            continue;
+        };
+        const pid = std.posix.fork() catch |e| {
+            try out.print("boot: mirror -- {s} could not start its server: {s}\n", .{ n.name, @errorName(e) });
+            std.posix.close(fd);
+            continue;
+        };
+        if (pid == 0) {
+            // PID 1's own code in a child that is never exec'd: it is given nothing of PID 1's but its stdio and its
+            // socket (the hardware watchdog above all, WDG-1)
+            timeserve.closeInherited(fd);
+            mirrorserve.serve(fd, id.pair, of);
+        }
+        // the parent keeps no descriptor to the port: the child is the source
+        std.posix.close(fd);
+        _ = try expect.mirrorLines(led.w(), m);
+        try led.echo();
+        return n.name;
+    }
+    return null;
+}
+
+/// Start taking the copy this machine was declared to take, once there is a key to sign its request with. The
+/// line that says it takes is said only once the puller EXISTS. Whether a pull has worked is not this line's to say
+/// and not the boot's to wait for: a source that is down must not hold a trial back, and what each attempt came to is
+/// kept beside the copy and read by `harb mirror check`.
+fn pullMirror(m: *const machine.Machine, id: Identity, unmounted: []const []const u8, led: *Ledger, out: *std.Io.Writer) !bool {
+    const from = m.mirror_from orelse return false;
+    // ... and a copy is never kept on a mount the kernel refused: the directory would be made in RAM, report that it was
+    // kept, and be gone with the power -- the one thing a copy is for
+    for (unmounted) |at| if (machine.within(from.into, at)) {
+        try out.print("boot: mirror -- this machine cannot take a copy into {s}: the mount it lies on was refused by the kernel, and a copy kept in RAM would die with the power\n", .{from.into});
+        return false;
+    };
+    const pid = std.posix.fork() catch |e| {
+        try out.print("boot: mirror -- this machine could not start taking a copy: {s}\n", .{@errorName(e)});
+        return false;
+    };
+    if (pid == 0) {
+        timeserve.closeInherited(-1);
+        mirrorserve.pull(id.pair, from);
+    }
+    _ = try expect.mirrorLines(led.w(), m);
+    try led.echo();
+    return true;
 }
 
 /// The last line of a record that is not empty.
@@ -1156,6 +1231,9 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     // nothing left to do (NAM-1).
     var serving: ?[]const u8 = null;
     var serving_buf: std.ArrayList(u8) = .{};
+    // the machine this one is taking a copy from, if it declared one (MIR-1): a taker has no one asking it
+    // anything, and is as little finished when its last one-shot is as a server is
+    var keeping: ?[]const u8 = null;
     // the links a machine that forwards will serve, up and waiting for the way (FWD-1)
     var await_way: std.ArrayList(*const machine.Network) = .{};
     // the mounts the kernel refused: a world's own directory (STATE) is never made on one (OWN-1)
@@ -1331,6 +1409,17 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         try serving_buf.appendSlice(gpa, "the time authority of ");
         try serving_buf.appendSlice(gpa, wire);
         serving = serving_buf.items;
+    };
+    // a machine that gives a copy of a world's directory is a server of it, and waits like one; a machine that takes
+    // one waits too, for as long as it stands, and says so in words that fit (a copy is not asked for)
+    if (device) |id| if (!opts.rehearse) {
+        if (try serveMirror(m, id, unmounted.items, &led, out)) |wire| {
+            if (serving_buf.items.len > 0) try serving_buf.appendSlice(gpa, " and ");
+            try serving_buf.appendSlice(gpa, "the mirror source of ");
+            try serving_buf.appendSlice(gpa, wire);
+            serving = serving_buf.items;
+        }
+        if (try pullMirror(m, id, unmounted.items, &led, out)) keeping = m.mirror_from.?.text;
     };
 
     // the ceilings, before the first world runs: a world must never see
@@ -1532,6 +1621,12 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                 // that works until it is needed (NAM-1).
                 if (!said_serving) {
                     try out.print("boot: every service has ended -- and this machine is still {s}: a server stops when the machine stops, not when the asking does\n", .{dom});
+                    said_serving = true;
+                    try out.flush();
+                }
+            } else if (keeping) |from| {
+                if (!said_serving) {
+                    try out.print("boot: every service has ended -- and this machine is still taking a copy from {s}: it asks for as long as the machine stands, and not only while a world runs\n", .{from});
                     said_serving = true;
                     try out.flush();
                 }

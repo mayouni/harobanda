@@ -400,11 +400,12 @@ same for all three.
 | the image: the files the machine boots from, the kernel's options, the boot settings | `src/image.zig` | QEMU transcripts against `machines/*.expected` |
 | the network: the wire is up before any service | `src/netcfg.zig`, `src/net.zig` | fixtures and a two-machine boot |
 | identity: a device's key, and the record it signs | `src/journal.zig` | `machines/qemu_identity.expected` |
-| a fleet: facts about a set, the keys a device used to have, the ways between its links, the door of a link, and where its data stays | `src/fleet.zig` | `declarative/fleet/`, `experiment/os7_fleet.sh`, `experiment/os8_links.sh` |
+| a fleet: facts about a set, the keys a device used to have, the ways between its links, the door of a link, where its data stays, and which machine keeps a copy of which other's directory | `src/fleet.zig` | `declarative/fleet/`, `experiment/os7_fleet.sh`, `experiment/os8_links.sh` |
 | a machine that is the way between two networks, and the names it answers across them | `src/machine.zig` (`FORWARD`), `src/names.zig`, `src/get.zig` | `machines/qemu_forward.expected`, `machines/cloud_links.expected` |
 | a solution's services, written apart from a machine and placed on one; and the program that says a server is serving | `src/pack.zig`, `src/ready.zig` | `harb court --pack`, `machines/qemu_cloud_ringserv.expected` |
 | a world that runs as an identity, and the directories it owns | `src/machine.zig` (`STATE`), `src/init.zig` | `machines/qemu_cloud_ringserv.expected` (the directory read back from the disk), `machines/qemu_own.expected` (a world asks the kernel what it may write), `experiment/state_probe.sh` |
 | time: a record dated by an authority's signed word, or said to be undated | `src/timeattest.zig`, `src/timeserve.zig`, `src/timeaudit.zig`, `src/machine.zig` (`CLOCK`, `TIME_FROM`) | `machines/time.expected` (two machines on one wire), `experiment/time_probe.sh`, `experiment/time_scene_probe.sh` |
+| a copy: the files of a world's directory kept on another machine, only if the source's signed list and every digest in it match | `src/mirror.zig`, `src/mirrorserve.zig`, `src/mirroraudit.zig`, `src/machine.zig` (`MIRROR_OF`, `MIRROR_FROM`), `src/fleet.zig` (`MIRROR`) | `machines/mirror.expected` (two machines on one wire, the disks read back), `experiment/mirror_unit.sh`, `experiment/mirror_probe.sh` |
 | updates: two slots, and a trial before any commit | `src/update.zig` | the card read back after a trial |
 | the guided tour, judged like any other claim | `src/learn.zig` | `harb learn --check` |
 | the pages: every code line fits GitHub's column, every machine a page shows in full is one the court accepts, the words are the tour's own, and every Next link goes where its section strip says | `src/docs.zig` | `harb docs --check`, in `zig build court` |
@@ -457,7 +458,12 @@ transcript:
 - `bash experiment/os10_time.sh` — two machines on one wire: a record is
   dated by an authority's signed word, stays undated when the authority is
   gone, and refuses an impostor's answer; then what anyone holding only the
-  fleet file can check of it, and six audits that must fail.
+  fleet file can check of it, and six audits that must fail;
+- `bash experiment/os12_mirror.sh` — two machines on one wire: one keeps a
+  verified copy of the other's world's directory, follows it when it
+  changes, and refuses an impostor, a stranger, a link, and the
+  machine's own key under another name; then what anyone holding only
+  the fleet file can check of the copy, and eight cases that must be refused.
 
 Every line of doctrine here was paid for by a mistake, and each is written up
 under its own tag in `experiment/PROTOCOL.md`, newest first. A few of them:
