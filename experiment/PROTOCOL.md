@@ -1,3 +1,115 @@
+# FRONT-1 — a front is a world like any server, and what it ends is TLS under a root it was given
+
+The cloud's front (rung 3b of `doc/CLOUD.md`), built on one machine
+2026-10-19 on the author's "continue", the day after he ruled the proxy
+(STZ-OS-RULING-18: Caddy). PORT-1 had built the port it needs; this seat
+places the program and judges it. The front on the gateway of two links,
+with the fleet declaring it, is the next scene.
+
+## What was built
+
+- **Caddy, vendored by digest** (`vendor/PIN.md`, `experiment/caddy_fetch.sh`,
+  `vendor/caddy/` gitignored): release 2.11.7 of 2026-10-03, the archive
+  refused unless its sha512 is the one Caddy published beside the release
+  and this file records; the one binary (52 MB) extracted to
+  `zig-out/caddy/caddy`. Apache-2.0, attached to the pin as the kernel's
+  licence is.
+- **The front pack** (`machines/front.pack`): Caddy as a world like any
+  server -- an identity of its own (`frontdoor`, 2020), `STATE
+  ["/run/front", "/data/front"]`, `PORTS [80, 443, 8080]` (443 for TLS,
+  80 for the redirect automatic HTTPS makes, 8080 on the loopback for the
+  one plain answer `harb ready` asks), ceilings, `HEALTH 10`, started by
+  `harb ready --mute`. Its configuration (`machines/front/Caddyfile`)
+  names its storage, its log and its root in the directory the machine
+  handed it, because the machine gives a world no environment and Caddy
+  would otherwise look for a home it does not have; `admin off`,
+  `skip_install_trust` (a client trusts what it is given). One site,
+  `https://front.local`, TLS ended there and the server behind reached in
+  plain HTTP on the loopback.
+- **The root, by hand** (`experiment/front_seed.sh`, through a new hook of
+  `os2_image.sh`, `HARB_DISK_SEED`): the scene makes a private key and a
+  self-signed certificate (openssl) and seeds them on the data disk under
+  what becomes `/data/front`, owned by the front's identity, the key
+  closed (0600), with `debugfs` and no mount; only the public half is
+  staged into the image (`/etc/front-ca.crt`). The floor never generates
+  it and neither does Caddy: enrolment by hand, as a device's key is
+  (FLT-1). The disk read back after the boot shows it, and Caddy's own
+  storage and log beside it, all the identity's.
+- **The question over TLS** (`harb get <host> <port> <path> --tls --ca
+  <pem> --name <host>`, `src/get.zig`): the same HTTP/1.0 question through
+  a TLS handshake, Zig's own TLS client, trusting the one PEM and nothing
+  else -- there is no system store on the floor -- and verifying the
+  certificate for the NAME given. The line says the status, the TLS
+  version, the name and the root's fingerprint (`fingerprint <16 hex>`,
+  the fleet's spelling, which the judge reads as KEY1).
+- **`harb ready --mute`**: the program's own console dropped. A server
+  that logs every request to stderr would write the transcript, and a
+  transcript is the machine's words; what Caddy keeps of its own is in
+  `/data/front/caddy.log`.
+- **The emulator's memory** (`src/image.zig`): the board's base plus every
+  ceiling the declaration holds a world to. Found at the first boot: a
+  256 MiB box could not unpack an initramfs carrying Caddy and RingServ
+  (`Initramfs unpacking failed: write error`, rootfs being half of the
+  memory), and PID 1 found no `/etc/machine`. A declared ceiling is a
+  promise the emulator must be able to keep.
+- **The machine** `machines/qemu_front.machine` (grants, a loopback, a
+  disk; no world of its own) with three packs placed in order -- the
+  server (`ringserv.pack`), the front, and `machines/front_witness.pack`,
+  three questions: `door` (over TLS, for `front.local`: `200
+  {"code":0,"message":"OK","data":{"up":true}} over TLS 1.3; the
+  certificate is for front.local, signed under the root fingerprint
+  KEY1`), `plain` (plain HTTP on 443: `400 Client sent an HTTP request
+  to an HTTPS server.`), `wrong` (over TLS, for `other.local`: `the
+  handshake with 127.0.0.1 failed: TlsAlert`). Pinned as
+  `machines/qemu_front_placed.expected`, 72 lines, matched twice with a
+  different root each run; the scene is `experiment/os11_front.sh`, and
+  `regress.sh` runs it as the scene `front`.
+- **Proven outside the floor first** (`experiment/front_outside.sh`, as
+  SRV-2 did): Caddy as `nobody` on 18443 under a root the probe made,
+  asked the same three questions: proven on this desk 2026-10-19.
+
+## What was found
+
+1. **A configuration validated as root poisons the storage of the user who
+   runs it.** `caddy validate` provisions the CA into the storage; run as
+   root in the outside probe, it left files the unprivileged run could not
+   open, and Caddy died at "provisioning CA 'local'" with nothing on its
+   console. Validate as the user you run as.
+2. **Where a probe keeps its files decides who can run them**: `nobody`
+   cannot traverse `/root`, and Ubuntu under WSL clears `/tmp` when the
+   distro restarts between two commands. `/srv` holds.
+3. **Zig's TLS client verifies a certificate for a DNS name and not for an
+   address** (`Certificate.verifyHostName` reads `dNSName` only), so the
+   front's certificate carries a name and the question names it
+   (`--name front.local`) while connecting to an address; a question for
+   an address would never verify.
+4. **A world with no environment needs its paths in its configuration**:
+   Caddy's data directory is `$XDG_DATA_HOME` or `$HOME/.local/share`, and
+   with neither it is `./.local/share` under `/`, which the front cannot
+   write. `storage file_system { root ... }` and `log { output file ... }`
+   say where, and `pki { ca local { root { cert, key } } }` says what it
+   signs under.
+5. **The disk list names a disk by its device, not by the mount's name**
+   (`d0 /dev/vda ext4 64 disk0.img`); the seed's first lookup asked for
+   `data` and found nothing.
+6. **The box's memory** (above): the first boot panicked before PID 1's
+   first line, and the kernel's own line said why.
+
+## Named seams
+
+- No mutant probe for this seat yet: the root seeded with the wrong owner
+  (Caddy cannot read its key, never ready), the public half missing from
+  the image (the handshake refused), the ports clause without 443 (Caddy
+  cannot bind, never ready) are the three to put wrong on purpose.
+- Caddy's HTTP/3 listener is UDP 443; Landlock holds TCP bind only, and
+  the capability given for 443 covers UDP too.
+- The front on the gateway of two links -- the fleet declaring which
+  member fronts and the root's fingerprint, the till asking HTTPS through
+  the box, the fleet court's rules -- is rung 3b's remaining half.
+- A certificate is a dated claim and the emulator's clock is its host's;
+  the validity window is ten years, which hides nothing and proves
+  nothing about dates (TIME-1 is where dates are judged).
+
 # PORT-1 — a world binds the ports it declares, and no other
 
 The port half of the cloud's front (rung 3b of `doc/CLOUD.md`), built

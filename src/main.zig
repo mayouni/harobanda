@@ -69,7 +69,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb confined [iface] [path...]             (what can this WORLD see and do? from inside one)
         \\  harb swarm  [n]                             (ask for n tasks and say where the kernel stopped; from inside a world)
         \\  harb ask    <name>                          (what does a name mean on this network? from inside a device on it)
-        \\  harb get    <host> <port> [<path>]          (ask a server one question, by name or address: did the packet cross? from inside a device)
+        \\  harb get    <host> <port> [<path>] [--tls --ca <pem> --name <host>]   (ask a server one question, by name or address: did the packet cross? over TLS, under the one root given; from inside a device)
         \\  harb attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  harb journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
         \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
@@ -77,7 +77,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
         \\  harb place  <file.machine> <file.pack>... [--out <file>]   (a solution's services, placed on a machine and judged as one)
         \\  harb court  --pack [declarative/pack/fixtures.json]
-        \\  harb ready  <ready-path> <a.b.c.d:port> [--url /health] [--every N] -- <program> [args...]   (a program's word that it is serving, said for it; from inside a world)
+        \\  harb ready  <ready-path> <a.b.c.d:port> [--url /health] [--every N] [--mute] -- <program> [args...]   (a program's word that it is serving, said for it; --mute drops the program's own console; from inside a world)
         \\  harb learn  [n] [--all] [--words] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
         \\  harb docs   --check                         (every page's code fits its column, and every machine it shows is accepted)
         \\  harb version

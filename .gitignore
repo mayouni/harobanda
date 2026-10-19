@@ -5,6 +5,7 @@ zig-cache/
 vendor/linux/
 vendor/rpi-firmware/
 vendor/zig/
+vendor/caddy/
 
 # python bytecode, from site/diagrams/
 __pycache__/

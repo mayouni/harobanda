@@ -1,0 +1,35 @@
+{
+	# the front of a cloud (FRONT-1): no admin endpoint, no trust-store installation
+	# (a client trusts what it is given), its storage and its log in the directory the
+	# machine handed it, and the root it signs under -- seeded on the disk by hand,
+	# never generated here
+	admin off
+	skip_install_trust
+	storage file_system {
+		root /data/front/storage
+	}
+	log {
+		output file /data/front/caddy.log
+	}
+	pki {
+		ca local {
+			name "Harobanda front"
+			root {
+				cert /data/front/root.crt
+				key /data/front/root.key
+			}
+		}
+	}
+}
+
+# the one site: TLS ended here, the server behind it reached in plain HTTP on the
+# machine's own loopback
+https://front.local {
+	tls internal
+	reverse_proxy 127.0.0.1:8210
+}
+
+# the one plain answer: what `harb ready` asks, on the loopback only
+http://127.0.0.1:8080 {
+	respond /health 200
+}

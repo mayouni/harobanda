@@ -1,0 +1,14 @@
+# qemu_front.stage -- what the image of machines/qemu_front.machine with its three packs
+# carries beyond /harb. One line each: <file in this repository's tree>  <where the image
+# puts it>. `harb image` packs a file only if some service names it by absolute path.
+#
+# The server and its application, as machines/ringserv.stage (SRV-2). The front: Caddy,
+# fetched and verified by experiment/caddy_fetch.sh (vendor/PIN.md), and its configuration.
+# The root the front signs under is NOT here: its key is seeded on the disk by the scene
+# (experiment/front_seed.sh), and only its public half travels in the image, for the
+# questions that must trust it and nothing else.
+zig-out/ringserv/ringserv   /ringserv
+machines/ringserv/app.ring  /app/app.ring
+zig-out/caddy/caddy         /caddy
+machines/front/Caddyfile    /app/Caddyfile
+zig-out/front/ca/root.crt   /etc/front-ca.crt

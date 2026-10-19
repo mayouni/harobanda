@@ -693,7 +693,17 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
             return 2;
         };
         try w.print("{s} {s}", .{ t.qemu, t.machine_args });
-        if (t.memory_mb > 0) try w.print(" -m {d}M", .{t.memory_mb});
+        // The emulator's memory is the board's base plus every ceiling the declaration holds a
+        // world to (FRONT-1): a ceiling is what the kernel lets a world reach, and an emulator with
+        // less than their sum would make the budget line a promise the box could not keep. The base
+        // also holds the image itself, which is unpacked into memory: a front of one static binary
+        // (52 MB) beside a server (24 MB) failed to unpack into a 256 MiB box at exactly this line
+        // -- "Initramfs unpacking failed: write error" -- and PID 1 found no /etc/machine.
+        if (t.memory_mb > 0) {
+            var ceilings: u32 = 0;
+            for (m.services) |s| ceilings += s.memory_mb orelse 0;
+            try w.print(" -m {d}M", .{t.memory_mb + ceilings});
+        }
         // the cores the declaration says the machine has: the emulator is handed the number (TIM-1); a
         // board has what it has, and the court holds the declaration to it
         if (m.cores > 1) try w.print(" -smp {d}", .{m.cores});

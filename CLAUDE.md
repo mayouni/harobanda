@@ -523,6 +523,23 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/ports_probe.sh
 
+# Caddy, the front's proxy, fetched and verified by digest
+# (vendor/PIN.md) -> zig-out/caddy/caddy
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/caddy_fetch.sh
+
+# the front proven outside the floor (FRONT-1): Caddy as an
+# unprivileged user under a root it was given, asked over TLS
+#   -> zig-out/wsl/front_outside.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/front_outside.sh
+
+# the front placed on a machine with the server behind it and
+# three questions to it: the root seeded by hand, the boot
+# judged -> zig-out/wsl/front.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os11_front.sh
+
 # the guided tour: 20 lessons, each with a command, the lines
 # to look for, and a way to BREAK it
 zig-out\bin\harb.exe learn
@@ -559,6 +576,34 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A front is a world like any server, and what it ends is TLS under a
+  root it was given** (FRONT-1): Caddy (STZ-OS-RULING-18), vendored by
+  the sha512 Caddy publishes beside its release (`vendor/PIN.md`,
+  `experiment/caddy_fetch.sh`), placed by `machines/front.pack` as an
+  identity with its own `STATE` and `PORTS [80, 443, 8080]`, started by
+  `harb ready --mute` (a server's console is not the transcript), its
+  storage, log and root named in its Caddyfile because a world has no
+  environment. The root is made BY HAND by the scene and seeded on the
+  disk owned by the front (`experiment/front_seed.sh`, through
+  `os2_image.sh`'s `HARB_DISK_SEED`); only its public half is in the
+  image, and `harb get --tls --ca <pem> --name <host>` trusts that PEM
+  and nothing else -- there is no system store on the floor -- and
+  verifies the certificate for a NAME, never an address (Zig's client
+  reads `dNSName` only). **The emulator's memory is the board's base plus
+  every declared ceiling**: a 256 MiB box could not unpack an initramfs
+  carrying Caddy and RingServ and PID 1 found no `/etc/machine`.
+  **Validate a configuration as the user who runs it**: validated as
+  root, Caddy's own CA provisioning left files the unprivileged run could
+  not open. Judged by `machines/qemu_front_placed.expected` (72 lines,
+  matched twice with a different root each run, the fingerprint read as
+  KEY1): over TLS the server behind the front answers 200, in plain HTTP
+  the TLS port answers 400, and a wrong name is refused by the client;
+  by the disk read back (the root, the storage and the log all the
+  front's); by the nodisk round (neither world starts); and by
+  `experiment/front_outside.sh` first. Named seams: no mutant probe yet
+  (three named in PROTOCOL); UDP 443 is Caddy's HTTP/3 and Landlock holds
+  TCP only; the front on the gateway of two links, with the fleet
+  declaring it, is next.
 - **A world binds the ports it declares, and no other** (PORT-1): `PORTS
   [443]` on a SERVICE that has a USER and needs `network`. The kernel's
   privilege for a port below 1024 is ONE capability for all of them, so a
@@ -1487,12 +1532,16 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   (PORT-1, 2026-10-14)**: `PORTS` on a SERVICE, the world held to them
   by a Landlock rule set and given the kernel's privilege for a port
   below 1024 only if it declares one -- what any front needs before it
-  exists. **The proxy is ruled: Caddy (STZ-OS-RULING-18, 2026-10-18,
-  the author's word)** -- vendored by the digest of its release like the
-  kernel, staged like RingServ, placed by a front pack with `PORTS [80,
-  443]`, an identity and a `STATE` for its keys; the seat decides whether
-  it sits on the gateway of `cloud_links.fleet` or on a machine of its
-  own. **And the five declarations of `site/resilience.html` are ordered
+  exists. **The proxy is ruled, Caddy (STZ-OS-RULING-18, 2026-10-18, the
+  author's word), and built on one machine (FRONT-1, 2026-10-19)**:
+  vendored by the digest of its release like the kernel, placed by
+  `machines/front.pack` with `PORTS [80, 443, 8080]`, an identity and a
+  `STATE` for its root, storage and log, booted on
+  `machines/qemu_front.machine` with the server behind it and three
+  questions to it (`qemu_front_placed.expected`, 72 lines). What remains
+  of rung 3b is the same front on the gateway of `cloud_links.fleet`: the
+  fleet declaring which member fronts and the root's fingerprint, and the
+  till asking HTTPS through the box. **And the five declarations of `site/resilience.html` are ordered
   (STZ-OS-RULING-19, the same word: "go ahead with implementing them
   all")**, in this order after the front: TERRITORY on a member, the
   MIRROR (a declared copy of a world's directory on another member,
@@ -1567,7 +1616,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

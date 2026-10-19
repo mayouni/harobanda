@@ -181,8 +181,13 @@ with a declared surface. *Status:* the time half is BUILT (TIME-1,
 2026-10-05), in the emulator, with its limits named below; of the front,
 the port is built (PORT-1, 2026-10-14: a world is held to the ports it
 declares, and given a port below 1024 only if it declares one) and the
-proxy is ruled, Caddy (STZ-OS-RULING-18, 2026-10-18), not yet placed;
-TLS stays out of the floor by ruling.
+proxy, Caddy (STZ-OS-RULING-18), is placed and judged on one machine
+(FRONT-1, 2026-10-19: a world that is not root ends TLS on 443 under a
+root it was given by hand, reaches the server behind it in plain HTTP on
+the loopback, and refuses a plain question on the TLS port); what remains
+is the same front on the gateway of two links, with the fleet declaring
+which member fronts and the root it signs under; TLS stays out of the
+floor by ruling.
 
 *The time half, as built.* `CLOCK` on a machine names the clock it HAS (a
 device), `TIME_AUTHORITY` on one of its links makes it that link's time

@@ -76,6 +76,31 @@ Changing the pin means changing the `$Ref` in `experiment/ringserv_build.ps1`,
 this table, and the pinned boot `machines/qemu_cloud_ringserv.expected` in the
 same commit, because that transcript quotes the server's own banner line.
 
+## Caddy, pinned by DIGEST (FRONT-1)
+
+The proxy that terminates TLS in front of a cloud (STZ-OS-RULING-18): the
+estate's rule is that no repository vendors a TLS or crypto stack, so the
+front is a program placed by a pack (`machines/front.pack`), and the
+program is Caddy, one static binary that manages its own certificates.
+Pinned the way the kernel is: the release archive is fetched by
+`experiment/caddy_fetch.sh`, refused unless its digest is the one below,
+and the `caddy` binary inside it is staged by `machines/front.stage`;
+`vendor/caddy/` keeps the archive and `PIN.txt` (gitignored). Caddy
+publishes sha512 beside its releases, so the pin is sha512 and the fetch
+reads the `tarball` and `sha512` rows of this table: their shape is
+load-bearing.
+
+| what | value |
+|---|---|
+| tarball | `caddy_2.11.7_linux_amd64.tar.gz` |
+| sha512 | `a7a433a1b133efc3c8d10eb0b99d52a24b5ef5c322dc77f5282182b1c0402139ab83f3a99f0c52409df77d20123fb0b523edad8a66d8f5e49136197bf61ef0e7` |
+| source of the digest | `https://github.com/caddyserver/caddy/releases/download/v2.11.7/caddy_2.11.7_checksums.txt`, fetched 2026-10-19; the release is dated 2026-10-03 |
+| version | 2.11.7, the newest release on the day of the pin |
+| licence | Apache-2.0 (Caddy's own `LICENSE`); the binary is not committed here and not redistributed |
+
+Changing the pin means changing the two rows above and the pinned boot
+of the front in the same commit.
+
 ## What is NOT pinned: availability
 
 A digest makes a tarball's CONTENT sovereign, not its EXISTENCE. Both

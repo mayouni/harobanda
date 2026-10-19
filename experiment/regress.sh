@@ -23,7 +23,7 @@ mkdir -p zig-out/wsl
 rm -f "$LOG"
 WANT="$*"
 MACHINES="qemu_hello qemu_egress qemu_confine qemu_budget qemu_identity qemu_own qemu_forward qemu_deadline qemu_tick qemu_ports fleet_temoin makeen_qemu makeen_box"
-SCENES="guarantees names fleet time cloud links"
+SCENES="guarantees names fleet time cloud links front"
 (
   # A GATE THAT IS NOT IN THE LIST REPORTS AS NOTHING (PX): the first run of this script was asked for three
   # names and ran two, because the third machine was pinned after the list was written and the script said
@@ -57,10 +57,11 @@ SCENES="guarantees names fleet time cloud links"
   if wanted names; then one names zig-out/wsl/names.txt bash experiment/os6_names.sh; else skip names "not named"; fi
   if wanted fleet; then one fleet zig-out/wsl/fleet.txt bash experiment/os7_fleet.sh; else skip fleet "not named"; fi
   if wanted time; then one time zig-out/wsl/time.txt bash experiment/os10_time.sh; else skip time "not named"; fi
-  for s in cloud:os9_cloud.sh links:os8_links.sh; do
+  for s in cloud:os9_cloud.sh links:os8_links.sh front:os11_front.sh; do
     n=${s%%:*}; f=${s#*:}
     if ! wanted "$n"; then skip "$n" "not named"
     elif [ ! -f zig-out/ringserv/ringserv ]; then skip "$n" "RingServ is not built under zig-out/ringserv (powershell experiment/ringserv_build.ps1)"
+    elif [ "$n" = front ] && [ ! -x zig-out/caddy/caddy ]; then skip "$n" "Caddy is not fetched under zig-out/caddy (experiment/caddy_fetch.sh)"
     else one "$n" "zig-out/wsl/$n.txt" bash "experiment/$f"; fi
   done
   echo "=== verdict: $ran ran, $fails failed ==="

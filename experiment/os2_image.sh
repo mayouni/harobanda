@@ -159,6 +159,14 @@ mkdir -p "$OUT" zig-out/wsl
     esac
     echo "$id: $img $fs ${size}M -> $dev"
   done
+  # enrolment by hand, before the boot (FRONT-1): a scene may seed the disks just made with what
+  # a world keeps on its own directory from its first boot -- a front's root key, which the floor
+  # never generates and the fleet declares by its fingerprint. The seed is a script given the
+  # image directory; the boot reads the disk back like anything on it
+  if [ -n "${HARB_DISK_SEED:-}" ]; then
+    echo "=== disk seed: $HARB_DISK_SEED ==="
+    bash "$HARB_DISK_SEED" "$OUT" || { echo "the disk seed failed"; exit 1; }
+  fi
   if [ "$SD" = yes ]; then
     echo "=== sd card ==="
     # the board's firmware, pinned by digest after the first fetch (vendor/rpi-firmware/, gitignored)

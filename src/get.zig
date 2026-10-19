@@ -19,12 +19,41 @@
 //! and 1 only when it was not given a question. A one-shot that exited
 //! non-zero would stop everything that comes AFTER it, and a transcript that
 //! ends there says less than one that says what happened.
+//!
+//! With `--tls --ca <pem> --name <host>` (FRONT-1) the same question is asked
+//! through a TLS handshake: the server's certificate must be issued for
+//! `<name>` and chain to a root in the PEM file, which is the front's own
+//! root as the scene seeded it, and nothing else is trusted -- no system
+//! store exists on the floor, and the file is the whole of what this world
+//! trusts. The line then says the TLS version and the root's fingerprint, so
+//! the transcript carries whose word the certificate was.
 
 const std = @import("std");
 const builtin = @import("builtin");
 const machine = @import("machine.zig");
 const names = @import("names.zig");
 const ready = @import("ready.zig");
+
+/// The first 16 hex digits of the sha256 of the first certificate in a PEM file: the spelling
+/// the fleet's keys use (`fingerprint <16 hex>`), so the judge's own normalisation reads it.
+pub fn rootFingerprint(arena: std.mem.Allocator, pem: []const u8) ![16]u8 {
+    const head = "-----BEGIN CERTIFICATE-----";
+    const tail = "-----END CERTIFICATE-----";
+    const b = std.mem.indexOf(u8, pem, head) orelse return error.NoCertificate;
+    const start = b + head.len;
+    const e = std.mem.indexOfPos(u8, pem, start, tail) orelse return error.NoCertificate;
+    var clean: std.ArrayList(u8) = .{};
+    for (pem[start..e]) |c| {
+        if (!std.ascii.isWhitespace(c)) try clean.append(arena, c);
+    }
+    const dec = std.base64.standard.Decoder;
+    const len = try dec.calcSizeForSlice(clean.items);
+    const der = try arena.alloc(u8, len);
+    try dec.decode(der, clean.items);
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(der, &digest, .{});
+    return std.fmt.bytesToHex(digest[0..8], .lower);
+}
 
 /// The three-digit status of an HTTP/1.x answer, or null if it is not one.
 pub fn statusCode(answer: []const u8) ?u16 {
@@ -57,19 +86,59 @@ pub fn run(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
         try out.print("get: a Linux act; this binary was built for {s}\n", .{@tagName(builtin.os.tag)});
         return 2;
     }
-    if (args.len < 2 or args.len > 3) {
-        try out.print("harb: get <host> <port> [<path>] -- a name or an a.b.c.d address, a port, and a path that starts with a slash\n", .{});
+    const usage = "harb: get <host> <port> [<path>] [--tls --ca <pem> --name <host>] -- a name or an a.b.c.d address, a port, a path that starts with a slash; over TLS, the root to trust and the name the certificate must carry\n";
+    var pos: [3][]const u8 = undefined;
+    var n_pos: usize = 0;
+    var tls_on = false;
+    var ca_path: ?[]const u8 = null;
+    var tls_name: ?[]const u8 = null;
+    var i: usize = 0;
+    while (i < args.len) : (i += 1) {
+        const a = args[i];
+        if (std.mem.eql(u8, a, "--tls")) {
+            tls_on = true;
+        } else if (std.mem.eql(u8, a, "--ca") and i + 1 < args.len) {
+            i += 1;
+            ca_path = args[i];
+        } else if (std.mem.eql(u8, a, "--name") and i + 1 < args.len) {
+            i += 1;
+            tls_name = args[i];
+        } else if (std.mem.startsWith(u8, a, "--") or n_pos == pos.len) {
+            try out.print(usage, .{});
+            return 1;
+        } else {
+            pos[n_pos] = a;
+            n_pos += 1;
+        }
+    }
+    if (n_pos < 2) {
+        try out.print(usage, .{});
         return 1;
     }
-    const host = args[0];
-    const port = std.fmt.parseInt(u16, args[1], 10) catch 0;
-    const path = if (args.len == 3) args[2] else "/";
+    const host = pos[0];
+    const port = std.fmt.parseInt(u16, pos[1], 10) catch 0;
+    const path = if (n_pos == 3) pos[2] else "/";
     if (port == 0 or path.len == 0 or path[0] != '/') {
-        try out.print("harb: get <host> <port> [<path>] -- a name or an a.b.c.d address, a port, and a path that starts with a slash\n", .{});
+        try out.print(usage, .{});
         return 1;
     }
-    var said: [160]u8 = undefined;
-    const url = std.fmt.bufPrint(&said, "http://{s}:{d}{s}", .{ host, port, path }) catch host;
+    if (tls_on and (ca_path == null or tls_name == null)) {
+        try out.print(usage, .{});
+        return 1;
+    }
+    if (!tls_on and (ca_path != null or tls_name != null)) {
+        try out.print(usage, .{});
+        return 1;
+    }
+    if (ca_path) |p| if (p.len == 0 or p[0] != '/') {
+        try out.print(usage, .{});
+        return 1;
+    };
+    var said: [200]u8 = undefined;
+    const url = if (tls_on)
+        std.fmt.bufPrint(&said, "https://{s}{s} at {s}:{d}", .{ tls_name.?, path, host, port }) catch host
+    else
+        std.fmt.bufPrint(&said, "http://{s}:{d}{s}", .{ host, port, path }) catch host;
 
     // an address, or a name asked of the resolver the lease named
     var ipbuf: [16]u8 = undefined;
@@ -136,10 +205,11 @@ pub fn run(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
         },
     }
     var req_buf: [512]u8 = undefined;
-    const req = ready.request(&req_buf, path, host) orelse {
+    const req = ready.request(&req_buf, path, if (tls_on) tls_name.? else host) orelse {
         try out.print("get {s} -- the request does not fit\n", .{url});
         return 0;
     };
+    if (tls_on) return overTls(arena, fd, url, ipt, tls_name.?, ca_path.?, req, out);
     if (l.E.init(l.write(fd, req.ptr, req.len)) != .SUCCESS) {
         try out.print("get {s} -- {s} took the connection and not the question\n", .{ url, ipt });
         return 0;
@@ -166,7 +236,97 @@ pub fn run(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
     return 0;
 }
 
+/// The same question through a TLS handshake (FRONT-1): the certificate must be issued for
+/// `name` and chain to a root in the PEM file at `ca_path`; nothing else is trusted. One line,
+/// exit 0 whatever happened, as the plain path.
+fn overTls(arena: std.mem.Allocator, fd: i32, url: []const u8, ipt: []const u8, name: []const u8, ca_path: []const u8, req: []const u8, out: *std.Io.Writer) !u8 {
+    const tls = std.crypto.tls;
+    const pem = std.fs.cwd().readFileAlloc(arena, ca_path, 1 << 16) catch |e| {
+        try out.print("get {s} -- the root to trust could not be read from {s}: {s}\n", .{ url, ca_path, @errorName(e) });
+        return 0;
+    };
+    const fp = rootFingerprint(arena, pem) catch {
+        try out.print("get {s} -- {s} holds no certificate to trust\n", .{ url, ca_path });
+        return 0;
+    };
+    var bundle: std.crypto.Certificate.Bundle = .{};
+    bundle.addCertsFromFilePathAbsolute(arena, ca_path) catch |e| {
+        try out.print("get {s} -- the root to trust could not be read from {s}: {s}\n", .{ url, ca_path, @errorName(e) });
+        return 0;
+    };
+    const stream = std.net.Stream{ .handle = fd };
+    const min = tls.Client.min_buffer_len;
+    const sr_buf = try arena.alloc(u8, min);
+    const sw_buf = try arena.alloc(u8, min);
+    const tr_buf = try arena.alloc(u8, min + 4096);
+    const tw_buf = try arena.alloc(u8, min);
+    var sreader = stream.reader(sr_buf);
+    var swriter = stream.writer(sw_buf);
+    var tc = tls.Client.init(sreader.interface(), &swriter.interface, .{
+        .host = .{ .explicit = name },
+        .ca = .{ .bundle = bundle },
+        .read_buffer = tr_buf,
+        .write_buffer = tw_buf,
+        // HTTP/1.0 with Connection: close -- the answer ends when the server closes, and a status line
+        // that never came is what this reports; nothing here is parsed past its first body line
+        .allow_truncation_attacks = true,
+    }) catch |e| {
+        try out.print("get {s} -- the handshake with {s} failed: {s}; the certificate must be for {s} and signed under the root fingerprint {s}\n", .{ url, ipt, @errorName(e), name, fp });
+        return 0;
+    };
+    tc.writer.writeAll(req) catch {
+        try out.print("get {s} -- {s} took the handshake and not the question\n", .{ url, ipt });
+        return 0;
+    };
+    tc.writer.flush() catch {
+        try out.print("get {s} -- {s} took the handshake and not the question\n", .{ url, ipt });
+        return 0;
+    };
+    swriter.interface.flush() catch {
+        try out.print("get {s} -- {s} took the handshake and not the question\n", .{ url, ipt });
+        return 0;
+    };
+    var ans: [4096]u8 = undefined;
+    const got = tc.reader.readSliceShort(&ans) catch |e| blk: {
+        // a server that closes without close_notify after an HTTP/1.0 answer is an answer all the same
+        if (e == error.ReadFailed) break :blk ans.len;
+        break :blk 0;
+    };
+    const answer = if (got <= ans.len) ans[0..got] else ans[0..];
+    const version: []const u8 = switch (tc.tls_version) {
+        .tls_1_3 => "TLS 1.3",
+        .tls_1_2 => "TLS 1.2",
+        else => "TLS",
+    };
+    const code = statusCode(answer) orelse {
+        try out.print("get {s} -- {s} answered over {s}, and what it said is not HTTP\n", .{ url, ipt, version });
+        return 0;
+    };
+    var line: [100]u8 = undefined;
+    const body = firstBodyLine(answer, &line);
+    if (body.len == 0) {
+        try out.print("get {s} -- {d} over {s}; the certificate is for {s}, signed under the root fingerprint {s}\n", .{ url, code, version, name, fp });
+    } else {
+        try out.print("get {s} -- {d} {s} over {s}; the certificate is for {s}, signed under the root fingerprint {s}\n", .{ url, code, body, version, name, fp });
+    }
+    return 0;
+}
+
 // ---- judged beside the code ----------------------------------------------
+
+test "the root's fingerprint is the sha256 of the first certificate's DER, sixteen hex (FRONT-1)" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // the DER bytes 0x30 0x03 0x02 0x01 0x05 (any bytes: the fingerprint is of what is between the lines)
+    const pem = "-----BEGIN CERTIFICATE-----\nMAMC\nAQU=\n-----END CERTIFICATE-----\n";
+    const fp = try rootFingerprint(arena, pem);
+    var digest: [32]u8 = undefined;
+    std.crypto.hash.sha2.Sha256.hash(&[_]u8{ 0x30, 0x03, 0x02, 0x01, 0x05 }, &digest, .{});
+    try t.expectEqualStrings(&std.fmt.bytesToHex(digest[0..8], .lower), &fp);
+    try t.expectError(error.NoCertificate, rootFingerprint(arena, "not a pem"));
+}
 
 test "a status is read from an HTTP/1.x answer and from nothing else" {
     const t = std.testing;

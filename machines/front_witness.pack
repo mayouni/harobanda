@@ -1,0 +1,33 @@
+-- front_witness.pack -- three questions to a front, from inside the machine (FRONT-1).
+--
+-- Placed after front.pack. Each is `harb get`, the till's own question, asked of the
+-- front on the machine's loopback; none of them trusts anything but the root the image
+-- carries at /etc/front-ca.crt, the public half of what the scene seeded on the disk.
+--
+--   door    over TLS, for the name the certificate carries: a 200 from the server
+--           behind the front, the TLS version, the root's fingerprint
+--   plain   plain HTTP on the TLS port: a front that ends TLS does not speak plain, and
+--           Caddy says so with a 400
+--   wrong   over TLS, for a name the certificate does not carry: the handshake is refused
+--           by the client, which is the half of TLS a server cannot prove for it
+
+DEFINE SERVICE door AS (
+  RUN ["/harb", "get", "127.0.0.1", "443", "/health", "--tls", "--ca", "/etc/front-ca.crt", "--name", "front.local"],
+  RESTART never,
+  AFTER [front, ringserv],
+  NEEDS [network]
+) RATIONALE "The question through the front: the server's own /health, reached over TLS and nothing else, under a root this world was given and no other"
+
+DEFINE SERVICE plain AS (
+  RUN ["/harb", "get", "127.0.0.1", "443", "/health"],
+  RESTART never,
+  AFTER [door],
+  NEEDS [network]
+) RATIONALE "The same port asked in plain HTTP: a front that ends TLS answers that it will not"
+
+DEFINE SERVICE wrong AS (
+  RUN ["/harb", "get", "127.0.0.1", "443", "/health", "--tls", "--ca", "/etc/front-ca.crt", "--name", "other.local"],
+  RESTART never,
+  AFTER [plain],
+  NEEDS [network]
+) RATIONALE "A name the certificate does not carry: the client refuses the handshake, because a certificate for the wrong name is no certificate"

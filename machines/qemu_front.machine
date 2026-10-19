@@ -1,0 +1,53 @@
+-- qemu_front.machine -- the machine a front is placed on: a server behind it, the front in
+-- front of it, and three questions to the front (FRONT-1).
+--
+-- Nothing here is a world: the machine grants, and three packs are placed on it in
+-- order -- machines/ringserv.pack (the server, on the loopback), machines/front.pack
+-- (Caddy, ending TLS on 443 and reaching the server in plain HTTP on the loopback) and
+-- machines/front_witness.pack (the questions). The scene is experiment/os11_front.sh,
+-- and the pin machines/qemu_front_placed.expected, the placed machine's.
+--
+-- One machine and a loopback, so that what is judged is the front itself: a world that
+-- is not root binding 443 and no other port (PORT-1), ending TLS under a root it was
+-- GIVEN -- seeded on the disk by the scene, owned by the front's identity, declared to
+-- the client by its public half and nothing else -- and refusing to speak plain on
+-- that port. The cloud's front on the gateway of two links is the next scene.
+
+DEFINE MACHINE qemu_front AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "A machine that grants what a server and a front ask, and carries nothing of its own: what runs on it is what was placed on it"
+
+DEFINE CAPABILITY network AS (
+  GRANT yes
+) RATIONALE "The front binds its ports and the server listens on the loopback"
+
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The server keeps its data and the front its certificates on a declared mount"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The program that says a server is serving starts the server, for the front as for the server behind it"
+
+DEFINE CAPABILITY threads AS (
+  GRANT yes
+) RATIONALE "Both answer on several threads, and the machine sizes them with TASKS, not with this"
+
+DEFINE CAPABILITY clock AS (
+  GRANT yes
+) RATIONALE "A certificate is a dated claim and a database a timestamped one; the machine has no trusted clock and says so elsewhere (STZ-OS-RULING-07)"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where the server keeps its database and the front its root, its storage and its log: a partition that survives the power"
+
+DEFINE NETWORK loopback AS (
+  INTERFACE "lo",
+  ADDRESS "127.0.0.1/8"
+) RATIONALE "The machine's own loopback: the front reaches the server on it, the readiness probes ask on it, and the questions to the front are asked on it; no route leaves the machine by it"

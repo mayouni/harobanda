@@ -61,6 +61,10 @@ pub const Spec = struct {
     port: u16,
     url: []const u8,
     every: u32,
+    /// the program's own stdout and stderr go nowhere (FRONT-1): a server that logs every request
+    /// to its console would write the transcript, and a transcript is the machine's words, not a
+    /// server's; what such a server keeps of its own is in a file in its own directory
+    mute: bool = false,
     /// the program and its arguments, as the world would have run it itself
     argv: []const []const u8,
 };
@@ -89,6 +93,7 @@ pub fn parse(arena: std.mem.Allocator, args: []const []const u8) error{ Refused,
 
     var url: []const u8 = default_url;
     var every: u32 = default_every;
+    var mute = false;
     var i: usize = 2;
     while (i < head.len) : (i += 1) {
         if (std.mem.eql(u8, head[i], "--url") and i + 1 < head.len) {
@@ -99,12 +104,14 @@ pub fn parse(arena: std.mem.Allocator, args: []const []const u8) error{ Refused,
             i += 1;
             every = std.fmt.parseInt(u32, head[i], 10) catch return error.Refused;
             if (every == 0 or every > 3600) return error.Refused;
+        } else if (std.mem.eql(u8, head[i], "--mute")) {
+            mute = true;
         } else return error.Refused;
     }
 
     const copy = try arena.alloc([]const u8, argv.len);
     for (argv, 0..) |a, k| copy[k] = a;
-    return .{ .ready_path = ready_path, .ip = ip, .port = port, .url = url, .every = every, .argv = copy };
+    return .{ .ready_path = ready_path, .ip = ip, .port = port, .url = url, .every = every, .mute = mute, .argv = copy };
 }
 
 /// Is this the start of an HTTP answer whose status is 200? Nothing else is
@@ -168,8 +175,8 @@ fn runLinux(gpa: std.mem.Allocator, spec: Spec) !u8 {
 
     var child = std.process.Child.init(spec.argv, gpa);
     child.stdin_behavior = .Inherit;
-    child.stdout_behavior = .Inherit;
-    child.stderr_behavior = .Inherit;
+    child.stdout_behavior = if (spec.mute) .Ignore else .Inherit;
+    child.stderr_behavior = if (spec.mute) .Ignore else .Inherit;
     child.spawn() catch |e| {
         sayErr("ready: cannot start {s}: {s}\n", .{ spec.argv[0], @errorName(e) });
         return 127;
