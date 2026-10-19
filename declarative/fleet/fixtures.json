@@ -1,6 +1,6 @@
 {
   "grammar": "fleet",
-  "version": "0.3",
+  "version": "0.4",
   "accepts": [
     {
       "id": "FA1",
@@ -82,8 +82,8 @@
     },
     {
       "id": "FA7",
-      "name": "the smallest cloud, verbatim: two links, a box that is the way between and the door of the front one, a till and a server (machines/cloud_links.fleet and the three files it names)",
-      "source": "-- cloud_links.fleet -- the smallest cloud, judged as one thing: a box that is the way between\n-- a front link and a core link, a client on the front, a server on the core (FWD-1, fleet v0.2).\n--\n-- Every check this file makes is one no single machine can fail. The box forwards, and is\n-- right to; the till's route to the core is right; the core's route back is right. A box that\n-- forwards between links nobody declared joined is a door nobody agreed to; a till whose route\n-- has a way there and a server with none back is a street that goes one way. Each of the\n-- machines is faultless alone, and the set is what is wrong. That is what a fleet is for.\n--\n-- LINKS names the wires these machines share: a network of one of these names, on any member,\n-- is that wire. ROUTE says two of them are joined, and through whom: the member must be on both,\n-- must say FORWARD, and every other member on either link must take the way -- by a gateway it\n-- declares, or by a lease from the one machine that can offer it. A route is a way BOTH ways,\n-- because no filter exists to make it one-way, and an answer needs a way back as much as a\n-- question needs a way there (a filter is a later seat of doc/CLOUD.md).\n--\n-- HARDWARE says which physical unit each member is, which is what lets the court hold the\n-- addresses the box PROMISES against the devices that will ask (HDW-1). The box has none: it\n-- is nobody's peer, and its two NICs are the emulator's business.\n--\n-- FRONT says which member is the DOOR of a link (FRONT-2, fleet v0.3): the one that ends TLS\n-- for the devices on it, by the name it has there, under a root the fleet names by its\n-- fingerprint. The box fronts the front link: machines/front.pack (Caddy) is placed on it,\n-- and a till asks https://front.cloud/ -- the box's own name on that link -- trusting the\n-- root's public half it was given and nothing else. The fleet is what says that THIS member\n-- is the door the tills are to trust, and under which root; the till's own question prints\n-- the fingerprint of the root that actually signed, and the two must be one.\n--\n-- ROOT below is a placeholder, as the KEY of machines/time_cloud.fleet is: the root is made\n-- at every run of the scene (openssl, by hand, never by the floor or by the front) and seeded\n-- on the box's disk, so a file in a repository cannot know it. The scene writes the real\n-- fingerprint into a COPY of this file, which is what enrolment is.\n--\n-- experiment/os8_links.sh boots the three machines on two wires and reads their hardware\n-- addresses from here.\n\nDEFINE FLEET cloud_links AS (\n  LINKS [front, core]\n) RATIONALE \"One front link, one core link, and a box that is both links' server and the way between\"\n\nDEFINE MEMBER gateway AS (\n  DECLARATION \"cloud_front.machine\"\n) RATIONALE \"The box: it serves both links and is the way between them. It is nobody's peer, so it says no hardware\"\n\nDEFINE MEMBER till AS (\n  DECLARATION \"cloud_till.machine\",\n  HARDWARE \"52:54:00:12:35:61\"\n) RATIONALE \"The client on the front link: the device the box promises 192.168.20.40 to\"\n\nDEFINE MEMBER core AS (\n  DECLARATION \"cloud_core.machine\",\n  HARDWARE \"52:54:00:12:35:62\"\n) RATIONALE \"The machine the server is placed on, on the core link: the device the box promises 10.20.0.2 to\"\n\nDEFINE ROUTE front_to_core AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"The clients on the front link reach the servers on the core link through the box, and the servers answer them the same way: the smallest cloud has a front link, a core link, and one way between\"\n\nDEFINE FRONT door AS (\n  MEMBER gateway,\n  LINK front,\n  ROOT \"aaaaaaaaaaaaaaaa\"\n) RATIONALE \"The door of the cloud: the box ends TLS for the devices on the front link, as front.cloud, under a root made by hand and seeded on its disk; a till that is given that root's public half asks the door by this name and is answered by the server behind the box, and by nobody who does not hold the root's key\"\n",
+      "name": "the smallest cloud, verbatim: two links, a box that is the way between and the door of the front one, a till and a server, the records staying in the room (machines/cloud_links.fleet and the three files it names)",
+      "source": "-- cloud_links.fleet -- the smallest cloud, judged as one thing: a box that is the way between\n-- a front link and a core link, a client on the front, a server on the core (FWD-1, fleet v0.2).\n--\n-- Every check this file makes is one no single machine can fail. The box forwards, and is\n-- right to; the till's route to the core is right; the core's route back is right. A box that\n-- forwards between links nobody declared joined is a door nobody agreed to; a till whose route\n-- has a way there and a server with none back is a street that goes one way. Each of the\n-- machines is faultless alone, and the set is what is wrong. That is what a fleet is for.\n--\n-- LINKS names the wires these machines share: a network of one of these names, on any member,\n-- is that wire. ROUTE says two of them are joined, and through whom: the member must be on both,\n-- must say FORWARD, and every other member on either link must take the way -- by a gateway it\n-- declares, or by a lease from the one machine that can offer it. A route is a way BOTH ways,\n-- because no filter exists to make it one-way, and an answer needs a way back as much as a\n-- question needs a way there (a filter is a later seat of doc/CLOUD.md).\n--\n-- HARDWARE says which physical unit each member is, which is what lets the court hold the\n-- addresses the box PROMISES against the devices that will ask (HDW-1). The box has none: it\n-- is nobody's peer, and its two NICs are the emulator's business.\n--\n-- FRONT says which member is the DOOR of a link (FRONT-2, fleet v0.3): the one that ends TLS\n-- for the devices on it, by the name it has there, under a root the fleet names by its\n-- fingerprint. The box fronts the front link: machines/front.pack (Caddy) is placed on it,\n-- and a till asks https://front.cloud/ -- the box's own name on that link -- trusting the\n-- root's public half it was given and nothing else. The fleet is what says that THIS member\n-- is the door the tills are to trust, and under which root; the till's own question prints\n-- the fingerprint of the root that actually signed, and the two must be one.\n--\n-- TERRITORY says where a member physically stands -- a country, a site -- and RESIDENCY where the\n-- fleet's data stays (TERR-1, fleet v0.4): every member that keeps a disk stands there, or the\n-- fleet is refused before anything boots. The box and the core keep disks, so both stand in the\n-- room the records are made in; the till keeps none, so it is free to be carried to the shop. The\n-- territory is the operator's word and never observed -- the floor has no way to tell a room from\n-- a country -- which is why the court holds it against what the fleet CAN read: the declaration.\n--\n-- ROOT below is a placeholder, as the KEY of machines/time_cloud.fleet is: the root is made\n-- at every run of the scene (openssl, by hand, never by the floor or by the front) and seeded\n-- on the box's disk, so a file in a repository cannot know it. The scene writes the real\n-- fingerprint into a COPY of this file, which is what enrolment is.\n--\n-- experiment/os8_links.sh boots the three machines on two wires and reads their hardware\n-- addresses from here.\n\nDEFINE FLEET cloud_links AS (\n  LINKS [front, core]\n) RATIONALE \"One front link, one core link, and a box that is both links' server and the way between\"\n\nDEFINE MEMBER gateway AS (\n  DECLARATION \"cloud_front.machine\",\n  TERRITORY room\n) RATIONALE \"The box: it serves both links and is the way between them. It is nobody's peer, so it says no hardware\"\n\nDEFINE MEMBER till AS (\n  DECLARATION \"cloud_till.machine\",\n  HARDWARE \"52:54:00:12:35:61\",\n  TERRITORY shop\n) RATIONALE \"The client on the front link: the device the box promises 192.168.20.40 to\"\n\nDEFINE MEMBER core AS (\n  DECLARATION \"cloud_core.machine\",\n  HARDWARE \"52:54:00:12:35:62\",\n  TERRITORY room\n) RATIONALE \"The machine the server is placed on, on the core link: the device the box promises 10.20.0.2 to\"\n\nDEFINE ROUTE front_to_core AS (\n  BETWEEN [front, core],\n  THROUGH gateway\n) RATIONALE \"The clients on the front link reach the servers on the core link through the box, and the servers answer them the same way: the smallest cloud has a front link, a core link, and one way between\"\n\nDEFINE FRONT door AS (\n  MEMBER gateway,\n  LINK front,\n  ROOT \"aaaaaaaaaaaaaaaa\"\n) RATIONALE \"The door of the cloud: the box ends TLS for the devices on the front link, as front.cloud, under a root made by hand and seeded on its disk; a till that is given that root's public half asks the door by this name and is answered by the server behind the box, and by nobody who does not hold the root's key\"\n\nDEFINE RESIDENCY records AS (\n  TERRITORY room\n) RATIONALE \"The records the core keeps, and the root and certificates the box keeps for the door, stay in the room they were made in: no machine of this fleet that keeps a disk stands anywhere else, whatever the till is carried to\"\n",
       "files": {
         "cloud_front.machine": "-- cloud_front.machine -- the box of the smallest cloud: the way between\n-- its front link and its core link (FWD-1, rung 2 of the cloud ladder,\n-- doc/CLOUD.md).\n--\n--      till ---- front link ---- [ this box ] ---- core link ---- commons\n--      (asks)    192.168.20.0/24                    10.20.0.0/24   (RingServ)\n--\n-- It does four things, each one a declaration and none an accident:\n--\n--   serves both links      a DOMAIN on each makes it the link's own server of\n--                          addresses and names (NAM-1). There is no pool: it\n--                          admits the two peers declared below and nobody else\n--   is the way             FORWARD, so a packet that arrives on one link may\n--                          leave by the other, and nothing here filters it\n--   offers itself          because it forwards, the lease it gives carries it as\n--                          the router, and every device it serves learns the way\n--   answers across links   because it is the way, it answers for the FULL names\n--                          on the other link too: `commons.core.cloud` on the\n--                          front link, and not the bare word `commons`, which is\n--                          a name on THIS link only\n--\n-- It declares no EGRESS and no GATEWAY: it knows the two links it is on and no\n-- way off them, and it says so by saying nothing (a machine that forwards\n-- cannot say `EGRESS none`: it is a way off every link it joins).\n--\n-- Which links such a box may join is a fact about a SET, and a fleet declares\n-- it: machines/cloud_links.fleet. experiment/os8_links.sh boots this box\n-- with the till and the core on two wires, and the till reaches the thing it\n-- named. The two hardware addresses below are the devices that will ask\n-- (HDW-1): the fleet holds them against the members that claim them.\n--\n-- It is also the DOOR of the front link (FRONT-2): machines/front.pack is\n-- placed on it by the scene, so Caddy ends TLS on 443 here, as front.cloud --\n-- the box's own name on that link -- and reaches the server on the core link\n-- in plain HTTP, by the box's own leg on that link. The fleet says so (FRONT),\n-- and under which root. What that asks of this machine is below: a disk for\n-- the root it is given, the certificates it issues and its log; the loopback\n-- for the one plain question `harb ready` asks it; and four capabilities a\n-- server world needs. Nothing here is a world: the machine grants, and the\n-- pack asks (PLC-1).\n--\n-- A front is a way of its own. FORWARD governs the packets that pass THROUGH\n-- this box; a proxy is this box asking the server on the device's behalf, so\n-- the door answers whether or not the box forwards. Which is why the fleet\n-- declares it: a front on a member of two links is a door to the second link,\n-- route or no route, and the FRONT declaration is the fleet saying it was\n-- meant -- as a ROUTE says a forwarder was.\n\nDEFINE MACHINE cloud_front AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux,\n  CONSOLE \"/dev/ttyS0\",\n  FORWARD yes\n) RATIONALE \"The box of a front link and a core link: it is both links' own server of names, and the way between them\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"A machine that serves two links and is the way between them speaks on both\"\n\nDEFINE CAPABILITY filesystem AS (\n  GRANT yes\n) RATIONALE \"The front keeps the root it was given, the certificates it issues and its log on a declared mount\"\n\nDEFINE CAPABILITY process AS (\n  GRANT yes\n) RATIONALE \"The program that says the front is serving starts it\"\n\nDEFINE CAPABILITY threads AS (\n  GRANT yes\n) RATIONALE \"The front answers on several threads, and the machine sizes them with TASKS, not with this\"\n\nDEFINE CAPABILITY clock AS (\n  GRANT yes\n) RATIONALE \"A certificate is a dated claim; the machine has no trusted clock and says so elsewhere (STZ-OS-RULING-07)\"\n\nDEFINE MOUNT data AS (\n  AT \"/data\",\n  FS ext4,\n  DEVICE \"/dev/vda\",\n  OPTIONS [rw, noatime]\n) RATIONALE \"Where the front keeps the root it was given, the certificates it issues and its log: a partition that survives the power, seeded by hand before the first boot\"\n\nDEFINE NETWORK front AS (\n  INTERFACE \"eth0\",\n  ADDRESS \"192.168.20.1/24\",\n  DOMAIN \"front.cloud\"\n) RATIONALE \"The link the clients are on: the first address on it, answering for every name on it\"\n\nDEFINE NETWORK core AS (\n  INTERFACE \"eth1\",\n  ADDRESS \"10.20.0.1/24\",\n  DOMAIN \"core.cloud\"\n) RATIONALE \"The link the servers are on, behind the box: nothing on it is reachable from the front link unless this machine is the way, and it is\"\n\nDEFINE NETWORK loopback AS (\n  INTERFACE \"lo\",\n  ADDRESS \"127.0.0.1/8\"\n) RATIONALE \"The machine's own loopback, so that the readiness probe can ask the front its one plain question; no route leaves the machine by it, and it is no link: no side of a way, nothing the names serve\"\n\nDEFINE PEER till AS (\n  NETWORK front,\n  HARDWARE \"52:54:00:12:35:61\",\n  ADDRESS \"192.168.20.40\"\n) RATIONALE \"The till, a client: the same address every day and a name it may be found by\"\n\nDEFINE PEER commons AS (\n  NETWORK core,\n  HARDWARE \"52:54:00:12:35:62\",\n  ADDRESS \"10.20.0.2\"\n) RATIONALE \"The server the solution runs on: the front link asks for it by the name commons.core.cloud and is told where it is\"\n",
         "cloud_till.machine": "-- cloud_till.machine -- the client of the smallest cloud: a device that is told\n-- nothing but its own address, asks for a server by name, and goes there\n-- (FWD-1, rung 2 of the cloud ladder, doc/CLOUD.md).\n--\n-- It declares no resolver, no gateway and no address of the server. It comes up,\n-- asks the front link who it is, and is told its address, the name of the link,\n-- where to ask about names, and -- because the box that answers is also the way\n-- between links -- the router. Then the four questions below, in order, which\n-- are the whole scene:\n--\n--   where    what does the name of the server on the OTHER link mean?\n--   reach    ask that server a question, and say what it answered. This is the\n--            line that proves a packet crossed: a name that resolves and a way\n--            that is closed look the same until somebody connects\n--   door     the same question through the DOOR (FRONT-2): https://front.cloud,\n--            the box's own name on this link, over TLS, trusting the root this\n--            device was given (/etc/front-ca.crt, staged) and nothing else. The\n--            certificate must carry the name asked, and the line says the\n--            fingerprint of the root that signed it -- the one the fleet declares\n--            (machines/cloud_links.fleet, FRONT), or somebody else answered\n--   wrong    the box's OTHER name, core.cloud, on the same port: the door has one\n--            name, the front was given no certificate for this one, and the\n--            device refuses the handshake -- the refusal is the asker's, before\n--            any question is sent\n--   bare     the same word with no domain: a name on THIS link, which nobody\n--            declared, so the box says there is no such name and does not guess\n--   outside  a name in the rest of the world: the box speaks for its own links\n--            and for the links it is the way to, and is silent about the rest\n--\n-- Its EGRESS is the one thing here that is a fact about ANOTHER link, written\n-- in this file: the core's prefix. It is the perimeter, because a till that\n-- reaches everything through a box that is the way to two links claims more\n-- than the box can deliver; and it is the one place the fleet court holds\n-- against the set (machines/cloud_links.fleet): a prefix no link of the fleet\n-- has is a route to nowhere.\n\nDEFINE MACHINE cloud_till AS (\n  PROFILE hosted,\n  ARCH x86_64,\n  KERNEL linux,\n  CONSOLE \"/dev/ttyS0\"\n) RATIONALE \"A client that is told everything it needs by the link it is plugged into, and declares only how far it may reach\"\n\nDEFINE CAPABILITY process AS (\n  GRANT yes\n) RATIONALE \"The questions are processes\"\n\nDEFINE CAPABILITY network AS (\n  GRANT yes\n) RATIONALE \"It has to ask, and then to connect\"\n\nDEFINE NETWORK front AS (\n  INTERFACE \"eth0\",\n  ADDRESS dhcp,\n  EGRESS [\"10.20.0.0/24\"]\n) RATIONALE \"It asks the link. The address, the domain, the resolver and the way are the box's to give; the perimeter -- the core link and nowhere else -- is this file's to say\"\n\nDEFINE SERVICE where AS (\n  RUN [\"/harb\", \"ask\", \"commons.core.cloud\"],\n  RESTART never,\n  NEEDS [process, network]\n) RATIONALE \"The server on the other link, asked for by its full name: the box that is the way answers for it\"\n\nDEFINE SERVICE reach AS (\n  RUN [\"/harb\", \"get\", \"commons.core.cloud\", \"8210\", \"/health\"],\n  RESTART never,\n  AFTER [where],\n  NEEDS [process, network]\n) RATIONALE \"Going there: the application's own answer to the question 'are you serving?', from a device on another link, through the box\"\n\nDEFINE SERVICE door AS (\n  RUN [\"/harb\", \"get\", \"front.cloud\", \"443\", \"/health\", \"--tls\", \"--ca\", \"/etc/front-ca.crt\"],\n  RESTART never,\n  AFTER [reach],\n  NEEDS [process, network]\n) RATIONALE \"The door of the cloud, asked by its name on this link, over TLS, under the one root this device was given: the server behind the box answers through the front, and the line says which root signed for it\"\n\nDEFINE SERVICE wrong AS (\n  RUN [\"/harb\", \"get\", \"core.cloud\", \"443\", \"/health\", \"--tls\", \"--ca\", \"/etc/front-ca.crt\"],\n  RESTART never,\n  AFTER [door],\n  NEEDS [process, network]\n) RATIONALE \"The box's other name, on the same port: the door has one name, and a certificate for another is refused by the one asking, before any question is sent\"\n\nDEFINE SERVICE bare AS (\n  RUN [\"/harb\", \"ask\", \"commons\"],\n  RESTART never,\n  AFTER [wrong],\n  NEEDS [process, network]\n) RATIONALE \"A bare word is a name on this link, and nobody declared it here: the same word on the far link is another device, and the box does not lend it\"\n\nDEFINE SERVICE outside AS (\n  RUN [\"/harb\", \"ask\", \"www.example.com\"],\n  RESTART never,\n  AFTER [bare],\n  NEEDS [process, network]\n) RATIONALE \"The rest of the world: the box speaks for its links and is silent about everything else, and does not go and ask on the till's behalf\"\n",
@@ -97,7 +97,13 @@
         ],
         "routes": 1,
         "fronts": 1,
-        "front_host": "front.cloud"
+        "front_host": "front.cloud",
+        "residency": "room",
+        "territories": {
+          "gateway": "room",
+          "till": "shop",
+          "core": "room"
+        }
       }
     },
     {
@@ -206,6 +212,59 @@
         "routes": 1,
         "fronts": 1,
         "front_host": "till.front.cloud"
+      }
+    },
+    {
+      "id": "FA14",
+      "name": "the data stays in tn: the member that keeps a disk stands there, and the one that keeps none is free to stand in fr",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"keeper.machine\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"bare.machine\",\n  TERRITORY fr\n) RATIONALE \"x\"\nDEFINE RESIDENCY data AS (\n  TERRITORY tn\n) RATIONALE \"x\"\n",
+      "files": {
+        "keeper.machine": "DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n",
+        "bare.machine": "DEFINE MACHINE bare AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 2,
+        "residency": "tn",
+        "territories": {
+          "depot": "tn",
+          "till": "fr"
+        }
+      }
+    },
+    {
+      "id": "FA15",
+      "name": "a territory with no residency is information: two members that keep disks in two countries, and nothing the fleet holds them to",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"keeper.machine\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"keeper2.machine\",\n  TERRITORY fr\n) RATIONALE \"x\"\n",
+      "files": {
+        "keeper.machine": "DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n",
+        "keeper2.machine": "DEFINE MACHINE keeper2 AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 2,
+        "residency": null,
+        "territories": {
+          "depot": "tn",
+          "annex": "fr"
+        }
+      }
+    },
+    {
+      "id": "FA16",
+      "name": "a disk that keeps nothing new is not data: a read-only store and a volatile one stand wherever they are put",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"keeper.machine\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MEMBER store AS (\n  DECLARATION \"reader.machine\",\n  TERRITORY fr\n) RATIONALE \"x\"\nDEFINE MEMBER scratch AS (\n  DECLARATION \"volatile.machine\"\n) RATIONALE \"x\"\nDEFINE RESIDENCY data AS (\n  TERRITORY tn\n) RATIONALE \"x\"\n",
+      "files": {
+        "keeper.machine": "DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n",
+        "reader.machine": "DEFINE MACHINE reader AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT store AS (AT \"/store\", FS ext4, DEVICE \"/dev/vdb\", OPTIONS [ro]) RATIONALE \"x\"\n",
+        "volatile.machine": "DEFINE MACHINE volatile AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT scratch AS (AT \"/scratch\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\n"
+      },
+      "expect": {
+        "members": 3,
+        "residency": "tn",
+        "territories": {
+          "depot": "tn",
+          "store": "fr",
+          "scratch": null
+        }
       }
     }
   ],
@@ -867,6 +926,73 @@
         "till.machine": "DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK front AS (INTERFACE \"eth0\", ADDRESS dhcp, EGRESS [\"10.1.0.0/24\"]) RATIONALE \"x\"\n"
       },
       "refusal": "already fronts front"
+    },
+    {
+      "id": "FR67",
+      "name": "one fleet, one place for its data: a second residency would leave the court holding every member to two laws",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"keeper.machine\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE RESIDENCY data AS (\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE RESIDENCY also AS (\n  TERRITORY fr\n) RATIONALE \"x\"\n",
+      "files": {
+        "keeper.machine": "DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n"
+      },
+      "refusal": "a fleet's data stays in one territory"
+    },
+    {
+      "id": "FR68",
+      "name": "a law that binds nobody is one nobody can see broken: the residency of a fleet in which no member keeps a disk",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER till AS (\n  DECLARATION \"bare.machine\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MEMBER kiosk AS (\n  DECLARATION \"bare2.machine\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE RESIDENCY data AS (\n  TERRITORY tn\n) RATIONALE \"x\"\n",
+      "files": {
+        "bare.machine": "DEFINE MACHINE bare AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\n",
+        "bare2.machine": "DEFINE MACHINE bare2 AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\n"
+      },
+      "refusal": "no member of this fleet keeps data"
+    },
+    {
+      "id": "FR69",
+      "name": "a member that keeps a disk and says no territory: nobody can check that its disk is where the data stays",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"keeper.machine\"\n) RATIONALE \"x\"\nDEFINE RESIDENCY data AS (\n  TERRITORY tn\n) RATIONALE \"x\"\n",
+      "files": {
+        "keeper.machine": "DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n"
+      },
+      "refusal": "says no TERRITORY"
+    },
+    {
+      "id": "FR70",
+      "name": "a member that keeps a disk in another territory than the one the data stays in: faultless alone, and in the wrong country",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"keeper.machine\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MEMBER annex AS (\n  DECLARATION \"keeper2.machine\",\n  TERRITORY fr\n) RATIONALE \"x\"\nDEFINE RESIDENCY data AS (\n  TERRITORY tn\n) RATIONALE \"x\"\n",
+      "files": {
+        "keeper.machine": "DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n",
+        "keeper2.machine": "DEFINE MACHINE keeper2 AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n"
+      },
+      "refusal": "a member that keeps a disk stands where the data stays"
+    },
+    {
+      "id": "FR71",
+      "name": "a territory is a lower_snake name, one spelling for one place: TN beside tn would be two territories to the court",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"keeper.machine\",\n  TERRITORY TN\n) RATIONALE \"x\"\n",
+      "files": {
+        "keeper.machine": "DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n"
+      },
+      "refusal": "Expected a clause value, found 'TN'"
+    },
+    {
+      "id": "FR72",
+      "name": "a disk on a FAT partition is data too: filesystems other than ext4 survive the power",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"keeper.machine\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MEMBER card AS (\n  DECLARATION \"efi.machine\",\n  TERRITORY fr\n) RATIONALE \"x\"\nDEFINE RESIDENCY data AS (\n  TERRITORY tn\n) RATIONALE \"x\"\n",
+      "files": {
+        "keeper.machine": "DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n",
+        "efi.machine": "DEFINE MACHINE efi AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT card AS (AT \"/card\", FS vfat, DEVICE \"/dev/vdb1\", OPTIONS [rw]) RATIONALE \"x\"\n"
+      },
+      "refusal": "a member that keeps a disk stands where the data stays"
+    },
+    {
+      "id": "FR73",
+      "name": "an edge sensor's readings in flash are data: a member that is no server keeps a disk of its own",
+      "source": "DEFINE FLEET c AS () RATIONALE \"x\"\nDEFINE MEMBER depot AS (\n  DECLARATION \"keeper.machine\",\n  TERRITORY tn\n) RATIONALE \"x\"\nDEFINE MEMBER probe AS (\n  DECLARATION \"sensor.machine\",\n  TERRITORY fr\n) RATIONALE \"x\"\nDEFINE RESIDENCY data AS (\n  TERRITORY tn\n) RATIONALE \"x\"\n",
+      "files": {
+        "keeper.machine": "DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\n",
+        "sensor.machine": "DEFINE MACHINE sensor AS (PROFILE edge, ARCH thumbv8m, KERNEL none, BOARD pico2) RATIONALE \"x\"\nDEFINE MOUNT log AS (AT \"/log\", FS littlefs, DEVICE \"flash0\") RATIONALE \"x\"\n"
+      },
+      "refusal": "a member that keeps a disk stands where the data stays"
     }
   ]
 }

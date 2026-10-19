@@ -617,6 +617,21 @@ pub fn main() !u8 {
                 try out.print("  front {s} -- {s} is the door of {s}, as {s} ({s}), under the root {s}\n", .{ fr.name, fr.member, fr.link, fr.host, fr.address, fr.root });
             }
         }
+        // where the data stays, and whom that binds (TERR-1): the members that keep a disk
+        if (f.residency) |r| {
+            var total: usize = 0;
+            for (f.members) |m| {
+                if (fleet.keepsData(m.machine)) total += 1;
+            }
+            try out.print("  residency {s} -- the data stays in {s}; it binds ", .{ r.name, r.territory });
+            var n: usize = 0;
+            for (f.members) |m| {
+                if (!fleet.keepsData(m.machine)) continue;
+                n += 1;
+                try out.print("{s}{s}", .{ if (n == 1) "" else if (n == total) " and " else ", ", m.name });
+            }
+            try out.print(", the member{s} that keep{s} a disk\n", .{ if (total == 1) "" else "s", if (total == 1) "s" else "" });
+        }
         // the one member whose word about the time the fleet takes (TIME-1)
         if (f.time_authority) |ta| try out.print("  time -- the word of {s}, and of nobody else, is what dates this fleet's records\n", .{ta});
         var unenrolled: usize = 0;
@@ -642,6 +657,8 @@ pub fn main() !u8 {
                     try out.print(" -- {s}", .{hw});
                 }
             }
+            // where it stands: the operator's word, held against the residency if the fleet has one
+            if (m.territory) |where| try out.print(" -- in {s}", .{where});
             if (m.fingerprint) |fp| {
                 try out.print(" -- enrolled, fingerprint {s}\n", .{fp[0..]});
             } else if (m.machine.journal != null) {

@@ -1,3 +1,106 @@
+# TERR-1 — where the data stays is a line the court reads, and the box in the wrong country is refused where it is declared
+
+The first of the five declarations of the resilience page after the cloud's
+front (STZ-OS-RULING-19, "go ahead with implementing them all"; the order
+this desk took is the front, territory, the mirror, the roll call, the loss
+drill, the source mirror), built 2026-10-19 on the author's "continue what
+is next in the plan". The resilience page said it plainly: the Gulf's
+clients learned the difference between a law and a copy in a crisis, and the
+file should say it in peacetime. This seat makes a localisation law a line
+the court reads, before any boot. It boots nothing: it is a grammar, judged
+by fixtures, and by a probe that puts each rule's mutant in front of them.
+
+## What was built
+
+- **Fleet v0.4** (`src/fleet.zig`, `declarative/fleet/GRAMMAR.md`, 89/89):
+  `TERRITORY` on a MEMBER -- where that machine physically stands, a
+  lower_snake name -- and `RESIDENCY`, a kind of its own: the territory every
+  member that keeps data stands in. The residency is a declaration and not a
+  clause of `FLEET` because every declaration says why it is there, and why
+  data stays somewhere -- a law, a contract, a promise to a client -- is the
+  fact an auditor reading the file will need. At most one (FR67).
+- **What keeps data** (`keepsData`, exported, and read by the roll): a MOUNT
+  that survives the power (ext4, vfat or littlefs) and is not read-only. The
+  machine grammar gained nothing for it: the machine's own declaration, read
+  as it stands. tmpfs is gone at the next boot and a read-only store keeps
+  nothing new, so neither binds (FA16).
+- **The rules**: a member that keeps data says where it stands (FR69) and
+  stands where the data stays (FR70, and FR72 for a FAT partition, FR73 for
+  an edge sensor's flash); a fleet in which no member keeps data cannot have
+  the law (FR68); a member that keeps none is free (FA14), and a fleet with
+  territories and no residency holds nobody to anything (FA15). Each is a
+  case where every machine of the fleet is faultless alone.
+- **The machine grammar** says where a machine does NOT: `RESIDENCY` is a
+  fleet kind and is refused in a machine file by name (R208), and `TERRITORY`
+  is a clause of a MEMBER and not of a MACHINE (R209), for the reason a
+  hardware address is -- a machine file is a design that images many devices,
+  and where one stands is a fact its deployment learns. Neither needed a new
+  rule in the parser; the fixtures state what the exhaustive switch and the
+  closed clause menu already did.
+- **The roll** (`harb fleet`) names the law and whom it binds -- `residency
+  records -- the data stays in room; it binds gateway and core, the members
+  that keep a disk` -- and each member's place (`-- in shop`).
+- **The smallest cloud says it** (`machines/cloud_links.fleet`): the box and
+  the core, which keep disks (the core's records, the box's root and
+  certificates), in the room, and the till, which keeps none, free to be in
+  the shop. FA7 is regenerated from the real files; the pin of the scene
+  carries the roll.
+- **`experiment/territory_probe.sh`**: the three courts, then fourteen
+  one-mutation copies of the rules, each required to be convicted by the case
+  named for it.
+
+## What was found while building it
+
+- **The probe's first run found two holes** the fixtures had left: nothing kept
+  data on a FAT partition or on an edge machine's flash, so taking `vfat` or
+  `littlefs` off the list of filesystems that survive the power was convicted
+  by nothing. FR72 and FR73 are what it asked for (and the first pin, 87
+  cases, became 89). The first version of the fixtures was green at once,
+  which is when a court deserves doubt.
+- **A mutant that changed nothing is a failure of the probe, not a pass.** One
+  mutant (a member takes no territory) was aimed at `src/fleet.zig` and the
+  clause menu it removes a word from lives in `src/machine.zig`: the probe
+  said `the mutation did not apply` and failed the run, which is what it is
+  for. It was aimed at the machine file and convicted by FA14.
+- **One spelling for one place came free.** The tokenizer refuses a word that
+  is neither lower_snake nor UPPER_SNAKE and reads UPPER_SNAKE as a keyword,
+  so `TERRITORY TN` is refused where a value is expected: FR71 states what
+  the grammar already did, as R207 and R208 do for the kinds.
+- **The law is a kind, and it is the fleet's, whole.** The choice that was
+  weighed: a clause of `FLEET` (smaller) or a kind (a place for its own
+  RATIONALE). The kind won on the author's own doctrine. And a fleet does not
+  say which world runs on which member (`MEMBER ... PACKS` is not built), so
+  "this solution's data" cannot be read as the worlds' directories; it is
+  read as every member's writable persistent disk. That also binds a disk that
+  holds no customer data (the box's own certificates), and the example fleet
+  keeps it in the room for that reason.
+
+## What is judged, and by what
+
+89 fleet fixtures (FA14-FA16 and FR67-FR73 new, FA7 regenerated from the real
+files), R208-R209 on the machine court (262/262), one unit test on pages
+written inline (`keepsData`; a disk in the right place; the same disk in
+another country, named by member, place and law; a disk nobody can place; a
+territory with no law), the probe, and the scene `experiment/os8_links.sh`,
+whose pin (`machines/cloud_links.expected`) carries the roll of the smallest
+cloud with its territories and its residency.
+
+## Named seams
+
+- **The territory is the operator's word and is never observed.** The floor has
+  no way to tell a room from a country, so the court judges that the
+  declaration is consistent -- every disk is declared and declared where the
+  law says -- and not that the box is there. Whoever enrols a member vouches
+  for where it stands as for its key; the hardware address is declared and
+  never observed in the same way.
+- **The law binds disks, not worlds.** Until a fleet names which pack runs on
+  which member the court cannot say which disk holds "this solution's" data,
+  so it binds them all.
+- **One territory per fleet.** A law that allows several places, or one that
+  keeps a machine OUT of a place (a sanction), is not built.
+- **The mirror, next, is held by it with no new rule**: a copy of a directory
+  is on the disk of a member that keeps one.
+
 # NAV-1 — a Next link is a claim about the site, and it is judged like one
 
 The site's bottom links, judged (the pages checker's fourth rule,
@@ -212,7 +315,7 @@ the door by its name.
 
 ## What the boot says
 
-`machines/cloud_links.expected`, 201 lines where FWD-1's were 148, matched
+`machines/cloud_links.expected`, 202 lines (201 before TERR-1 put the territories on the roll) where FWD-1's were 148, matched
 twice with a different root each run: the roll, naming the door under the
 root (`front door -- gateway is the door of front, as front.cloud
 (192.168.20.1), under the root FP1`); the box with `caddy` placed, judging

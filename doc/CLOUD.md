@@ -196,7 +196,7 @@ it was given and nothing else, so the fingerprint its line prints is the
 one the fleet declares. The box with `FORWARD` taken out still answers at
 the door: a front is a way of its own, which is why the fleet declares it
 as it declares a route. Rung 3b is BUILT, in the emulator
-(`machines/cloud_links.expected`, 201 lines, the roll and the three
+(`machines/cloud_links.expected`, 202 lines, the roll and the three
 machines over three rounds); TLS stays out of the floor by ruling, and
 what a device trusts is a file in its image that the scene, not the
 court, holds to the fleet's word.
@@ -289,9 +289,20 @@ secret; stzn renders the verdicts as the page an auditor reads.
   ordered and will be the floor's. A distributed filesystem is still
   not: the floor copies and verifies files between declared places, and
   what a consistent copy IS stays the application's.*
-- **No second grammar.** A cloud is fleet v0.3 -- routes, doors, placement,
-  rollout added to the kinds a fleet file may contain -- never a third
-  file. A file is judged by which kinds it may contain.
+- **No knowledge of where a box really is.** The floor has no way to tell a
+  room from a country. `TERRITORY` on a member says where it stands and
+  `RESIDENCY` says where the fleet's data stays (TERR-1, 2026-10-19,
+  STZ-OS-RULING-19): the court refuses, before any boot, a member that keeps
+  a disk and stands anywhere else, and the roll names the law and whom it
+  binds. What is judged is the DECLARATION -- the box in the wrong country is
+  refused where it is declared and not found where it is plugged in -- and
+  whoever enrols a member vouches for where it stands as for its key. The
+  law is the fleet's whole, because a fleet does not yet say which world
+  runs on which member, so it binds every writable persistent disk; one
+  territory per fleet, and no law that keeps a machine OUT of a place.
+- **No second grammar.** A cloud is fleet v0.4 -- routes, doors, residency,
+  placement, rollout added to the kinds a fleet file may contain -- never a
+  third file. A file is judged by which kinds it may contain.
   *Amended 2026-10-04, the day it was written, when rung 1's first
   session read the code (PLC-1): the sentence is true of the SET and
   false of the solution. A pack -- the solution's own file, the thing a

@@ -1,4 +1,4 @@
-# fleet v0.3 — the grammar of a set of machines
+# fleet v0.4 — the grammar of a set of machines
 
 ## Why there is a second file and not a bigger one
 
@@ -37,6 +37,7 @@ declares a `FLEET` is refused by name, and a fleet file that declares a
 | `DECLARATION` | string | required — a `.machine` file, resolved beside this fleet file. It must be readable (FR13) and must itself be judged; a member's own refusal is reported WITH the member, because a line number in a file the reader did not open is not an answer (FR12) |
 | `KEY` | string | optional — the member's enrolled Ed25519 **public** key, 64 hex characters (FR6) |
 | `HARDWARE` | string | optional — which physical unit this member is, six pairs of hex (FR14). One device, one member (FR15) |
+| `TERRITORY` | ident | optional (fleet v0.4, TERR-1) — where this machine physically stands: a country, a site, written as a lower_snake name, one spelling for one place (FR71). The operator's word and never observed. It is what a `RESIDENCY` holds the member to when the member keeps a disk (FR69, FR70); in a fleet with no residency it is information the roll shows |
 
 ### DEFINE RETIREMENT — a key a member USED to have (RET-1)
 
@@ -57,6 +58,28 @@ A machine says `FORWARD` and the fleet says it was meant: **a machine that
 forwards is a door**, joins every one of its links whether or not anybody
 meant it to, and the fleet must have a route through it for every pair of
 them (FR39, FR40). One way between two links (FR38).
+
+### DEFINE RESIDENCY — where the fleet's data stays (TERR-1, fleet v0.4)
+
+| clause | value | obligation |
+|---|---|---|
+| `TERRITORY` | ident | required — the territory every member that keeps data stands in. A member **keeps data** when its machine declares a mount that survives the power (`ext4`, `vfat` or `littlefs`) and that is not read-only: a volatile disk (`tmpfs`) and a program store nothing can write keep nothing new |
+
+At most one in a fleet (FR67): a fleet's data stays in one territory, or the
+court holds every member to two laws and cannot say which wins. It is a
+declaration of its own, not a clause of `FLEET`, because why data stays
+somewhere -- a law, a contract, a promise to a client -- is the fact an
+auditor reading the file will need, and every declaration says why it is
+there (`RATIONALE`).
+
+Every member that keeps data must say where it stands (FR69) and must stand
+where the data stays (FR70); a fleet in which no member keeps data cannot
+have one (FR68), because a law that binds nobody is a law nobody can see
+broken. A member that keeps none -- a till, a sensor with only volatile
+memory -- is free to stand anywhere, and the court says so (FA14, FA16).
+What the court reads is the DECLARATION: the box in the wrong country is
+refused where it is declared, before anything boots, and not found where it
+is plugged in.
 
 ### DEFINE FRONT — the door of a link (FRONT-2, fleet v0.3)
 
@@ -228,6 +251,11 @@ checks the members it has, and says nothing about the rest of the wire.
 | FR64 | a `FRONT` whose member neither serves the link nor is promised a name there by its server |
 | FR65 | a `ROOT` that is not 16 lowercase hex: the fingerprint exactly as a device prints it, or no device's line can be held to it |
 | FR66 | two doors on one link: a device told to trust the door of its link would have two to choose from |
+| FR67 | two residencies: a fleet's data stays in one territory, or every member is held to two laws |
+| FR68 | **a residency in a fleet in which no member keeps data**: a law that binds nobody is one nobody can see broken |
+| FR69 | a member that keeps data and says no `TERRITORY`: nobody can check that its disk is where the data stays |
+| FR70 | **a member that keeps data in another territory than the residency's**: faultless alone, and in the wrong country |
+| FR71 | a territory spelled `TN` beside `tn`: one spelling for one place, as for every other word |
 
 ## Attribution: one machine verifying another's record
 
@@ -389,8 +417,49 @@ cannot know a root made at each run, so `machines/cloud_links.fleet` carries
 a placeholder and `experiment/os8_links.sh` writes the fingerprint into a
 COPY, as `os10_time.sh` enrols a key -- enrolment by hand, FLT-1's design.
 
+## Where the data stays: a law is a line the court reads (TERR-1)
+
+The resilience page (`site/resilience.html`) said it plainly: the Gulf's
+clients learned the difference between a law and a copy in a crisis, and the
+file should say it in peacetime. `TERRITORY` on a member and `RESIDENCY` on
+the fleet are that line. Where the data may be is a fact about a SET -- no
+machine knows where the others stand, and a box added in another country is
+faultless alone -- so it is declared where a set is, and judged before any
+boot:
+
+```
+DEFINE MEMBER depot AS (
+  DECLARATION "depot.machine",
+  TERRITORY tn
+) RATIONALE "..."
+
+DEFINE RESIDENCY records AS (
+  TERRITORY tn
+) RATIONALE "The clients' records stay in the country (...)"
+```
+
+```
+# the roll names the law and whom it binds
+residency records -- the data stays in room; it binds
+    gateway and core, the members that keep a disk
+```
+
+The mirror that comes next (STZ-OS-RULING-19) is held by it with no new
+rule: a mirror is a copy of a directory on a disk of another member, and a
+member that holds a copy keeps a disk.
+
 ## Named seams (stated, not hidden)
 
+- **Territory.** It is the operator's word, never observed: the floor has no
+  way to tell a room from a country, so what the court judges is that the
+  DECLARATION is consistent -- every disk is declared and declared where the
+  law says -- and not that the box is there. Whoever enrols a member vouches
+  for where it stands as for its key. The law is the fleet's, whole: a fleet
+  does not yet say which world runs on which member (`MEMBER ... PACKS` is
+  not built), so "this solution's data" is read as "every member's writable,
+  persistent disk", which also binds a disk that holds no customer data (the
+  box's own certificates). One territory per fleet; a law that allows several
+  places, or one that keeps a machine OUT of a place, is not built.
 - **The door.** One per link, named by the link's server (its domain, or a
   promise), under one root; a device trusts the root's public half it was
   GIVEN, and nothing judges how it got it. What a member trusts is a file in

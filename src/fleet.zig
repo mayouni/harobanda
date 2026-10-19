@@ -109,6 +109,14 @@ pub const Member = struct {
     /// members that will ask for them are the same devices.
     hardware: ?[6]u8,
     hardware_text: ?[]const u8,
+    /// WHERE this machine physically stands: a country, a site (TERR-1).
+    /// It belongs here and not in the machine file for the reason the key and
+    /// the hardware address do: a machine file is a DESIGN that can image many
+    /// devices, and where one of them stands is a fact its deployment learns.
+    /// It is the operator's word and never observed -- the floor has no way to
+    /// tell a country -- so it is judged for what the fleet can hold it against
+    /// (the residency), and named for what it is: a declaration.
+    territory: ?[]const u8 = null,
     /// the fingerprint that key implies -- the same 16 hex the device
     /// prints on its own console, so the two can be compared by eye
     fingerprint: ?[16]u8,
@@ -194,6 +202,24 @@ pub const Front = struct {
     rationale: []const u8,
 };
 
+/// Where the fleet's data stays (TERR-1, fleet v0.4): the territory every
+/// member that keeps data stands in.
+///
+/// A declaration of its own, as ROUTE and FRONT are, because why data stays
+/// somewhere -- a law, a contract, a promise to a client -- is the fact an
+/// auditor reading this file will need, and a clause of the FLEET would have
+/// no place to say it. And it is the fleet's, because it is a fact about a SET:
+/// no machine knows where the others stand, and a box added in the wrong
+/// country is faultless alone. The court holds it against every member that
+/// keeps a disk (`keepsData`) before any boot, so the box in the wrong country
+/// is refused where it is declared, not found where it is plugged in.
+pub const Residency = struct {
+    name: []const u8,
+    line: usize,
+    territory: []const u8,
+    rationale: []const u8,
+};
+
 pub const Fleet = struct {
     name: []const u8,
     line: usize,
@@ -211,6 +237,9 @@ pub const Fleet = struct {
     routes: []const Route,
     /// the doors: one member per fronted link, ending TLS under a root the fleet names (FRONT-2)
     fronts: []const Front = &.{},
+    /// where the data stays, if the fleet says (TERR-1); a fleet that says nothing is one whose
+    /// members' territories are information, and nothing holds them to anything
+    residency: ?Residency = null,
     /// the member whose word about the time the fleet takes (TIME-1, STZ-OS-RULING-07): enrolled
     /// like any member, so what it signs is checked with a public key by anyone who holds this file.
     /// Null is a fleet that has no time, and whose records are ORDERED and UNDATED.
@@ -378,6 +407,11 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
             hardware_text = t;
         }
 
+        // where it stands: a lower_snake name, one spelling per territory -- the tokenizer refuses TN
+        // beside tn, as it refuses every other word spelled two ways
+        var territory: ?[]const u8 = null;
+        if (machine.find(d, "TERRITORY")) |c| territory = try machine.wantIdent(&ctx, c);
+
         const text = resolver.read(path) orelse return ctx.refuse(d.line, "MEMBER {s} names {s}, which cannot be read from beside this fleet file", .{ d.name, path });
         var inner = Refusal{};
         const m = machine.declare(arena, text, &inner) catch |e| switch (e) {
@@ -411,6 +445,7 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
             .key_text = key_text,
             .hardware = hardware,
             .hardware_text = hardware_text,
+            .territory = territory,
             .fingerprint = fingerprint,
             .machine = m,
             .rationale = d.rationale,
@@ -543,6 +578,17 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         try fronts.append(arena, .{ .name = d.name, .line = d.line, .member = who, .link = wire, .host = host, .address = address, .root = root, .rationale = d.rationale });
     };
 
+    // ---- where the data stays (TERR-1) ---------------------------------
+    //
+    // One declaration at most: a fleet's data stays in one territory, and two laws would leave the
+    // court holding every member to both with no way to say which wins.
+    var residency: ?Residency = null;
+    for (decls.items) |d| if (d.kind == .RESIDENCY) {
+        if (residency) |first| return ctx.refuse(d.line, "RESIDENCY {s} says where the data stays, and {s} already does (line {d}): a fleet's data stays in one territory, or the court holds every member to two laws and cannot say which wins", .{ d.name, first.name, first.line });
+        const tc = try machine.required(&ctx, d, "TERRITORY");
+        residency = .{ .name = d.name, .line = d.line, .territory = try machine.wantIdent(&ctx, tc), .rationale = d.rationale };
+    };
+
     // ---- the time authority (TIME-1) ---------------------------------
     var time_authority: ?[]const u8 = null;
     var time_line: usize = fd.line;
@@ -559,6 +605,7 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         .retirements = try retirements.toOwnedSlice(arena),
         .routes = try routes.toOwnedSlice(arena),
         .fronts = try fronts.toOwnedSlice(arena),
+        .residency = residency,
         .time_authority = time_authority,
         .time_line = time_line,
         .rationale = fd.rationale,
@@ -655,8 +702,47 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
 
     try checkRoutes(&ctx, f);
     try checkTime(&ctx, f);
+    try checkResidency(&ctx, f);
 
     return f;
+}
+
+// ---- where the data stays (TERR-1) ---------------------------------------
+
+/// Whether a machine keeps data: it declares a MOUNT that survives the power
+/// (ext4, vfat or littlefs; tmpfs is gone at the next boot) and is not read-only
+/// (a program store that nothing can write keeps nothing new). This is the one
+/// test the residency is held by, and it is the machine's own declaration read
+/// as it stands: nothing is added to the machine grammar for it.
+pub fn keepsData(m: machine.Machine) bool {
+    for (m.mounts) |mt| {
+        switch (mt.fs) {
+            .ext4, .vfat, .littlefs => {},
+            else => continue,
+        }
+        var read_only = false;
+        for (mt.options) |o| {
+            if (o == .ro) read_only = true;
+        }
+        if (!read_only) return true;
+    }
+    return false;
+}
+
+/// The residency, held against the set: every member that keeps data says where it stands, and
+/// stands where the fleet says the data stays; and the law binds somebody. Each is a case where
+/// every machine of the fleet is faultless alone -- a box with a disk is right to have one, in
+/// whatever country the operator put it.
+fn checkResidency(ctx: *machine.Ctx, f: Fleet) machine.Error!void {
+    const r = f.residency orelse return;
+    var bound: usize = 0;
+    for (f.members) |m| {
+        if (!keepsData(m.machine)) continue;
+        bound += 1;
+        const where = m.territory orelse return ctx.refuse(m.line, "{s} keeps data on a disk of its own, and RESIDENCY {s} (line {d}) says the data stays in {s}: {s} says no TERRITORY, so nobody can check that its disk is there", .{ m.name, r.name, r.line, r.territory, m.name });
+        if (!std.mem.eql(u8, where, r.territory)) return ctx.refuse(m.line, "{s} keeps data on a disk of its own in {s}, and RESIDENCY {s} (line {d}) says the data stays in {s}: a member that keeps a disk stands where the data stays", .{ m.name, where, r.name, r.line, r.territory });
+    }
+    if (bound == 0) return ctx.refuse(r.line, "RESIDENCY {s} says the data stays in {s}, and no member of this fleet keeps data: a law that binds nobody is one nobody can see broken", .{ r.name, r.territory });
 }
 
 // ---- the time authority (TIME-1) ----------------------------------------
@@ -1214,6 +1300,78 @@ test "a door is a member with a name on the link it fronts, and the fleet says w
         \\
     , t.resolver(), &refusal));
     try testing.expect(std.mem.indexOf(u8, refusal.message, "16 lowercase hex") != null);
+}
+
+test "a residency holds every member that keeps a disk to the territory the data stays in" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    const keeper_src =
+        \\DEFINE MACHINE keeper AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+        \\DEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE "x"
+        \\DEFINE MOUNT data AS (AT "/data", FS ext4, DEVICE "/dev/vda", OPTIONS [rw]) RATIONALE "x"
+        \\
+    ;
+    const reader_src =
+        \\DEFINE MACHINE reader AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+        \\DEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE "x"
+        \\DEFINE MOUNT store AS (AT "/store", FS ext4, DEVICE "/dev/vdb", OPTIONS [ro]) RATIONALE "x"
+        \\
+    ;
+    const bare_src =
+        \\DEFINE MACHINE bare AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+        \\
+    ;
+    // what a machine keeps: a disk that survives the power and can be written, and nothing else
+    var inner = Refusal{};
+    try testing.expect(keepsData(try machine.declare(arena, keeper_src, &inner)));
+    try testing.expect(!keepsData(try machine.declare(arena, reader_src, &inner)));
+    try testing.expect(!keepsData(try machine.declare(arena, bare_src, &inner)));
+
+    const t = T{ .files = &.{ .{ "keeper.machine", keeper_src }, .{ "bare.machine", bare_src } } };
+    const law =
+        \\DEFINE RESIDENCY data AS (TERRITORY tn) RATIONALE "x"
+        \\
+    ;
+    // the member that keeps a disk stands where the data stays; the one that keeps none stands elsewhere
+    var refusal = Refusal{};
+    const ok = try declare(arena,
+        \\DEFINE FLEET c AS () RATIONALE "x"
+        \\DEFINE MEMBER depot AS (DECLARATION "keeper.machine", TERRITORY tn) RATIONALE "x"
+        \\DEFINE MEMBER till AS (DECLARATION "bare.machine", TERRITORY fr) RATIONALE "x"
+        \\
+    ++ law, t.resolver(), &refusal);
+    try testing.expectEqualStrings("tn", ok.residency.?.territory);
+    try testing.expectEqualStrings("tn", ok.member("depot").?.territory.?);
+    try testing.expectEqualStrings("fr", ok.member("till").?.territory.?);
+
+    // the same disk in another country is refused, naming the member, where it stands and where the data stays
+    try testing.expectError(error.Refused, declare(arena,
+        \\DEFINE FLEET c AS () RATIONALE "x"
+        \\DEFINE MEMBER depot AS (DECLARATION "keeper.machine", TERRITORY fr) RATIONALE "x"
+        \\DEFINE MEMBER till AS (DECLARATION "bare.machine", TERRITORY tn) RATIONALE "x"
+        \\
+    ++ law, t.resolver(), &refusal));
+    try testing.expect(std.mem.indexOf(u8, refusal.message, "depot keeps data on a disk of its own in fr") != null);
+    try testing.expect(std.mem.indexOf(u8, refusal.message, "stays in tn") != null);
+
+    // a disk nobody can place is not read as being wherever the law wants
+    try testing.expectError(error.Refused, declare(arena,
+        \\DEFINE FLEET c AS () RATIONALE "x"
+        \\DEFINE MEMBER depot AS (DECLARATION "keeper.machine") RATIONALE "x"
+        \\
+    ++ law, t.resolver(), &refusal));
+    try testing.expect(std.mem.indexOf(u8, refusal.message, "depot says no TERRITORY") != null);
+
+    // and where a fleet declares no law, a territory is information and binds nobody
+    const free = try declare(arena,
+        \\DEFINE FLEET c AS () RATIONALE "x"
+        \\DEFINE MEMBER depot AS (DECLARATION "keeper.machine", TERRITORY fr) RATIONALE "x"
+        \\
+    , t.resolver(), &refusal);
+    try testing.expect(free.residency == null);
+    try testing.expectEqualStrings("fr", free.member("depot").?.territory.?);
 }
 
 // ---- retirement (RET-1) ---------------------------------------------------

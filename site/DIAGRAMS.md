@@ -465,18 +465,19 @@ it frames the proof.
 
 **The sentence it must make true:** *a resilient cloud is many small declared machines in many rooms,
 each judging its own boot and keeping its own record, joined by links the fleet file names, so that
-losing a room is losing what the file says was in it -- and what the file will say next (a territory, a
-mirror, the roll call) is ordered and not built.*
+losing a room is losing what the file says was in it -- and what the file will say next (a mirror, the
+roll call, the loss drill) is ordered and not built; where the data stays is written already.*
 
 **Composition.** A hall as ONE strip across the top, in the old taupe: `a hall` -- `data, compute,
 reach: one place` -- and a brick chip, `ONE STRIKE, ALL LOST`; one place is enough to lose all three.
 Under it the fleet file as a band with the one orange mark: `The fleet file` -- `which boxes, on which
-links, who is the way between, who dates the records, which key is out`. Under the file, with an arrow
+links, who is the way between, who dates the records, where data stays, which key is out`. Under the file, with an arrow
 each, three rooms as three machines in the blue-grey: `room A` (one file, own key; judges its boot;
 keeps its record), `room B` (one file, own key; the way between the two links), and `room C`, struck --
 in the neutral fill with a brick `STRUCK` chip: `lost: what the file says, and nothing more`. A dashed
 arrow from A to B, `a mirror · ordered`, this family's mark for absence. A last band, `NEXT, ORDERED`:
-territory, a mirror, the roll call, in the page's own words.
+a mirror, the roll call, the loss drill, in the page's own words. (Territory was the first of the three
+until 2026-10-19 (TERR-1); it is on the file's own list now, and the band says what is still ahead.)
 
 **Exact labels.** Kicker: `HAROBANDA — A CLOUD THAT FITS IN A ROOM`. No quotation from a pinned boot
 (the picture states an architecture, not a transcript), so no pin check; every word of the last band is

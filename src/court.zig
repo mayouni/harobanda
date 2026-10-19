@@ -384,6 +384,34 @@ pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.
         if (str(expect.get("front_host"))) |w| if (f.fronts.len == 0 or !std.mem.eql(u8, f.fronts[0].host, w)) {
             why = try std.fmt.allocPrint(arena, "front_host: expected {s} got {s}", .{ w, if (f.fronts.len == 0) "none" else f.fronts[0].host });
         };
+        // where the data stays and where each member stands (TERR-1, fleet v0.4): the residency's
+        // territory, or null for none, and each named member's territory -- read, because a
+        // clause the parser dropped would still leave the fleet accepted
+        if (expect.get("residency")) |rv| switch (rv) {
+            .string => |want| {
+                const got = if (f.residency) |r| r.territory else "none";
+                if (!std.mem.eql(u8, got, want)) why = try std.fmt.allocPrint(arena, "residency: expected {s} got {s}", .{ want, got });
+            },
+            .null => if (f.residency) |r| {
+                why = try std.fmt.allocPrint(arena, "residency: expected none, got {s}", .{r.territory});
+            },
+            else => {},
+        };
+        if (expect.get("territories")) |tv| if (tv == .object) {
+            var it = tv.object.iterator();
+            while (it.next()) |e| {
+                const m = f.member(e.key_ptr.*) orelse {
+                    why = try std.fmt.allocPrint(arena, "territories: no member {s}", .{e.key_ptr.*});
+                    continue;
+                };
+                const got = m.territory orelse "none";
+                const want = switch (e.value_ptr.*) {
+                    .string => |s| s,
+                    else => "none",
+                };
+                if (!std.mem.eql(u8, got, want)) why = try std.fmt.allocPrint(arena, "territories: {s} expected {s} got {s}", .{ e.key_ptr.*, want, got });
+            }
+        };
         // the member the fleet takes the time from (TIME-1)
         if (str(expect.get("time_authority"))) |w| if (f.time_authority == null or !std.mem.eql(u8, f.time_authority.?, w)) {
             why = try std.fmt.allocPrint(arena, "time_authority: expected {s} got {s}", .{ w, f.time_authority orelse "none" });

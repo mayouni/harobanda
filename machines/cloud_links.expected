@@ -4,9 +4,10 @@ roll:   link front -- served by gateway
 roll:   link core -- served by gateway
 roll:   route front_to_core -- front and core, through gateway
 roll:   front door -- gateway is the door of front, as front.cloud (192.168.20.1), under the root FP1
-roll:   gateway -- cloud_front (cloud_front.machine, front 192.168.20.1/24, serves front.cloud, core 10.20.0.1/24, serves core.cloud) -- not enrolled
-roll:   till -- cloud_till (cloud_till.machine, front asks) -- 52:54:00:12:35:61, promised 192.168.20.40 as till -- not enrolled
-roll:   core -- cloud_core (cloud_core.machine, core asks) -- 52:54:00:12:35:62, promised 10.20.0.2 as commons -- not enrolled
+roll:   residency records -- the data stays in room; it binds gateway and core, the members that keep a disk
+roll:   gateway -- cloud_front (cloud_front.machine, front 192.168.20.1/24, serves front.cloud, core 10.20.0.1/24, serves core.cloud) -- in room -- not enrolled
+roll:   till -- cloud_till (cloud_till.machine, front asks) -- 52:54:00:12:35:61, promised 192.168.20.40 as till -- in shop -- not enrolled
+roll:   core -- cloud_core (cloud_core.machine, core asks) -- 52:54:00:12:35:62, promised 10.20.0.2 as commons -- in room -- not enrolled
 box: the way between the links and the door of the front one, before anyone has asked:
 box: boot: harb init -- machine cloud_front (hosted / x86_64 / qemu_pc) -- pid 1
 box: boot: console /dev/ttyS0

@@ -42,7 +42,7 @@ c.box("a hall", "data, compute and reach in one place: one strike, and all three
 c.gap(20)
 
 c.kicker("MANY ROOMS", NEW_LINE)
-c.box("The fleet file", "which boxes, on which links, who is the way between, who dates the records, which key is out", "plain", accent=True)
+c.box("The fleet file", "which boxes, on which links, who is the way between, who dates the records, where data stays, which key is out", "plain", accent=True)
 c.arrow()
 c.box("room A", "one file, its own key; it judges its boot and keeps its record", "machine")
 c.gap(8)
@@ -53,7 +53,7 @@ c.gap(8)
 c.note("The links the file names join the rooms. A mirror from A to B is ordered, not built.", MUTED)
 c.gap(16)
 
-c.strip_items("NEXT, ORDERED", ["territory: which country each box is in",
-                                "a mirror: A's files kept on B, and verified",
-                                "the roll call: who has written a record since"])
+c.strip_items("NEXT, ORDERED", ["a mirror: A's files kept on B, and verified",
+                                "the roll call: who has written a record since",
+                                "the loss drill: one box lost, the rest serve"])
 c.render("harobanda-diagram-14-narrow.png")

@@ -26,6 +26,13 @@
 -- is the door the tills are to trust, and under which root; the till's own question prints
 -- the fingerprint of the root that actually signed, and the two must be one.
 --
+-- TERRITORY says where a member physically stands -- a country, a site -- and RESIDENCY where the
+-- fleet's data stays (TERR-1, fleet v0.4): every member that keeps a disk stands there, or the
+-- fleet is refused before anything boots. The box and the core keep disks, so both stand in the
+-- room the records are made in; the till keeps none, so it is free to be carried to the shop. The
+-- territory is the operator's word and never observed -- the floor has no way to tell a room from
+-- a country -- which is why the court holds it against what the fleet CAN read: the declaration.
+--
 -- ROOT below is a placeholder, as the KEY of machines/time_cloud.fleet is: the root is made
 -- at every run of the scene (openssl, by hand, never by the floor or by the front) and seeded
 -- on the box's disk, so a file in a repository cannot know it. The scene writes the real
@@ -39,17 +46,20 @@ DEFINE FLEET cloud_links AS (
 ) RATIONALE "One front link, one core link, and a box that is both links' server and the way between"
 
 DEFINE MEMBER gateway AS (
-  DECLARATION "cloud_front.machine"
+  DECLARATION "cloud_front.machine",
+  TERRITORY room
 ) RATIONALE "The box: it serves both links and is the way between them. It is nobody's peer, so it says no hardware"
 
 DEFINE MEMBER till AS (
   DECLARATION "cloud_till.machine",
-  HARDWARE "52:54:00:12:35:61"
+  HARDWARE "52:54:00:12:35:61",
+  TERRITORY shop
 ) RATIONALE "The client on the front link: the device the box promises 192.168.20.40 to"
 
 DEFINE MEMBER core AS (
   DECLARATION "cloud_core.machine",
-  HARDWARE "52:54:00:12:35:62"
+  HARDWARE "52:54:00:12:35:62",
+  TERRITORY room
 ) RATIONALE "The machine the server is placed on, on the core link: the device the box promises 10.20.0.2 to"
 
 DEFINE ROUTE front_to_core AS (
@@ -62,3 +72,7 @@ DEFINE FRONT door AS (
   LINK front,
   ROOT "aaaaaaaaaaaaaaaa"
 ) RATIONALE "The door of the cloud: the box ends TLS for the devices on the front link, as front.cloud, under a root made by hand and seeded on its disk; a till that is given that root's public half asks the door by this name and is answered by the server behind the box, and by nobody who does not hold the root's key"
+
+DEFINE RESIDENCY records AS (
+  TERRITORY room
+) RATIONALE "The records the core keeps, and the root and certificates the box keeps for the door, stay in the room they were made in: no machine of this fleet that keeps a disk stands anywhere else, whatever the till is carried to"

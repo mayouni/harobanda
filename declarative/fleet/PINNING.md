@@ -1,14 +1,23 @@
-# fleet v0.3 — pinning and the conformance scoreboard
+# fleet v0.4 — pinning and the conformance scoreboard
 
 ## The pin
 
 `fixtures.json` sha256:
 
 ```
-eecc9ced012e51138a71cd71404d3cf3de2bfdafddd5dc18576ded0ca7e0547a
+097850a29eed81c4d385b0c15eee2df9f8599b3d1a66967119631e95b551e0cc
 ```
 
-(Before the door of 2026-10-19 (FRONT-2, fleet v0.3):
+(Before where the data stays of 2026-10-19 (TERR-1, fleet v0.4):
+`eecc9ced012e51138a71cd71404d3cf3de2bfdafddd5dc18576ded0ca7e0547a`,
+79/79; the widening added FA14-FA16 and FR67-FR73, gave `MEMBER` its
+`TERRITORY` and the fleet its sixth kind, `RESIDENCY` -- the territory
+every member that keeps a disk stands in -- and regenerated FA7 from the
+real files, which carry the territories and the residency now. The first
+run of the new cases was green at once, which is when a court deserves
+doubt, and got a probe: each rule's mutant is convicted by the case named
+for it (`experiment/territory_probe.sh`).
+Before the door of 2026-10-19 (FRONT-2, fleet v0.3):
 `247b8f5ed72517d878d1aba7a3c89f93485aa3f4e7378134837362e4508a417a`,
 71/71; the widening added FA13 and FR60-FR66, gave the fleet its fifth
 kind, `FRONT` -- the member that ends TLS for the devices of one link, the
@@ -54,7 +63,7 @@ grammar's own `PINNING.md` requires of itself.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **79/79** — 13 accepts, 66 rejects (71/71 before FRONT; 32/32 before ROUTE; the first run of the ROUTE widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
+| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **89/89** — 16 accepts, 73 rejects (79/79 before RESIDENCY; 71/71 before FRONT; 32/32 before ROUTE; the first run of the ROUTE widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
 
 `zig build court` runs BOTH grammars: the machine fixtures first, the
 fleet fixtures after. One step, two courts, because a fleet is no better
@@ -160,6 +169,41 @@ its fingerprint into a copy of the fleet, and holds the till's own line --
 `signed under the root fingerprint ...` -- to what that copy declares. The
 root that signed for the door and the root the fleet names are one value
 read twice, and the pin says so by giving both the same `FP1`.
+
+## Where the data stays: RESIDENCY and TERRITORY (TERR-1, fleet v0.4)
+
+`TERRITORY` on a MEMBER says where that machine physically stands, and
+`RESIDENCY` says where the fleet's data stays; the court refuses, before
+anything boots, a member that keeps a disk and stands anywhere else. Eleven
+cases hold it (FA14-FA16, FR67-FR73 and FA7 regenerated), and what they
+judge is what no machine can: a box with a disk is faultless alone, in
+whatever country somebody put it.
+
+- **the law binds the members that keep data** (FA14, FR70, FR72, FR73): a mount that
+  survives the power (ext4, vfat or littlefs: a FAT partition, FR72, and an edge sensor's flash, FR73) and that something can write.
+  A member that keeps none is free to stand elsewhere (FA14's till), and so
+  is one whose only disk is read-only (a program store) or volatile (tmpfs):
+  a disk that keeps nothing new is not data (FA16);
+- **a member that keeps data must say where** (FR69): a disk nobody can
+  place is one the fleet cannot hold to the law, and "no territory" is
+  refused, never read as "wherever the law wants";
+- **a law that binds nobody is refused** (FR68): the residency of a fleet in
+  which no member keeps a disk is a law nobody can see broken -- usually a
+  machine file that lost its mount, which nothing else would notice;
+- **one fleet, one place for its data** (FR67): two residencies would leave
+  the court holding every member to two laws with no way to say which wins;
+- **one spelling for one place** (FR71): a territory is a lower_snake name,
+  and the tokenizer that already refuses every other word spelled two ways
+  refuses `TN` beside `tn`;
+- **a territory with no residency is information** (FA15): the roll shows it
+  and nothing holds the members to anything. A fleet is not forced to
+  declare a law to say where its machines are.
+
+What it does not do, stated: the territory is the operator's word and is
+never observed (the floor has no way to tell a country), so what the court
+judges is the declaration; and the law is the fleet's, whole, because a fleet
+does not yet name which world runs on which member, so "this solution's data"
+is read as "every member's disk".
 
 ## The court judges this pin (PIN-1)
 

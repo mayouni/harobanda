@@ -2280,6 +2280,18 @@
       "name": "a FRONT belongs to a fleet file: which member the devices of a link trust as their door is a fact about a set, and no machine can say it",
       "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE FRONT door AS (MEMBER gw, LINK front, ROOT \"0123456789abcdef\") RATIONALE \"x\"\n",
       "refusal": "FRONT belongs to a fleet file, not a machine file"
+    },
+    {
+      "id": "R208",
+      "name": "a RESIDENCY belongs to a fleet file: where a fleet's data stays is a fact about a set, and no machine can say it",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE RESIDENCY data AS (TERRITORY tn) RATIONALE \"x\"\n",
+      "refusal": "RESIDENCY belongs to a fleet file, not a machine file"
+    },
+    {
+      "id": "R209",
+      "name": "where a machine stands is the deployment's, never the design's: a machine file takes no TERRITORY, as it takes no HARDWARE address of its own",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux, TERRITORY tn) RATIONALE \"x\"\n",
+      "refusal": "Unknown clause 'TERRITORY' for MACHINE"
     }
   ]
 }

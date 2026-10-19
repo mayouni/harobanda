@@ -76,13 +76,18 @@ clause outside its kind's table is refused naming the allowed set
 
 ## The kinds
 
-`FLEET`, `MEMBER`, `RETIREMENT`, `ROUTE` and `FRONT` are kinds of this
-same language and are refused in a machine file by name (R85-R87, R102,
-R207): a machine declares what ONE machine is, and no machine can say
-who else is in its estate, which keys it has held, which links are
-joined, or which member the devices of a link are to trust as their
-door. They are the fleet grammar's, `declarative/fleet/GRAMMAR.md`
-(FLT-1, RET-1, FWD-1, FRONT-2). Which file a kind belongs
+`FLEET`, `MEMBER`, `RETIREMENT`, `ROUTE`, `FRONT` and `RESIDENCY` are
+kinds of this same language and are refused in a machine file by name
+(R85-R87, R102, R207, R208): a machine declares what ONE machine is, and
+no machine can say who else is in its estate, which keys it has held,
+which links are joined, which member the devices of a link are to trust
+as their door, or where the fleet's data stays. Nor does a machine say
+where IT stands: `TERRITORY` is a clause of a MEMBER and not of a
+machine (R209), for the reason its hardware address is -- a machine file
+is a design that images many devices, and where one of them stands is a
+fact its deployment learns. They are the fleet grammar's,
+`declarative/fleet/GRAMMAR.md` (FLT-1, RET-1, FWD-1, FRONT-2, TERR-1).
+Which file a kind belongs
 in is one EXHAUSTIVE switch, `belongsToFleet`, asked by both parsers --
 never a condition that names the kinds, which is how a new one walks
 past it: with the old `.FLEET or .MEMBER`, a machine file carrying a

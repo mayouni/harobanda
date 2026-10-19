@@ -400,6 +400,16 @@ wsl -d Ubuntu -- bash `
 # the roll: who is in the set, and who nobody can speak for yet
 zig-out\bin\harb.exe fleet machines\salle_makeen.fleet
 
+# where the data stays (TERR-1): the roll of the smallest cloud
+# names the law, the members it binds, and each one's place
+zig-out\bin\harb.exe fleet machines\cloud_links.fleet
+
+# the territory rules probed (TERR-1): the three courts, then 14
+# one-mutation copies of the rules, each convicted by its case
+#   -> zig-out/wsl/territory_probe.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/territory_probe.sh
+
 # a solution's services (a pack) placed on a machine and judged
 # as one; --out writes the placed machine, a machine like any
 zig-out\bin\harb.exe place machines\<name>.machine <name>.pack
@@ -587,6 +597,44 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **Where the data stays is a line the court reads, and the box in the
+  wrong country is refused where it is declared** (TERR-1,
+  STZ-OS-RULING-19): fleet v0.4 gives a MEMBER `TERRITORY` (where that
+  machine physically stands, a lower_snake name -- the tokenizer that
+  refuses every word spelled two ways refuses `TN` beside `tn` -- and the
+  deployment's fact, so on the member beside its key and hardware address,
+  never in the machine file: a machine file takes no `TERRITORY`, R209) and
+  gives the set a `RESIDENCY` (a kind of its own, with its own RATIONALE,
+  because why data stays somewhere is the fact an auditor will need; at
+  most one, FR67): the territory every member that **keeps data** stands
+  in. A member keeps data when its machine declares a mount that survives
+  the power (ext4, vfat or littlefs -- FR72 a FAT partition, FR73 an edge
+  sensor's flash, both found by the probe's first run) and is not
+  read-only; a volatile disk and a program store nothing can write keep
+  nothing new (FA16). It must say where it stands (FR69) and stand where
+  the data stays (FR70); a fleet in which none keeps data cannot have the
+  law (FR68: a law that binds nobody is one nobody can see broken). A
+  member that keeps none -- a till -- stands anywhere (FA14), and a fleet
+  with territories and no residency says them on the roll and holds
+  nobody to anything (FA15). `harb fleet` names the law and whom it
+  binds. **The territory is the operator's word and never observed**: the
+  floor has no way to tell a room from a country, so the court judges
+  that the declaration is consistent, and whoever enrols a member vouches
+  for where it stands as for its key. **The law is the fleet's, whole**,
+  because a fleet does not yet say which world runs on which member, so
+  "this solution's data" is read as "every member's writable persistent
+  disk" -- which also binds the box's own certificates. The mirror that
+  comes next is held by it with no new rule: a copy of a directory is on
+  the disk of a member that keeps one. The smallest cloud says it
+  (`machines/cloud_links.fleet`: the box and the core in the room, the
+  till free to be in the shop) and its pin carries the roll
+  (`machines/cloud_links.expected`). Judged by 89 fleet fixtures (FA14-FA16
+  and FR67-FR73 new, FA7 regenerated), R208-R209, and
+  `experiment/territory_probe.sh` (14 mutants of the rules, each
+  convicted by the case named for it). Named seams: one territory per
+  fleet (a law that allows several places, or keeps a machine OUT of one,
+  is not built); the territory is declared and never observed; the law
+  binds disks, not worlds.
 - **A Next link is a claim about the site, and it is judged like one**
   (NAV-1): every site page but the home page and the Blog's carries a
   section strip (`<nav class="path">`, the pages of its section in the
@@ -656,7 +704,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   never a clause of the pack, which lands on the gateway without it.
   **The front's health stays its own**: a probe through its upstream
   would tie the box's watchdog to another machine's server. Judged by
-  `machines/cloud_links.expected` (201 lines, matched twice with a
+  `machines/cloud_links.expected` (202 lines, matched twice with a
   different root each run: the roll naming the door, the box as the
   door, 200 over TLS 1.3 through it, the box's other name refused by the
   till's own client, the stranger reaching nothing, the closed box still
@@ -1640,7 +1688,9 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   the fingerprint it prints is the one the fleet declares. Rung 3b is
   built, in the emulator. **And the five declarations of `site/resilience.html` are ordered
   (STZ-OS-RULING-19, the same word: "go ahead with implementing them
-  all")**, in this order after the front: TERRITORY on a member, the
+  all")**, in this order after the front: **TERRITORY on a member, built
+  (TERR-1, 2026-10-19: fleet v0.4, `TERRITORY` on a member and a
+  `RESIDENCY` for the fleet, judged by the court before any boot)**, the
   MIRROR (a declared copy of a world's directory on another member,
   verified by the fleet's keys -- CLOUD.md's "no distributed filesystem"
   amended beside its text), the roll call (who has written a record
@@ -1716,7 +1766,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: NAV-1, FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: TERR-1, NAV-1, FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

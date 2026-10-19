@@ -5,7 +5,8 @@ Brief: site/DIAGRAMS.md section 13. The sentence it must make true: a resilient
 cloud is many small declared machines in many rooms, each judging its own boot
 and keeping its own record, joined by links the fleet file names, so that
 losing a room is losing what the file says was in it -- and what the file will
-say next (a territory, a mirror, the roll call) is ordered and not built.
+say next (a mirror, the roll call, the loss drill) is ordered and not built; where
+the data stays is written already (TERR-1) and is on the file's own list.
 
 It is containment and topology, which is what a diagram is for here: a hall as
 ONE strip, where data, compute and reach sit in one place and one strike takes
@@ -30,14 +31,14 @@ from house import (W, S, canvas, save, band, rule, fit, arrow_down, dashed, chip
 KICKER_TOP = "HAROBANDA — A CLOUD THAT FITS IN A ROOM"
 HALL = ("a hall", "data, compute, reach: one place", "ONE STRIKE, ALL LOST")
 FILE = ("The fleet file", ["which boxes, on which links, who is the way between,",
-                           "who dates the records, which key is out"])
+                           "who dates the records, where data stays, which key is out"])
 ROOMS = [("room A", ["one file, own key", "judges its boot", "keeps its record"], "machine"),
          ("room B", ["one file, own key", "the way between", "the two links"], "machine"),
          ("room C", ["lost: what the", "file says, and", "nothing more"], "struck")]
 MIRROR = "a mirror · ordered"
-NEXT = ("NEXT, ORDERED", ["territory: which country each box is in",
-                          "a mirror: A's files kept on B, and verified",
-                          "the roll call: who has written a record since"])
+NEXT = ("NEXT, ORDERED", ["a mirror: A's files kept on B, and verified",
+                          "the roll call: who has written a record since",
+                          "the loss drill: one box lost, the rest serve"])
 
 img, d = canvas(14)
 

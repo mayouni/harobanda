@@ -5,10 +5,19 @@
 `fixtures.json` sha256:
 
 ```
-51cc25d6f0ca09339d08e54d5bb565efadc924265f780b43ce3c6b038132f62c
+17c8ecddae2253e7854a10e84ea5de7f7929128df9fef230489794ee87d5c558
 ```
 
-(Before the door of 2026-10-19 (FRONT-2):
+(Before where the data stays of 2026-10-19 (TERR-1):
+`51cc25d6f0ca09339d08e54d5bb565efadc924265f780b43ce3c6b038132f62c`,
+260/260; the widening added R208-R209 -- a `RESIDENCY` in a machine file
+is refused by name, as the other fleet kinds are (R207 and before), and so
+is a `TERRITORY` on a MACHINE, because where a machine stands is its
+deployment's and never its design's. Neither needed a new rule in the
+parser: `belongsToFleet` is the exhaustive switch the kind did not compile
+without, and the clause menu is closed, so the fixtures state where a reader
+looks for them what the grammar already did.
+Before the door of 2026-10-19 (FRONT-2):
 `b0a62e87ecbeb6a46a61cd1974ac5294a5ea49736e57439141905f0041b5e905`,
 259/259; the widening added R207 -- a `FRONT` in a machine file is
 refused by name, as the other four fleet kinds are (R85-R87, R102): which
@@ -190,7 +199,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **213/213** — 43 accepts with structural expectations, 170 rejects with expected refusal fragments (173/173 before TIME; 132/132 before STATE; 120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **262/262** — 53 accepts with structural expectations, 209 rejects with expected refusal fragments (260/260 before RESIDENCY, and the row not kept in step with the seats between 213/213 and there: the pin above is the one judged, PIN-1; 213/213 after TIME, 173/173 before TIME; 132/132 before STATE; 120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):
