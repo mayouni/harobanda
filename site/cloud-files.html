@@ -56,7 +56,7 @@
     </div>
     <div class="trio">
       <div class="card"><h4>A machine file</h4><p>Says what one machine is and what each program on it may use: the network, which disks, which user, how much memory. <code>harb check</code> reads it against the language's rules and refuses what breaks one, naming the line.</p></div>
-      <div class="card"><h4>A fleet file</h4><p>Names the machines of one estate, each with the public key it is enrolled by, the networks it sits on (the fleet file calls a network a link), and which machine is the way between two of them. It is judged as a whole, because some mistakes belong to no single machine.</p></div>
+      <div class="card"><h4>A fleet file</h4><p>Names the machines of one estate, each with the public key it is enrolled by, the networks it sits on (the fleet file calls a network a link), which machine is the way between two of them, and which machine is the door of a link: the one that ends TLS for the devices on it, under a root the file names by its fingerprint. It is judged as a whole, because some mistakes belong to no single machine.</p></div>
       <div class="card"><h4>A pack</h4><p>A solution's server programs on their own, written apart from any machine: what each one needs to run. <code>harb place</code> puts a pack on a machine, and the machine's own checks judge the result as one machine.</p></div>
     </div>
     <div class="term" style="margin-top:clamp(24px,3vw,34px)" aria-label="The reserved program of machines/qemu_deadline.machine, as written">

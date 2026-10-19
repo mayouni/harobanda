@@ -1,14 +1,24 @@
-# fleet v0.2 — pinning and the conformance scoreboard
+# fleet v0.3 — pinning and the conformance scoreboard
 
 ## The pin
 
 `fixtures.json` sha256:
 
 ```
-247b8f5ed72517d878d1aba7a3c89f93485aa3f4e7378134837362e4508a417a
+eecc9ced012e51138a71cd71404d3cf3de2bfdafddd5dc18576ded0ca7e0547a
 ```
 
-(FR59 moved within the same seat, before it was ever committed: its asker
+(Before the door of 2026-10-19 (FRONT-2, fleet v0.3):
+`247b8f5ed72517d878d1aba7a3c89f93485aa3f4e7378134837362e4508a417a`,
+71/71; the widening added FA13 and FR60-FR66, gave the fleet its fifth
+kind, `FRONT` -- the member that ends TLS for the devices of one link, the
+name it answers to there, derived and never written twice, and the root it
+signs under, by its fingerprint -- and regenerated FA7 from the real files,
+which carry the door now; each reject is a case where every machine is
+faultless alone, and FA7 was green at once because the court's rule and
+the files' author were the same desk, which is when a court deserves doubt
+and got the probe of a real boot instead.
+FR59 moved within the same seat, before it was ever committed: its asker
 now names a GATEWAY, because the machine court refuses a question to an
 address a machine has no way to (R168), and an asker with no gateway was
 refused there, for the wrong reason, before the fleet could say that no
@@ -44,7 +54,7 @@ grammar's own `PINNING.md` requires of itself.
 
 | runtime | how | conformance |
 |---|---|---|
-| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **71/71** — 12 accepts, 59 rejects (32/32 before ROUTE; the first run of the widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
+| Zig (`src/fleet.zig`) | `zig build court` / `harb court --fleet` | **79/79** — 13 accepts, 66 rejects (71/71 before FRONT; 32/32 before ROUTE; the first run of the ROUTE widening was 56/58, and the two it refused were MY fixtures, each for the wrong reason, so the court convicted its own author twice before it was green) |
 
 `zig build court` runs BOTH grammars: the machine fixtures first, the
 fleet fixtures after. One step, two courts, because a fleet is no better
@@ -128,6 +138,28 @@ declare its gateway), so each refused for a reason that was true and was
 not the one the case was written for. A court that refuses for the wrong
 reason is not a court of that rule, and its author is the first thing it
 convicts.
+
+## The door: FRONT (FRONT-2, fleet v0.3)
+
+`FRONT` names the member that ends TLS for the devices of one link, and
+the root it signs under. Eight cases hold it (FA13, FR60-FR66), and what
+they judge is what no machine can: that the door is a machine of the set
+(FR60) standing on a link the fleet declares (FR61, FR62); that it HAS a
+name there -- a certificate carries a name, and a device asks for one --
+which is the link's domain when the member serves the link, or the name
+the link's server promises it (FA13), and which does not exist on a wire
+nobody serves (FR63) or for a member nobody names (FR64); that the root is
+written as the device prints it, 16 lowercase hex (FR65); and that a link
+has one door (FR66). The name is DERIVED, so FA7 and FA13 say what it must
+be (`front_host`): a derivation that silently changed would leave the
+fleet accepted and every device asking the wrong name.
+
+What it buys is the join, as HARDWARE did: `machines/cloud_links.fleet`
+says `ROOT`, `experiment/os8_links.sh` makes the root at every run, writes
+its fingerprint into a copy of the fleet, and holds the till's own line --
+`signed under the root fingerprint ...` -- to what that copy declares. The
+root that signed for the door and the root the fleet names are one value
+read twice, and the pin says so by giving both the same `FP1`.
 
 ## The court judges this pin (PIN-1)
 

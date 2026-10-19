@@ -14,7 +14,7 @@
 DEFINE SERVICE door AS (
   RUN ["/harb", "get", "127.0.0.1", "443", "/health", "--tls", "--ca", "/etc/front-ca.crt", "--name", "front.local"],
   RESTART never,
-  AFTER [front, ringserv],
+  AFTER [caddy, ringserv],
   NEEDS [network]
 ) RATIONALE "The question through the front: the server's own /health, reached over TLS and nothing else, under a root this world was given and no other"
 

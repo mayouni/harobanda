@@ -1,4 +1,4 @@
-# fleet v0.2 — the grammar of a set of machines
+# fleet v0.3 — the grammar of a set of machines
 
 ## Why there is a second file and not a bigger one
 
@@ -57,6 +57,23 @@ A machine says `FORWARD` and the fleet says it was meant: **a machine that
 forwards is a door**, joins every one of its links whether or not anybody
 meant it to, and the fleet must have a route through it for every pair of
 them (FR39, FR40). One way between two links (FR38).
+
+### DEFINE FRONT — the door of a link (FRONT-2, fleet v0.3)
+
+| clause | value | obligation |
+|---|---|---|
+| `MEMBER` | ident | required — the member that ends TLS for the devices of the link: declared (FR60), standing on that link (FR62), and with a NAME there, because a certificate carries a name and a device asks for one. The name is DERIVED, never written twice: the link's domain when the member serves the link (the box IS `front.cloud`), or `peer.domain` when the link's server promises the member an address under that name (FA13). On a wire nobody serves there is no name (FR63), and a member the server promises nothing has none (FR64) |
+| `LINK` | ident | required — the link whose devices ask the door: one the fleet declares (FR61). One door per link (FR66) |
+| `ROOT` | string | required — the fingerprint of the root the front signs under, 16 lowercase hex exactly as `harb get --tls` prints it from a device (FR65). What a device printed and what the fleet declares can then be compared by anyone holding this file: a different value is a different root, and somebody else answered |
+
+**A front is a way of its own.** `FORWARD` governs the packets that pass
+THROUGH a machine; a front is that machine asking the server on the
+device's behalf, by its own leg on the server's link. So a door on a member
+of two links reaches the second link's server whether or not a `ROUTE`
+joins the links, and the `FRONT` declaration is the fleet saying that door
+was meant, as a `ROUTE` says a forwarder was. `experiment/os8_links.sh`
+shows it: the box with `FORWARD` taken out is silent about the far link,
+and its door still answers.
 
 **A route is a way both ways.** No packet filter exists to make it one-way,
 and an answer needs a way back as much as a question needs a way there, so
@@ -204,6 +221,13 @@ checks the members it has, and says nothing about the rest of the wire.
 | FR57 | ... or a port it does not answer on |
 | FR58 | **a member whose `TIME_KEY` is not the authority's enrolled key**: it would believe another's answer |
 | FR59 | a member that asks the authority from a link the authority's is not joined to: a question with no way there |
+| FR60 | a `FRONT` that is nobody in the fleet: a door is a machine of the set |
+| FR61 | a `FRONT` on a link the fleet does not declare |
+| FR62 | a `FRONT` whose member has no network on that link: a door stands on the link it is asked on |
+| FR63 | a `FRONT` on a wire nobody serves names on: a certificate carries a name, and nobody there would give the door one |
+| FR64 | a `FRONT` whose member neither serves the link nor is promised a name there by its server |
+| FR65 | a `ROOT` that is not 16 lowercase hex: the fingerprint exactly as a device prints it, or no device's line can be held to it |
+| FR66 | two doors on one link: a device told to trust the door of its link would have two to choose from |
 
 ## Attribution: one machine verifying another's record
 
@@ -335,8 +359,48 @@ runs, with a placeholder key: a device makes its key on its first boot and
 a file in a repository cannot know it, so the script enrols the authority
 into COPIES.
 
+## The door: one member ends TLS for a link, under a root the fleet names (FRONT-2)
+
+The front of a cloud is a world like any server (FRONT-1): `machines/front.pack`
+places Caddy on a machine, as an identity with its own directories and the
+ports it binds. What the machine cannot say is that the devices on a link are
+to TRUST it: which member is their door, by what name, under which root. A
+fleet says that, `FRONT`, and judges what no machine can (FR60-FR66). The
+device's side is small and deliberately dumb: it is given the root's public
+half (staged into its image) and asks the door by its name --
+`harb get front.cloud 443 /health --tls --ca /etc/front-ca.crt` -- trusting
+that file and nothing else, and its line says the fingerprint of the root
+that signed. The fleet's `ROOT` is that fingerprint, so a transcript and a
+fleet file can be held together by anybody who has both.
+
+```
+# the roll names the door
+front door -- gateway is the door of front, as
+    front.cloud (192.168.20.1), under the root <fp>
+
+# for a script that stages the root
+harb fleet <file.fleet> front <name>
+gateway front front.cloud 192.168.20.1 <fp>
+```
+
+The root is made BY HAND (`openssl`, in the scene) and seeded on the door's
+disk; the floor never generates it and neither does the front. A repository
+cannot know a root made at each run, so `machines/cloud_links.fleet` carries
+a placeholder and `experiment/os8_links.sh` writes the fingerprint into a
+COPY, as `os10_time.sh` enrols a key -- enrolment by hand, FLT-1's design.
+
 ## Named seams (stated, not hidden)
 
+- **The door.** One per link, named by the link's server (its domain, or a
+  promise), under one root; a device trusts the root's public half it was
+  GIVEN, and nothing judges how it got it. What a member trusts is a file in
+  its image, not a declaration: the scene holds it to the fleet's `ROOT`, the
+  court cannot. The front's configuration (its Caddyfile) restates the
+  server's address, which the box's `PEER` already declares -- a second place
+  that has to agree, because a world on the box has no resolver of its own;
+  deriving the configuration from the declaration (SEE-1) is not built. A
+  door is TCP on 443; what it fronts, and how many servers, is the
+  configuration's and not the fleet's.
 - **Time.** A fleet has ONE time authority, which stands on a clock it
   declares and on nothing else (authenticated network time is not built);
   a statement is an upper bound, never a lower one; and the authority

@@ -5,10 +5,18 @@
 `fixtures.json` sha256:
 
 ```
-b0a62e87ecbeb6a46a61cd1974ac5294a5ea49736e57439141905f0041b5e905
+51cc25d6f0ca09339d08e54d5bb565efadc924265f780b43ce3c6b038132f62c
 ```
 
-(Before the ports of 2026-10-14 (PORT-1):
+(Before the door of 2026-10-19 (FRONT-2):
+`b0a62e87ecbeb6a46a61cd1974ac5294a5ea49736e57439141905f0041b5e905`,
+259/259; the widening added R207 -- a `FRONT` in a machine file is
+refused by name, as the other four fleet kinds are (R85-R87, R102): which
+member the devices of a link trust as their door is a fact about a set.
+The parser needed no new rule for it, because `belongsToFleet` is an
+exhaustive switch and the kind did not compile until it was placed; the
+fixture states the rule where a reader looks for it.
+Before the ports of 2026-10-14 (PORT-1):
 `ccfeff69ad36db5e55f9f698232a34f833bf03a48db6cc28dc2b4c42690ece9c`,
 245/245; the widening added A52-A53 and R195-R206 -- a world that runs as
 an identity and speaks on the network may be given the TCP ports it will

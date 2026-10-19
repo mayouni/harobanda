@@ -891,7 +891,7 @@ pub const Clause = struct {
     value: Value,
 };
 
-pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER, RETIREMENT, ROUTE };
+pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER, PEER, FLEET, MEMBER, RETIREMENT, ROUTE, FRONT };
 
 /// Which file a kind belongs in -- one language, two files (FLT-1).
 ///
@@ -905,7 +905,7 @@ pub const Kind = enum { MACHINE, SERVICE, CAPABILITY, MOUNT, PIN, NETWORK, USER,
 pub fn belongsToFleet(kind: Kind) bool {
     return switch (kind) {
         .MACHINE, .SERVICE, .CAPABILITY, .MOUNT, .PIN, .NETWORK, .USER, .PEER => false,
-        .FLEET, .MEMBER, .RETIREMENT, .ROUTE => true,
+        .FLEET, .MEMBER, .RETIREMENT, .ROUTE, .FRONT => true,
     };
 }
 
@@ -931,6 +931,7 @@ fn allowedClauses(kind: Kind) []const []const u8 {
         .MEMBER => &.{ "DECLARATION", "KEY", "HARDWARE" },
         .RETIREMENT => &.{ "MEMBER", "KEY", "THROUGH" },
         .ROUTE => &.{ "BETWEEN", "THROUGH" },
+        .FRONT => &.{ "MEMBER", "LINK", "ROOT" },
     };
 }
 

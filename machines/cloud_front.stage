@@ -1,0 +1,12 @@
+# cloud_front.stage -- what the image of machines/cloud_front.machine with machines/front.pack
+# placed on it carries beyond /harb (FRONT-2). One line each: <file in this repository's tree>
+# <where the image puts it>. `harb image` packs a file only if some service names it by
+# absolute path.
+#
+# The front: Caddy, fetched and verified by experiment/caddy_fetch.sh (vendor/PIN.md), and
+# the configuration for THIS placement -- the box's own name on the front link, the server
+# on the core link behind it. The root the front signs under is NOT here: the scene seeds it
+# on the box's disk (experiment/front_seed.sh), and only its public half travels, in the
+# till's image (machines/cloud_till.stage), for the question that must trust it.
+zig-out/caddy/caddy               /caddy
+machines/front/Caddyfile.gateway  /app/Caddyfile

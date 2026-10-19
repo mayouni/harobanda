@@ -77,6 +77,23 @@ Without `--out` it is a rehearsal: judged, nothing written. With it,
 the placed text is written, and it is a machine file like any other:
 `harb check`, `plan`, `image` and `judge` take it.
 
+**`--after <world>` orders the placement** (FRONT-2): every service of
+the pack that orders itself after nothing is given `AFTER [<world>]`,
+written on the line of its own `DEFINE` so that the pack's lines keep
+their numbers and a refusal still names the line the pack's author
+wrote; a service that already has an `AFTER` is left exactly as written.
+It is a fact about THIS placement and not about the pack, which is why
+it is not a clause of the pack: the front (`machines/front.pack`) opens
+after the server it fronts on the one machine that carries both
+(`experiment/os11_front.sh`), and the same pack is placed on the gateway
+of a cloud, where that server is another machine's, without it. The
+banner above the pack says what the placement added -- `-- placed by
+harb place: front.pack sha256:... after ringserv` -- and the pack's
+digest stays that of its bytes as read. Found by a race: two servers
+placed as peers became ready in either order, and a pin fixed one of
+them (BDG-1: a transcript whose order depends on which process got there
+first is a margin, and the race is closed, never normalised away).
+
 ## Where a refusal is reported
 
 `place: <file> (line N): <message>`, where the file is a file NAME and

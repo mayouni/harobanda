@@ -1,0 +1,8 @@
+# cloud_till.stage -- what the image of machines/cloud_till.machine carries beyond /harb
+# (FRONT-2). One line each: <file in this repository's tree>  <where the image puts it>.
+#
+# The public half of the root the door signs under, made by the scene at each run and never
+# in git: the one thing this device trusts when it asks https://front.cloud. The fleet names
+# the same root by its fingerprint (machines/cloud_links.fleet, FRONT), and the till's own
+# question prints the fingerprint of the root that signed: the scene holds the two together.
+zig-out/front/ca/root.crt   /etc/front-ca.crt

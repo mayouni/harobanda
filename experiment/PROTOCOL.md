@@ -1,3 +1,141 @@
+# FRONT-2 — a door is declared by the set it serves, and a front is a way of its own
+
+The cloud's front on the gateway of two links (the rest of rung 3b of
+`doc/CLOUD.md`), built 2026-10-19 on the author's "continue" after
+FRONT-1, the same day. FRONT-1 placed the proxy on one machine with the
+server beside it; this seat puts the same pack on the box of
+`machines/cloud_links.fleet`, has the fleet say so, and has the till ask
+the door by its name.
+
+## What was built
+
+- **Fleet v0.3: `FRONT`** (`src/fleet.zig`, `declarative/fleet/GRAMMAR.md`,
+  79/79). A declaration of its own, as `ROUTE` is: `MEMBER` (the member that
+  ends TLS: declared, FR60; standing on the link, FR62), `LINK` (one the
+  fleet declares, FR61; one door per link, FR66) and `ROOT` (the 16-hex
+  fingerprint a device prints, FR65). The door's NAME is DERIVED and never
+  written twice: the link's domain when the member serves the link (the box
+  IS `front.cloud`), `peer.domain` when the link's server promises the
+  member an address under that name (FA13: `till.front.cloud`); on a wire
+  nobody serves there is no name (FR63) and a member nobody names has none
+  (FR64). The roll prints the door; `harb fleet <file> front <name>` prints
+  member, link, name, address and root on one line for a script. FA7 is
+  regenerated verbatim from the real files, which carry the door now, and
+  says what the derived name must be (`front_host`), because a derivation
+  that silently changed would leave the fleet accepted and every device
+  asking the wrong name. R207 refuses a `FRONT` in a machine file by name,
+  as the other four fleet kinds are refused (260/260).
+- **The box is the door** (`machines/cloud_front.machine`): four capabilities
+  a server world needs, a `data` mount for the root it is given, the
+  certificates it issues and its log, and a loopback for the one plain
+  question `harb ready` asks; `machines/front.pack` placed on it by the scene
+  (`machines/cloud_front.stage`: Caddy and `machines/front/Caddyfile.gateway`,
+  whose one site is `https://front.cloud`, the box's own name on the front
+  link, with the server on the core link behind it at the address the box's
+  `PEER` promises -- written again, a named seam). The till
+  (`machines/cloud_till.machine`) asks two more questions: `door`, the same
+  `/health` through the door over TLS, trusting the root's public half it was
+  given (`machines/cloud_till.stage` stages `/etc/front-ca.crt`) and nothing
+  else, and `wrong`, the box's OTHER name (`core.cloud`) on the same port,
+  refused by the till's own client before any question is sent.
+- **`harb get --tls` asks by NAME**: a name asked is the name the certificate
+  must carry, so `--name` is for an address only, and the line says
+  `https://front.cloud:443/health` as it says the plain question.
+- **Enrolment by hand, the time scene's shape** (`experiment/os8_links.sh`):
+  the root is made at every run (openssl) and seeded on the box's disk
+  (`experiment/front_seed.sh`, both boxes); `ROOT` in the repository's fleet
+  is a placeholder, and the scene writes the fingerprint into a COPY of the
+  fleet beside copies of its three machine files (a fleet resolves its
+  declarations beside itself), judges the copy, reads the door back from it,
+  and holds the till's own line -- `signed under the root fingerprint ...` --
+  to that ROOT before any pin is consulted. The pin then reads the roll's
+  root and the till's as the same `FP1` (marked at its exact length, then
+  mapped in order of appearance: a door signed by another root would read
+  `FP2` and convict).
+- **`harb place --after <world>`** (`src/pack.zig`, `declarative/pack/GRAMMAR.md`):
+  every service of the placed pack that orders itself after nothing is given
+  `AFTER [<world>]`, written on the line of its own `DEFINE` so the pack's
+  lines keep their numbers and a refusal still names the author's line; a
+  service with its own `AFTER` is left as written; the banner says
+  `after <world>` and the pack's digest stays that of its bytes as read. A
+  fact about the PLACEMENT, never a clause of the pack: the one-machine
+  front opens after the server it fronts (`experiment/os11_front.sh`), and
+  the same pack lands on the gateway without it.
+
+## What the boot says
+
+`machines/cloud_links.expected`, 201 lines where FWD-1's were 148, matched
+twice with a different root each run: the roll, naming the door under the
+root (`front door -- gateway is the door of front, as front.cloud
+(192.168.20.1), under the root FP1`); the box with `caddy` placed, judging
+itself at 33 lines; the till, `200 {"code":0,...} over TLS 1.3; the
+certificate is for front.cloud, signed under the root fingerprint FP1`, and
+`the handshake with 10.20.0.1 failed: TlsAlert` for the box's other name;
+the stranger, told nothing, reaching nothing -- not the server, not the
+door; the closed box, silent about the far link, STILL THE DOOR: `closed:
+ask commons.core.cloud -- no such name` and, two lines later, the same 200
+over TLS through `front.cloud`. The box's "every service has ended" line
+is gone from both boxes, because a box with a door is a box with a world.
+
+## What was found
+
+- **A front is a way of its own.** `FORWARD` governs the packets that pass
+  THROUGH a box; a front is the box asking the server on the device's
+  behalf, by its own leg on the server's link. The box with `FORWARD` taken
+  out is silent about the far link and still answers at the door. That is
+  why the fleet declares a `FRONT` as it declares a `ROUTE` (FR39's shape
+  one layer up): a front on a member of two links is a door to the second
+  link, route or no route, and the declaration is the fleet saying it was
+  meant. It is also the narrow way FWD-1 left open as a seam -- not a
+  packet filter, but a door that passes one protocol to one address.
+- **A pack's names share the namespace of the machine it lands on.** The
+  front's world was called `front`, and the box's front LINK is called
+  `front`: `'front' is already declared (line 84 of cloud_front.machine)`.
+  The layer's words are the ones machines use for their links, so a world
+  is named for its program, `caddy`, as `ringserv` is; FRONT-1's pin was
+  re-pinned by the rule (eight lines) and re-run.
+- **Two servers placed as peers become ready in either order.** The
+  one-machine front's pin had fixed one order, and held twice before it
+  broke on the third run: RingServ's startup straddles its own first probe
+  under the emulator, Caddy's does not. A pin is a claim that what happened
+  was RIGHT (SYS-1), and both orders are right, so the order was a margin
+  (BDG-1); the race is closed by a declaration -- `--after ringserv` at the
+  placement -- never by normalising the two lines, and the one-machine
+  pin's `start caddy` line now follows the server's `ready`.
+- **The front's health stays its own.** Making Caddy's `/health` a proxy
+  of the upstream's would have closed the race more elegantly and been
+  wrong: a box whose world's `HEALTH` depends on another machine's server
+  is a box whose watchdog resets it when that server is down (HLT-1).
+- **The witness question's name was taken too**: `front_witness.pack`
+  already called its TLS question `door`, so the world could not be `door`
+  either. One namespace, read before naming.
+
+## What is judged, and by what
+
+The pin, twice (a new root each run, `FP1` both times); the fleet court
+79/79 (FA7 verbatim, FA13, FR60-FR66) and the machine court 260/260
+(R207); the pack court 35/35; the unit tests (the door's derived name and
+its refusals; `--after` on a service with and without its own `AFTER`,
+the line count kept, the digest kept, an unknown world refused at the
+pack's line); `experiment/os11_front.sh` matched again with the renamed
+world and the placement's order; `regress.sh front links` as the gate.
+
+## Named seams
+
+- The Caddyfile restates the server's address, which the box's `PEER`
+  already declares: a world on the box has no resolver of its own (the box
+  serves names and asks nobody, itself included). Deriving the front's
+  configuration from the declaration (SEE-1), or a names server that asks
+  itself, is not built.
+- What a device trusts is a FILE in its image (`/etc/front-ca.crt`), not a
+  declaration; the scene holds it to the fleet's `ROOT`, the court cannot.
+- One door per link; TCP 443 only (UDP 443 is Caddy's HTTP/3, which
+  Landlock does not hold); what the door fronts, and how many servers, is
+  the configuration's and not the fleet's.
+- No mutant probe for either front seat; three were named under FRONT-1.
+- A door on a member that does not serve its link is accepted by the court
+  (FA13) and never booted.
+
 # FRONT-1 — a front is a world like any server, and what it ends is TLS under a root it was given
 
 The cloud's front (rung 3b of `doc/CLOUD.md`), built on one machine

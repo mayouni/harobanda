@@ -163,6 +163,37 @@ pub const Route = struct {
     rationale: []const u8,
 };
 
+/// The door of a cloud (FRONT-2, fleet v0.3): the member that ends TLS for the devices
+/// on one link, the name it answers to there, and the root it signs under.
+///
+/// A declaration of its own, as ROUTE is, because why a link has a door -- the tills on
+/// the front link reach the servers behind it over TLS -- is the fact an auditor reading
+/// this file will need. And it is the fleet's, because a front is a fact about a SET: the
+/// machine that fronts says only which ports it binds (PORTS), and only the fleet can say
+/// that THIS member is the door the devices on THIS link are to trust, under which root.
+/// What a device does with that is its own: it is given the root's public half and asks
+/// the door by its name (`harb get --tls`), and the fingerprint it prints is the one
+/// written here, or somebody else answered.
+pub const Front = struct {
+    name: []const u8,
+    line: usize,
+    /// the member that fronts: on the link, with a name there
+    member: []const u8,
+    /// the link whose devices ask it
+    link: []const u8,
+    /// the name the front answers to on that link, DERIVED and never written twice: the
+    /// link's domain when the member serves the link (the box IS `front.cloud`), or
+    /// `peer.domain` when the link's server promises the member an address under that name
+    host: []const u8,
+    /// the address that name is, as the declaration that holds it spells it
+    address: []const u8,
+    /// the fingerprint of the root the front signs under -- 16 lowercase hex, exactly as
+    /// `harb get --tls` prints it from a device -- so what a device printed and what the
+    /// fleet declares can be compared by anyone holding this file
+    root: []const u8,
+    rationale: []const u8,
+};
+
 pub const Fleet = struct {
     name: []const u8,
     line: usize,
@@ -178,6 +209,8 @@ pub const Fleet = struct {
     retirements: []const Retirement,
     /// the ways between links, each through one member
     routes: []const Route,
+    /// the doors: one member per fronted link, ending TLS under a root the fleet names (FRONT-2)
+    fronts: []const Front = &.{},
     /// the member whose word about the time the fleet takes (TIME-1, STZ-OS-RULING-07): enrolled
     /// like any member, so what it signs is checked with a public key by anyone who holds this file.
     /// Null is a fleet that has no time, and whose records are ORDERED and UNDATED.
@@ -256,6 +289,24 @@ fn isHead(t: []const u8) bool {
 }
 
 /// the network of this name on this machine, or null
+/// 16 lowercase hex: a root's fingerprint exactly as `harb get --tls` prints it
+fn isFingerprint(t: []const u8) bool {
+    if (t.len != 16) return false;
+    for (t) |c| if (!((c >= '0' and c <= '9') or (c >= 'a' and c <= 'f'))) return false;
+    return true;
+}
+
+/// The peer the server of ONE link promises this member an address as, on that link: the
+/// member says which device it is (HARDWARE), and the server has it in its register there.
+fn promisedOn(server: Member, m: Member, wire: []const u8) ?machine.Peer {
+    const hw = m.hardware orelse return null;
+    for (server.machine.peers) |p| {
+        if (!std.mem.eql(u8, p.network, wire)) continue;
+        if (std.mem.eql(u8, &p.hardware, &hw)) return p;
+    }
+    return null;
+}
+
 fn linkOf(m: machine.Machine, link: []const u8) ?machine.Network {
     for (m.networks) |n| if (std.mem.eql(u8, n.name, link)) return n;
     return null;
@@ -443,6 +494,55 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         try routes.append(arena, .{ .name = d.name, .line = d.line, .between = between, .through = via, .rationale = d.rationale });
     };
 
+    // ---- the doors (FRONT-2) ------------------------------------------
+    //
+    // A front is a member that ends TLS for the devices on one link. What the fleet
+    // can judge, and no machine can: that the member exists and stands on that link,
+    // that it HAS a name there (a certificate carries a name, and a device asks for
+    // one), what that name is, and that the root it signs under is written as a
+    // fingerprint a device can be held to.
+    var fronts: std.ArrayList(Front) = .{};
+    for (decls.items) |d| if (d.kind == .FRONT) {
+        const mc = try machine.required(&ctx, d, "MEMBER");
+        const who = try machine.wantIdent(&ctx, mc);
+        var found: ?Member = null;
+        for (members.items) |m| if (std.mem.eql(u8, m.name, who)) {
+            found = m;
+        };
+        const fm = found orelse return ctx.refuse(mc.line, "FRONT {s} is {s}, and no MEMBER {s} is declared: a front is a machine of this fleet", .{ d.name, who, who });
+        const lc = try machine.required(&ctx, d, "LINK");
+        const wire = try machine.wantIdent(&ctx, lc);
+        if (!has(links.items, wire)) return ctx.refuse(lc.line, "FRONT {s} fronts {s}, and this fleet declares no link of that name: a front is asked on a wire the fleet declares, by the devices on it", .{ d.name, wire });
+        const n = linkOf(fm.machine, wire) orelse return ctx.refuse(mc.line, "FRONT {s} is {s}, which has no network on {s}: a front is asked on the link it stands on", .{ d.name, who, wire });
+        // its name on that link, derived and never written twice: the link's own server
+        // IS the domain; any other member is named by the promise that server makes it
+        var host: []const u8 = undefined;
+        var address: []const u8 = undefined;
+        if (n.domain) |dom| {
+            host = dom;
+            address = switch (n.address) {
+                .static => |s| s.text[0 .. std.mem.indexOfScalar(u8, s.text, '/') orelse s.text.len],
+                .dhcp => return ctx.refuse(mc.line, "FRONT {s} is {s}, which serves names on {s} from a leased address: a door is an address somebody sends to, so it declares one", .{ d.name, who, wire }),
+            };
+        } else {
+            var sv: ?Member = null;
+            for (members.items) |m| if (linkOf(m.machine, wire)) |mn| if (mn.domain != null) {
+                sv = m;
+            };
+            const s = sv orelse return ctx.refuse(mc.line, "FRONT {s} is {s} on {s}, and no member serves names on {s}: a certificate carries a name, and nobody there would give the front one", .{ d.name, who, wire, wire });
+            const p = promisedOn(s, fm, wire) orelse return ctx.refuse(mc.line, "FRONT {s} is {s}, which has no name on {s}: it does not serve the link, and {s} promises it nothing there", .{ d.name, who, wire, s.name });
+            host = try std.fmt.allocPrint(arena, "{s}.{s}", .{ p.name, linkOf(s.machine, wire).?.domain.? });
+            address = p.address;
+        }
+        const rc = try machine.required(&ctx, d, "ROOT");
+        const root = try machine.wantString(&ctx, rc);
+        if (!isFingerprint(root)) return ctx.refuse(rc.line, "ROOT is the fingerprint of the root the front signs under -- 16 lowercase hex, as `harb get --tls` prints it from a device -- and '{s}' is not one", .{root});
+        for (fronts.items) |o| if (std.mem.eql(u8, o.link, wire)) {
+            return ctx.refuse(d.line, "{s} already fronts {s} as {s}: one link, one door, or a device told to trust the door of its link would have two to choose from", .{ o.member, wire, o.host });
+        };
+        try fronts.append(arena, .{ .name = d.name, .line = d.line, .member = who, .link = wire, .host = host, .address = address, .root = root, .rationale = d.rationale });
+    };
+
     // ---- the time authority (TIME-1) ---------------------------------
     var time_authority: ?[]const u8 = null;
     var time_line: usize = fd.line;
@@ -458,6 +558,7 @@ pub fn declare(arena: Allocator, src: []const u8, resolver: Resolver, refusal: *
         .members = try members.toOwnedSlice(arena),
         .retirements = try retirements.toOwnedSlice(arena),
         .routes = try routes.toOwnedSlice(arena),
+        .fronts = try fronts.toOwnedSlice(arena),
         .time_authority = time_authority,
         .time_line = time_line,
         .rationale = fd.rationale,
@@ -1053,6 +1154,66 @@ test "the fleet refuses what no single machine can be wrong about" {
     // together they are a network with two servers
     try testing.expectError(error.Refused, declare(arena, src, t.resolver(), &refusal));
     try testing.expect(std.mem.indexOf(u8, refusal.message, "already serves salle") != null);
+}
+
+test "a door is a member with a name on the link it fronts, and the fleet says which root it signs under" {
+    var arena_state = std.heap.ArenaAllocator.init(testing.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+
+    // a box on two links, serving both and the way between; a till that asks on the front one
+    const box =
+        \\DEFINE MACHINE box AS (PROFILE hosted, ARCH x86_64, KERNEL linux, FORWARD yes) RATIONALE "x"
+        \\DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "x"
+        \\DEFINE NETWORK front AS (INTERFACE "eth0", ADDRESS "192.168.20.1/24", DOMAIN "front.cloud") RATIONALE "x"
+        \\DEFINE NETWORK core AS (INTERFACE "eth1", ADDRESS "10.20.0.1/24", DOMAIN "core.cloud") RATIONALE "x"
+        \\DEFINE PEER till AS (NETWORK front, HARDWARE "52:54:00:12:35:61", ADDRESS "192.168.20.40") RATIONALE "x"
+        \\
+    ;
+    const till =
+        \\DEFINE MACHINE till AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE "x"
+        \\DEFINE CAPABILITY network AS (GRANT yes) RATIONALE "x"
+        \\DEFINE NETWORK front AS (INTERFACE "eth0", ADDRESS dhcp, EGRESS ["10.20.0.0/24"]) RATIONALE "x"
+        \\
+    ;
+    const t = T{ .files = &.{ .{ "box.machine", box }, .{ "till.machine", till } } };
+    const head =
+        \\DEFINE FLEET c AS (LINKS [front, core]) RATIONALE "x"
+        \\DEFINE MEMBER gateway AS (DECLARATION "box.machine") RATIONALE "x"
+        \\DEFINE MEMBER till AS (DECLARATION "till.machine", HARDWARE "52:54:00:12:35:61") RATIONALE "x"
+        \\DEFINE ROUTE r AS (BETWEEN [front, core], THROUGH gateway) RATIONALE "x"
+        \\
+    ;
+    // the box serves the front link, so its name there is the domain itself
+    var refusal = Refusal{};
+    const ok = try declare(arena, head ++
+        \\DEFINE FRONT door AS (MEMBER gateway, LINK front, ROOT "0123456789abcdef") RATIONALE "x"
+        \\
+    , t.resolver(), &refusal);
+    try testing.expectEqual(@as(usize, 1), ok.fronts.len);
+    try testing.expectEqualStrings("front.cloud", ok.fronts[0].host);
+    try testing.expectEqualStrings("192.168.20.1", ok.fronts[0].address);
+    try testing.expectEqualStrings("0123456789abcdef", ok.fronts[0].root);
+
+    // the till is promised a name by the link's server, so it could be the door too, as till.front.cloud
+    const named = try declare(arena, head ++
+        \\DEFINE FRONT door AS (MEMBER till, LINK front, ROOT "0123456789abcdef") RATIONALE "x"
+        \\
+    , t.resolver(), &refusal);
+    try testing.expectEqualStrings("till.front.cloud", named.fronts[0].host);
+    try testing.expectEqualStrings("192.168.20.40", named.fronts[0].address);
+
+    // a door on a link the member does not stand on, and a root that is not a fingerprint
+    try testing.expectError(error.Refused, declare(arena, head ++
+        \\DEFINE FRONT door AS (MEMBER till, LINK core, ROOT "0123456789abcdef") RATIONALE "x"
+        \\
+    , t.resolver(), &refusal));
+    try testing.expect(std.mem.indexOf(u8, refusal.message, "has no network on core") != null);
+    try testing.expectError(error.Refused, declare(arena, head ++
+        \\DEFINE FRONT door AS (MEMBER gateway, LINK front, ROOT "ABCDEF0123456789") RATIONALE "x"
+        \\
+    , t.resolver(), &refusal));
+    try testing.expect(std.mem.indexOf(u8, refusal.message, "16 lowercase hex") != null);
 }
 
 // ---- retirement (RET-1) ---------------------------------------------------

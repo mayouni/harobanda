@@ -61,7 +61,7 @@ SCENES="guarantees names fleet time cloud links front"
     n=${s%%:*}; f=${s#*:}
     if ! wanted "$n"; then skip "$n" "not named"
     elif [ ! -f zig-out/ringserv/ringserv ]; then skip "$n" "RingServ is not built under zig-out/ringserv (powershell experiment/ringserv_build.ps1)"
-    elif [ "$n" = front ] && [ ! -x zig-out/caddy/caddy ]; then skip "$n" "Caddy is not fetched under zig-out/caddy (experiment/caddy_fetch.sh)"
+    elif { [ "$n" = front ] || [ "$n" = links ]; } && [ ! -x zig-out/caddy/caddy ]; then skip "$n" "Caddy is not fetched under zig-out/caddy (experiment/caddy_fetch.sh)"
     else one "$n" "zig-out/wsl/$n.txt" bash "experiment/$f"; fi
   done
   echo "=== verdict: $ran ran, $fails failed ==="

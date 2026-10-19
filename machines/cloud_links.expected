@@ -1,12 +1,28 @@
-box: the way between the links, before anyone has asked:
+roll: the fleet, with the root's fingerprint written in: who the door is, and under which root:
+roll: fleet cloud_links -- 3 members on front and core -- judged, no refusal
+roll:   link front -- served by gateway
+roll:   link core -- served by gateway
+roll:   route front_to_core -- front and core, through gateway
+roll:   front door -- gateway is the door of front, as front.cloud (192.168.20.1), under the root FP1
+roll:   gateway -- cloud_front (cloud_front.machine, front 192.168.20.1/24, serves front.cloud, core 10.20.0.1/24, serves core.cloud) -- not enrolled
+roll:   till -- cloud_till (cloud_till.machine, front asks) -- 52:54:00:12:35:61, promised 192.168.20.40 as till -- not enrolled
+roll:   core -- cloud_core (cloud_core.machine, core asks) -- 52:54:00:12:35:62, promised 10.20.0.2 as commons -- not enrolled
+box: the way between the links and the door of the front one, before anyone has asked:
 box: boot: harb init -- machine cloud_front (hosted / x86_64 / qemu_pc) -- pid 1
 box: boot: console /dev/ttyS0
 box: boot: mount proc at /proc -- done
 box: boot: mount sysfs at /sys -- done
 box: boot: mount devtmpfs at /dev -- done
+box: boot: mount cgroup2 at /sys/fs/cgroup -- done
+box: boot: mount ext4 at /data -- done
 box: boot: grant network (effectful)
+box: boot: grant filesystem (effectful)
+box: boot: grant process (effectful)
+box: boot: grant threads (compute)
+box: boot: grant clock (sensing)
 box: boot: network front -- eth0 up 192.168.20.1/24
 box: boot: network core -- eth1 up 10.20.0.1/24
+box: boot: network loopback -- lo up 127.0.0.1/8
 box: boot: forward -- between front and core: a packet that arrives on one may leave by another, and nothing here filters it
 box: boot: names front -- front.cloud: this machine is 192.168.20.1/24, 1 declared peer, and no address for anyone else
 box: boot: names front -- till.front.cloud is 192.168.20.40 for 52:54:00:12:35:61
@@ -18,8 +34,14 @@ box: boot: names core -- commons.core.cloud is 10.20.0.2 for 52:54:00:12:35:62
 box: boot: names core -- this machine forwards, so it is offered as the router to everyone it serves here
 box: boot: names core -- and for front.cloud, which this machine is the way to: front.cloud is 192.168.20.1
 box: boot: names core -- till.front.cloud is 192.168.20.40, through this machine
-box: boot: judge -- the boot matches its expectation (/etc/expected, 19 lines)
-box: boot: every service has ended -- and this machine is still front.cloud and core.cloud: a server stops when the machine stops, not when the asking does
+box: boot: budget -- caddy 128 MiB and 100% of a core and 64 tasks; the kernel holds the ceiling, not the world
+box: boot: health -- caddy every 10s; a world that stops refreshing stops the watchdog
+box: boot: ports -- caddy may bind 80, 443 and 8080 and no other port: the kernel refuses the rest, and gives a port below 1024 only to a world that declares it
+box: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+box: boot: state -- caddy owns /run/front and /data/front as frontdoor (2020:2020); each made, then read back as that identity's, mode 0700
+box: boot: start caddy -- pid N -- /harb ready /run/front/ready 127.0.0.1:8080 --every 2 --mute -- /caddy run --config /app/Caddyfile --adapter caddyfile -- as frontdoor (2020:2020)
+box: boot: caddy -- ready (/run/front/ready)
+box: boot: judge -- the boot matches its expectation (/etc/expected, 33 lines)
 core: the server, behind the box:
 core: boot: harb init -- machine cloud_core (hosted / x86_64 / qemu_pc) -- pid 1
 core: boot: console /dev/ttyS0
@@ -63,13 +85,19 @@ till: boot: where (pid N) exited 0
 till: boot: start reach -- pid N -- /harb get commons.core.cloud 8210 /health
 till: get http://commons.core.cloud:8210/health -- 200 {"code":0,"message":"OK","data":{"up":true}}
 till: boot: reach (pid N) exited 0
+till: boot: start door -- pid N -- /harb get front.cloud 443 /health --tls --ca /etc/front-ca.crt
+till: get https://front.cloud:443/health -- 200 {"code":0,"message":"OK","data":{"up":true}} over TLS 1.3; the certificate is for front.cloud, signed under the root fingerprint FP1
+till: boot: door (pid N) exited 0
+till: boot: start wrong -- pid N -- /harb get core.cloud 443 /health --tls --ca /etc/front-ca.crt
+till: get https://core.cloud:443/health -- the handshake with 10.20.0.1 failed: TlsAlert; the certificate must be for core.cloud and signed under the root fingerprint FP1
+till: boot: wrong (pid N) exited 0
 till: boot: start bare -- pid N -- /harb ask commons
 till: ask commons -- no such name on this network (from 192.168.20.1)
 till: boot: bare (pid N) exited 0
 till: boot: start outside -- pid N -- /harb ask www.example.com
 till: ask www.example.com -- no such name on this network (from 192.168.20.1)
 till: boot: outside (pid N) exited 0
-till: boot: judge -- the boot matches its expectation (/etc/expected, 18 lines)
+till: boot: judge -- the boot matches its expectation (/etc/expected, 22 lines)
 till: boot: every service has ended -- init has nothing left to keep alive
 till: boot: init halts the machine -- reboot(RESTART)
 till: reboot: Restarting system
@@ -89,6 +117,12 @@ stranger: boot: where (pid N) exited 0
 stranger: boot: start reach -- pid N -- /harb get commons.core.cloud 8210 /health
 stranger: get http://commons.core.cloud:8210/health -- no resolver was named, so the name is not an address
 stranger: boot: reach (pid N) exited 0
+stranger: boot: start door -- pid N -- /harb get front.cloud 443 /health --tls --ca /etc/front-ca.crt
+stranger: get https://front.cloud:443/health -- no resolver was named, so the name is not an address
+stranger: boot: door (pid N) exited 0
+stranger: boot: start wrong -- pid N -- /harb get core.cloud 443 /health --tls --ca /etc/front-ca.crt
+stranger: get https://core.cloud:443/health -- no resolver was named, so the name is not an address
+stranger: boot: wrong (pid N) exited 0
 stranger: boot: start bare -- pid N -- /harb ask commons
 stranger: ask commons -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
 stranger: boot: bare (pid N) exited 0
@@ -102,21 +136,34 @@ stranger: boot: judge -- said, not expected: network front -- eth0 dhcp: no leas
 stranger: boot: every service has ended -- init has nothing left to keep alive
 stranger: boot: init halts the machine -- reboot(RESTART)
 stranger: reboot: Restarting system
-closed box: the same box less its one clause, which serves both links and is the way between neither:
+closed box: the same box less its one clause, which serves both links and is the way between neither, and is still the door:
 closedbox: boot: harb init -- machine cloud_front (hosted / x86_64 / qemu_pc) -- pid 1
 closedbox: boot: console /dev/ttyS0
 closedbox: boot: mount proc at /proc -- done
 closedbox: boot: mount sysfs at /sys -- done
 closedbox: boot: mount devtmpfs at /dev -- done
+closedbox: boot: mount cgroup2 at /sys/fs/cgroup -- done
+closedbox: boot: mount ext4 at /data -- done
 closedbox: boot: grant network (effectful)
+closedbox: boot: grant filesystem (effectful)
+closedbox: boot: grant process (effectful)
+closedbox: boot: grant threads (compute)
+closedbox: boot: grant clock (sensing)
 closedbox: boot: network front -- eth0 up 192.168.20.1/24
 closedbox: boot: names front -- front.cloud: this machine is 192.168.20.1/24, 1 declared peer, and no address for anyone else
 closedbox: boot: names front -- till.front.cloud is 192.168.20.40 for 52:54:00:12:35:61
 closedbox: boot: network core -- eth1 up 10.20.0.1/24
 closedbox: boot: names core -- core.cloud: this machine is 10.20.0.1/24, 1 declared peer, and no address for anyone else
 closedbox: boot: names core -- commons.core.cloud is 10.20.0.2 for 52:54:00:12:35:62
-closedbox: boot: judge -- the boot matches its expectation (/etc/expected, 12 lines)
-closedbox: boot: every service has ended -- and this machine is still front.cloud and core.cloud: a server stops when the machine stops, not when the asking does
+closedbox: boot: network loopback -- lo up 127.0.0.1/8
+closedbox: boot: budget -- caddy 128 MiB and 100% of a core and 64 tasks; the kernel holds the ceiling, not the world
+closedbox: boot: health -- caddy every 10s; a world that stops refreshing stops the watchdog
+closedbox: boot: ports -- caddy may bind 80, 443 and 8080 and no other port: the kernel refuses the rest, and gives a port below 1024 only to a world that declares it
+closedbox: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+closedbox: boot: state -- caddy owns /run/front and /data/front as frontdoor (2020:2020); each made, then read back as that identity's, mode 0700
+closedbox: boot: start caddy -- pid N -- /harb ready /run/front/ready 127.0.0.1:8080 --every 2 --mute -- /caddy run --config /app/Caddyfile --adapter caddyfile -- as frontdoor (2020:2020)
+closedbox: boot: caddy -- ready (/run/front/ready)
+closedbox: boot: judge -- the boot matches its expectation (/etc/expected, 26 lines)
 closed: the same till, with that box:
 closed: boot: harb init -- machine cloud_till (hosted / x86_64 / qemu_pc) -- pid 1
 closed: boot: console /dev/ttyS0
@@ -134,6 +181,12 @@ closed: boot: where (pid N) exited 0
 closed: boot: start reach -- pid N -- /harb get commons.core.cloud 8210 /health
 closed: get http://commons.core.cloud:8210/health -- the name does not exist on this network
 closed: boot: reach (pid N) exited 0
+closed: boot: start door -- pid N -- /harb get front.cloud 443 /health --tls --ca /etc/front-ca.crt
+closed: get https://front.cloud:443/health -- 200 {"code":0,"message":"OK","data":{"up":true}} over TLS 1.3; the certificate is for front.cloud, signed under the root fingerprint FP1
+closed: boot: door (pid N) exited 0
+closed: boot: start wrong -- pid N -- /harb get core.cloud 443 /health --tls --ca /etc/front-ca.crt
+closed: get https://core.cloud:443/health -- the name does not exist on this network
+closed: boot: wrong (pid N) exited 0
 closed: boot: start bare -- pid N -- /harb ask commons
 closed: ask commons -- no such name on this network (from 192.168.20.1)
 closed: boot: bare (pid N) exited 0

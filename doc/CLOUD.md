@@ -184,10 +184,22 @@ declares, and given a port below 1024 only if it declares one) and the
 proxy, Caddy (STZ-OS-RULING-18), is placed and judged on one machine
 (FRONT-1, 2026-10-19: a world that is not root ends TLS on 443 under a
 root it was given by hand, reaches the server behind it in plain HTTP on
-the loopback, and refuses a plain question on the TLS port); what remains
-is the same front on the gateway of two links, with the fleet declaring
-which member fronts and the root it signs under; TLS stays out of the
-floor by ruling.
+the loopback, and refuses a plain question on the TLS port), and then on
+the gateway of two links (FRONT-2, 2026-10-19): fleet v0.3's `FRONT`
+names the member that is the DOOR of a link -- by the name it has there,
+derived from the link's server and never written twice, and under a root
+named by its fingerprint -- and the same pack is placed on the box of
+`machines/cloud_links.fleet`; the root is made by hand, seeded on the
+box's disk and enrolled into a copy of the fleet, and the till asks
+`https://front.cloud` through the door, trusting the root's public half
+it was given and nothing else, so the fingerprint its line prints is the
+one the fleet declares. The box with `FORWARD` taken out still answers at
+the door: a front is a way of its own, which is why the fleet declares it
+as it declares a route. Rung 3b is BUILT, in the emulator
+(`machines/cloud_links.expected`, 201 lines, the roll and the three
+machines over three rounds); TLS stays out of the floor by ruling, and
+what a device trusts is a file in its image that the scene, not the
+court, holds to the fleet's word.
 
 *The time half, as built.* `CLOCK` on a machine names the clock it HAS (a
 device), `TIME_AUTHORITY` on one of its links makes it that link's time
@@ -277,7 +289,7 @@ secret; stzn renders the verdicts as the page an auditor reads.
   ordered and will be the floor's. A distributed filesystem is still
   not: the floor copies and verifies files between declared places, and
   what a consistent copy IS stays the application's.*
-- **No second grammar.** A cloud is fleet v0.2 -- routes, placement,
+- **No second grammar.** A cloud is fleet v0.3 -- routes, doors, placement,
   rollout added to the kinds a fleet file may contain -- never a third
   file. A file is judged by which kinds it may contain.
   *Amended 2026-10-04, the day it was written, when rung 1's first

@@ -29,12 +29,20 @@
 --
 -- Its console is muted (`--mute`): a server that logs every request to stderr would
 -- write the machine's transcript, and what it keeps of its own is /data/front/caddy.log.
+--
+-- The world is called `caddy`, for the program, as machines/ringserv.pack calls its world
+-- `ringserv` -- and not `front` (FRONT-2): a pack's names share the namespace of the
+-- machine it is placed on, and `front` is what a machine on a cloud's front link calls
+-- that link (machines/cloud_front.machine), so a world of that name could never be
+-- placed on the box that is the front's natural home. The layer's words are the ones
+-- machines use for their links; a world is named for the program it runs. Its place
+-- keeps the front's name: /run/front and /data/front are where the front's things are.
 
 DEFINE USER frontdoor AS (
   UID 2020
 ) RATIONALE "The identity the front runs as: it owns its storage and its log, binds the ports it was given, and nothing else of the machine"
 
-DEFINE SERVICE front AS (
+DEFINE SERVICE caddy AS (
   RUN [
     "/harb", "ready", "/run/front/ready", "127.0.0.1:8080",
     "--every", "2", "--mute", "--",

@@ -43,7 +43,7 @@ mkdir -p zig-out/placed zig-out/wsl
   P1=zig-out/placed/${NAME}_1.machine; P2=zig-out/placed/${NAME}_2.machine; PLACED=zig-out/placed/$NAME.machine
   rm -f "$P1" "$P2" "$PLACED"
   "$H" place "$HOST" machines/ringserv.pack --out "$P1" || { echo "JUDGED: the server's placement was refused, so there is nothing to boot"; exit 1; }
-  "$H" place "$P1" machines/front.pack --out "$P2" || { echo "JUDGED: the front's placement was refused, so there is nothing to boot"; exit 1; }
+  "$H" place "$P1" machines/front.pack --after ringserv --out "$P2" || { echo "JUDGED: the front's placement was refused, so there is nothing to boot"; exit 1; }
   "$H" place "$P2" machines/front_witness.pack --out "$PLACED" || { echo "JUDGED: the questions' placement was refused, so there is nothing to boot"; exit 1; }
   [ -f "$PLACED" ] || { echo "place said it wrote $PLACED and it is not there"; exit 1; }
   echo "placed: $PLACED ($(grep -c '^DEFINE SERVICE' "$PLACED") services, $(grep -c '^DEFINE USER' "$PLACED") identities)"

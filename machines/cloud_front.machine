@@ -28,6 +28,23 @@
 -- with the till and the core on two wires, and the till reaches the thing it
 -- named. The two hardware addresses below are the devices that will ask
 -- (HDW-1): the fleet holds them against the members that claim them.
+--
+-- It is also the DOOR of the front link (FRONT-2): machines/front.pack is
+-- placed on it by the scene, so Caddy ends TLS on 443 here, as front.cloud --
+-- the box's own name on that link -- and reaches the server on the core link
+-- in plain HTTP, by the box's own leg on that link. The fleet says so (FRONT),
+-- and under which root. What that asks of this machine is below: a disk for
+-- the root it is given, the certificates it issues and its log; the loopback
+-- for the one plain question `harb ready` asks it; and four capabilities a
+-- server world needs. Nothing here is a world: the machine grants, and the
+-- pack asks (PLC-1).
+--
+-- A front is a way of its own. FORWARD governs the packets that pass THROUGH
+-- this box; a proxy is this box asking the server on the device's behalf, so
+-- the door answers whether or not the box forwards. Which is why the fleet
+-- declares it: a front on a member of two links is a door to the second link,
+-- route or no route, and the FRONT declaration is the fleet saying it was
+-- meant -- as a ROUTE says a forwarder was.
 
 DEFINE MACHINE cloud_front AS (
   PROFILE hosted,
@@ -41,6 +58,29 @@ DEFINE CAPABILITY network AS (
   GRANT yes
 ) RATIONALE "A machine that serves two links and is the way between them speaks on both"
 
+DEFINE CAPABILITY filesystem AS (
+  GRANT yes
+) RATIONALE "The front keeps the root it was given, the certificates it issues and its log on a declared mount"
+
+DEFINE CAPABILITY process AS (
+  GRANT yes
+) RATIONALE "The program that says the front is serving starts it"
+
+DEFINE CAPABILITY threads AS (
+  GRANT yes
+) RATIONALE "The front answers on several threads, and the machine sizes them with TASKS, not with this"
+
+DEFINE CAPABILITY clock AS (
+  GRANT yes
+) RATIONALE "A certificate is a dated claim; the machine has no trusted clock and says so elsewhere (STZ-OS-RULING-07)"
+
+DEFINE MOUNT data AS (
+  AT "/data",
+  FS ext4,
+  DEVICE "/dev/vda",
+  OPTIONS [rw, noatime]
+) RATIONALE "Where the front keeps the root it was given, the certificates it issues and its log: a partition that survives the power, seeded by hand before the first boot"
+
 DEFINE NETWORK front AS (
   INTERFACE "eth0",
   ADDRESS "192.168.20.1/24",
@@ -52,6 +92,11 @@ DEFINE NETWORK core AS (
   ADDRESS "10.20.0.1/24",
   DOMAIN "core.cloud"
 ) RATIONALE "The link the servers are on, behind the box: nothing on it is reachable from the front link unless this machine is the way, and it is"
+
+DEFINE NETWORK loopback AS (
+  INTERFACE "lo",
+  ADDRESS "127.0.0.1/8"
+) RATIONALE "The machine's own loopback, so that the readiness probe can ask the front its one plain question; no route leaves the machine by it, and it is no link: no side of a way, nothing the names serve"
 
 DEFINE PEER till AS (
   NETWORK front,

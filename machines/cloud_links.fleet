@@ -18,6 +18,19 @@
 -- addresses the box PROMISES against the devices that will ask (HDW-1). The box has none: it
 -- is nobody's peer, and its two NICs are the emulator's business.
 --
+-- FRONT says which member is the DOOR of a link (FRONT-2, fleet v0.3): the one that ends TLS
+-- for the devices on it, by the name it has there, under a root the fleet names by its
+-- fingerprint. The box fronts the front link: machines/front.pack (Caddy) is placed on it,
+-- and a till asks https://front.cloud/ -- the box's own name on that link -- trusting the
+-- root's public half it was given and nothing else. The fleet is what says that THIS member
+-- is the door the tills are to trust, and under which root; the till's own question prints
+-- the fingerprint of the root that actually signed, and the two must be one.
+--
+-- ROOT below is a placeholder, as the KEY of machines/time_cloud.fleet is: the root is made
+-- at every run of the scene (openssl, by hand, never by the floor or by the front) and seeded
+-- on the box's disk, so a file in a repository cannot know it. The scene writes the real
+-- fingerprint into a COPY of this file, which is what enrolment is.
+--
 -- experiment/os8_links.sh boots the three machines on two wires and reads their hardware
 -- addresses from here.
 
@@ -43,3 +56,9 @@ DEFINE ROUTE front_to_core AS (
   BETWEEN [front, core],
   THROUGH gateway
 ) RATIONALE "The clients on the front link reach the servers on the core link through the box, and the servers answer them the same way: the smallest cloud has a front link, a core link, and one way between"
+
+DEFINE FRONT door AS (
+  MEMBER gateway,
+  LINK front,
+  ROOT "aaaaaaaaaaaaaaaa"
+) RATIONALE "The door of the cloud: the box ends TLS for the devices on the front link, as front.cloud, under a root made by hand and seeded on its disk; a till that is given that root's public half asks the door by this name and is answered by the server behind the box, and by nobody who does not hold the root's key"

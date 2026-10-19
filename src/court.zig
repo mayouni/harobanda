@@ -375,6 +375,15 @@ pub fn runFleet(gpa: std.mem.Allocator, fixtures_path: []const u8, out: *std.Io.
         if (int(expect.get("routes"))) |w| if (@as(i64, @intCast(f.routes.len)) != w) {
             why = try std.fmt.allocPrint(arena, "routes: expected {d} got {d}", .{ w, f.routes.len });
         };
+        // the doors (FRONT-2, fleet v0.3): how many, and the name the first answers to,
+        // because that name is DERIVED and a derivation that silently changed would still
+        // leave the fleet accepted
+        if (int(expect.get("fronts"))) |w| if (@as(i64, @intCast(f.fronts.len)) != w) {
+            why = try std.fmt.allocPrint(arena, "fronts: expected {d} got {d}", .{ w, f.fronts.len });
+        };
+        if (str(expect.get("front_host"))) |w| if (f.fronts.len == 0 or !std.mem.eql(u8, f.fronts[0].host, w)) {
+            why = try std.fmt.allocPrint(arena, "front_host: expected {s} got {s}", .{ w, if (f.fronts.len == 0) "none" else f.fronts[0].host });
+        };
         // the member the fleet takes the time from (TIME-1)
         if (str(expect.get("time_authority"))) |w| if (f.time_authority == null or !std.mem.eql(u8, f.time_authority.?, w)) {
             why = try std.fmt.allocPrint(arena, "time_authority: expected {s} got {s}", .{ w, f.time_authority orelse "none" });

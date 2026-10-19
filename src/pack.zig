@@ -88,6 +88,9 @@ pub const Pack = struct {
     digest: [64]u8,
     services: []const []const u8,
     users: []const []const u8,
+    /// the world of the machine this placement ordered the pack's services after,
+    /// when it did (`--after`, FRONT-2): a fact about the placement, not the pack
+    after: ?[]const u8 = null,
 };
 
 pub const Placement = struct {
@@ -218,7 +221,47 @@ fn attribute(arena: Allocator, regions: []const Region, line: usize, message: []
 /// not a pack; a name, when it is already taken by the machine or by a pack
 /// before it; and anything the machine court refuses once the services are
 /// there, reported at the line of the file that wrote it.
+/// A pack ordered after one of the machine's worlds at placement (FRONT-2): every
+/// service of the pack that orders itself after nothing is given `AFTER [<world>]`,
+/// written on the line of its own DEFINE, so that the pack's lines keep their numbers
+/// and a refusal still names the line the pack's author wrote. It is a fact about THIS
+/// placement and not about the pack: the door opens after the server it fronts on the
+/// one machine that carries both, and the same pack is placed on a gateway, where that
+/// server is another machine's, without it. The pack's digest stays that of its bytes
+/// as read, and the banner above it says what the placement added.
+fn orderedAfter(arena: Allocator, input: Input, world: []const u8, refusal: *Refusal) Error!Input {
+    const decls = (try readDecls(arena, input, refusal)).decls;
+    var marks: std.ArrayList(usize) = .{};
+    for (decls) |d| if (d.kind == .SERVICE and machine.find(d, "AFTER") == null) {
+        try marks.append(arena, d.line);
+    };
+    var text: std.ArrayList(u8) = .{};
+    var it = std.mem.splitScalar(u8, input.source, '\n');
+    var n: usize = 0;
+    while (it.next()) |line| {
+        n += 1;
+        if (n > 1) try text.append(arena, '\n');
+        var marked = false;
+        for (marks.items) |m| if (m == n) {
+            marked = true;
+        };
+        if (!marked) {
+            try text.appendSlice(arena, line);
+            continue;
+        }
+        const p = std.mem.indexOfScalar(u8, line, '(') orelse return refuseIn(refusal, input.name, n, try std.fmt.allocPrint(arena, "cannot place this service after {s}: its DEFINE line carries no '(' to write the AFTER into, and the clause is written on that line so the pack's lines keep their numbers", .{world}));
+        try text.appendSlice(arena, line[0 .. p + 1]);
+        try text.appendSlice(arena, try std.fmt.allocPrint(arena, " AFTER [{s}],", .{world}));
+        try text.appendSlice(arena, line[p + 1 ..]);
+    }
+    return .{ .name = input.name, .source = try text.toOwnedSlice(arena) };
+}
+
 pub fn place(arena: Allocator, host: Input, packs: []const Input, refusal: *Refusal) Error!Placement {
+    return placeAfter(arena, host, packs, null, refusal);
+}
+
+pub fn placeAfter(arena: Allocator, host: Input, packs: []const Input, after: ?[]const u8, refusal: *Refusal) Error!Placement {
     if (packs.len == 0) return refuseIn(refusal, host.name, 0, "Nothing to place: name at least one pack");
 
     // the machine, alone first: a refusal that comes later is the placement's
@@ -238,7 +281,8 @@ pub fn place(arena: Allocator, host: Input, packs: []const Input, refusal: *Refu
 
     var read: std.ArrayList(Pack) = .{};
     for (packs) |input| {
-        const p = try readPack(arena, input, refusal);
+        var p = try readPack(arena, input, refusal);
+        p.after = after;
         var again = Refusal{};
         for ((try readDecls(arena, input, &again)).decls) |d| {
             for (taken.items) |t| if (std.mem.eql(u8, d.name, t.name)) {
@@ -257,11 +301,18 @@ pub fn place(arena: Allocator, host: Input, packs: []const Input, refusal: *Refu
     if (host.source.len == 0 or host.source[host.source.len - 1] != '\n') try text.append(arena, '\n');
     try regions.append(arena, .{ .file = host.name, .first = 1, .last = countLines(text.items), .is_pack = false });
     for (packs, read.items) |input, p| {
+        // the pack as written, or as written with the placement's one clause on each
+        // service's DEFINE line: the same number of lines either way
+        const src = if (after) |w| (try orderedAfter(arena, input, w, refusal)).source else input.source;
         try text.appendSlice(arena, "\n");
-        try text.appendSlice(arena, try std.fmt.allocPrint(arena, "-- placed by harb place: {s} sha256:{s}\n", .{ p.name, p.digest[0..] }));
+        if (after) |w| {
+            try text.appendSlice(arena, try std.fmt.allocPrint(arena, "-- placed by harb place: {s} sha256:{s} after {s}\n", .{ p.name, p.digest[0..], w }));
+        } else {
+            try text.appendSlice(arena, try std.fmt.allocPrint(arena, "-- placed by harb place: {s} sha256:{s}\n", .{ p.name, p.digest[0..] }));
+        }
         const first = countLines(text.items) + 1;
-        try text.appendSlice(arena, input.source);
-        if (input.source.len == 0 or input.source[input.source.len - 1] != '\n') try text.append(arena, '\n');
+        try text.appendSlice(arena, src);
+        if (src.len == 0 or src[src.len - 1] != '\n') try text.append(arena, '\n');
         try regions.append(arena, .{ .file = input.name, .first = first, .last = countLines(text.items), .is_pack = true });
     }
     const placed = try text.toOwnedSlice(arena);
@@ -327,6 +378,52 @@ test "a pack is placed after the machine's own services, and the text is the mac
     const banner = try std.fmt.allocPrint(arena, "-- placed by harb place: commons.pack sha256:{s}\n", .{hex[0..]});
     try t.expect(std.mem.indexOf(u8, p.text, banner) != null);
     try t.expectEqualStrings(hex[0..], p.packs[0].digest[0..]);
+}
+
+const pack_free =
+    \\-- the Commons, ordering itself after nothing
+    \\DEFINE USER commons_user AS (UID 2000) RATIONALE "x"
+    \\DEFINE SERVICE commons AS (
+    \\  RUN ["/commons"],
+    \\  RESTART always,
+    \\  NEEDS [network, filesystem],
+    \\  SEES [data],
+    \\  USER commons_user
+    \\) RATIONALE "x"
+    \\
+;
+
+test "a pack placed --after a world of the machine orders its services after it, on their own lines, and one that orders itself is left as written" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var r = Refusal{};
+    // a service with no AFTER is given one, written on its DEFINE line
+    const p = try placeAfter(arena, .{ .name = "host.machine", .source = host_ok }, &.{.{ .name = "commons.pack", .source = pack_free }}, "kds", &r);
+    try t.expectEqual(@as(usize, 2), p.machine.services.len);
+    try t.expectEqual(@as(usize, 1), p.machine.services[1].after.len);
+    try t.expectEqualStrings("kds", p.machine.services[1].after[0]);
+    try t.expect(std.mem.indexOf(u8, p.text, "DEFINE SERVICE commons AS ( AFTER [kds],\n  RUN [\"/commons\"],") != null);
+    try t.expect(std.mem.indexOf(u8, p.text, "sha256:") != null);
+    try t.expect(std.mem.indexOf(u8, p.text, " after kds\n") != null);
+    try t.expectEqualStrings("kds", p.packs[0].after.?);
+    // the same number of lines as the pack, so a refusal still names the author's line
+    const at = std.mem.indexOf(u8, p.text, "-- placed by harb place:").?;
+    try t.expectEqual(countLines(pack_free), countLines(p.text[at..]) - 1);
+    // the pack's digest is that of its bytes as READ, not as placed
+    var hex: [64]u8 = undefined;
+    var digest: [32]u8 = undefined;
+    Sha256.hash(pack_free, &digest, .{});
+    _ = try std.fmt.bufPrint(&hex, "{x}", .{&digest});
+    try t.expectEqualStrings(hex[0..], p.packs[0].digest[0..]);
+    // a service that already orders itself is left exactly as written
+    const q = try placeAfter(arena, .{ .name = "host.machine", .source = host_ok }, &.{.{ .name = "commons.pack", .source = pack_ok }}, "kds", &r);
+    try t.expect(std.mem.endsWith(u8, q.text, pack_ok));
+    try t.expectEqual(@as(usize, 1), q.machine.services[1].after.len);
+    // a world the machine does not have is the machine court's refusal, attributed to the pack's line
+    try t.expectError(error.Refused, placeAfter(arena, .{ .name = "host.machine", .source = host_ok }, &.{.{ .name = "commons.pack", .source = pack_free }}, "nobody", &r));
+    try t.expectEqualStrings("commons.pack", r.file);
 }
 
 test "placing twice gives the same bytes, and no path is written into them" {

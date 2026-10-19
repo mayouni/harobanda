@@ -20,13 +20,15 @@
 //! non-zero would stop everything that comes AFTER it, and a transcript that
 //! ends there says less than one that says what happened.
 //!
-//! With `--tls --ca <pem> --name <host>` (FRONT-1) the same question is asked
-//! through a TLS handshake: the server's certificate must be issued for
-//! `<name>` and chain to a root in the PEM file, which is the front's own
-//! root as the scene seeded it, and nothing else is trusted -- no system
-//! store exists on the floor, and the file is the whole of what this world
-//! trusts. The line then says the TLS version and the root's fingerprint, so
-//! the transcript carries whose word the certificate was.
+//! With `--tls --ca <pem>` (FRONT-1) the same question is asked through a
+//! TLS handshake: the server's certificate must be issued for the name asked
+//! and chain to a root in the PEM file, which is the front's own root as the
+//! scene seeded it, and nothing else is trusted -- no system store exists on
+//! the floor, and the file is the whole of what this world trusts. The name
+//! is the host when the host is one (a door is asked by its name, FRONT-2),
+//! and `--name <host>` when the host is an address, which carries none. The
+//! line then says the TLS version and the root's fingerprint, so the
+//! transcript carries whose word the certificate was.
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -86,7 +88,7 @@ pub fn run(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
         try out.print("get: a Linux act; this binary was built for {s}\n", .{@tagName(builtin.os.tag)});
         return 2;
     }
-    const usage = "harb: get <host> <port> [<path>] [--tls --ca <pem> --name <host>] -- a name or an a.b.c.d address, a port, a path that starts with a slash; over TLS, the root to trust and the name the certificate must carry\n";
+    const usage = "harb: get <host> <port> [<path>] [--tls --ca <pem> [--name <host>]] -- a name or an a.b.c.d address, a port, a path that starts with a slash; over TLS, the root to trust and, for an address, the name the certificate must carry (a name asked is the name expected)\n";
     var pos: [3][]const u8 = undefined;
     var n_pos: usize = 0;
     var tls_on = false;
@@ -122,9 +124,19 @@ pub fn run(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
         try out.print(usage, .{});
         return 1;
     }
-    if (tls_on and (ca_path == null or tls_name == null)) {
+    if (tls_on and ca_path == null) {
         try out.print(usage, .{});
         return 1;
+    }
+    // the name the certificate must carry: the host itself when the host is a name
+    // (a door is asked by its name, and that is the name it must answer to), and
+    // said with --name when the host is an address, which carries none
+    if (tls_on and tls_name == null) {
+        if (machine.parseIpv4(host) != null) {
+            try out.print(usage, .{});
+            return 1;
+        }
+        tls_name = host;
     }
     if (!tls_on and (ca_path != null or tls_name != null)) {
         try out.print(usage, .{});
@@ -135,7 +147,9 @@ pub fn run(arena: std.mem.Allocator, args: []const []const u8, out: *std.Io.Writ
         return 1;
     };
     var said: [200]u8 = undefined;
-    const url = if (tls_on)
+    const url = if (tls_on and std.mem.eql(u8, tls_name.?, host))
+        std.fmt.bufPrint(&said, "https://{s}:{d}{s}", .{ host, port, path }) catch host
+    else if (tls_on)
         std.fmt.bufPrint(&said, "https://{s}{s} at {s}:{d}", .{ tls_name.?, path, host, port }) catch host
     else
         std.fmt.bufPrint(&said, "http://{s}:{d}{s}", .{ host, port, path }) catch host;

@@ -82,14 +82,19 @@ core: boot: state -- ringserv owns /run/ringserv and /data/ringserv as <span cla
 till: ask commons.core.cloud -- 10.20.0.2 (from 192.168.20.1)
 till: get http://commons.core.cloud:8210/health -- <span class="k">200</span> {"code":0,"message":"OK","data":{"up":true}}
 
+<span class="d"># the till, through the door: the same server, over TLS, under the one root the till was given</span>
+till: get https://front.cloud:443/health -- <span class="k">200</span> {"code":0,"message":"OK","data":{"up":true}} over TLS 1.3; the certificate is for front.cloud, signed under the root fingerprint FP1
+till: get https://core.cloud:443/health -- the handshake with 10.20.0.1 failed: <span class="k">TlsAlert</span>; the certificate must be for core.cloud and signed under the root fingerprint FP1
+
 <span class="d"># a device nobody declared, on the same network</span>
 stranger: boot: network front -- eth0 dhcp: <span class="k">no lease after 3 tries</span> (no server answered on this network)
 stranger: ask commons.core.cloud -- <span class="k">no resolver: this machine was never told where to ask</span> (/etc/resolv.conf)
 
 <span class="d"># the same box with one line of its file taken out: FORWARD yes</span>
-closed: ask commons.core.cloud -- <span class="k">no such name on this network</span> (from 192.168.20.1)</pre>
+closed: ask commons.core.cloud -- <span class="k">no such name on this network</span> (from 192.168.20.1)
+closed: get https://front.cloud:443/health -- <span class="k">200</span> {"code":0,"message":"OK","data":{"up":true}} over TLS 1.3; the certificate is for front.cloud, signed under the root fingerprint FP1</pre>
     </div>
-    <p class="cap">The first two lines are the box saying what it will do for both networks. The third is the server's own user and the directories it was handed. The till's two lines are the question and the server's answer. The stranger is a machine whose hardware address the fleet file never declared: it is given no address, so no router and no resolver, and is told nothing. Without its one line the box serves both networks but is the way between neither, so the till is told the name does not exist. A device that chose its own address and named the box as its gateway would still be carried, because forwarding filters nothing.</p>
+    <p class="cap">The first two lines are the box saying what it will do for both networks. The third is the server's own user and the directories it was handed. The till's first two lines are the question and the server's answer. Its next two are the door: the same server reached through the box over TLS, under the one root the till was given, with the fingerprint of the root that signed on the line, which is the one the fleet file names; and the box's other name on the same port, refused by the till's own client before any question is sent. The stranger is a machine whose hardware address the fleet file never declared: it is given no address, so no router and no resolver, and is told nothing. Without its one line the box serves both networks but is the way between neither, so the till is told the name does not exist; the door still answers, because a front is the box asking the server on the till's behalf, by its own leg on the other network, and not a packet passing through, which is why the fleet file names the door as it names the way. A device that chose its own address and named the box as its gateway would still be carried, because forwarding filters nothing.</p>
     <p class="prose" style="margin-top:clamp(22px,3vw,32px)">Next: <a href="cloud-files.html">How it is written →</a> The three kinds of file that write a cloud, what is left out on purpose, and what you keep when somebody else owns the hardware.</p>
   </section>
 

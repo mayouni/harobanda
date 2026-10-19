@@ -400,7 +400,7 @@ same for all three.
 | the image: the files the machine boots from, the kernel's options, the boot settings | `src/image.zig` | QEMU transcripts against `machines/*.expected` |
 | the network: the wire is up before any service | `src/netcfg.zig`, `src/net.zig` | fixtures and a two-machine boot |
 | identity: a device's key, and the record it signs | `src/journal.zig` | `machines/qemu_identity.expected` |
-| a fleet: facts about a set, the keys a device used to have, and the ways between its links | `src/fleet.zig` | `declarative/fleet/`, `experiment/os7_fleet.sh`, `experiment/os8_links.sh` |
+| a fleet: facts about a set, the keys a device used to have, the ways between its links, and the door of a link | `src/fleet.zig` | `declarative/fleet/`, `experiment/os7_fleet.sh`, `experiment/os8_links.sh` |
 | a machine that is the way between two networks, and the names it answers across them | `src/machine.zig` (`FORWARD`), `src/names.zig`, `src/get.zig` | `machines/qemu_forward.expected`, `machines/cloud_links.expected` |
 | a solution's services, written apart from a machine and placed on one; and the program that says a server is serving | `src/pack.zig`, `src/ready.zig` | `harb court --pack`, `machines/qemu_cloud_ringserv.expected` |
 | a world that runs as an identity, and the directories it owns | `src/machine.zig` (`STATE`), `src/init.zig` | `machines/qemu_cloud_ringserv.expected` (the directory read back from the disk), `machines/qemu_own.expected` (a world asks the kernel what it may write), `experiment/state_probe.sh` |

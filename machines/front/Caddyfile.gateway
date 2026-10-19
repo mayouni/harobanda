@@ -1,0 +1,38 @@
+{
+	# the front of a cloud, on the box between two links (FRONT-2): the same program
+	# as machines/front/Caddyfile -- no admin endpoint, no trust-store installation (a
+	# client trusts what it is given), its storage and its log in the directory the
+	# machine handed it, and the root it signs under, seeded on the disk by hand
+	admin off
+	skip_install_trust
+	storage file_system {
+		root /data/front/storage
+	}
+	log {
+		output file /data/front/caddy.log
+	}
+	pki {
+		ca local {
+			name "Harobanda front"
+			root {
+				cert /data/front/root.crt
+				key /data/front/root.key
+			}
+		}
+	}
+}
+
+# the one site: the box's own name on the front link, TLS ended here, the server
+# on the core link reached in plain HTTP by the box's own leg on that link. The
+# address is the one machines/cloud_front.machine promises the peer `commons`
+# (10.20.0.2), written again here because a world has no resolver of its own on
+# this box -- a second place that has to agree, and a named seam of FRONT-2
+https://front.cloud {
+	tls internal
+	reverse_proxy 10.20.0.2:8210
+}
+
+# the one plain answer: what `harb ready` asks, on the loopback only
+http://127.0.0.1:8080 {
+	respond /health 200
+}

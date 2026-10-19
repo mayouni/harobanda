@@ -413,12 +413,16 @@ powershell -ExecutionPolicy Bypass -File `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/os9_cloud.sh
 
-# the smallest cloud (FWD-1): THREE machines on TWO wires, a
-# till that reaches a server on the other link through the box
-# (needs RingServ built, as above) -> zig-out/wsl/links.txt
+# the smallest cloud (FWD-1, FRONT-2): THREE machines on TWO
+# wires, a till that reaches a server on the other link through
+# the box, and through the box's DOOR over TLS -- the front
+# placed on the gateway, under a root made by hand (needs
+# RingServ built, as above, and Caddy fetched, as below)
+#   -> zig-out/wsl/links.txt
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/os8_links.sh
 zig-out\bin\harb.exe fleet machines\cloud_links.fleet
+zig-out\bin\harb.exe fleet machines\cloud_links.fleet front door
 
 # a world that execs holds no watchdog (WDG-1): the unit
 # tests on Linux, and two mutants that must be convicted
@@ -576,6 +580,51 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A door is declared by the set it serves, and a front is a way of its
+  own** (FRONT-2): fleet v0.3's `FRONT` names the member that ends TLS
+  for the devices of one link -- declared (FR60), standing on the link
+  (FR61-FR62), with a NAME there that is DERIVED and never written twice
+  (the link's domain when the member serves it, `peer.domain` when the
+  link's server promises it one; FR63-FR64), under a `ROOT` written as
+  the 16-hex fingerprint a device prints (FR65), one door per link
+  (FR66); `harb fleet <file> front <name>` says member, link, name,
+  address and root for a script. The same pack as FRONT-1 is placed on
+  the box of `cloud_links.fleet`; the root is made by hand, seeded on
+  the box's disk and enrolled into a COPY of the fleet, as the time
+  scene enrols a key (a repository cannot know a root made at each
+  run); the till asks `https://front.cloud` with `harb get --tls --ca`
+  (a name asked is the name expected; `--name` is for an address), its
+  line prints the fingerprint of the root that signed, the scene holds
+  it to the copy's ROOT before any pin is consulted, and the pin reads
+  it as the same FP1 as the roll's. **A front is a way of its own**:
+  `FORWARD` governs the packets that pass THROUGH the box, and the door
+  is the box asking the server by its own leg on the server's link, so
+  the box less FORWARD is silent about the far link and still answers at
+  the door -- which is why the fleet declares a FRONT as it declares a
+  ROUTE. **A pack's names share the namespace of the machine it lands
+  on**: a world named `front` could not be placed on a box whose link is
+  `front`; the front's world is `caddy`, named for its program as
+  `ringserv` is, and FRONT-1's pin was re-pinned by the rule. **Two
+  servers placed as peers become ready in either order**, and a pin had
+  fixed one (the one-machine front, on its third run): `harb place
+  --after <world>` writes the placement's order onto each service's own
+  DEFINE line, so a refusal keeps the author's line numbers and the
+  pack's digest stays that of its bytes -- a fact about the placement,
+  never a clause of the pack, which lands on the gateway without it.
+  **The front's health stays its own**: a probe through its upstream
+  would tie the box's watchdog to another machine's server. Judged by
+  `machines/cloud_links.expected` (201 lines, matched twice with a
+  different root each run: the roll naming the door, the box as the
+  door, 200 over TLS 1.3 through it, the box's other name refused by the
+  till's own client, the stranger reaching nothing, the closed box still
+  the door), by FA7 verbatim, FA13, FR60-FR66 and R207 (79/79, 260/260),
+  and by the fleet's and the placement's unit tests. Named seams: the
+  Caddyfile restates the peer's address (a world on the box has no
+  resolver of its own; deriving the front's configuration from the
+  declaration is not built); what a device trusts is a file in its
+  image, held to the fleet's ROOT by the scene and not by the court;
+  one door per link, TCP 443 only; no mutant probe for either front
+  seat yet.
 - **A front is a world like any server, and what it ends is TLS under a
   root it was given** (FRONT-1): Caddy (STZ-OS-RULING-18), vendored by
   the sha512 Caddy publishes beside its release (`vendor/PIN.md`,
@@ -1538,10 +1587,15 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   `machines/front.pack` with `PORTS [80, 443, 8080]`, an identity and a
   `STATE` for its root, storage and log, booted on
   `machines/qemu_front.machine` with the server behind it and three
-  questions to it (`qemu_front_placed.expected`, 72 lines). What remains
-  of rung 3b is the same front on the gateway of `cloud_links.fleet`: the
-  fleet declaring which member fronts and the root's fingerprint, and the
-  till asking HTTPS through the box. **And the five declarations of `site/resilience.html` are ordered
+  questions to it (`qemu_front_placed.expected`, 72 lines). **And on the
+  gateway of two links (FRONT-2, 2026-10-19)**: fleet v0.3's `FRONT`
+  names the member that is the door of a link, by the name it has there
+  and under a root by its fingerprint; the same pack is placed on the box
+  of `cloud_links.fleet`, the root is made by hand and enrolled into a
+  copy of the fleet, and the till asks `https://front.cloud` through the
+  door, trusting the root's public half it was given and nothing else --
+  the fingerprint it prints is the one the fleet declares. Rung 3b is
+  built, in the emulator. **And the five declarations of `site/resilience.html` are ordered
   (STZ-OS-RULING-19, the same word: "go ahead with implementing them
   all")**, in this order after the front: TERRITORY on a member, the
   MIRROR (a declared copy of a world's directory on another member,
@@ -1607,16 +1661,19 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   by the author, 2026-09-27**, and ~~ratifying 06~~ **ratified by him as
   drafted** the same day, and **08 ratified by him** too. The ZQL -> Z
   go did NOT reach Central through a CONCLUSIONS line -- a log it records,
-  not a queue it routes -- and this desk is NOT IN `protocol/REPOS.md`, so
-  Central cannot see it: relayed to Central's live session directly
-  (2026-09-27 05:49) with the author's go to route it and to adopt this desk; the Pi kit, a purchase; and
+  not a queue it routes -- and this desk was NOT IN `protocol/REPOS.md`
+  then, so Central could not see it: relayed to Central's live session
+  directly (2026-09-27 05:49) with the author's go to route it and to adopt
+  this desk (adopted since: `REPOS.md` carries harobanda, and Central's
+  public-repo thread in the mailbox is closed, nothing owed, read
+  2026-10-19); the Pi kit, a purchase; and
   ~~PUBLISHING~~ -- **published 2026-09-27 on his word**: the
   commit history keeps his address as author (his choice; this repo's
   future commits use his GitHub noreply address), and the firmware's
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

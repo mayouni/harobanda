@@ -12,6 +12,16 @@
 --   reach    ask that server a question, and say what it answered. This is the
 --            line that proves a packet crossed: a name that resolves and a way
 --            that is closed look the same until somebody connects
+--   door     the same question through the DOOR (FRONT-2): https://front.cloud,
+--            the box's own name on this link, over TLS, trusting the root this
+--            device was given (/etc/front-ca.crt, staged) and nothing else. The
+--            certificate must carry the name asked, and the line says the
+--            fingerprint of the root that signed it -- the one the fleet declares
+--            (machines/cloud_links.fleet, FRONT), or somebody else answered
+--   wrong    the box's OTHER name, core.cloud, on the same port: the door has one
+--            name, the front was given no certificate for this one, and the
+--            device refuses the handshake -- the refusal is the asker's, before
+--            any question is sent
 --   bare     the same word with no domain: a name on THIS link, which nobody
 --            declared, so the box says there is no such name and does not guess
 --   outside  a name in the rest of the world: the box speaks for its own links
@@ -58,10 +68,24 @@ DEFINE SERVICE reach AS (
   NEEDS [process, network]
 ) RATIONALE "Going there: the application's own answer to the question 'are you serving?', from a device on another link, through the box"
 
+DEFINE SERVICE door AS (
+  RUN ["/harb", "get", "front.cloud", "443", "/health", "--tls", "--ca", "/etc/front-ca.crt"],
+  RESTART never,
+  AFTER [reach],
+  NEEDS [process, network]
+) RATIONALE "The door of the cloud, asked by its name on this link, over TLS, under the one root this device was given: the server behind the box answers through the front, and the line says which root signed for it"
+
+DEFINE SERVICE wrong AS (
+  RUN ["/harb", "get", "core.cloud", "443", "/health", "--tls", "--ca", "/etc/front-ca.crt"],
+  RESTART never,
+  AFTER [door],
+  NEEDS [process, network]
+) RATIONALE "The box's other name, on the same port: the door has one name, and a certificate for another is refused by the one asking, before any question is sent"
+
 DEFINE SERVICE bare AS (
   RUN ["/harb", "ask", "commons"],
   RESTART never,
-  AFTER [reach],
+  AFTER [wrong],
   NEEDS [process, network]
 ) RATIONALE "A bare word is a name on this link, and nobody declared it here: the same word on the far link is another device, and the box does not lend it"
 

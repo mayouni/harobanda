@@ -69,13 +69,13 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb confined [iface] [path...]             (what can this WORLD see and do? from inside one)
         \\  harb swarm  [n]                             (ask for n tasks and say where the kernel stopped; from inside a world)
         \\  harb ask    <name>                          (what does a name mean on this network? from inside a device on it)
-        \\  harb get    <host> <port> [<path>] [--tls --ca <pem> --name <host>]   (ask a server one question, by name or address: did the packet cross? over TLS, under the one root given; from inside a device)
+        \\  harb get    <host> <port> [<path>] [--tls --ca <pem> [--name <host>]]   (ask a server one question, by name or address: did the packet cross? over TLS, under the one root given, for the name asked; from inside a device)
         \\  harb attest [file.machine]                  (sign with this device's key and verify it, from inside it)
         \\  harb journal [file.machine]                 (this machine's own record: every entry verified, or the one that broke)
-        \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member>]   (machines judged together; one device's record checked by another)
+        \\  harb fleet  <file.fleet> [verify <member> <record> | hardware <member> | front <name>]   (machines judged together; one device's record checked by another; a door, by name and root)
         \\  harb time   verify <file.fleet> <statements> [<record>]   (what the fleet's time authority said about a record, checked with the key the fleet holds)
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
-        \\  harb place  <file.machine> <file.pack>... [--out <file>]   (a solution's services, placed on a machine and judged as one)
+        \\  harb place  <file.machine> <file.pack>... [--after <world>] [--out <file>]   (a solution's services, placed on a machine and judged as one; --after orders them after one of its worlds)
         \\  harb court  --pack [declarative/pack/fixtures.json]
         \\  harb ready  <ready-path> <a.b.c.d:port> [--url /health] [--every N] [--mute] -- <program> [args...]   (a program's word that it is serving, said for it; --mute drops the program's own console; from inside a world)
         \\  harb learn  [n] [--all] [--words] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
@@ -501,6 +501,21 @@ pub fn main() !u8 {
             try out.print("{s}\n", .{hw});
             return 0;
         }
+        if (args.len >= 4 and std.mem.eql(u8, args[3], "front")) {
+            // One line, for a script that stages the root a door signs under and must
+            // hold what a device printed to what the fleet declares: the member, the
+            // link, the name the door answers to, its address and the root's fingerprint.
+            if (args.len < 5) {
+                try out.print("harb: fleet front takes the front's name\n", .{});
+                return 1;
+            }
+            for (f.fronts) |fr| if (std.mem.eql(u8, fr.name, args[4])) {
+                try out.print("{s} {s} {s} {s} {s}\n", .{ fr.member, fr.link, fr.host, fr.address, fr.root });
+                return 0;
+            };
+            try out.print("fleet {s} -- there is no front called {s}\n", .{ f.name, args[4] });
+            return 1;
+        }
         if (args.len >= 4 and std.mem.eql(u8, args[3], "verify")) {
             if (args.len < 6) {
                 try out.print("harb: fleet verify takes a member and a record file\n", .{});
@@ -595,6 +610,11 @@ pub fn main() !u8 {
                 try out.print("  route {s} -- ", .{r.name});
                 for (r.between, 0..) |l, i| try out.print("{s}{s}", .{ if (i == 0) "" else if (i + 1 == r.between.len) " and " else ", ", l });
                 try out.print(", through {s}\n", .{r.through});
+            }
+            // the doors (FRONT-2): who ends TLS for the devices of a link, by what name,
+            // and under which root -- the fingerprint a device's own question prints
+            for (f.fronts) |fr| {
+                try out.print("  front {s} -- {s} is the door of {s}, as {s} ({s}), under the root {s}\n", .{ fr.name, fr.member, fr.link, fr.host, fr.address, fr.root });
             }
         }
         // the one member whose word about the time the fleet takes (TIME-1)
@@ -963,6 +983,7 @@ pub fn main() !u8 {
         // What a solution asks, placed on the machine that grants it
         // (PLC-1). Without --out it is a rehearsal: judged, nothing written.
         var out_path: ?[]const u8 = null;
+        var after: ?[]const u8 = null;
         var paths: std.ArrayList([]const u8) = .{};
         var j: usize = 2;
         while (j < args.len) : (j += 1) {
@@ -973,6 +994,15 @@ pub fn main() !u8 {
                     return 1;
                 }
                 out_path = args[j];
+            } else if (std.mem.eql(u8, args[j], "--after")) {
+                // the placement's own ordering (FRONT-2): the pack's services start
+                // after this world of the machine, a fact about where the pack lands
+                j += 1;
+                if (j >= args.len) {
+                    try out.print("harb: --after needs the world the pack's services start after\n", .{});
+                    return 1;
+                }
+                after = args[j];
             } else try paths.append(arena, args[j]);
         }
         if (paths.items.len < 2) {
@@ -988,7 +1018,7 @@ pub fn main() !u8 {
             try inputs.append(arena, .{ .name = pack.fileName(p), .source = bytes });
         }
         var refusal = pack.Refusal{};
-        const placed = pack.place(arena, inputs.items[0], inputs.items[1..], &refusal) catch |e| switch (e) {
+        const placed = pack.placeAfter(arena, inputs.items[0], inputs.items[1..], after, &refusal) catch |e| switch (e) {
             error.Refused => {
                 try out.print("place: {s} (line {d}): {s}\n", .{ refusal.file, refusal.line, refusal.message });
                 return 1;
@@ -996,7 +1026,9 @@ pub fn main() !u8 {
             else => return e,
         };
         for (placed.packs) |p| {
-            try out.print("place {s} (sha256 {s}) -- {d} service(s), {d} user(s)\n", .{ p.name, p.digest[0..16], p.services.len, p.users.len });
+            try out.print("place {s} (sha256 {s}) -- {d} service(s), {d} user(s)", .{ p.name, p.digest[0..16], p.services.len, p.users.len });
+            if (p.after) |world| try out.print(", after {s}", .{world});
+            try out.print("\n", .{});
         }
         const m = placed.machine;
         try out.print("on machine {s} -- {s} / {s} / kernel {s} -- {d} service(s) in all -- judged, no refusal\n", .{ m.name, @tagName(m.profile), @tagName(m.arch), @tagName(m.kernel), m.services.len });

@@ -2274,6 +2274,12 @@
       "name": "a list is all words, all strings or all numbers, never mixed",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE NETWORK lo AS (INTERFACE \"lo\", ADDRESS \"127.0.0.1/8\") RATIONALE \"x\"\nDEFINE USER srv AS (UID 2000) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, NEEDS [network], USER srv, PORTS [443, https]) RATIONALE \"x\"\n",
       "refusal": "never mixed"
+    },
+    {
+      "id": "R207",
+      "name": "a FRONT belongs to a fleet file: which member the devices of a link trust as their door is a fact about a set, and no machine can say it",
+      "source": "DEFINE MACHINE gw AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE FRONT door AS (MEMBER gw, LINK front, ROOT \"0123456789abcdef\") RATIONALE \"x\"\n",
+      "refusal": "FRONT belongs to a fleet file, not a machine file"
     }
   ]
 }
