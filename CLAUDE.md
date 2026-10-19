@@ -558,7 +558,7 @@ zig-out\bin\harb.exe learn 7
 zig-out\bin\harb.exe docs --check
 
 # the navigation check probed (NAV-1): the Cloud page's real
-# defect and eight more put back one at a time in a copy of
+# defect and nine more put back one at a time in a copy of
 # the pages, each convicted by name, and the clean copy passes
 #   -> zig-out/nav_probe.txt
 bash experiment/nav_probe.sh
@@ -588,20 +588,26 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
 - **A Next link is a claim about the site, and it is judged like one**
-  (NAV-1): every site page but the home page carries a section strip
-  (`<nav class="path">`, the pages of its section in the order to read
-  them), and `harb docs --check` requires that a page's Next link is
-  the page after its own in that strip, in the strip's own words for it;
-  that the strip is the same on every page of its section and names
-  pages that exist; that each page marks itself and no other; and that
-  the last page of a strip, which has no page after it, leaves its
-  section only by a link named in `onward` -- one today, the data
-  centers post to the page that holds its proof -- a name the check
-  convicts as stale once the page stops bearing it out. **A judge that
+  (NAV-1): every site page but the home page and the Blog's carries a
+  section strip (`<nav class="path">`, the pages of its section in the
+  order to read them), and `harb docs --check` requires that a page's
+  Next link is the page after its own in that strip, in the strip's own
+  words for it; that the strip is the same on every page of its section
+  and names pages that exist; that each page marks itself and no other;
+  and that the last page of a strip, which has no page after it, leaves
+  its section only by a link named in `onward` -- none today -- a name
+  the check convicts as stale once the page stops bearing it out. **The
+  Blog keeps no second menu bar** (the author, 2026-10-19): its posts
+  are a list and not a sequence, so its two pages are named in
+  `no_strip` beside the home page, with no order to follow; a Next link
+  on one still goes to a page that exists, and a name that no page bears,
+  or whose page has grown a strip, is convicted as stale. The data
+  centers post's link to the page that holds its proof was the one
+  onward link there was, and is now that kind of Next. **A judge that
   skips what it cannot read is green for the wrong reason**: a Next
-  line in any other form, a second one, and a page with no strip (the
-  home page excepted, by name) are convicted, never passed over, or one
-  change of markup would take every page out of the check. **Found by
+  line in any other form, a second one, and a page with no strip (but
+  the named ones) are convicted, never passed over, or one change of
+  markup would take every page out of the check. **Found by
   the author's eye with every gate green**: the Cloud page's Next went
   to How it is written after Real time had been put before it, and the
   Security chain stopped at its fourth page once Resilience became its
@@ -610,8 +616,8 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   been made. **The probe's first run was red, for its own expectation**:
   a strip missing an entry is reported by the pages that list it and
   not by the odd page, so the probe had named the wrong side. Judged by
-  twelve unit tests in `src/docs.zig` and by `experiment/nav_probe.sh`
-  (the real defect and eight more, each convicted by name; the clean
+  fourteen unit tests in `src/docs.zig` and by `experiment/nav_probe.sh`
+  (the real defect and nine more, each convicted by name; the clean
   copy passes; the seam below run, not only stated). Named seams: a
   page with NO Next is not judged -- the Why, AI, The machine and Build
   sections and For IT carry none, by convention, and in a section that

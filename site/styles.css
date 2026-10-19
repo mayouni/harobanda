@@ -122,6 +122,10 @@ p.prose:not(.lead):not(.pull){font-size:18px;line-height:1.65;}
 /* With two bars kept on screen, a jump to an anchor (the skip link) lands
    under them unless the page says how much of its top is covered. */
 html:has(.path){scroll-padding-top:calc(var(--bar-h) + var(--path-h,50px));}
+/* The Blog keeps no strip (the author, 2026-10-19): its posts are a list, not a
+   sequence, so only the menu stays on screen and a jump to an anchor lands under
+   that one bar. The home page keeps its own offset on its own anchor. */
+html:not(:has(.path)):not(:has(.home-body)){scroll-padding-top:var(--bar-h);}
 
 /* ---------- pages ---------- */
 .pagehead{padding-top:clamp(40px,6vw,74px);padding-bottom:clamp(28px,4vw,46px);border-bottom:1px solid var(--line);}

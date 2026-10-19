@@ -106,6 +106,46 @@ and so does every later court.
   other way is convicted as having none, which is the loud failure and the
   one that is wanted.
 
+## Amended, the same evening: the Blog keeps no strip
+
+The author ruled that the Blog section carries no second menu bar: its
+posts are a list, not a sequence, and a strip of two entries under the menu
+said otherwise. The strip came off `blog.html` and `datacenters.html`; the
+menu's Blog entry stays. What that did to the rules above, beside the text
+and not in place of it:
+
+- The Blog's two pages are named in `no_strip` beside the home page, so
+  `index.html`, `blog.html` and `datacenters.html` are the pages with no
+  order to follow, and the run says so: `of the site's 29 pages, 26 sit in
+  6 section strips ... 7 Next links ... (0 onward, named); the 3 pages
+  named as having no strip carry 2 Next link(s), each to a page that
+  exists`.
+- **`onward` is empty.** The one link it named, the data centers post to
+  `resilience.html`, was the last page of the Blog's strip leaving its
+  section; it is now a Next on a page with no order, judged for the one
+  thing there is to judge. The list stays, empty, for the day a last page
+  leaves its section on purpose; with an empty list the real-file probe
+  cannot show a stale name, which the unit tests do on lists of their own.
+- **A page with no strip is judged for its Next link going somewhere that
+  exists** (`nextReadable`, shared with the strip branch: a second Next link
+  and a line in a form the check cannot read are convicted here as there),
+  because for a page with a strip that follows from rule 1 and for one
+  without it followed from nothing: the post's link to its proof could have
+  gone to a page that was renamed, unnoticed. A name in `no_strip` that no
+  page bears is stale too, or it would excuse the next page of that name
+  unread.
+- **`checkNavigation` takes the named pages as an argument**, as it took the
+  onward list, so the tests name their own and do not depend on the site's.
+- **The probe's two onward mutants rested on the Blog's strip** and were
+  replaced: a Next put on the last page of the Deploy strip, unnamed; a Blog
+  page's Next to a page that is not there; a Blog page that has grown a
+  strip back. Ten mutants now, with the clean copy at six strips.
+- **The CSS and the script follow.** `html:not(:has(.path)):not(:has(.home-body))`
+  gives the Blog's pages the scroll offset of the one bar they keep, so the
+  skip link lands under the menu and not behind it (measured: 80 px, the
+  menu's height; the pages with a strip keep 130; the home page keeps its
+  own). `app.js`'s comment says "every page but the home and the Blog's".
+
 # FRONT-2 — a door is declared by the set it serves, and a front is a way of its own
 
 The cloud's front on the gateway of two links (the rest of rung 3b of

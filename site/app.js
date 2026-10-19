@@ -9,8 +9,8 @@
   });
 })();
 
-/* Every page but the home has the section strip under the menu, and the strip
-   stays on screen when the page scrolls, directly under the menu. Its CSS top is
+/* Every page but the home and the Blog's has the section strip under the menu, and
+   the strip stays on screen when the page scrolls, directly under the menu. Its CSS top is
    the menu's height as CSS computes it (--bar-h); this writes the menu's measured
    height over that number, and the strip's own height beside it, so the two bars
    meet with no gap at any zoom and a jump to an anchor lands below both. */

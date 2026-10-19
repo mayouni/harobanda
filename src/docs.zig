@@ -33,18 +33,22 @@
 //!    the grammar"), and the tour had its own wording of the same eight.
 //!
 //! 4. A page's Next link goes where its section strip says (NAV-1). Every
-//!    page of the site but the home page carries a strip, `<nav
-//!    class="path">`: the pages of its section in the order the reader is
-//!    meant to take them. Some end with `Next: <a href="X">Label →</a>`, and
-//!    that link must be the page after its own in the strip, in the strip's
-//!    own words for it. The strip must be the same on every page of its
-//!    section, or there is no one order to follow. The last page of a strip
-//!    has no page after it, so a Next link from there leaves the section,
-//!    and says so by name in `onward`: loosened for every last page, any of
-//!    them could go anywhere. When this was written the Cloud page's Next
-//!    skipped the page inserted after it (Real time), and the Security
-//!    chain stopped one page short of its fifth. The author found the first
-//!    by eye; the court, the tour and the rules above were green over both.
+//!    page of the site but the home page and the Blog's carries a strip,
+//!    `<nav class="path">`: the pages of its section in the order the
+//!    reader is meant to take them. Some end with `Next: <a href="X">Label
+//!    →</a>`, and that link must be the page after its own in the strip, in
+//!    the strip's own words for it. The strip must be the same on every
+//!    page of its section, or there is no one order to follow. The last
+//!    page of a strip has no page after it, so a Next link from there
+//!    leaves the section, and says so by name in `onward`: loosened for
+//!    every last page, any of them could go anywhere. The pages named in
+//!    `no_strip` have no order to follow -- the Blog's posts are a list and
+//!    not a sequence, the author's ruling of 2026-10-19 -- but a Next link
+//!    on one of them still goes to a page that exists. When this was
+//!    written the Cloud page's Next skipped the page inserted after it
+//!    (Real time), and the Security chain stopped one page short of its
+//!    fifth. The author found the first by eye; the court, the tour and the
+//!    rules above were green over both.
 //!
 //! What this does NOT judge, stated rather than implied: an excerpt elided
 //! with `...` (what is elided cannot be judged, which is why the pages say
@@ -146,13 +150,15 @@ const Tally = struct {
     /// the site's pages the navigation check was handed, and how many sit in
     /// a section strip, in how many distinct strips, with how many Next
     /// links (each judged) of which how many go onward, by name; the rest
-    /// are the home page, named as having no strip (NAV-1)
+    /// are named as having no strip, and how many Next links they carry,
+    /// each judged to go to a page that exists (NAV-1)
     nav_total: usize = 0,
     nav_pages: usize = 0,
     nav_sections: usize = 0,
     nav_next: usize = 0,
     nav_onward: usize = 0,
     nav_bare: usize = 0,
+    nav_bare_next: usize = 0,
 };
 
 /// A block that declares a MACHINE and elides nothing is a claim that this
@@ -459,16 +465,21 @@ const NextRead = struct { first: ?Next = null, count: usize = 0, unread: bool = 
 /// the page no longer bears out is convicted as stale.
 const Onward = struct { from: []const u8, to: []const u8 };
 
-const onward = [_]Onward{
-    // a narration sends its reader on to the page that holds its proof: the
-    // post is last in the Blog's strip, and the proof is a page of Security's
-    .{ .from = "site/datacenters.html", .to = "resilience.html" },
-};
+/// None today. The one there was -- the data centers post sending its reader
+/// on to the page that holds its proof -- was the last page of the Blog's
+/// strip, and the Blog has no strip since 2026-10-19. The list stays, empty,
+/// for the day a last page leaves its section on purpose (a section's end
+/// sending its reader to the start of the next, say): that is one line here,
+/// and a conviction until it is written.
+const onward = [_]Onward{};
 
 /// The pages that carry no strip by design: the home page, which is no
-/// section's. Any other page without one is convicted -- otherwise a change
-/// of markup would take every page out of the check and leave it green.
-const no_strip = [_][]const u8{"index.html"};
+/// section's, and the Blog's two, whose posts are a list and not a sequence
+/// (the author, 2026-10-19: the Blog keeps no second menu bar). Any other
+/// page without one is convicted -- otherwise a change of markup would take
+/// every page out of the check and leave it green -- and so is a name that
+/// no page bears, or one whose page has grown a strip.
+const no_strip = [_][]const u8{ "index.html", "blog.html", "datacenters.html" };
 
 fn isNamed(list: []const []const u8, name: []const u8) bool {
     for (list) |s| {
@@ -602,12 +613,31 @@ fn signature(alloc: std.mem.Allocator, es: []const Entry) ![]const u8 {
     return s.items;
 }
 
-/// The site's navigation, judged: every page but the named ones carries a
+/// A page's Next line is one link, in the form this check reads. When it is
+/// not, says so and returns false: there is nothing to judge.
+fn nextReadable(w: *std.Io.Writer, r: Read, t: *Tally) !bool {
+    const nx = r.next;
+    if (nx.count > 1) {
+        t.bad += 1;
+        try w.print("  {s}:{d} -- carries {d} Next links: a page says where to go next once\n", .{ r.page.path, nx.first.?.line, nx.count });
+        return false;
+    }
+    if (nx.unread) {
+        t.bad += 1;
+        try w.print("  {s} -- has a Next line in a form this check cannot read (`Next: <a href=\"...\">Label →</a>`): a link it cannot read is a link it cannot judge\n", .{r.page.path});
+        return false;
+    }
+    return true;
+}
+
+/// The site's navigation, judged: every page but the `bare` ones carries a
 /// strip that marks it and no other as current; a section's strip is the same
 /// on every page of it, and names pages that exist; and a page's Next link is
 /// the page after its own in the strip, in the strip's words, unless it is the
-/// last of its strip and the link is named in `links` (NAV-1).
-fn checkNavigation(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const Page, links: []const Onward, t: *Tally) !void {
+/// last of its strip and the link is named in `links`. A `bare` page -- one
+/// named as having no strip -- has no order to follow, and its Next link goes
+/// to a page that exists (NAV-1).
+fn checkNavigation(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const Page, links: []const Onward, bare: []const []const u8, t: *Tally) !void {
     const reads = try alloc.alloc(Read, pages.len);
     for (pages, reads) |p, *r| {
         r.* = .{ .page = p, .name = std.fs.path.basename(p.path), .strip = try parseStrip(alloc, p.text), .next = try parseNext(alloc, p.text) };
@@ -617,15 +647,23 @@ fn checkNavigation(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const P
 
     for (reads) |r| {
         const strip = r.strip orelse {
-            if (isNamed(&no_strip, r.name)) {
+            if (isNamed(bare, r.name)) {
+                // no strip, so no order to follow; a Next link still goes somewhere that exists
                 t.nav_bare += 1;
+                if (!try nextReadable(w, r, t)) continue;
+                const link = r.next.first orelse continue;
+                t.nav_bare_next += 1;
+                if (readByName(reads, link.href) == null) {
+                    t.bad += 1;
+                    try w.print("  {s}:{d} -- Next goes to {s}, which is not a page of the site: a page with no strip has no order to follow, and its link still goes to a page that exists\n", .{ r.page.path, link.line, link.href });
+                }
                 continue;
             }
             t.bad += 1;
-            try w.print("  {s} -- carries no section strip (<nav class=\"path\">): every page but the home page says where it sits in its section, and a Next link is judged against it\n", .{r.page.path});
+            try w.print("  {s} -- carries no section strip (<nav class=\"path\">): every page but the home page and the Blog's says where it sits in its section, and a Next link is judged against it\n", .{r.page.path});
             continue;
         };
-        if (isNamed(&no_strip, r.name)) {
+        if (isNamed(bare, r.name)) {
             t.bad += 1;
             try w.print("  {s}:{d} -- is named in `no_strip` (src/docs.zig) as a page with no section strip, and it has one: the name is stale\n", .{ r.page.path, strip.line });
             continue;
@@ -678,18 +716,8 @@ fn checkNavigation(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const P
         }
 
         // the Next link: the page after this one, in the strip's words
-        const nx = r.next;
-        if (nx.count > 1) {
-            t.bad += 1;
-            try w.print("  {s}:{d} -- carries {d} Next links: a page says where to go next once\n", .{ r.page.path, nx.first.?.line, nx.count });
-            continue;
-        }
-        if (nx.unread) {
-            t.bad += 1;
-            try w.print("  {s} -- has a Next line in a form this check cannot read (`Next: <a href=\"...\">Label →</a>`): a link it cannot read is a link it cannot judge\n", .{r.page.path});
-            continue;
-        }
-        const link = nx.first orelse continue;
+        if (!try nextReadable(w, r, t)) continue;
+        const link = r.next.first orelse continue;
         t.nav_next += 1;
         if (here + 1 < strip.entries.len) {
             const want = strip.entries[here + 1];
@@ -743,6 +771,15 @@ fn checkNavigation(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const P
             try w.print("  {s} -- named in `onward` (src/docs.zig) as going on to {s}, and {s}: the name is stale\n", .{ o.from, o.to, m });
         }
     }
+
+    // a name in `no_strip` that no page bears would keep excusing a page that is gone, and
+    // the next page of that name, whatever it is, would be excused unread
+    for (bare) |name| {
+        if (readByName(reads, name) == null) {
+            t.bad += 1;
+            try w.print("  {s} -- named in `no_strip` (src/docs.zig) as a page with no section strip, and no such page is on the site: the name is stale\n", .{name});
+        }
+    }
 }
 
 /// Run from the repository root, as `zig build court` runs it.
@@ -768,7 +805,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         try checkHtml(alloc, w, p, text, &t);
         if (isSitePage(p)) try site.append(alloc, .{ .path = p, .text = text });
     }
-    try checkNavigation(alloc, w, site.items, &onward, &t);
+    try checkNavigation(alloc, w, site.items, &onward, &no_strip, &t);
     const pages = [_]struct { path: []const u8, html: bool }{
         .{ .path = "README.md", .html = false },
         .{ .path = "site/words.html", .html = true },
@@ -783,7 +820,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         try compareWords(alloc, w, pg.path, got, &learn.words, &t);
     }
     if (t.bad == 0) {
-        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named)\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward });
+        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next });
     } else {
         try w.print("docs -- {d} claim(s) the documents make do not hold\n", .{t.bad});
     }
@@ -1081,9 +1118,14 @@ const NavProbe = struct { tally: Tally, said: []const u8 };
 /// Judge a set of pages' navigation. Everything lives in `arena`, so a test can read what was
 /// said as well as count it.
 fn navProbe(arena: std.mem.Allocator, pages: []const Page, links: []const Onward) !NavProbe {
+    return navProbeBare(arena, pages, links, &.{});
+}
+
+/// the same, with some pages named as having no strip
+fn navProbeBare(arena: std.mem.Allocator, pages: []const Page, links: []const Onward, bare: []const []const u8) !NavProbe {
     var aw = std.Io.Writer.Allocating.init(arena);
     var t = Tally{};
-    try checkNavigation(arena, &aw.writer, pages, links, &t);
+    try checkNavigation(arena, &aw.writer, pages, links, bare, &t);
     return .{ .tally = t, .said = aw.written() };
 }
 
@@ -1251,23 +1293,78 @@ test "a strip that names a page the site does not have is convicted" {
     try t.expect(heard(p, "names c.html, which is not a page of the site"));
 }
 
-test "a page with no strip is convicted unless it is the home page, which is named" {
+test "a page with no strip is convicted unless it is named, as the home page and the Blog's are" {
     const t = std.testing;
     var arena_state = std.heap.ArenaAllocator.init(t.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
     const bare = "<main>no strip here</main>\n";
-    const x = try navProbe(arena, &.{.{ .path = "site/x.html", .text = bare }}, &.{});
-    try t.expectEqual(@as(usize, 1), x.tally.bad);
+    const named = [_][]const u8{"index.html"};
+    const x = try navProbeBare(arena, &.{.{ .path = "site/x.html", .text = bare }}, &.{}, &named);
+    // x is not the named page, and the named page is not on the site
     try t.expect(heard(x, "site/x.html -- carries no section strip"));
-    // the home page is named, and counted as having none
-    const h = try navProbe(arena, &.{.{ .path = "site/index.html", .text = bare }}, &.{});
+    try t.expect(heard(x, "no such page is on the site"));
+    try t.expectEqual(@as(usize, 2), x.tally.bad);
+    // the named page, present, is counted as having none and judged by nothing more
+    const h = try navProbeBare(arena, &.{.{ .path = "site/index.html", .text = bare }}, &.{}, &named);
     try t.expectEqual(@as(usize, 0), h.tally.bad);
     try t.expectEqual(@as(usize, 1), h.tally.nav_bare);
     // a named page that has grown a strip is a stale name
-    const s = try navProbe(arena, &.{.{ .path = "site/index.html", .text = nav_a ++ nav_end }}, &.{});
+    const s = try navProbeBare(arena, &.{.{ .path = "site/index.html", .text = nav_a ++ nav_end }}, &.{}, &named);
     try t.expect(s.tally.bad >= 1);
     try t.expect(heard(s, "the name is stale"));
+}
+
+test "a page with no strip has no order to follow, and its Next link still goes to a page that exists" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const named = [_][]const u8{ "blog.html", "post.html" };
+    const post = "<main>a post</main>\n";
+    // the index sends its reader to the first post: a page that is there
+    const there = [_]Page{
+        .{ .path = "site/blog.html", .text = "<main>the list <p>Next: <a href=\"post.html\">A post →</a> About it.</p></main>\n" },
+        .{ .path = "site/post.html", .text = post },
+    };
+    const ok = try navProbeBare(arena, &there, &.{}, &named);
+    try t.expectEqual(@as(usize, 0), ok.tally.bad);
+    try t.expectEqual(@as(usize, 2), ok.tally.nav_bare);
+    // judged, and counted
+    try t.expectEqual(@as(usize, 1), ok.tally.nav_bare_next);
+    // the same link to a page the site does not have is convicted, at its own line
+    const gone = [_]Page{
+        .{ .path = "site/blog.html", .text = "<main>the list\n<p>Next: <a href=\"nowhere.html\">A post →</a> About it.</p></main>\n" },
+        .{ .path = "site/post.html", .text = post },
+    };
+    const bad = try navProbeBare(arena, &gone, &.{}, &named);
+    try t.expectEqual(@as(usize, 1), bad.tally.bad);
+    try t.expect(heard(bad, "site/blog.html:2 -- Next goes to nowhere.html, which is not a page of the site"));
+    // and a Next line it cannot read is no more passed over here than on a page with a strip
+    const two = [_]Page{
+        .{ .path = "site/blog.html", .text = "<p>Next: <a href=\"post.html\">A post →</a></p><p>Next: <a href=\"post.html\">A post →</a></p>\n" },
+        .{ .path = "site/post.html", .text = post },
+    };
+    const twice = try navProbeBare(arena, &two, &.{}, &named);
+    try t.expectEqual(@as(usize, 1), twice.tally.bad);
+    try t.expect(heard(twice, "carries 2 Next links"));
+}
+
+test "a name in no_strip that no page bears is stale" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const chain = [_]Page{
+        .{ .path = "site/a.html", .text = nav_a ++ to_b ++ nav_end },
+        .{ .path = "site/b.html", .text = nav_b ++ to_c ++ nav_end },
+        .{ .path = "site/c.html", .text = nav_c ++ nav_end },
+    };
+    const ghost = [_][]const u8{"ghost.html"};
+    const p = try navProbeBare(arena, &chain, &.{}, &ghost);
+    try t.expectEqual(@as(usize, 1), p.tally.bad);
+    try t.expect(heard(p, "ghost.html -- named in `no_strip`"));
+    try t.expect(heard(p, "no such page is on the site: the name is stale"));
 }
 
 test "a strip must mark this page and no other" {

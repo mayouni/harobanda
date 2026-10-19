@@ -48,7 +48,7 @@ fails=0
 
   echo "=== the control: the clean copy passes, and says what it judged ==="
   out=$(cd "$S" && "$H" docs --check 2>&1); rc=$?
-  if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -qF "7 section strips"; then
+  if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -qF "6 section strips"; then
     echo "ok    clean copy: exit 0, $(printf '%s' "$out" | grep -o -E "of the site's [0-9]+ pages.*")"
   else
     echo "FAIL  clean copy: exit $rc"; printf '%s\n' "$out" | sed 's/^/        /'; fails=$((fails+1))
@@ -94,12 +94,15 @@ fails=0
   mutant "a page with no strip" \
     site/build.html 's|<nav class="path"|<nav class="paths"|' \
     "site/build.html -- carries no section strip"
-  mutant "a link that leaves its section from the last page of it, unnamed" \
-    site/datacenters.html 's|Next: <a href="resilience.html">Resilience|Next: <a href="threats.html">Resilience|' \
+  mutant "a link from the last page of a strip, which no page follows, unnamed" \
+    site/cloud-status.html 's|</main>|<p class="prose">Next: <a href="cloud.html">The cloud</a> A sentence.</p>\n</main>|' \
     "this is the last page of its strip, so no page follows it"
-  mutant "a name in the onward list that its page no longer bears out" \
-    site/datacenters.html '/Next: <a href="resilience.html">Resilience/d' \
-    "the page carries no Next link: the name is stale"
+  mutant "a page with no strip whose Next goes to a page that is not there" \
+    site/blog.html 's|Next: <a href="datacenters.html">|Next: <a href="nowhere.html">|' \
+    "Next goes to nowhere.html, which is not a page of the site"
+  mutant "a page named as having no strip that has grown one" \
+    site/blog.html 's|^<main id="main">|<nav class="path"><div class="path-in"><a href="blog.html" class="here" aria-current="page">Blog</a></div></nav>\n<main id="main">|' \
+    "as a page with no section strip, and it has one: the name is stale"
 
   # the seam the check names, run rather than only stated: a page with no Next is not judged, so a
   # Next that is deleted goes unnoticed. It is reported, and it is not part of the verdict.
