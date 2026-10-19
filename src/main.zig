@@ -79,7 +79,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb court  --pack [declarative/pack/fixtures.json]
         \\  harb ready  <ready-path> <a.b.c.d:port> [--url /health] [--every N] [--mute] -- <program> [args...]   (a program's word that it is serving, said for it; --mute drops the program's own console; from inside a world)
         \\  harb learn  [n] [--all] [--words] [--run] [--check]   (the guided tour: what this machine does, and how to break it)
-        \\  harb docs   --check                         (every page's code fits its column, and every machine it shows is accepted)
+        \\  harb docs   --check                         (every page's code fits its column, every machine it shows is accepted, and every Next link goes where its section strip says)
         \\  harb version
         \\
     , .{ version, @tagName(builtin.cpu.arch), @tagName(builtin.os.tag), default_fixtures });

@@ -1,3 +1,111 @@
+# NAV-1 — a Next link is a claim about the site, and it is judged like one
+
+The site's bottom links, judged (the pages checker's fourth rule,
+`src/docs.zig`), built 2026-10-19 on the author's request, on the same
+evening he found by eye that the Cloud page's Next link skipped a page.
+
+## What was found, and why nothing had said so
+
+Every page of the site but the home page carries a section strip,
+`<nav class="path">`: the pages of its section in the order the reader is
+meant to take them. Some end with `Next: <a href="X">Label →</a>`. When
+Real time was put into the Deploy strip (For IT, The cloud, **Real time**,
+How it is written, Where it stands) the strip was edited on every page of
+the section and the Next link of the page before it was not: the Cloud page
+went on sending its reader to How it is written, past the page inserted
+after it. The audit that followed found a second hole of the same family:
+Resilience had become the fifth page of Security's strip, and the fourth
+page, A secure design, had no Next to it, so a reader going page by page
+stopped one short. The court, the tour, `harb docs --check` and the
+Linux tests were all green over both. Adding a page to a strip is two
+edits, and only one had a judge.
+
+## What was built
+
+- **`harb docs --check`'s fourth rule** (`checkNavigation`), run over the
+  HTML files directly in `site/`:
+  1. a page's Next link is the entry after its own in its strip, and says
+     the strip's own words for it (entities decoded: `&amp;` and `&` are
+     one word);
+  2. the last page of a strip, which has no page after it, leaves its
+     section only by a link named in `onward` -- one: `datacenters.html` to
+     `resilience.html`, a narration sending its reader on to the page that
+     holds its proof -- and the words are those the target calls itself;
+  3. a name in `onward` that its page no longer bears out (no Next, not
+     the last of its strip, a Next that goes elsewhere, a target that is no
+     page) is convicted as stale, so the list cannot hide what a page does
+     now;
+  4. a section's strip is the same on every page of it: the same pages in
+     the same order with the same words, every page it names exists and has
+     a strip, and each page marks itself and no other. A difference is
+     reported once for each pair, from the page whose path comes first or,
+     when the other does not list it back and would never say so, from the
+     page that lists it;
+  5. a page with no strip is convicted unless it is named in `no_strip`
+     (the home page); a name that has grown a strip is stale.
+  The run says what it judged: `of the site's 29 pages, 28 sit in 7
+  section strips, each the same on every page of its section, and their 9
+  Next links each go to the next page of the strip (1 onward, named)`.
+- **`experiment/nav_probe.sh`**: a scratch copy of every Markdown and HTML
+  file, the clean copy required to pass, and nine defects put back one at a
+  time -- the Cloud page's real one first -- each required to make the
+  check exit 1 and say the words that name it. The tenth run is the seam,
+  reported and not gated.
+
+## What was found while building it
+
+- **A judge that skips what it cannot read is green for the wrong reason.**
+  The Next link is found by its form, `Next: <a href="X">`; a link in any
+  other form, written by the next hand to touch a page, would have been
+  passed over silently. A Next line in another form is counted by its
+  start and convicted as unread; two Next links are convicted; a page with
+  no strip is convicted unless named. The home page is the one name, so a
+  change of markup that took every page out of the check would fail it
+  loudly instead of leaving it green.
+- **The probe's first run was red, for its own expectation.** The mutant
+  that took one entry out of one page's strip was convicted, and the probe
+  failed it: it expected the words `(nothing) here`, and the check reports
+  the difference from the pages that LIST the odd page -- `(nothing)
+  there`. The check was right and the probe had named the wrong side. A
+  probe that is wrong the first time is evidence that it can be.
+- **A pair is judged from one side, or from none.** Reporting each pair
+  from both pages doubles every line; reporting it only from the page whose
+  path comes first misses a page that lists a lesser page which does not
+  list it back. The rule is the first side, or the page that lists the
+  other when the other will not say.
+- **The shadow of a local.** `said` was a top-level helper and an existing
+  test had a local of that name: Zig refuses a local that hides a
+  declaration. The helper is `heard`.
+
+## What is judged, and by what
+
+Twelve unit tests in `src/docs.zig` on pages written inline (a chain that
+follows its strip; a Next that skips a page, naming the page meant; a Next
+that calls its page something else; the last page, unnamed, named, renamed,
+stale three ways; a strip that differs on one page, convicted from each
+page that lists it; a one-way listing; a strip that names a page that is
+not there; a page with no strip, the home page, a stale name; a strip that
+marks the wrong page or none; a Next in a form it cannot read, and two; the
+words compared as a reader sees them; an attribute read by its own name),
+and the probe above on the real pages. `zig build court` runs the check,
+and so does every later court.
+
+## Named seams
+
+- **A page with no Next is not judged.** The Why, AI, The machine and Build
+  sections and the For IT page carry none, by convention, and in a section
+  that does use them a deleted one goes unnoticed: the Security chain's gap
+  was found by comparing neighbours and not by this. The probe runs it
+  (`secure-design.html` without its Next passes) so the seam is observed
+  and not only stated; a rule that required a Next on every page but the
+  last of a section that uses any would flag For IT, and whether For IT
+  should end in one is the author's.
+- The sentence after a Next link describes the page it goes to, and only a
+  reader can judge that.
+- A strip is read from `<nav class="path">`; a page whose strip is built any
+  other way is convicted as having none, which is the loud failure and the
+  one that is wanted.
+
 # FRONT-2 — a door is declared by the set it serves, and a front is a way of its own
 
 The cloud's front on the gateway of two links (the rest of rung 3b of

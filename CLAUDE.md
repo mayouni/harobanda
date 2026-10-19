@@ -552,9 +552,16 @@ zig-out\bin\harb.exe learn
 # vocabulary, `--run` where the command is this binary's
 zig-out\bin\harb.exe learn 7
 
-# the pages: no code line wider than 64, and every machine a
-# page shows in full is one the court accepts (DOC-1)
+# the pages: no code line wider than 64, every machine a page
+# shows in full is one the court accepts, and every Next link
+# goes where its section strip says (DOC-1, NAV-1)
 zig-out\bin\harb.exe docs --check
+
+# the navigation check probed (NAV-1): the Cloud page's real
+# defect and eight more put back one at a time in a copy of
+# the pages, each convicted by name, and the clean copy passes
+#   -> zig-out/nav_probe.txt
+bash experiment/nav_probe.sh
 
 # every boot the tour asks for, from a copy of only what is
 # published -- no stz, no zig-out (LRN-3)
@@ -580,6 +587,36 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A Next link is a claim about the site, and it is judged like one**
+  (NAV-1): every site page but the home page carries a section strip
+  (`<nav class="path">`, the pages of its section in the order to read
+  them), and `harb docs --check` requires that a page's Next link is
+  the page after its own in that strip, in the strip's own words for it;
+  that the strip is the same on every page of its section and names
+  pages that exist; that each page marks itself and no other; and that
+  the last page of a strip, which has no page after it, leaves its
+  section only by a link named in `onward` -- one today, the data
+  centers post to the page that holds its proof -- a name the check
+  convicts as stale once the page stops bearing it out. **A judge that
+  skips what it cannot read is green for the wrong reason**: a Next
+  line in any other form, a second one, and a page with no strip (the
+  home page excepted, by name) are convicted, never passed over, or one
+  change of markup would take every page out of the check. **Found by
+  the author's eye with every gate green**: the Cloud page's Next went
+  to How it is written after Real time had been put before it, and the
+  Security chain stopped at its fourth page once Resilience became its
+  fifth. Adding a page to a strip is two edits -- the strip on every
+  page, and the Next of the page before it -- and only the first had
+  been made. **The probe's first run was red, for its own expectation**:
+  a strip missing an entry is reported by the pages that list it and
+  not by the odd page, so the probe had named the wrong side. Judged by
+  twelve unit tests in `src/docs.zig` and by `experiment/nav_probe.sh`
+  (the real defect and eight more, each convicted by name; the clean
+  copy passes; the seam below run, not only stated). Named seams: a
+  page with NO Next is not judged -- the Why, AI, The machine and Build
+  sections and For IT carry none, by convention, and in a section that
+  uses them a deleted one goes unnoticed; the sentence after a link,
+  which describes its target, is a reader's to judge.
 - **A door is declared by the set it serves, and a front is a way of its
   own** (FRONT-2): fleet v0.3's `FRONT` names the member that ends TLS
   for the devices of one link -- declared (FR60), standing on the link
@@ -1673,7 +1710,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: NAV-1, FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

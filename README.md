@@ -407,7 +407,7 @@ same for all three.
 | time: a record dated by an authority's signed word, or said to be undated | `src/timeattest.zig`, `src/timeserve.zig`, `src/timeaudit.zig`, `src/machine.zig` (`CLOCK`, `TIME_FROM`) | `machines/time.expected` (two machines on one wire), `experiment/time_probe.sh`, `experiment/time_scene_probe.sh` |
 | updates: two slots, and a trial before any commit | `src/update.zig` | the card read back after a trial |
 | the guided tour, judged like any other claim | `src/learn.zig` | `harb learn --check` |
-| the pages: every code line fits GitHub's column, every machine a page shows in full is one the court accepts, and the words are the tour's own | `src/docs.zig` | `harb docs --check`, in `zig build court` |
+| the pages: every code line fits GitHub's column, every machine a page shows in full is one the court accepts, the words are the tour's own, and every Next link goes where its section strip says | `src/docs.zig` | `harb docs --check`, in `zig build court` |
 | the reference machines | `machines/` | each boots and is judged against its pin |
 | the illustrated long version | `site/`, published at [mayouni.github.io/harobanda](https://mayouni.github.io/harobanda/) by `.github/workflows/pages.yml` on every push that changes it | the court judges every machine it shows in full |
 | the vendored kernel, pinned by digest | `vendor/PIN.md` | kernel.org's own sums |
