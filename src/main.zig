@@ -38,6 +38,7 @@ const tick = @import("tick.zig");
 const mirror = @import("mirror.zig");
 const mirroraudit = @import("mirroraudit.zig");
 const mirrorserve = @import("mirrorserve.zig");
+const roll = @import("roll.zig");
 const timeattest = @import("timeattest.zig");
 const timeaudit = @import("timeaudit.zig");
 const timeserve = @import("timeserve.zig");
@@ -79,6 +80,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb time   verify <file.fleet> <statements> [<record>]   (what the fleet's time authority said about a record, checked with the key the fleet holds)
         \\  harb mirror check [file.machine] [--wait N] [--fresh | --follow]   (is the copy this machine keeps the source's word? every file against the listing the source signed, from inside the machine; --follow also asks that the attempt just made reached the source)
         \\  harb mirror verify <file.fleet> <mirror> <listing> <dir>   (the same, with the fleet's two keys and nothing else: the listing the keeper kept and the directory it keeps, checked from anywhere)
+        \\  harb roll   <file.fleet> <dir> [--since <roll>] [--at <time>] [--out <roll>]   (who has written a record since: every member's brought record against the fleet's keys and the time authority's statements, and against the roll before it; --at is when the records were collected, default now; --out writes the roll the next call is compared with)
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
         \\  harb place  <file.machine> <file.pack>... [--after <world>] [--out <file>]   (a solution's services, placed on a machine and judged as one; --after orders them after one of its worlds)
         \\  harb court  --pack [declarative/pack/fixtures.json]
@@ -405,6 +407,11 @@ pub fn main() !u8 {
             return 1;
         }
         return timeaudit.run(arena, args[3..], out);
+    }
+    if (std.mem.eql(u8, verb, "roll")) {
+        // The roll call (ROLL-1): the records members brought, read against the fleet's keys and its time
+        // authority's statements, and against the roll before; no secret takes part and nothing is fetched
+        return roll.run(arena, args[2..], out);
     }
     if (std.mem.eql(u8, verb, "mirror")) {
         // A copy of a world's directory, read back and judged by something that never held the secret (MIR-1):
@@ -1234,6 +1241,7 @@ test {
     _ = mirror;
     _ = mirroraudit;
     _ = mirrorserve;
+    _ = roll;
     _ = timeattest;
     _ = timeaudit;
     _ = timeserve;

@@ -89,7 +89,7 @@ file says where it runs, and the court says whether the two agree.
 | time | **built (TIME-1), in the emulator:** a fleet's one time authority signs that an entry of a record existed no later than a time it read from a clock it has; the asking machine keeps the statement beside its record; ruling 07: attested, never assumed | a board's real clock (OS-5), authenticated network time as a source (NTS), a lower bound |
 | rollout | an A/B trial per box, self-judged | waves over the set, and the set's own commit |
 | reach per world | `EGRESS` writes routes; worlds with `network` share them | per-world egress, and the packet filter |
-| one record | each journal signed; `harb fleet attribute` | a witness world that collects and verifies every member's journal, holding no secret |
+| one record | each journal signed; `harb fleet attribute`; **the reading is built (ROLL-1):** `harb roll` reads what members were brought against the fleet's keys and its time authority's statements, and against the roll before it | the collecting: a witness that fetches every member's journal (the floor moves no record between machines), and the evidence page |
 | an image a provider boots | the emulator is handed the kernel and the initramfs; only the Pi gets a card | an x86 disk image with a boot loader or EFI stub, and the two slots on it |
 
 ## 5. The ladder, in the order the dependencies allow
@@ -298,6 +298,51 @@ word); a restore verb; a confinement of the two children, which are the
 floor's own code running as root; and anything but regular files and
 directories.
 
+*The roll call, as built (ROLL-1, 2026-10-20, STZ-OS-RULING-19).* A fleet's
+machines keep signed records of their boots, and a fleet that names a time
+authority has the entries dated; what it could not do was read the whole
+set at once and say who had written since the last time anybody looked.
+`harb roll <fleet> <dir> [--since <roll>]` takes the record each member was
+brought -- `<member>.record` and the statements beside it -- and says, with
+only what the fleet file holds, whether each is there, whether it is the
+member's own and whole, how far it goes and what the authority said of it;
+and, against the roll before, who WROTE (the roll's last entry is still in
+the record, at the place that roll counted it, so the entries after it were
+written after that entry), who has NOTHING NEW, whose record went
+BACKWARDS or became another chain, and who was held and is ABSENT now, with
+the entries, last entry and newest dated entry the last roll held of it:
+what is lost is a line with numbers on it. "Since" is the previous roll's
+last entry, named by the digest of the whole line (an entry's own hash is a
+hash of public bytes, which two devices of one design share, so a rebuilt
+card would be taken for the old one), and not a clock, because the floor's
+dates are upper bounds ("no later than"). A member the roll could not hold
+is not forgotten -- the roll keeps what it last held, and the time of the
+roll that held it -- and a record that went backwards stays DIVERGED until
+a roll is called again without `--since`, because accepting it is an act of
+a person. An entry the authority dates before the roll that did not have it
+says that roll was shown a copy older than it said (`--at` is the moment the
+records were collected). A machine that stops declaring a journal, and a
+member the fleet file stops naming, are said once; the second is a finding
+when the roll still owed an answer for it. A record is written once per boot,
+so a member that stays up has nothing new, and the roll names that state and
+does not judge it. The roll is a file (`--out`), unsigned, which holds the
+records' word, the caller's clock and the history of the calls (the same
+records and the same roll before it, called at the same moment, make the same
+one); it is written only if it reads back, to a file beside the one it
+replaces, synced, and renamed over it.
+*Judged* by `experiment/os13_roll.sh`, which runs the time seat's arc and
+rolls over the till's record in eighteen sections (a roll that is not
+brought the record and keeps what it held, a record that goes backwards and
+stays flagged until accepted, a stale copy, an entry taken out, a statement
+changed, a record cut at its end, a key nobody enrolled and a clock behind
+the roll before it), pinned at 187 lines; by twenty-one tests and a probe that
+convicts each of 89 mutants of the module (`experiment/roll_probe.sh`); and by
+two readers with no stake, whose findings are each a case. *Not built:* the
+collecting (the floor moves no record between machines; the mirror carries a
+world's directory and not the floor's record, and a machine keeps one mirror,
+so a witness cannot yet fetch from many), a heartbeat on a timer so that a live
+member keeps writing, an alarm, and a roll that is signed.
+
 **Rung 4 -- an image a provider's machine boots.** An EFI stub or a
 boot loader, the two slots on a disk, a `BOARD` for a generic virtio
 virtual machine, `HARDWARE` being the address the provider gives.
@@ -323,7 +368,7 @@ machine, and a filter behind the routes (the stronger statement EGR-1
 left open). A declared witness world that collects every member's
 journal and verifies it with the fleet's public keys, holding no
 secret; stzn renders the verdicts as the page an auditor reads.
-*Status:* not built; `harb fleet attribute` is the one-record shape.
+*Status:* the reading is built (ROLL-1, 2026-10-20: `harb roll`, described under the mirror above); the collecting, per-world egress, the packet filter and the evidence page are not.
 
 ## 6. What is not built, by the doctrine already paid for
 

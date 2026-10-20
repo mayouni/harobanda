@@ -1,0 +1,187 @@
+=== the arc the records come from: the time seat's, end to end ===
+arc: the time seat's arc matched its pin, and left the till's record at two moments, with the statements beside it
+clock: every roll is called at a moment derived from the statements' own times; what is pinned is how long ago
+=== A: the first roll, over the record the till published at its third boot ===
+A: roll: fleet nuage -- 2 members, 1 keeps a record; as of <time>, by the caller's clock
+A: roll: dates come from clockbox (fingerprint FP1): an entry "existed no later than" a time, which is that member's word and never a lower bound
+A: roll: this is the first roll: there is nothing to compare it with
+A: roll: clockbox -- keeps no record: its machine declares no JOURNAL, so there is none to bring
+A: roll: till -- 2 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+A: roll: till -- entry 2 of 2 existed no later than <time> (clockbox's word)
+A: roll: 1 of 1 record held
+A: roll: clean: every record that should be there is, and is its member's, in order from its first entry
+A: roll: written to zig-out/roll/a.roll: the next roll is compared with it (--since)
+A: exit 0
+=== B: two hours later, over the record it published at its fifth boot, against A ===
+B: roll: compared with the roll of <time>, 2 h 5 min before this one by the caller's clock
+B: roll: till -- 4 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+B: roll: till -- entry 3 of 4 existed no later than <time> (clockbox's word); the entry after it is ORDERED and UNDATED
+B: roll: till -- WROTE 2 entries since the roll of <time> (entries 3-4); the first existed no later than <time>, and the last one is ORDERED and UNDATED
+B: roll: 1 of 1 record held; since the last roll 1 wrote, 0 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+B: roll: clean: every record that should be there is, is its member's, and goes on from the roll before it wherever that roll held it
+B: roll: written to zig-out/roll/b.roll: the next roll is compared with it (--since)
+B: exit 0
+=== C: the same record again, against B ===
+C: roll: compared with the roll of <time>, 3 h 35 min before this one by the caller's clock
+C: roll: till -- 4 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+C: roll: till -- entry 3 of 4 existed no later than <time> (clockbox's word); the entry after it is ORDERED and UNDATED
+C: roll: till -- NOTHING NEW since the roll of <time>: the record brought still ends at entry 4, head H8
+C: roll: 1 of 1 record held; since the last roll 0 wrote, 1 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+C: roll: clean: every record that should be there is, is its member's, and goes on from the roll before it wherever that roll held it
+C: exit 0
+=== D: nobody brings the record, against B ===
+D: roll: compared with the roll of <time>, 3 h 35 min before this one by the caller's clock
+D: roll: till -- ABSENT: its machine keeps a record at /data/journal, and none was brought
+D: roll: till -- the roll of <time> held it: 4 entries, head H8, newest dated entry 3 no later than <time>
+D: roll: 0 of 1 record held; since the last roll 0 wrote, 0 had nothing new, 1 absent, 0 diverged, 0 new, 0 left the fleet
+D: roll: NOT clean: 1 thing the set owes an answer for
+D: roll: written to zig-out/roll/d.roll: the next roll is compared with it (--since)
+D: exit 1
+=== D2: the record comes back, against D ===
+D2: roll: compared with the roll of <time>, 1 h 30 min before this one by the caller's clock
+D2: roll: till -- 4 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+D2: roll: till -- entry 3 of 4 existed no later than <time> (clockbox's word); the entry after it is ORDERED and UNDATED
+D2: roll: till -- NOTHING NEW since the roll of <time>: the record brought still ends at entry 4, head H8
+D2: roll: 1 of 1 record held; since the last roll 0 wrote, 1 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+D2: roll: clean: every record that should be there is, is its member's, and goes on from the roll before it wherever that roll held it
+D2: exit 0
+=== E: the record as it stood before B, against B: shorter than B saw ===
+E: roll: compared with the roll of <time>, 3 h 35 min before this one by the caller's clock
+E: roll: till -- 2 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+E: roll: till -- entry 2 of 2 existed no later than <time> (clockbox's word)
+E: roll: till -- DIVERGED: the roll of <time> held 4 entries and this record holds 2: a record is only ever extended, so this one was cut back, is another device's, or is not the one that roll saw. It stays DIVERGED until a roll is called again without --since
+E: roll: 0 of 1 record held; since the last roll 0 wrote, 0 had nothing new, 0 absent, 1 diverged, 0 new, 0 left the fleet
+E: roll: NOT clean: 1 thing the set owes an answer for
+E: roll: written to zig-out/roll/e.roll: the next roll is compared with it (--since)
+E: exit 1
+=== E2: the whole record, against E ===
+E2: roll: compared with the roll of <time>, 1 h 30 min before this one by the caller's clock
+E2: roll: till -- 4 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+E2: roll: till -- entry 3 of 4 existed no later than <time> (clockbox's word); the entry after it is ORDERED and UNDATED
+E2: roll: till -- NOTHING NEW since the roll of <time>: the record brought still ends at entry 4, head H8
+E2: roll: 1 of 1 record held; since the last roll 0 wrote, 1 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+E2: roll: clean: every record that should be there is, is its member's, and goes on from the roll before it wherever that roll held it
+E2: exit 0
+=== E3: the short record again, against E ===
+E3: roll: compared with the roll of <time>, 1 h 30 min before this one by the caller's clock
+E3: roll: till -- 2 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+E3: roll: till -- entry 2 of 2 existed no later than <time> (clockbox's word)
+E3: roll: till -- DIVERGED: the roll of <time> held 4 entries and this record holds 2: a record is only ever extended, so this one was cut back, is another device's, or is not the one that roll saw. It stays DIVERGED until a roll is called again without --since
+E3: roll: 0 of 1 record held; since the last roll 0 wrote, 0 had nothing new, 0 absent, 1 diverged, 0 new, 0 left the fleet
+E3: roll: NOT clean: 1 thing the set owes an answer for
+E3: exit 1
+=== E4: the short record, with no roll before it ===
+E4: roll: this is the first roll: there is nothing to compare it with
+E4: roll: till -- 2 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+E4: roll: till -- entry 2 of 2 existed no later than <time> (clockbox's word)
+E4: roll: 1 of 1 record held
+E4: roll: clean: every record that should be there is, and is its member's, in order from its first entry
+E4: roll: written to zig-out/roll/e4.roll: the next roll is compared with it (--since)
+E4: exit 0
+=== E5: the short record, against E4 ===
+E5: roll: compared with the roll of <time>, 1 h before this one by the caller's clock
+E5: roll: till -- 2 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+E5: roll: till -- entry 2 of 2 existed no later than <time> (clockbox's word)
+E5: roll: till -- NOTHING NEW since the roll of <time>: the record brought still ends at entry 2, head H8
+E5: roll: 1 of 1 record held; since the last roll 0 wrote, 1 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+E5: roll: clean: every record that should be there is, is its member's, and goes on from the roll before it wherever that roll held it
+E5: exit 0
+=== F: an entry taken out of the middle of the record, against B ===
+F: roll: compared with the roll of <time>, 3 h 35 min before this one by the caller's clock
+F: roll: till -- BROKEN at entry 3: the entry is not the one this place holds (seq=<its place> prev=...): an entry was removed, reordered or replaced, or these are not an entry's bytes; 2 entries verified before it
+F: roll: till -- the break is inside what the roll of <time> vouched for (4 entries): entries that roll saw have been changed or removed
+F: roll: 0 of 1 record held; since the last roll 0 wrote, 0 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+F: roll: NOT clean: 1 thing the set owes an answer for
+F: exit 1
+=== G: one second added to a statement, against B ===
+G: roll: compared with the roll of <time>, 3 h 35 min before this one by the caller's clock
+G: roll: till -- 4 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+G: roll: till -- entry 3 of 4 existed no later than <time> (clockbox's word); the entry after it is ORDERED and UNDATED
+G: roll: till -- FINDING: 1 of 3 statements did not verify against clockbox's key and it is not taken: changed after it was signed, signed by another, cut short, or not a statement
+G: roll: till -- NOTHING NEW since the roll of <time>: the record brought still ends at entry 4, head H8
+G: roll: 1 of 1 record held; since the last roll 0 wrote, 1 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+G: roll: NOT clean: 1 thing the set owes an answer for
+G: exit 1
+=== H: the record cut at its end, with the authority's statements about what was cut, against B ===
+H: roll: compared with the roll of <time>, 3 h 35 min before this one by the caller's clock
+H: roll: till -- 2 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+H: roll: till -- entry 2 of 2 existed no later than <time> (clockbox's word)
+H: roll: till -- FINDING: 1 statement verifies and is about entries this record does not hold: it is another record's, or entries were cut from the end of this one
+H: roll: till -- DIVERGED: the roll of <time> held 4 entries and this record holds 2: a record is only ever extended, so this one was cut back, is another device's, or is not the one that roll saw. It stays DIVERGED until a roll is called again without --since
+H: roll: 0 of 1 record held; since the last roll 0 wrote, 0 had nothing new, 0 absent, 1 diverged, 0 new, 0 left the fleet
+H: roll: NOT clean: 2 things the set owes an answer for
+H: exit 1
+=== I: the fleet before the till's key was enrolled ===
+I: roll: this is the first roll: there is nothing to compare it with
+I: roll: till -- NOT ENROLLED: the fleet holds no key for it, so nobody can speak for its records until its own fingerprint is enrolled
+I: roll: 0 of 1 record held
+I: roll: NOT clean: 1 thing the set owes an answer for
+I: roll: not written (no --out): nothing was kept, so the next roll will be a first roll too
+I: exit 1
+=== M: a roll shown a record older than the authority's own date for an entry ===
+M0: roll: this is the first roll: there is nothing to compare it with
+M0: roll: till -- 2 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+M0: roll: till -- entry 2 of 2 existed no later than <time> (clockbox's word)
+M0: roll: 1 of 1 record held
+M0: roll: clean: every record that should be there is, and is its member's, in order from its first entry
+M0: roll: written to zig-out/roll/m0.roll: the next roll is compared with it (--since)
+M0: exit 0
+M: roll: compared with the roll of <time>, 2 h 5 min before this one by the caller's clock
+M: roll: till -- 4 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+M: roll: till -- entry 3 of 4 existed no later than <time> (clockbox's word); the entry after it is ORDERED and UNDATED
+M: roll: till -- WROTE 2 entries since the roll of <time> (entries 3-4); the first existed no later than <time>, and the last one is ORDERED and UNDATED
+M: roll: till -- FINDING: the authority dates the first of them no later than <time>, which is before the roll of <time>, the roll that did not have it: the copy that roll was shown was stale, or the caller's clock and the authority's disagree
+M: roll: 1 of 1 record held; since the last roll 1 wrote, 0 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+M: roll: NOT clean: 1 thing the set owes an answer for
+M: exit 1
+=== O: the record brought with no statements beside it, against B ===
+O: roll: compared with the roll of <time>, 3 h 35 min before this one by the caller's clock
+O: roll: till -- 4 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H8, and no secret took part
+O: roll: till -- every entry is ORDERED and UNDATED here: no statements were brought beside the record
+O: roll: till -- NOTHING NEW since the roll of <time>: the record brought still ends at entry 4, head H8
+O: roll: 1 of 1 record held; since the last roll 0 wrote, 1 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+O: roll: clean: every record that should be there is, is its member's, and goes on from the roll before it wherever that roll held it
+O: exit 0
+=== J: the roll is a file, and the same call twice writes the same bytes ===
+file: B and J are the same 268 bytes
+file: A: roll v1 fleet=nuage at=A authority=FP
+file: A: member clockbox state=none entries=0 head=- dated=0 t=- last=-
+file: A: member till state=held entries=2 head=H dated=2 t=BOUND2 last=A
+file: A: end
+file: B: roll v1 fleet=nuage at=B authority=FP
+file: B: member clockbox state=none entries=0 head=- dated=0 t=- last=-
+file: B: member till state=held entries=4 head=H dated=3 t=BOUND3 last=B
+file: B: end
+file: D: roll v1 fleet=nuage at=C authority=FP
+file: D: member clockbox state=none entries=0 head=- dated=0 t=- last=-
+file: D: member till state=absent entries=4 head=H dated=3 t=BOUND3 last=B
+file: D: end
+file: E: roll v1 fleet=nuage at=C authority=FP
+file: E: member clockbox state=none entries=0 head=- dated=0 t=- last=-
+file: E: member till state=diverged entries=4 head=H dated=3 t=BOUND3 last=B
+file: E: end
+file: E4: roll v1 fleet=nuage at=E4 authority=FP
+file: E4: member clockbox state=none entries=0 head=- dated=0 t=- last=-
+file: E4: member till state=held entries=2 head=H dated=2 t=BOUND2 last=E4
+file: E4: end
+=== K: what is refused, in words ===
+K1: harb: roll takes a fleet file and the directory the records were brought to: harb roll <file.fleet> <dir> [--since <roll>] [--at <time>] [--out <roll>]
+K1: exit 1
+K2: harb: roll: --at is seconds since the epoch or YYYY-MM-DDTHH:MMZ, not 'yesterday'
+K2: exit 1
+K3: harb: cannot read zig-out/roll/none.roll: there is no such roll
+K3: exit 1
+K4: harb: zig-out/roll/junk.roll is not a roll: it is a file `harb roll --out` writes, in the one spelling it reads back
+K4: exit 1
+K5: harb: zig-out/roll/other.roll is a roll of fleet elsewhere, and this is fleet nuage: the anchors in it are another fleet's
+K5: exit 1
+K6: harb: cannot open zig-out/roll/nowhere, the directory the records were brought to: FileNotFound
+K6: exit 1
+K7: roll: compared with the roll of <time>, which the caller's clock reads as LATER than this one: the two are not one clock's
+K7: roll: till -- ABSENT: its machine keeps a record at /data/journal, and none was brought
+K7: roll: till -- the roll of <time> held it: 4 entries, head H8, newest dated entry 3 no later than <time>
+K7: roll: 0 of 1 record held; since the last roll 0 wrote, 0 had nothing new, 1 absent, 0 diverged, 0 new, 0 left the fleet
+K7: roll: NOT clean: 1 thing the set owes an answer for
+K7: harb: roll: nothing was written: this roll is as of a time earlier than the roll it was compared with, and a roll file is kept only in the order of the caller's clock -- call it with a later --at, or with no --since to start again
+K7: exit 1
+file: K7 wrote no roll

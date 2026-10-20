@@ -48,11 +48,10 @@ c.box("room A", "one file, its own key; it judges its boot and keeps its record"
 c.gap(8)
 c.box("room B", "the same, and the way between the two links", "machine")
 c.gap(8)
-c.box("room C, struck", "lost: what the file says was here, and nothing more", "kern")
+c.box("room C, struck", "lost: what the file and the roll say was here, and nothing more", "kern")
 c.gap(8)
 c.note("The links the file names join the rooms. A's files are kept on B, and verified.", MUTED)
 c.gap(16)
 
-c.strip_items("NEXT, ORDERED", ["the roll call: who has written a record since",
-                                "the loss drill: one box lost, the rest serve"])
+c.strip_items("NEXT, ORDERED", ["the loss drill: one box lost, the rest serve"])
 c.render("harobanda-diagram-14-narrow.png")

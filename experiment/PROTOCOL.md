@@ -1,3 +1,276 @@
+# ROLL-1 — the roll call: who has written a record since, and the latest it can have been
+
+The third of the five declarations of the resilience page after the cloud's
+front (STZ-OS-RULING-19, "go ahead with implementing them all"; the order this
+desk takes is the front, territory, the mirror, the roll call, the loss drill,
+the source mirror), built 2026-10-20 on the author's "continue", reviewed twice
+by readers with no stake, and reworked after each. A cloud is a fleet of
+machines that each keep a signed record of their boots (JRN-1), and a fleet that
+names a time authority has the entries dated (TIME-1). What a fleet could not do
+was read the whole set at once, with nothing but its own file, and say who had
+written since the last time anybody looked. `harb roll` does: it takes the
+records members were brought, judges each against the keys the fleet holds and
+the statements its authority signed, and compares the set with the roll before
+it. It moves nothing -- the records are brought -- and it holds no secret. (The
+fleet's roll, `harb fleet`, says who is IN the set; the roll call says what each
+member's record has done.)
+
+## What was built
+
+- **`src/roll.zig`** -- no kernel, as `timeaudit.zig` is none. `read` judges one
+  member's record: whether one was brought; whose it is, by `fleet.attribute`
+  (so a key since retired, an altered entry, another device's record, a record
+  of nothing and a member nobody enrolled are each named as `harb fleet verify`
+  names them); how far it goes, with the digest of the whole line of every entry
+  that verified; and what the authority said of it, entry by entry -- the
+  earliest statement at or after an entry is its bound, and statements that
+  cannot both be right of a clock that runs forward are counted, the reading
+  `timeaudit.zig` makes, held to it by a test that compares the two on the same
+  inputs. `compare` is what no single record can say: against the roll before, a
+  record has WRITTEN (the roll's last entry is still in it, at the place that
+  roll counted it; the entries after it are the ones written since), has
+  NOTHING NEW, has gone BACKWARDS (shorter than the roll saw, or as long and
+  another chain), or was held and is ABSENT, or is BROKEN inside what the roll
+  vouched for, or after it, or cannot be vouched for at all; and `stored` is
+  what the roll writes down, which is the point of the reworks below. `call` says
+  all of it in words and returns the roll it makes.
+- **The roll as a file** (`roll v1 fleet= at= authority=`, a line a member,
+  `end`): the set's memory of who was heard from and how far -- state, entries,
+  the digest of the last entry, how many entries have a time on them, the tightest
+  bound of the newest, and `last`, the roll that held this observation. Unsigned,
+  because nothing in it is a secret; it holds the records' word, the caller's
+  clock and the history of the calls that made it (anchors carried, divergences
+  kept), so the same records and the same roll before it, called at the same
+  moment, make the same one. Read strictly (one spelling of every field, nothing
+  after `end`, nothing it could not have read: an anchor is a head AND a count AND
+  the roll that held it, and a held member was held by THIS roll).
+- **The verb**: `harb roll <fleet> <dir> [--since <roll>] [--at <time>] [--out
+  <roll>]`. `<dir>` must be a directory and holds, for each member whose machine
+  declares a JOURNAL, `<member>.record` and the statements beside it,
+  `<member>.record.time` -- the names the machine keeps them under, with the
+  member's in front; a file brought for a machine that keeps none is noticed and
+  never read. `--at` is the moment the records were COLLECTED (default: now,
+  which is right only when they were collected a moment ago). **A roll is written
+  only if it reads back**: to a file beside the one it replaces, synced, and
+  renamed over it, so a killed run or a power cut leaves the roll before or this
+  one and never half of one; a roll as of a time earlier than the roll it was
+  compared with carries that roll's anchors and does not read back, so it is
+  printed, nothing is written, and the old roll stays. Exit 0 only for a clean
+  roll: every record that should be there is, is its member's, goes on from the
+  roll before it, and no statement was refused, about an entry the record does not
+  hold, or contradicted by another.
+- **`experiment/os13_roll.sh`**: the scene runs the time seat's arc (an authority
+  and a till on one wire, the till booted five times, the authority gone for two
+  of them) and rolls over the two moments of the till's record that arc
+  publishes. A is the first roll; B, two hours later by the caller's clock,
+  finds two entries written since, the first dated and the last not (the
+  authority had gone, and nothing dates what it did not hear); C finds nothing
+  new; D has nobody bring the record and says what B held of it, and D2 brings
+  it back and finds it NOTHING NEW *since B* -- the roll that was not brought it
+  did not lose it, and the roll file shows B's last entry and B's time carried;
+  E is the earlier record against B, shorter than B saw, DIVERGED; E2 the whole
+  record after it, still on from B; E3 the short one again, DIVERGED again; E4 a
+  roll with no roll before it, the way a person accepts a record that went
+  backwards, and E5 on from that; F an entry taken out of the middle; G a second
+  added to a statement; H the record cut at its end with the authority's
+  statements about what was cut; I the fleet before the till's key was enrolled;
+  M a roll shown a copy older than the authority's own date for an entry; O the
+  record with no statements beside it; J the roll as a file, the same call
+  writing the same bytes, and four of the files read with their times named; K
+  what is refused, in words, among it a directory that is not there and a roll as
+  of a time earlier than the one it is compared with. Pinned at 187 lines
+  (`machines/roll.expected`). **Every roll in it is called at a moment derived from
+  the statements' own times**, because the emulator's clock is a base plus the
+  seconds the machine has run and differs by a few seconds from one run to the
+  next; what the pin holds of a time is how long ago, a difference of constants,
+  and never the time.
+- **`experiment/roll_probe.sh`**: 89 mutants of the module, each convicted by the
+  test named for its rule (`roll_probe.sh r14 r48` runs some, says which it left
+  out, and does not claim the whole).
+
+## What was found while building it
+
+- **"Since" can only be a comparison, never a clock.** The ruling's phrase is
+  "who has written a record since, with a time on it". The only dates the floor
+  has are the authority's, and a statement is an upper bound: an entry "existed
+  no later than" a time, never "no earlier". A silent member cannot be given the
+  time it stopped. What can be PROVED is the hash chain: a roll remembers a
+  member's last entry, and the next record either contains it at the place the
+  roll counted it, and the entries after it were written after THAT ENTRY, or it
+  does not. That they were written after the roll looked is the copy's to say --
+  a roll shown a stale copy held an older end than the record had. So the window
+  of an entry written since is from the roll that did not have it -- the caller's
+  clock, and printed as the caller's, because the floor has none -- to the
+  authority's bound. The roll file is that memory, and the first roll has none.
+- **A record is written once per boot, so silence is a state and not a verdict.**
+  A machine that stays up for a year writes nothing for a year. The roll says
+  "NOTHING NEW since the roll of ..." and does not judge it (its first wording,
+  "wrote nothing", was a verb, and a verb is an act). Where a silence means a
+  loss is the member nobody can bring, and that is ABSENT with what the last roll
+  held of it: its entries, its head, the newest entry anyone dated. What is lost
+  is a line with numbers on it. A heartbeat entry on a timer would make a live
+  member keep writing and a dead one stop, and would change what JRN-1 says a
+  record is; it is not built (the seams).
+- **The anchor named an entry by its `hash=`, and two devices of one design
+  share it** (the first review). The hash of an entry is a hash of public bytes
+  (its place, the hash before it, the machine's name, the declaration's digest, a
+  verdict), so a till whose card was replaced by another of the same design,
+  booted alike, has the SAME chain of hashes for as long as it has as many
+  entries, and a head made of one would read the new card's record as the old
+  card's, extended. TIME-1 had said so in this file fifteen days before and named
+  an entry by the digest of its whole written line, signature and all, for
+  exactly that reason; the roll took the other hash. The anchor is
+  `timeattest.entryDigest` of the last line now, and a test that builds two
+  devices of one design (`a chain is named by the device that signed it`) holds
+  the two chains apart, and `harb roll` says so for a set (forked).
+- **A roll that could not hold a member lost it, and a record that went backwards
+  was accepted the next time** (the first review). The first version stored this
+  roll's observation of every member, so a member nobody brought had no anchor,
+  and the next record -- cut back, forked, another device's -- was a first look
+  and clean; a record that was shorter than the roll saw became the new head, and
+  the roll after it was clean too. The anchor is the last observation that was
+  HELD, and a roll that could not hold the member carries it, with the time of the
+  roll that held it: ABSENT, NOT ITS OWN, BROKEN, EMPTY, unenrolled and "no longer
+  declares a journal" all keep it. A record that goes backwards is DIVERGED and
+  keeps the old anchor too, **until a roll is called again without `--since`**:
+  accepting a rebuilt card or a restored record is an act of the person who calls
+  the roll, and never a side effect of calling it. (It is all or nothing: a roll
+  with no `--since` re-anchors every member.)
+- **A roll can be shown a copy older than it says, and only a date can say so**
+  (the first review). A stale copy reads as "nothing new". An entry the authority
+  dates BEFORE the roll that did not have it was written before that roll was
+  called, so the copy that roll was shown was older than the roll says, or the two
+  clocks disagree; the roll says that, to the second (a bound rounded up to the
+  minute beside a roll rounded down contradicted itself on the first try). `--at`
+  is therefore the moment the records were collected: a roll called at 12:30 over
+  records collected at 12:00 would be right to find an entry dated 12:10 a stale
+  copy. A bound equal to the roll's own time is not one.
+- **A roll the program wrote and could not read** (the second review). The
+  anchor a roll carries has the time of the roll that held it, and the file
+  requires that to be no later than the roll's own; `--at` is the caller's, so a
+  roll called as of a time earlier than the one it was compared with wrote
+  `at=1000` beside `last=2000`, replaced the good roll with it, and the next call
+  answered "is not a roll". The verb writes a roll only if it reads back, and says
+  why when it will not; a test calls the roll over every pair of ways a member's
+  record can differ from the one before it (eight observations twice over, and a
+  fleet that stops enrolling the member) and reads each roll back.
+- **A finding that never cleared, and a member deleted to make one go away** (the
+  second review). "NO LONGER KEEPS A RECORD" fired at every later roll, and the only
+  way out was a roll with no `--since`, which also accepts every divergence; it is
+  said once now, and the anchor stays, silent, for the day the machine names a
+  journal again. A member the fleet file stops naming is LEFT: said and free when
+  the roll held it and owed nothing about it, a finding -- once, because the roll
+  written now has nothing of it -- when it was ABSENT, DIVERGED or broken, so that
+  deleting a line from the fleet file is not a way to make a divergence vanish
+  unseen.
+- **Claims stronger than the code** (the second review), corrected where they
+  stood: "anyone with the fleet file and the same records makes the same roll" (the
+  roll holds the caller's clock and the history of the calls, so it is the same
+  records AND the same roll before it, called at the same moment); "the entries
+  after it were written after that roll looked, by the hash" (the hash orders them
+  after the anchor's entry; the roll's own look is the copy's); "written whole or
+  not at all" (a file beside it, renamed, with no sync: safe against a killed run
+  and not a power cut; it is synced now); "TIME-1 two days before" (fifteen); "the
+  next roll is compared with it" said of a first roll with no `--out` (it says it
+  was not kept); a name limit of 255 the grammar does not have; "N of M records
+  held" counting a record that went backwards as held beside the diverged it was
+  also counted as. And three behaviours: a date `20:60Z` read as 21:00 (the
+  calendar round trip compared only the day; it compares every part now), a
+  directory typo that made every keeper ABSENT and rewrote the roll, and a file
+  brought for a machine that keeps none, which was read, up to 64 MiB, and could
+  stop the verb. The time audit counts statements that cannot both be right of a
+  clock that runs forward; the roll's reading did not, though a test claimed
+  parity; it counts them now, says them as a finding, and the test compares them.
+- **Rules no test would have caught**, listed by the second reader, each a
+  one-line mutation: the minute limit, the departed-member filter, the blank-line
+  skip, the extra-word guards on both lines, the fleet-name check, the head
+  length, the days-and-hours arguments, the equal-time boundary, the order of the
+  two digests in the forked sentence, the words of three of the comparison's
+  sentences, and an unreadable file taken for one nobody brought. Each has a test
+  or a mutant now. Two of the first probe's own mutants were wrong: a rule hidden
+  behind another (a roll as of a time past the limit was refused by the
+  held-by-this-roll rule before the limit was asked), and a mutant that crashed
+  the run before its test ran.
+- **The scene's own clock was wrong, and the new check is what would have
+  said so.** Its first version called its rolls at fixed times on 2026-10-06
+  against the emulator's 2026-10-05, so the second roll would have found the
+  authority's date for every new entry older than the first roll; the rolls are
+  called at moments derived from the statements now, with a precondition that
+  fails the scene if the arc's dates are not in the order it needs. A date a test
+  computed by hand was an hour wrong too (13:33 for 14:13), and was found by
+  computing it with a second tool.
+- **A slice of a copy that is gone read as noise, and no test said so.** The
+  first run of the verb over the real artifacts of the last time-scene run
+  printed `head` followed by bytes of nothing: `h8(h: [64]u8)` returned a slice
+  of its own by-value parameter. Every unit test passed, because each asserted
+  other substrings. The verb's output was READ before the scene was written, and
+  a test now compares the printed head with the head the roll holds (EGR-2: a
+  sentence is judged by reading it).
+- **The fleet court has two rules the test fleets learned by being refused**: one
+  declaration is one member ("keeper.machine is already depot's declaration") and
+  a signed record names its machine, so two devices of one design are two machine
+  files ("till2 and till both declare the machine time_till"). The tests build
+  their fleets from the time seat's own files with the test's keys written in, as
+  the scene's enrolment does, and not from a fleet nobody else judges.
+- **The record a witness publishes at a boot is the record BEFORE that boot's
+  entry.** The third boot's export holds two entries, and "after the third boot"
+  described the disk and not the record; the scene's headings say who published
+  when.
+- **A heredoc turned `\\` into one backslash in a Python patch and the fix did not
+  apply**, three times (CLAUDE.md's trap, again): anything with a backslash in it
+  is a file written with the file tools.
+
+## What is judged, and by what
+
+Twenty-one tests (`zig test src/roll.zig`, on the host and on Linux): the roll as a
+file (round trip, and what it is not), a time in the two spellings the verb takes,
+a record read for whose it is and what the authority said of it, the records that
+are not the member's or not whole or not there or not enrolled, one heard under a
+retired key and one nobody signed, a chain named by the device that signed it, the
+comparison with the roll before in every direction, what a roll writes down, a
+roll that always reads back, the whole set called and said in words (six rolls, a
+member that left, a member that is new, a clock that reads before the roll it is
+compared with, another authority's roll), the records that make a roll not clean,
+a machine that stops declaring a journal and a member that leaves, a clock that
+went backwards between statements, a record with blank lines and carriage returns,
+how long ago is said, what is said of a record the roll cannot go on from, a fleet
+that keeps no record and one that takes its time from nobody, the statements that
+do not verify or disagree with the roll before, the reading held to
+`timeaudit.read` on six kinds of statements, and the verb over a directory, with
+what it refuses; `experiment/os13_roll.sh` over a real arc, pinned at 187
+lines; and `experiment/roll_probe.sh`, which puts one bug at a time into a scratch
+copy of the module (89) and requires each to be convicted by the test named for
+its rule. No grammar changed: the roll reads the declarations that already are.
+
+## Named seams
+
+- **The records are brought, not fetched.** The floor moves no record between
+  machines: the mirror carries a world's directory and not the floor's own record
+  (JRN-1: a record is the floor's or a world's, never both), and a machine gives
+  or keeps one mirror (R211), so a witness cannot yet collect from many members.
+  Who collects, and how, is the operator's; what the roll needs of them is a pair
+  of files named for the member.
+- **Nothing is heard from a member that stays up.** A record is written once per
+  boot; a heartbeat entry on a timer is a different seat and is not built.
+- **The anchor is the previous roll's last entry, and the file that holds it is
+  unsigned.** The first roll has none; whoever holds the file can rewrite its
+  anchor, and fools only themselves; a roll lost leaves the next without one.
+  Accepting a divergence is all or nothing (a roll with no `--since` re-anchors
+  every member), and a divergence is accepted by the same act that discards every
+  other anchor.
+- **A stale copy is found only if a date disagrees.** A copy that is older than
+  its roll says, of a member the authority did not date since, reads as "nothing
+  new".
+- **The roll's time is the caller's, and the authority's is an upper bound.** A
+  roll whose clock is behind the authority's by a few seconds finds a stale copy
+  where there is none; one authority per fleet, as in TIME-1.
+- **A record cut at its end that no roll saw and no statement names is a record**:
+  the shorter chain is whole (TIME-1's seam, unchanged).
+- **`--out` is synced and renamed, and no test can make a disk fail half way**:
+  that the roll before survives a power cut is by construction, and unprobed; the
+  directory entry itself is not synced, so a power cut may leave the older roll.
+- **No alarm.** It prints and exits; nothing watches the set.
+
 # MIR-1 — a copy of a world's directory is the source's word, or it is not kept
 
 The second of the five declarations of the resilience page after the cloud's

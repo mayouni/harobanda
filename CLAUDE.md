@@ -476,6 +476,28 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/time_scene_probe.sh
 
+# the roll call (ROLL-1): who has written a record since --
+# the time seat's arc run end to end, then the till's record
+# rolled over in eighteen sections: a record not brought and
+# the anchor kept, one that went backwards, a stale copy, and
+# the cases that must be found or refused (about six minutes)
+#   -> zig-out/wsl/roll.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/os13_roll.sh
+
+# the same, by hand: the records members were brought, one
+# pair of files a member, against the fleet's keys, its time
+# authority's statements, and the roll before it
+zig-out\bin\harb.exe roll `
+  <file.fleet> <dir> [--since <roll>] [--at <time>] `
+  [--out <roll>]
+
+# the roll's mutants that must be convicted: 89 of the module
+# (name some -- r14 r48 -- to run only those)
+#   -> zig-out/wsl/roll_probe.txt
+wsl -d Ubuntu -- bash `
+  /mnt/d/GitHub/harobanda/experiment/roll_probe.sh
+
 # the mirror (MIR-1): a world's directory kept on another
 # machine -- two machines on one wire, enrolled by hand, a
 # ledger copied and read back from both disks, then the
@@ -623,6 +645,90 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **A set is read at once, and "since" is a comparison, never a clock**
+  (ROLL-1, STZ-OS-RULING-19): `harb roll <fleet> <dir> [--since <roll>]
+  [--at <time>] [--out <roll>]` takes the record each member was BROUGHT
+  (`<member>.record` and the statements beside it, `<member>.record.time`),
+  judges it with only what the fleet file holds -- the member's key, a
+  retired one too, and the time authority's -- and says, for every member
+  whose machine declares a JOURNAL: ABSENT, EMPTY, NOT ENROLLED, NOT ITS
+  OWN, BROKEN at an entry, or held: its own, whole and in order, with the
+  newest entry anybody dated and the entries after it ORDERED and
+  UNDATED. Against the roll before it says what no single record can: it
+  WROTE (the roll's last entry is still in the record at the place that
+  roll counted it, so the entries after it were written after that
+  entry), has NOTHING NEW, went BACKWARDS or became another chain
+  (DIVERGED), or was held and is ABSENT now, with the entries, last entry
+  and newest dated entry the roll held of it -- what is lost is a line
+  with numbers on it. **The anchor is the digest of the whole last line,
+  never its `hash=`**: an entry's hash is a hash of public bytes, so two
+  devices of one design that have booted alike have the SAME chain of
+  hashes (TIME-1 named an entry by its whole line for this reason, and
+  the first version of the roll forgot it fifteen days later), and a head
+  made of one would read a rebuilt card's record as the old card's,
+  extended; the signature is in the line, and a line is one device's.
+  **The anchor is the last observation that was HELD, and a roll that
+  could not hold a member does not lose it**: a member nobody brought,
+  whose record does not verify, or whom nobody can vouch for keeps the
+  roll before's anchor and the time of the roll that held it, so one
+  missed collection does not turn the next record into a first look; a
+  record that went backwards is DIVERGED and keeps the old anchor too,
+  **until a roll is called again without `--since`** -- accepting a
+  rebuilt card or a restored record is an act of the person who calls the
+  roll, never a side effect of calling it. A machine whose declaration
+  stops naming a JOURNAL is said once and its anchor kept, silent; a
+  member the fleet file stops naming is said once too, as a finding when
+  the roll still owed an answer for it, because deleting a line must not
+  make a divergence vanish unseen. **The only dates the floor has are
+  upper bounds** (an entry "existed no later than" a time), so a silent
+  member cannot be given the time it stopped: the window of an entry
+  written since runs from the roll that did not have it (the caller's
+  clock, printed as the caller's, and the moment the records were
+  COLLECTED) to the authority's bound, and a bound BEFORE that roll is a
+  finding, because the copy the roll was shown was older than it said.
+  **A record is written once per boot, so silence is a state and never a
+  verdict**: a machine that stays up for a year wrote nothing for a year,
+  and the roll says NOTHING NEW. The roll is a file (`roll v1`, one
+  spelling, read strictly, unsigned: nothing in it is a secret; it holds
+  the records' word, the caller's clock and the history of the calls, so
+  the same records and the same roll before it, called at the same
+  moment, make the same one), **written only if it reads back** -- to a
+  file beside the one it replaces, synced, and renamed over it -- and the
+  verb exits 0 only when it is clean. **Two reviews by readers with no
+  stake found the work unsound after every gate was green**: the first,
+  the public hash, the anchor lost with the member, a divergence taken as
+  the new truth the next time, a stale copy nobody could see, and a
+  machine that stopped declaring a record unsaid; the second, a roll the
+  program wrote and could not read back (a clock behind the roll it was
+  compared with replaced a good roll with one `parse` refused), a finding
+  that never cleared, a member deleted to make one vanish, claims
+  stronger than the code, and rules no test would have caught; every one
+  has the case that now convicts it. **A sentence is judged by reading
+  it** (EGR-2 again): the first run printed a head followed by bytes of
+  nothing -- a slice of a by-value parameter -- with every unit test
+  green, and was found by reading the verb's output over a real arc's
+  artifacts before the scene existed; a test now holds the printed head
+  to the head the roll keeps. **A scene's own clock is a claim, and so is
+  a probe's mutant**: the first scene called its rolls a day off the
+  emulator's, which the new check would have convicted, so its rolls are
+  called at moments derived from the statements' times and what is pinned
+  of a time is how long ago; and two of the first probe's mutants were
+  wrong (a rule hidden behind another, and a crash before its test).
+  Judged by twenty-one tests on the host and on Linux (the reading held to
+  `timeaudit.read` on six kinds of statements), `experiment/os13_roll.sh`
+  (the time arc, rolled over in eighteen sections -- a roll that is not
+  brought a record and keeps what it held, one that goes backwards and
+  stays DIVERGED until accepted, a stale copy, and the cases that must be
+  found: pinned at 187 lines) and `experiment/roll_probe.sh` (89 mutants,
+  each convicted by the test named for its rule). No grammar changed.
+  Named seams: the records are brought and not fetched (the mirror carries
+  a world's directory and not the floor's own record, and one mirror per
+  machine means a witness cannot yet collect from many); nothing is heard
+  from a member that stays up (a heartbeat on a timer is not built); the
+  roll file is unsigned, and accepting a divergence is all or nothing; a
+  stale copy is found only if a date disagrees; the roll's time is the
+  caller's; that the roll before survives a power cut is by construction
+  and unprobed; no alarm.
 - **A copy of a world's directory is the source's word, or it is not
   kept** (MIR-1, STZ-OS-RULING-19): until this seat the floor moved no
   data between machines, and it now moves exactly this -- the files of
@@ -1830,10 +1936,13 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   directory on another member, verified by the fleet's keys, judged by
   two machines on one wire and the negatives read off their disks --
   CLOUD.md's "no distributed filesystem" amended beside its text)**,
-  the roll call (who has written a record
-  since), the loss drill (a scene that destroys a member mid-run), and the
-  source mirror last (ruling 04's shape; it needs a place for a private
-  release). Rungs 5 and 6 need MicroRing's desk and a body. Haro's desk holds one constraint from the ruling:
+  **the roll call, built (ROLL-1, 2026-10-20: `harb roll` reads the
+  records members were brought against the fleet's keys and its time
+  authority's statements, and against the roll before it, and says who
+  has written since and by when -- the records are brought and not
+  fetched, which is its named seam)**, the loss drill (a scene that
+  destroys a member mid-run), and the source mirror last (ruling 04's
+  shape; it needs a place for a private release). Rungs 5 and 6 need MicroRing's desk and a body. Haro's desk holds one constraint from the ruling:
   the reservation is the world's main thread's, since the kernel refuses
   a reserved task that forks or spawns a thread unless its children fall
   back to normal scheduling -- which is how TIM-1 sets it (reset-on-fork),
@@ -1903,7 +2012,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: MIR-1, TERR-1, NAV-1, FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
+  line carries: ROLL-1, MIR-1, TERR-1, NAV-1, FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two
   grammars and their pins are `declarative/machine/` and

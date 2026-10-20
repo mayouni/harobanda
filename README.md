@@ -406,6 +406,7 @@ same for all three.
 | a world that runs as an identity, and the directories it owns | `src/machine.zig` (`STATE`), `src/init.zig` | `machines/qemu_cloud_ringserv.expected` (the directory read back from the disk), `machines/qemu_own.expected` (a world asks the kernel what it may write), `experiment/state_probe.sh` |
 | time: a record dated by an authority's signed word, or said to be undated | `src/timeattest.zig`, `src/timeserve.zig`, `src/timeaudit.zig`, `src/machine.zig` (`CLOCK`, `TIME_FROM`) | `machines/time.expected` (two machines on one wire), `experiment/time_probe.sh`, `experiment/time_scene_probe.sh` |
 | a copy: the files of a world's directory kept on another machine, only if the source's signed list and every digest in it match | `src/mirror.zig`, `src/mirrorserve.zig`, `src/mirroraudit.zig`, `src/machine.zig` (`MIRROR_OF`, `MIRROR_FROM`), `src/fleet.zig` (`MIRROR`) | `machines/mirror.expected` (two machines on one wire, the disks read back), `experiment/mirror_unit.sh`, `experiment/mirror_probe.sh` |
+| the roll call: who has written a record since, read from the records members were brought, against the fleet's keys, its time authority's statements and the roll before | `src/roll.zig` | `machines/roll.expected` (the time seat's arc, rolled over), `experiment/roll_probe.sh` |
 | updates: two slots, and a trial before any commit | `src/update.zig` | the card read back after a trial |
 | the guided tour, judged like any other claim | `src/learn.zig` | `harb learn --check` |
 | the pages: every code line fits GitHub's column, every machine a page shows in full is one the court accepts, the words are the tour's own, and every Next link goes where its section strip says | `src/docs.zig` | `harb docs --check`, in `zig build court` |
@@ -463,7 +464,11 @@ transcript:
   verified copy of the other's world's directory, follows it when it
   changes, and refuses an impostor, a stranger, a link, and the
   machine's own key under another name; then what anyone holding only
-  the fleet file can check of the copy, and eight cases that must be refused.
+  the fleet file can check of the copy, and eight cases that must be refused;
+- `bash experiment/os13_roll.sh` — the time seat's arc run end to end, then
+  the till's record rolled over in eighteen sections: who has written since,
+  who has nothing new, what a roll kept of a record it could not read, and
+  the cases that must be found or refused.
 
 Every line of doctrine here was paid for by a mistake, and each is written up
 under its own tag in `experiment/PROTOCOL.md`, newest first. A few of them:

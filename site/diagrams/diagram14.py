@@ -4,9 +4,10 @@
 Brief: site/DIAGRAMS.md section 13. The sentence it must make true: a resilient
 cloud is many small declared machines in many rooms, each judging its own boot
 and keeping its own record, joined by links the fleet file names, so that
-losing a room is losing what the file says was in it -- and what the file will
-say next (the roll call, the loss drill) is ordered and not built; where the data
-stays (TERR-1) and the copy of a room's files (MIR-1) are written already and are on the file's own list.
+losing a room is losing what the file and the roll say was in it -- and what
+comes next (the loss drill) is ordered and not built; where the data stays
+(TERR-1), the copy of a room's files (MIR-1) and the roll of who has written
+since (ROLL-1) are written already.
 
 It is containment and topology, which is what a diagram is for here: a hall as
 ONE strip, where data, compute and reach sit in one place and one strike takes
@@ -15,8 +16,9 @@ machines on the links the file names, one of them the way between, one of them
 struck. The orange accent is used once, on the fleet file, because that is
 what makes many rooms one cloud. Brick is used once, on the strike. The copy
 from room A to room B is a solid arrow since 2026-10-19 (MIR-1): it was dashed,
-this family's mark for absence, while it was ordered and not built. The last band
-says what is still ahead in the page's own words (DOC-2).
+this family's mark for absence, while it was ordered and not built. The roll call is
+in the third room's words since 2026-10-20 (ROLL-1): what is lost is what the file and
+the last roll say. The last band says what is still ahead in the page's own words (DOC-2).
 
 The phone gets a different drawing of the same argument: narrow14.py.
 
@@ -35,10 +37,9 @@ FILE = ("The fleet file", ["which boxes, on which links, who is the way between,
                            "who dates the records, where data stays, which key is out"])
 ROOMS = [("room A", ["one file, own key", "judges its boot", "keeps its record"], "machine"),
          ("room B", ["one file, own key", "the way between", "the two links"], "machine"),
-         ("room C", ["lost: what the", "file says, and", "nothing more"], "struck")]
+         ("room C", ["lost: what the", "file and roll say", "and nothing more"], "struck")]
 MIRROR = "A's files, kept on B"
-NEXT = ("NEXT, ORDERED", ["the roll call: who has written a record since",
-                          "the loss drill: one box lost, the rest serve"])
+NEXT = ("NEXT, ORDERED", ["the loss drill: one box lost, the rest serve"])
 
 img, d = canvas(14)
 
