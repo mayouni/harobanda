@@ -24,12 +24,35 @@ version and a tarball that is not the pinned one, each refused).
 
 | what | value |
 |---|---|
-| tarball | `linux-6.12.109.tar.xz` |
-| sha256 | `5484e552a334e15019f4aeba89e5b58f04651cf2f4e24e04de9f152f1c38e3fa` |
-| source of the digest | `https://cdn.kernel.org/pub/linux/kernel/v6.x/sha256sums.asc`, fetched 2026-09-12 |
+| tarball | `linux-6.12.115.tar.xz` |
+| sha256 | `0ec90fe4b20422b1b664b77e6d2dde22b40bd41e7eb2cad8ac8739a4749cb1bb` |
+| source of the digest | `https://cdn.kernel.org/pub/linux/kernel/v6.x/sha256sums.asc`, fetched 2026-11-05 |
 | licence | GPL-2.0 (the kernel's own `COPYING`); the image ships the kernel unmodified, built from this source |
 | config | `tinyconfig` + the fragment `harb image` derives per machine (`kernel.fragment`); no modules |
 | compiler | gcc from WSL Ubuntu for the first boot; `make CC="zig cc"` is the stated destination and untested |
+
+*Amended 2026-11-05 (TCPUAF-1, HAROBANDA-TCPUAF-01).* The pin moved
+from `linux-6.12.109` (sha256 `5484e552...e3fa`, fetched 2026-09-12) to
+`linux-6.12.115`, the newest 6.12 longterm release on that day (released
+2026-10-30), because 6.12.109 predates the fix for CVE-2026-98432: a
+use-after-free of a socket's IP options in IPv4 TCP connection setup,
+reachable from the network without authentication, and built into every
+machine here that declares a network (`CONFIG_INET`, `src/image.zig`). The
+fix ("ipv4: free inet_opt and ireq_opt after an RCU grace period") is
+first in 6.12.113: OSV's record for the CVE says so, and so does
+kernel.org's `ChangeLog-6.12.113` -- and no other changelog from 110 to
+115 -- read on 2026-11-05. The finding was stzlib-security's; the release
+was checked here, not taken from the report.
+
+**The rule for moving the pin** (it was never written, and a pin with no
+rule for moving it reproduces a vulnerable kernel faithfully): the pin
+moves to a newer 6.12 point release when a fix in it reaches a
+configuration this repository can build -- the kernel's own advisory, read
+against what `harb image` derives -- and in the same commit every pinned
+boot is re-run against its pin and every reference image is rebuilt.
+Nobody watches the advisories for this desk yet: until something does
+(`harb advisories`, HAROBANDA-ONEHOUR-01, not built), a move happens when
+a reading like stzlib-security's reaches the mailbox.
 
 Changing the pin means changing this file, `os2_kernel_fetch.sh`'s
 version pattern, and the first boot transcript in the same commit.

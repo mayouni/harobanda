@@ -1,3 +1,43 @@
+# TCPUAF-1 — the kernel pin moved past a remote use-after-free, and every pinned boot re-run on it
+
+Routed by stzlib-security as HAROBANDA-TCPUAF-01 (2026-11-05): the pinned
+kernel, `linux-6.12.109`, predates the fix for CVE-2026-98432, a
+use-after-free of a socket's IP options in IPv4 TCP connection setup,
+reachable from the network without authentication. Every machine here that
+declares a network builds `CONFIG_INET` (`src/image.zig`), so the flaw was in
+every networked image this repository makes.
+
+**Checked, not taken from the report.** OSV's record for the CVE gives the
+fix as first in 6.12.113; kernel.org's `ChangeLog-6.12.113` carries the fix
+line ("ipv4: free inet_opt and ireq_opt after an RCU grace period") and no
+other changelog from 110 to 115 does. The pin moved to `linux-6.12.115`, the
+newest 6.12 longterm release that day (2026-10-30), its digest taken from
+kernel.org's `sha256sums.asc`; `experiment/kernel_fetch_probe.sh` 5/5.
+
+**Found while moving it: the build cache would have booted the OLD kernel
+under the new pin's name.** KCACHE-1 keyed a kernel build directory by the
+digest of the configuration fragment alone, so a pin moved to a new point
+release found the previous release's build directory, called it a HIT, and
+would have judged every boot green on 6.12.109. The key now carries the
+version (`$K/build/<arch>-6.12.115-<frag sha>`), and a new pin is a MISS for
+every configuration. **A cache key is a claim that two builds are the same,
+and what it leaves out is what it says does not matter** -- the source was
+left out because, until today, it never changed.
+
+**The rule for moving the pin** is written in `vendor/PIN.md`, where there
+was none: a fix that reaches a configuration this repository can build moves
+the pin, and every pinned boot is re-run in the same commit. Nothing watches
+the advisories yet (HAROBANDA-ONEHOUR-01, `harb advisories`, not built).
+
+**Judged** by `experiment/regress.sh` whole, on the new kernel, every kernel
+configuration rebuilt: 22 ran, 0 failed, none skipped -- the thirteen pinned
+machines and the nine scenes (guarantees, names, fleet, time, mirror, roll,
+cloud, links, front), started 2026-11-05T21:00:38Z, about two and a half
+hours. No pin changed: no transcript names the kernel's version. Named seams:
+the dated diagnostic scripts (`os4_*`, `zigcc_*`) still name 6.12.109 and
+are records, not gates; the reference card image of `makeen_box` is rebuilt
+by its boot under `zig-out/` and is not published.
+
 # ROLL-1 — the roll call: who has written a record since, and the latest it can have been
 
 The third of the five declarations of the resilience page after the cloud's

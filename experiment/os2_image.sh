@@ -102,6 +102,11 @@ mkdir -p "$OUT" zig-out/wsl
   # builds of the same kernel. Keep the CONFIG lines, and keep
   # `# CONFIG_X is not set`, which looks like a comment and is a setting.
   FRAG=$(grep -E '^(CONFIG_[A-Z0-9_]+=|# CONFIG_[A-Z0-9_]+ is not set)' "$OUT/kernel.fragment" | sha256sum | cut -c1-12)
+  # ... and the SOURCE it is built from (TCPUAF-1): keyed by the fragment alone, a pin moved to a new point
+  # release would have found the old release's build directory, called it a HIT, and booted the old kernel
+  # under the new pin's name. The version is in the key, so a new pin is a MISS for every configuration.
+  KVER=${TARBALL%.tar.xz}
+  FRAG=${KVER#linux-}-$FRAG
   B=$K/build/$KSUB-$FRAG
   if [ -f "$B/$KERNEL_ARTIFACT" ]; then
     echo "kernel cache: HIT $KSUB-$FRAG -- this configuration is already built"
