@@ -159,6 +159,9 @@ const Tally = struct {
     nav_onward: usize = 0,
     nav_bare: usize = 0,
     nav_bare_next: usize = 0,
+    /// the pages whose main menu and strip were read for a label shown twice
+    /// (MENU-1)
+    nav_labelled: usize = 0,
 };
 
 /// A block that declares a MACHINE and elides nothing is a claim that this
@@ -523,7 +526,17 @@ fn nextLabel(alloc: std.mem.Allocator, raw: []const u8) ![]const u8 {
 
 /// the page's section strip, if it has one
 fn parseStrip(alloc: std.mem.Allocator, text: []const u8) !?Strip {
-    const nav = std.mem.indexOf(u8, text, "<nav class=\"path\"") orelse return null;
+    return parseNav(alloc, text, "<nav class=\"path\"");
+}
+
+/// the page's main menu, `<nav class="nav" id="nav">`, read as a strip is
+fn parseMenu(alloc: std.mem.Allocator, text: []const u8) !?Strip {
+    return parseNav(alloc, text, "<nav class=\"nav\"");
+}
+
+/// the links of the `<nav>` that opens with `open`, if the page has one
+fn parseNav(alloc: std.mem.Allocator, text: []const u8, open: []const u8) !?Strip {
+    const nav = std.mem.indexOf(u8, text, open) orelse return null;
     const body = text[0 .. std.mem.indexOfPos(u8, text, nav, "</nav>") orelse text.len];
     var entries: std.ArrayList(Entry) = .{};
     var pos = nav;
@@ -782,6 +795,53 @@ fn checkNavigation(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const P
     }
 }
 
+// ---- the site's labels: no label twice in the navigation a page shows (MENU-1) ----
+
+/// A label as the rule compares it: case ignored, and a leading "The"
+/// ignored, so that "The machine" and "Machine" are one label.
+fn labelKey(alloc: std.mem.Allocator, label: []const u8) ![]const u8 {
+    const low = try std.ascii.allocLowerString(alloc, std.mem.trim(u8, label, " \t\r\n"));
+    return if (std.mem.startsWith(u8, low, "the ")) std.mem.trimLeft(u8, low["the ".len..], " ") else low;
+}
+
+/// The Principal's rule of 2026-11-06 for every site of the estate: no entry
+/// of a submenu carries the label of the menu entry it sits under, and no
+/// label appears twice among the navigation one page shows -- its main menu
+/// and its section strip, together. Security's strip opened with "Security"
+/// under the menu's "Security" on five pages until the rule. Every page must
+/// carry a main menu, or a change of markup would take it out of the check.
+fn checkLabels(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const Page, t: *Tally) !void {
+    for (pages) |p| {
+        const menu = try parseMenu(alloc, p.text) orelse {
+            t.bad += 1;
+            try w.print("  {s} -- carries no main menu (<nav class=\"nav\">): every page of the site shows one, and its labels are judged with the strip's\n", .{p.path});
+            continue;
+        };
+        t.nav_labelled += 1;
+        const strip = try parseStrip(alloc, p.text);
+        const where = [_][]const u8{ "the main menu", "the section strip" };
+        const lists = [_][]const Entry{ menu.entries, if (strip) |s| s.entries else &.{} };
+        const lines = [_]usize{ menu.line, if (strip) |s| s.line else 0 };
+        for (lists, 0..) |list, li| {
+            for (list, 0..) |e, i| {
+                const key = try labelKey(alloc, e.label);
+                // compare with every entry shown before this one, once a pair
+                found: for (lists[0 .. li + 1], 0..) |earlier, lj| {
+                    const upto = if (lj == li) i else earlier.len;
+                    for (earlier[0..upto]) |f| {
+                        if (!std.mem.eql(u8, key, try labelKey(alloc, f.label))) continue;
+                        t.bad += 1;
+                        try w.print("  {s}:{d} -- '{s}' ({s}) in {s} repeats '{s}' ({s}) in {s}: no label appears twice in the navigation a page shows, case and a leading 'The' ignored\n", .{
+                            p.path, lines[li], e.label, e.href, where[li], f.label, f.href, where[lj],
+                        });
+                        break :found;
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Run from the repository root, as `zig build court` runs it.
 pub fn check(w: *std.Io.Writer) !usize {
     var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -806,6 +866,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         if (isSitePage(p)) try site.append(alloc, .{ .path = p, .text = text });
     }
     try checkNavigation(alloc, w, site.items, &onward, &no_strip, &t);
+    try checkLabels(alloc, w, site.items, &t);
     const pages = [_]struct { path: []const u8, html: bool }{
         .{ .path = "README.md", .html = false },
         .{ .path = "site/words.html", .html = true },
@@ -820,7 +881,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         try compareWords(alloc, w, pg.path, got, &learn.words, &t);
     }
     if (t.bad == 0) {
-        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next });
+        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled });
     } else {
         try w.print("docs -- {d} claim(s) the documents make do not hold\n", .{t.bad});
     }
@@ -1426,4 +1487,64 @@ test "an attribute is read by its own name, and a page is a file directly in sit
     try t.expect(!isSitePage("site/diagrams/a.html"));
     try t.expect(!isSitePage("doc/a.html"));
     try t.expect(!isSitePage("a.html"));
+}
+
+const menu_sec = "<nav class=\"nav\" id=\"nav\">\n<a href=\"why.html\">Why</a>\n" ++
+    "<a href=\"security.html\" class=\"active\">Security</a>\n</nav>\n";
+
+fn labelProbe(arena: std.mem.Allocator, pages: []const Page) !NavProbe {
+    var aw = std.Io.Writer.Allocating.init(arena);
+    var t = Tally{};
+    try checkLabels(arena, &aw.writer, pages, &t);
+    return .{ .tally = t, .said = aw.written() };
+}
+
+test "a strip entry that repeats its menu entry is convicted, naming both (MENU-1)" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // the defect as it stood: "Security" under "Security"
+    const old = "<nav class=\"path\">\n<a href=\"security.html\" class=\"here\" aria-current=\"page\">Security</a>\n" ++
+        "<a href=\"refusals.html\">What it refuses</a>\n</nav>\n";
+    const p = try labelProbe(arena, &.{.{ .path = "site/security.html", .text = menu_sec ++ old }});
+    try t.expectEqual(@as(usize, 1), p.tally.bad);
+    try t.expect(heard(p, "site/security.html:"));
+    try t.expect(heard(p, "'Security' (security.html) in the section strip repeats 'Security' (security.html) in the main menu"));
+    // the fix: the landing page named by its subject
+    const new = "<nav class=\"path\">\n<a href=\"security.html\" class=\"here\" aria-current=\"page\">The approach</a>\n" ++
+        "<a href=\"refusals.html\">What it refuses</a>\n</nav>\n";
+    const q = try labelProbe(arena, &.{.{ .path = "site/security.html", .text = menu_sec ++ new }});
+    try t.expectEqual(@as(usize, 0), q.tally.bad);
+    try t.expectEqual(@as(usize, 1), q.tally.nav_labelled);
+}
+
+test "a label is one label whatever its case and a leading The, in a menu or a strip alone (MENU-1)" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const strip = "<nav class=\"path\">\n<a href=\"m.html\" class=\"here\" aria-current=\"page\">The machine</a>\n" ++
+        "<a href=\"n.html\">MACHINE</a>\n</nav>\n";
+    const p = try labelProbe(arena, &.{.{ .path = "site/m.html", .text = menu_sec ++ strip }});
+    try t.expectEqual(@as(usize, 1), p.tally.bad);
+    try t.expect(heard(p, "'MACHINE' (n.html) in the section strip repeats 'The machine' (m.html) in the section strip"));
+    // two menu entries alike
+    const twice = "<nav class=\"nav\" id=\"nav\">\n<a href=\"a.html\">Build</a>\n<a href=\"b.html\">build</a>\n</nav>\n";
+    const q = try labelProbe(arena, &.{.{ .path = "site/a.html", .text = twice }});
+    try t.expectEqual(@as(usize, 1), q.tally.bad);
+    try t.expect(heard(q, "in the main menu repeats 'Build' (a.html) in the main menu"));
+    // a word that merely contains another is not that word
+    try t.expectEqualStrings("machine", try labelKey(arena, " The machine "));
+    try t.expectEqualStrings("theory", try labelKey(arena, "Theory"));
+}
+
+test "a page with no main menu is convicted, not passed over (MENU-1)" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const p = try labelProbe(arena_state.allocator(), &.{.{ .path = "site/x.html", .text = "<main></main>\n" }});
+    try t.expectEqual(@as(usize, 1), p.tally.bad);
+    try t.expect(heard(p, "site/x.html -- carries no main menu"));
+    try t.expectEqual(@as(usize, 0), p.tally.nav_labelled);
 }

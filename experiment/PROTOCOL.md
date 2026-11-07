@@ -1,3 +1,33 @@
+# MENU-1 — no label twice in the navigation a page shows
+
+The Principal ruled on 2026-11-06, for every site of the estate, that a
+submenu entry never repeats the label of the menu entry it sits under
+(relayed by Central as MENU-NOREPEAT-HAROBANDA); Central's note the same
+morning widened the sweep to every label shown twice in one page's
+navigation, case and a leading "The" ignored.
+
+**The sweep found one case, on five pages**: the Security section's strip
+opened with "Security" under the main menu's "Security". The other five
+sections already name their first page by its subject ("The case", "What
+it is", "Your apps", "The full stack", "For IT"), so Security's became
+**"The approach"**, and its title "Security: the approach". Central's
+note preferred another fix -- the landing page leaves its strip and is
+reached by the menu alone -- and it was not taken, for a local reason: a
+strip here is the section's reading order, every page marks itself in it,
+and the Next links are judged against it (NAV-1); a section whose first
+page is missing from its own strip is the one section where that order
+starts nowhere. The rename is also what the Principal's own words asked
+("find an other label for all the cases").
+
+**Judged by `harb docs --check`** (`checkLabels` in `src/docs.zig`, in
+`zig build court`): on every site page the main menu and the section
+strip are read together, and a label shown twice is convicted with both
+entries named; a page with no main menu is convicted, not passed over.
+Demonstrated once by putting the old label back: five convictions, exit
+1; with the fix, 29 pages clean. Three unit tests. Named seams: the page
+outline and the Next link are not compared with the menu; the rename is
+a label nobody has looked at on the rendered page yet.
+
 # TCPUAF-1 — the kernel pin moved past a remote use-after-free, and every pinned boot re-run on it
 
 Routed by stzlib-security as HAROBANDA-TCPUAF-01 (2026-11-05): the pinned
