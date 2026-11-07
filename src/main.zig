@@ -945,6 +945,22 @@ pub fn main() !u8 {
             else => |e| try out.print("confined: priority -- {s}\n", .{@tagName(e)}),
         }
 
+        // ... and whether this world can open the kernel's crypto interface
+        // (ALGOUT-1). Safe to TRY: a socket that opened is closed on the next
+        // line and nothing was asked of it. EPERM is the floor's answer; a
+        // kernel without the family would answer EAFNOSUPPORT, and that is
+        // said as the kernel's, so a filter that stopped holding shows here
+        // even on a kernel that has nothing to open.
+        const rc_alg = l.socket(confine.AF_ALG, l.SOCK.SEQPACKET, 0);
+        switch (l.E.init(rc_alg)) {
+            .PERM => try out.print("confined: crypto socket -- refused by the kernel (EPERM): the kernel's ciphers are not a world's to call\n", .{}),
+            .SUCCESS => {
+                _ = l.close(@intCast(rc_alg));
+                try out.print("confined: crypto socket -- OPENED: this world reached the kernel's crypto interface, and the floor is not holding\n", .{});
+            },
+            else => |e| try out.print("confined: crypto socket -- the kernel answered {s}, and not the floor: the floor's refusal is not on this world\n", .{@tagName(e)}),
+        }
+
         // and whether this world may make another process. A permitted
         // fork is PROVEN by forking, not by the absence of an error: the
         // child says so and is reaped.

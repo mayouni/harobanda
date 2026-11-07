@@ -1477,6 +1477,20 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     // the ports each world may bind, and no other (PORT-1): the kernel is asked at each start
     _ = try expect.portsLine(led.w(), m);
     _ = try expect.floorLine(led.w(), m);
+    // ... and the kernel's crypto socket, asked of the kernel by PID 1, which no filter holds
+    // (ALGOUT-1): a line said only after asking
+    if (m.services.len > 0) {
+        const rc_alg = linux.socket(confine.AF_ALG, linux.SOCK.SEQPACKET, 0);
+        var eb: [40]u8 = undefined;
+        const answer: ?[]const u8 = switch (linux.E.init(rc_alg)) {
+            .SUCCESS => blk: {
+                _ = linux.close(@intCast(rc_alg));
+                break :blk null;
+            },
+            else => |e| std.fmt.bufPrint(&eb, "E{s}", .{@tagName(e)}) catch "an error",
+        };
+        _ = try expect.cryptoLine(led.w(), m, answer);
+    }
     try led.echo();
     // the directories the worlds own, made and handed over before any of them exists (OWN-1)
     try prepareState(m, slots.items, unmounted.items, opts.rehearse, &led, out);

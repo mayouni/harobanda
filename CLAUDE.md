@@ -701,6 +701,20 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
 
+- **The kernel's crypto socket is never built, asked at every boot, and
+  refused to every world** (ALGOUT-1): the image refuses a kernel whose
+  config has any `CONFIG_CRYPTO_USER_API*`; PID 1 asks for `AF_ALG` and
+  says the kernel's answer (`boot: crypto`, EAFNOSUPPORT); the filter
+  refuses `socket(AF_ALG)` with EPERM whatever a world declared. And two
+  rules routed by stzlib-security (HAROBANDA-CRYPT-01, the OpenSSH 10.6p2
+  bypass on musl): **a password or secret is never checked with libc
+  `crypt(3)`** on this floor -- harb is static musl, and musl answered
+  `*` for a long password, which compared equal to a locked account's
+  `*` -- it goes through the engine's Argon2id; and **an image carries no
+  sshd today, and the day one is declared it is OpenSSH >= 10.6p2 with
+  `PasswordAuthentication no`**, named in the machine file, never added
+  to an image by hand.
+
 - **A set is read at once, and "since" is a comparison, never a clock**
   (ROLL-1, STZ-OS-RULING-19): `harb roll <fleet> <dir> [--since <roll>]
   [--at <time>] [--out <roll>]` takes the record each member was BROUGHT

@@ -293,6 +293,18 @@ pub const off_limits = [_][]const u8{
     "setpriority",        "ioprio_set",
 };
 
+/// The one socket family refused to every world (ALGOUT-1): the kernel's
+/// crypto interface, `AF_ALG`. A world that may open it hands its bytes to
+/// cipher code inside the kernel, and that code has twice been a way from
+/// an unprivileged process to root (CVE-2026-31431, "Copy Fail", through
+/// `algif_aead`). The kernel this floor builds carries none -- no
+/// `CONFIG_CRYPTO_USER_API` is ever derived, the image refuses a kernel
+/// that has one, and PID 1 asks the kernel at every boot -- so this is the
+/// second wall: the day a fragment turns it on, no world may still open it.
+/// No declaration should ask for the kernel's ciphers; a world that needs
+/// cryptography carries its own, in its own process.
+pub const AF_ALG: u32 = 38;
+
 /// The calls PRI-1 added: named apart so that a test and a probe can ask
 /// for them by name, and the tour can count them.
 pub const priority_calls = [_][]const u8{ "sched_setscheduler", "sched_setparam", "sched_setattr", "setpriority", "ioprio_set" };
@@ -318,6 +330,7 @@ pub fn filter(c: Confinement, buf: []sock_filter) []sock_filter {
     var ndeny: usize = 0;
     var clone_jmp: ?usize = null;
     var thread_jmp: ?usize = null;
+    var alg_jmp: ?usize = null;
 
     // the architecture this filter was built for, and nothing else
     buf[n] = .{ .code = LD_W_ABS, .jt = 0, .jf = 0, .k = OFF_ARCH };
@@ -337,6 +350,21 @@ pub fn filter(c: Confinement, buf: []sock_filter) []sock_filter {
             buf[n] = .{ .code = JMP_JEQ_K, .jt = 0, .jf = 0, .k = nr };
             n += 1;
         }
+    }
+
+    // the kernel's crypto interface, refused to every world (ALGOUT-1): one
+    // family of one call, so the first argument is read only when the call
+    // IS socket -- any other call skips the read and keeps its number in the
+    // accumulator for the tests that follow, and a socket of any other
+    // family is allowed at once, since nothing after this tests socket
+    if (nrOf("socket")) |nr| {
+        buf[n] = .{ .code = JMP_JEQ_K, .jt = 0, .jf = 2, .k = nr };
+        n += 1;
+        buf[n] = .{ .code = LD_W_ABS, .jt = 0, .jf = 0, .k = OFF_ARG0 };
+        n += 1;
+        alg_jmp = n;
+        buf[n] = .{ .code = JMP_JEQ_K, .jt = 0, .jf = 0, .k = AF_ALG };
+        n += 1;
     }
 
     // the calls that make a PROCESS and cannot make anything else
@@ -393,6 +421,11 @@ pub fn filter(c: Confinement, buf: []sock_filter) []sock_filter {
     for (deny_jmps[0..ndeny]) |i| {
         buf[i].jt = @intCast(deny - i - 1);
         buf[i].jf = 0;
+    }
+    if (alg_jmp) |i| {
+        // the crypto family is denied; any other family of socket is allowed
+        buf[i].jt = @intCast(deny - i - 1);
+        buf[i].jf = @intCast(allow - i - 1);
     }
     if (clone_jmp) |i| {
         // not clone: fall through to whatever comes next, which for the
@@ -720,14 +753,79 @@ test "every jump lands inside the program, and on a return" {
                 const target = i + 1 + @as(usize, off);
                 try testing.expect(target < prog.len);
                 // a jump must land on one of the three verdicts, or on the
-                // instruction that follows it (offset 0)
-                try testing.expect(off == 0 or prog[target].code == RET_K);
+                // instruction that follows it (offset 0) -- or, from the
+                // socket test alone, just past the read of its family
+                // (ALGOUT-1), where the next call's test begins
+                const past_family = ins.code == JMP_JEQ_K and ins.k == nrOf("socket").? and off == 2;
+                try testing.expect(off == 0 or prog[target].code == RET_K or past_family);
             }
         }
         // the architecture guard is first and refuses anything else
         try testing.expectEqual(OFF_ARCH, prog[0].k);
         try testing.expectEqual(audit_arch, prog[1].k);
         try testing.expectEqual(prog.len - 1, 1 + 1 + @as(usize, prog[1].jf));
+    }
+}
+
+/// What the kernel would answer: the program run on one call, as classic BPF
+/// runs it -- the only instructions the filter emits are a load of a word of
+/// the call's data, two kinds of jump and a return.
+fn verdict(prog: []const sock_filter, nr: u32, arg0: u32) u32 {
+    var acc: u32 = 0;
+    var pc: usize = 0;
+    while (pc < prog.len) {
+        const ins = prog[pc];
+        switch (ins.code) {
+            LD_W_ABS => acc = switch (ins.k) {
+                OFF_ARCH => audit_arch,
+                OFF_NR => nr,
+                OFF_ARG0 => arg0,
+                else => unreachable,
+            },
+            JMP_JEQ_K => {
+                pc += 1 + @as(usize, if (acc == ins.k) ins.jt else ins.jf);
+                continue;
+            },
+            JMP_JSET_K => {
+                pc += 1 + @as(usize, if (acc & ins.k != 0) ins.jt else ins.jf);
+                continue;
+            },
+            RET_K => return ins.k,
+            else => unreachable,
+        }
+        pc += 1;
+    }
+    unreachable;
+}
+
+test "the kernel's crypto socket is refused to every world, and no other family is (ALGOUT-1)" {
+    if (audit_arch == 0) return error.SkipZigTest;
+    const socket = nrOf("socket").?;
+    const eperm = linux.SECCOMP.RET.ERRNO | @as(u32, @intFromEnum(linux.E.PERM));
+    const cases = [_]Confinement{
+        .{ .network = true, .process = true, .threads = true },
+        .{ .network = true, .process = false, .threads = true },
+        .{ .network = false, .process = false, .threads = false },
+        .{ .network = true, .process = true, .threads = false },
+    };
+    for (cases) |c| {
+        var buf: [64]sock_filter = undefined;
+        const prog = filter(c, &buf);
+        // the crypto family, whatever the world declared
+        try testing.expectEqual(eperm, verdict(prog, socket, AF_ALG));
+        // the families a world uses are left alone: inet, inet6, unix, netlink
+        for ([_]u32{ linux.AF.INET, linux.AF.INET6, linux.AF.UNIX, linux.AF.NETLINK }) |fam| {
+            try testing.expectEqual(linux.SECCOMP.RET.ALLOW, verdict(prog, socket, fam));
+        }
+        // and a call that is not socket keeps its number past the test: an
+        // argument of 38 means nothing to mount, which is still refused, and
+        // to read, which is still allowed
+        try testing.expectEqual(eperm, verdict(prog, nrOf("mount").?, AF_ALG));
+        try testing.expectEqual(linux.SECCOMP.RET.ALLOW, verdict(prog, nrOf("read").?, AF_ALG));
+        // and the tests that follow it still decide: fork, when not granted
+        const fork_nr = nrOf("clone").?;
+        const want: u32 = if (c.process) linux.SECCOMP.RET.ALLOW else eperm;
+        try testing.expectEqual(want, verdict(prog, fork_nr, 0));
     }
 }
 
@@ -807,6 +905,46 @@ test "a world is refused a priority it was never given (PRI-1)" {
     const bare_answer = try askInAChild(false);
     if (bare_answer != 1) return error.SkipZigTest;
     try testing.expectEqual(@as(u8, 0), try askInAChild(true));
+}
+
+/// What a child is answered when it asks for the kernel's crypto socket:
+/// 0 refused with EPERM (the floor), 1 opened, 2 another refusal (a kernel
+/// without the family answers EAFNOSUPPORT), 3 the filter could not be set.
+fn tryCryptoSocket(filtered: bool) u8 {
+    if (filtered) {
+        const done = apply(.{ .network = true, .process = true, .threads = true }, null);
+        if (done.trouble != null or !done.seccomp) return 3;
+    }
+    const rc = linux.socket(AF_ALG, linux.SOCK.SEQPACKET, 0);
+    return switch (linux.E.init(rc)) {
+        .SUCCESS => blk: {
+            _ = linux.close(@intCast(rc));
+            break :blk 1;
+        },
+        .PERM => 0,
+        else => 2,
+    };
+}
+
+fn askCryptoInAChild(filtered: bool) !u8 {
+    const pid = try std.posix.fork();
+    if (pid == 0) linux.exit(tryCryptoSocket(filtered));
+    var status: u32 = 0;
+    _ = linux.wait4(pid, &status, 0, null);
+    if (status & 0x7f != 0) return error.ChildKilled;
+    return @intCast((status >> 8) & 0xff);
+}
+
+test "a world is refused the kernel's crypto socket, by the kernel (ALGOUT-1)" {
+    // asked of the kernel, in a child, behind the production filter of a world
+    // that declared everything: what refuses it is the floor. The control is
+    // the same call with no filter -- opened where the kernel has the family
+    // (WSL's does), EAFNOSUPPORT where it has not; EPERM there would mean the
+    // floor's refusal could not be told from the kernel's
+    if (builtin.os.tag != .linux) return error.SkipZigTest;
+    const bare_answer = try askCryptoInAChild(false);
+    if (bare_answer == 0) return error.SkipZigTest;
+    try testing.expectEqual(@as(u8, 0), try askCryptoInAChild(true));
 }
 
 test "the clone bit decides, and it decides the right way round" {

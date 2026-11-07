@@ -39,10 +39,11 @@ box: boot: budget -- caddy 128 MiB and 100% of a core and 64 tasks; the kernel h
 box: boot: health -- caddy every 10s; a world that stops refreshing stops the watchdog
 box: boot: ports -- caddy may bind 80, 443 and 8080 and no other port: the kernel refuses the rest, and gives a port below 1024 only to a world that declares it
 box: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+box: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
 box: boot: state -- caddy owns /run/front and /data/front as frontdoor (2020:2020); each made, then read back as that identity's, mode 0700
 box: boot: start caddy -- pid N -- /harb ready /run/front/ready 127.0.0.1:8080 --every 2 --mute -- /caddy run --config /app/Caddyfile --adapter caddyfile -- as frontdoor (2020:2020)
 box: boot: caddy -- ready (/run/front/ready)
-box: boot: judge -- the boot matches its expectation (/etc/expected, 33 lines)
+box: boot: judge -- the boot matches its expectation (/etc/expected, 34 lines)
 core: the server, behind the box:
 core: boot: harb init -- machine cloud_core (hosted / x86_64 / qemu_pc) -- pid 1
 core: boot: console /dev/ttyS0
@@ -62,13 +63,14 @@ core: boot: network loopback -- lo up 127.0.0.1/8
 core: boot: budget -- ringserv 128 MiB and 100% of a core and 64 tasks; the kernel holds the ceiling, not the world
 core: boot: health -- ringserv every 10s; a world that stops refreshing stops the watchdog
 core: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+core: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
 core: boot: state -- ringserv owns /run/ringserv and /data/ringserv as appserver (2000:2000); each made, then read back as that identity's, mode 0700
 core: boot: start ringserv -- pid N -- /harb ready /run/ringserv/ready 127.0.0.1:8210 --every 2 -- /ringserv run /app/app.ring --data /data/ringserv -- as appserver (2000:2000)
 core: ringserv: --data puts the database at /data/ringserv/ringserv.db
 core: ringserv: serving plain HTTP on 0.0.0.0:8210 — :behindproxy is set, so TLS is the proxy's job.
 core: RingServ 0.9.0 — serving on http://0.0.0.0:8210/api/v1  (2 workers)
 core: boot: ringserv -- ready (/run/ringserv/ready)
-core: boot: judge -- the boot matches its expectation (/etc/expected, 21 lines)
+core: boot: judge -- the boot matches its expectation (/etc/expected, 22 lines)
 till: the declared device, which knows nothing and asks:
 till: boot: harb init -- machine cloud_till (hosted / x86_64 / qemu_pc) -- pid 1
 till: boot: console /dev/ttyS0
@@ -80,6 +82,7 @@ till: boot: grant network (effectful)
 till: boot: network front -- eth0 up 192.168.20.40/24 (dhcp), dns [192.168.20.1], names on front.cloud (/etc/resolv.conf)
 till: boot: egress front -- 10.20.0.0/24 and nowhere else: no default route
 till: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+till: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
 till: boot: start where -- pid N -- /harb ask commons.core.cloud
 till: ask commons.core.cloud -- 10.20.0.2 (from 192.168.20.1)
 till: boot: where (pid N) exited 0
@@ -98,7 +101,7 @@ till: boot: bare (pid N) exited 0
 till: boot: start outside -- pid N -- /harb ask www.example.com
 till: ask www.example.com -- no such name on this network (from 192.168.20.1)
 till: boot: outside (pid N) exited 0
-till: boot: judge -- the boot matches its expectation (/etc/expected, 22 lines)
+till: boot: judge -- the boot matches its expectation (/etc/expected, 23 lines)
 till: boot: every service has ended -- init has nothing left to keep alive
 till: boot: init halts the machine -- reboot(RESTART)
 till: reboot: Restarting system
@@ -112,6 +115,7 @@ stranger: boot: grant process (effectful)
 stranger: boot: grant network (effectful)
 stranger: boot: network front -- eth0 dhcp: no lease after 3 tries (no server answered on this network)
 stranger: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+stranger: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
 stranger: boot: start where -- pid N -- /harb ask commons.core.cloud
 stranger: ask commons.core.cloud -- no resolver: this machine was never told where to ask (/etc/resolv.conf)
 stranger: boot: where (pid N) exited 0
@@ -161,10 +165,11 @@ closedbox: boot: budget -- caddy 128 MiB and 100% of a core and 64 tasks; the ke
 closedbox: boot: health -- caddy every 10s; a world that stops refreshing stops the watchdog
 closedbox: boot: ports -- caddy may bind 80, 443 and 8080 and no other port: the kernel refuses the rest, and gives a port below 1024 only to a world that declares it
 closedbox: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+closedbox: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
 closedbox: boot: state -- caddy owns /run/front and /data/front as frontdoor (2020:2020); each made, then read back as that identity's, mode 0700
 closedbox: boot: start caddy -- pid N -- /harb ready /run/front/ready 127.0.0.1:8080 --every 2 --mute -- /caddy run --config /app/Caddyfile --adapter caddyfile -- as frontdoor (2020:2020)
 closedbox: boot: caddy -- ready (/run/front/ready)
-closedbox: boot: judge -- the boot matches its expectation (/etc/expected, 26 lines)
+closedbox: boot: judge -- the boot matches its expectation (/etc/expected, 27 lines)
 closed: the same till, with that box:
 closed: boot: harb init -- machine cloud_till (hosted / x86_64 / qemu_pc) -- pid 1
 closed: boot: console /dev/ttyS0
@@ -176,6 +181,7 @@ closed: boot: grant network (effectful)
 closed: boot: egress front -- 10.20.0.0/24: no way written: this network has no gateway, and a route to another network goes through one
 closed: boot: network front -- eth0 up 192.168.20.40/24 (dhcp), dns [192.168.20.1], names on front.cloud (/etc/resolv.conf)
 closed: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+closed: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
 closed: boot: start where -- pid N -- /harb ask commons.core.cloud
 closed: ask commons.core.cloud -- no such name on this network (from 192.168.20.1)
 closed: boot: where (pid N) exited 0

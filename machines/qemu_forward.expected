@@ -9,9 +9,10 @@ boot: network front -- eth0 up 192.168.20.1/24
 boot: network core -- eth1 up 10.20.0.1/24
 boot: forward -- between front and core: a packet that arrives on one may leave by another, and nothing here filters it
 boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
 boot: start witness -- pid N -- /harb reach 10.20.0.7
 reach 10.20.0.7 -- a route exists: this machine knows a way there
 boot: witness (pid N) exited 0
-boot: judge -- the boot matches its expectation (/etc/expected, 13 lines)
+boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)
 boot: every service has ended -- init has nothing left to keep alive
 boot: init halts the machine -- reboot(RESTART)

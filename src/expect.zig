@@ -242,6 +242,26 @@ pub fn floorLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// The standing CRYPTO line (ALGOUT-1): what the kernel answers PID 1 -- which
+/// no filter holds -- when it asks for the kernel's crypto socket, `AF_ALG`.
+/// The kernel this floor builds has none (the image refuses one that does),
+/// so the answer is EAFNOSUPPORT and the line says so, and that the floor
+/// refuses one to every world besides (`confine.AF_ALG`). Said once per
+/// machine, after asking, as the floor line is: a machine with no worlds has
+/// nobody to keep it from. A kernel that OPENS one says so in other words,
+/// and the boot differs from its expectation.
+pub const fmt_crypto = "boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with {s}: it has none for a world to open, and the floor refuses one to every world besides\n";
+pub const fmt_crypto_opened = "boot: crypto -- THE KERNEL OPENED ITS CRYPTO SOCKET (AF_ALG): its ciphers are built, and only the floor's filter keeps them from the worlds\n";
+pub const crypto_expected = "EAFNOSUPPORT";
+
+/// `answer` is the kernel's errno as `E` and its name, or null when the
+/// socket opened.
+pub fn cryptoLine(w: *std.Io.Writer, m: *const machine.Machine, answer: ?[]const u8) !bool {
+    if (m.services.len == 0) return false;
+    if (answer) |a| try w.print(fmt_crypto, .{a}) else try w.writeAll(fmt_crypto_opened);
+    return true;
+}
+
 /// The standing TIMED line (TIM-1): what the kernel says of ITSELF on a machine
 /// that reserves time -- its preemption model, from its own version string,
 /// and how finely its timers resolve, from `clock_getres`. Worded ONCE here:
@@ -559,6 +579,7 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
     _ = try confineLine(w, m);
     _ = try portsLine(w, m);
     _ = try floorLine(w, m);
+    _ = try cryptoLine(w, m, crypto_expected);
     _ = try stateLine(w, m);
     // every service starts; a one-shot is ready when it has exited 0, a
     // daemon when spawned or, if it declares READY, when it has signalled
@@ -783,6 +804,7 @@ test "the board's expectation is derived from the declaration, line for line" {
         \\boot: health -- serve every 3s; a world that stops refreshing stops the watchdog
         \\boot: confine -- once has no sight of the other worlds and no way to start one and no sight of /data, serve has no sight of the other worlds and no way to start one and no sight of /data; what a world did not declare, the kernel does not give it
         \\boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+        \\boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
         \\boot: start once -- pid N -- /harb id -- as world (1000:1000)
         \\boot: once (pid N) exited 0
         \\boot: start serve -- pid N -- /stzr /app/serve.luau

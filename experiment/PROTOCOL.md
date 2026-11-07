@@ -1,3 +1,56 @@
+# ALGOUT-1 — the kernel's crypto socket: never built, asked at every boot, and refused to every world
+
+Routed by stzlib-security as HAROBANDA-ALGOUT-01 (2026-11-05), beside the
+kernel pin: Copy Fail (CVE-2026-31431, local root through the kernel's
+crypto socket, `AF_ALG` / `algif_aead`, in CISA's list of exploited flaws)
+did not reach this floor, because no `CONFIG_CRYPTO_USER_API` option is
+ever derived. "Out by construction" holds only until somebody edits a
+fragment, so the ask was a proof a boot gives, and a second wall.
+
+**Three walls, each with its own witness.** The IMAGE: `os2_image.sh`
+reads the built kernel's config and refuses the image if any
+`CONFIG_CRYPTO_USER_API*` is `y` or `m`, and says `kernel: no crypto
+socket built` otherwise. The KERNEL, asked at every boot: PID 1, which no
+filter holds, asks for the socket and says what it was answered --
+`boot: crypto -- the kernel answers ... with EAFNOSUPPORT` -- and the
+expectation derives that line, so a kernel that opens one differs from it
+in words of their own. The FILTER: `socket(AF_ALG, ...)` is refused with
+EPERM to every world whatever it declared (`confine.AF_ALG`), the first
+rule in the filter that reads an argument of a call other than `clone`;
+any other family of socket is allowed at once, and a call that is not
+`socket` keeps its number in the accumulator for the tests that follow.
+
+**Judged** by a unit test that RUNS the program (a classic-BPF
+interpreter in the tests: the crypto family refused under four
+confinements, inet, inet6, unix and netlink allowed, `mount` still
+refused and `read` still allowed with 38 in their first argument, the
+fork test still deciding after it); by a Linux test that installs the
+production filter in a child and asks the kernel -- WSL's kernel HAS the
+family, so the control opens the socket and the filtered child is
+refused EPERM; 182 of 182 on Linux, none skipped; by a mutant (the socket
+block dropped) convicted by the test named for the rule; and by
+`qemu_confine`, whose six worlds each say `confined: crypto socket --
+refused by the kernel (EPERM)` -- EPERM, not the EAFNOSUPPORT the kernel
+would have said, so the line is the floor's even on a kernel with
+nothing to open. Every pin was changed by the rule, never by a
+transcript (`boot: crypto` after every `boot: floor`, the machine's own
+count of its expectation raised by one where that boot is judged, the
+witness line after each world's priority line), and `regress.sh` whole
+judged every one against a real boot. **Its first run was red on three
+scenes, for the rule's own omission**: the time and mirror scenes also
+print how many lines each image expects (`image built (N expected
+lines)`), a count the rule had not named; the diffs were those seven lines
+and nothing else, the roll was red only because it runs the time arc
+first, and the count was added to the rule and the three scenes re-run.
+A rule that re-pins is a claim about every place a number is printed.
+
+Named seams: `socketpair` and `socketcall` are not tested (the second
+does not exist on either target; the first does not make an `AF_ALG`
+socket); the witness on the board is OS-5's; and what a world that needs
+cryptography uses is its own code in its own process -- the estate's
+rule that no repository vendors a crypto stack is about the stack, and
+this floor gives no world the kernel's.
+
 # MENU-1 — no label twice in the navigation a page shows
 
 The Principal ruled on 2026-11-06, for every site of the estate, that a

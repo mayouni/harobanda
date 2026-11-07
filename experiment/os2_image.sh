@@ -137,6 +137,15 @@ mkdir -p "$OUT" zig-out/wsl
   # .config belongs to whichever machine of this ARCH was built last, and a
   # diagnostic that read the tree answered for the wrong machine (OS-4)
   cp "$B/.config" "$OUT/kernel.config"
+  # the kernel's crypto socket (AF_ALG) is never built (ALGOUT-1): a world that can open it hands
+  # its bytes to cipher code in the kernel, which has been a way to root (CVE-2026-31431). Nothing
+  # derives it today; this refuses the image the day a fragment, or a default, turns it on, and
+  # PID 1 asks the kernel again at every boot (boot: crypto)
+  if grep -E '^CONFIG_CRYPTO_USER_API[A-Z0-9_]*=(y|m)' "$OUT/kernel.config"; then
+    echo "kernel: REFUSED -- it carries the crypto socket (CONFIG_CRYPTO_USER_API above), which no machine here builds"
+    exit 1
+  fi
+  echo "kernel: no crypto socket built (no CONFIG_CRYPTO_USER_API in its config)"
   cp "$B/System.map" "$OUT/System.map"   # the symbol map of THIS kernel, for os4_syms.sh
   if [ -n "$DTB" ]; then
     cp "$B/$DTB" "$OUT/$(basename "$DTB")" || { echo "no dtb built: $DTB"; exit 1; }
