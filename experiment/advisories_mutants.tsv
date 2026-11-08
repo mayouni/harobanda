@@ -1,0 +1,12 @@
+# name	the exact line of the rule	what it becomes	a fragment of the test that must fail
+m1	        if (isConfigName(line[0..i])) return true;	        if (isConfigName(line[0..i]) and false) return true;	the build a list names
+m2	    a.verdict = if (built.items.len > 0) .reaches else .not_built;	    a.verdict = .reaches;	an advisory reaches a machine
+m3	        if (b.rc == null) return .lt;	        if (b.rc == null) return .eq;	a release is compared by its numbers
+m4	            for (0..branch.len) |i| if (v.nums[i] != branch.nums[i]) return false;	            _ = branch;	an advisory reaches a machine
+m5	            if (f != st) return .disagree;	            _ = f;	a record that cannot answer
+m6	    if (named.items.len == 0) {	    if (false) {	a record that cannot answer
+m7	        if (prev) |p| if (std.mem.order(u8, p, line) != .lt) {	        if (prev) |p| if (false and std.mem.order(u8, p, line) != .lt) {	a list of compiled files
+m8	    if (any_unaffected) {	    if (any_unaffected or any_affected) {	an advisory reaches a machine
+m9	    if (any_disagree or (any_affected and any_unaffected)) {	    if (any_affected and any_unaffected) {	a record that cannot answer
+m10	        return v.order(from) != .lt and v.order(lt) == .lt;	        return v.order(from) != .lt and (v.order(lt) == .lt or true);	an advisory whose fix is in the pinned release
+m11	    for (named.items) |f| if (src.files.contains(f)) try built.append(arena, f);	    for (named.items) |f| if (src.files.contains(f) or true) try built.append(arena, f);	an advisory reaches a machine

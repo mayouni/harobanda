@@ -1,3 +1,77 @@
+# ONEHOUR-1 — which kernel advisories reach THIS machine
+
+Routed by stzlib-security as HAROBANDA-ONEHOUR-01 (2026-11-05, B6 of
+stzlib's `SOFTANZA_ONE_HOUR.md`): the kernel fragment already says what
+a machine built, and nobody was using it to read advisories -- the TCP
+flaw the pin moved past (TCPUAF-1) reached this desk because another
+desk read it. The Principal left the order to this desk on 2026-11-08
+("i let you decide if advisories goes first or not"), and it went
+before ruling 19's loss drill.
+
+**The question that decides is a file, not an option.** A CONFIG
+option is a name; a flaw lives in a file, reached through Makefiles and
+`#include`s nobody here reads. The kernel's own numbering authority
+names the files each fix touched (`programFiles` in its CVE JSON 5
+records -- read on 2026-11-08 from CVE-2024-50264; a record from
+another authority, CVE-2024-1086's, names none), and kbuild already
+records what each object of a build was compiled from, in a `.cmd` file
+beside it. So `experiment/kernel_sources.py`, run by `os2_image.sh`
+after every kernel build, lists every source file and header an object
+of the kernel was compiled from (not the host tools) into
+`kernel.sources` beside the image, under the name of the build it
+read: `<release>-<12 hex>`, the release of the pin and the digest of
+the fragment's option lines, the same key the build directory has.
+`harb advisories <machine> <records>` derives that name TODAY -- the
+pin's `tarball` row and the fragment `harb image` would write, moved
+into `image.fragment` so the two derive it once -- and refuses a list
+that names another build: another machine's, or one from before the
+pin moved, is an answer about a kernel this machine no longer gets.
+
+**Each record is one line in a ledger's shape** (`advisory id=...
+verdict=... kernel=... build=... named=... built=...`): `reaches`
+(the release is affected and a named file is compiled in), `fixed`,
+`not-built`, `cannot-tell` (no file named, no range a release number
+can be compared with -- a range in git commits only, since a pin is a
+release -- an authority that says "unknown", or two ranges that hold
+the release and disagree), `not-kernel`, `rejected`. By default it
+prints what reaches and what cannot be told, `--all` every record, and
+it exits 1 if either is there. A directory that holds anything but
+`.json` files, and a file that is not a CVE record, refuse the run:
+a judge that skips what it cannot read is green for the wrong reason.
+
+**Judged** by `experiment/advisories_scene.sh` (43 lines, pinned in
+`machines/advisories.expected`, seconds, no emulator): six FIXTURE
+records written by hand in the kernel authority's shape, read for
+`qemu_egress`, which declares a network, and `qemu_hello`, which does
+not -- the TCP fixture reaches the first and is not built into the
+second, the program filter's reaches both, the crypto socket's and the
+packet filter's reach neither, the shape of the flaw the pin moved past
+is fixed -- then four refusals, and the list put to the question (the
+egress list without `net/ipv4/tcp.c` turns its TCP answer to
+not-built); and by `experiment/advisories_probe.sh`, eleven mutants of
+the module's rules, each convicted by the test named for it. **The
+probe's first run convicted five of eight**: two rules no test held
+(the digest was checked for its shape and not its value, so a key that
+dropped every `CONFIG_X=` line passed; and a disagreement INSIDE one
+element was reported as a range nobody could compare), and three
+mutants of the probe's own (a `|` in a rule's text split the table, a
+failing test's name sits on a different line from the word FAIL, and a
+mutant that leaves a name unused does not compile). The tests now hold
+the digest to the value `sha256sum` gives for the same lines and name
+the disagreement; the table is TAB-separated, in its own file. The
+first build of the list is checked by running the same verb on the
+arm64 machine (`makeen_qemu`, 2962 files) and by the build key Zig
+derives matching the one the shell keyed the build directory by.
+
+Named seams: the records are BROUGHT, never fetched -- nothing watches
+on a schedule, so who watches is whoever runs the verb; "compiled" is
+taken for "linked", which holds with no modules; the files a record
+names are those its FIX touched, the record's word; a range in git
+commits only cannot be told; the verb reads the kernel and not the
+userspace (harb, RingServ, Caddy are their own pins); no CISA KEV or
+CVSS weight on a line yet; and the machines whose lists exist are the
+ones whose image was built since this seat.
+
 # ALGOUT-1 — the kernel's crypto socket: never built, asked at every boot, and refused to every world
 
 Routed by stzlib-security as HAROBANDA-ALGOUT-01 (2026-11-05), beside the

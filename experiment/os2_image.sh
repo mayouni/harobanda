@@ -146,6 +146,10 @@ mkdir -p "$OUT" zig-out/wsl
     exit 1
   fi
   echo "kernel: no crypto socket built (no CONFIG_CRYPTO_USER_API in its config)"
+  # the source files this kernel COMPILED, for `harb advisories` (ONEHOUR-1): the build's own record of
+  # what each object was made from, keyed by the same name as the build, so an advisory is answered for
+  # the kernel this image carries and a list from another build is refused by name
+  python3 -I experiment/kernel_sources.py "$SRC" "$B" "$FRAG" "$OUT/kernel.sources" || { echo "kernel sources not listed"; exit 1; }
   cp "$B/System.map" "$OUT/System.map"   # the symbol map of THIS kernel, for os4_syms.sh
   if [ -n "$DTB" ]; then
     cp "$B/$DTB" "$OUT/$(basename "$DTB")" || { echo "no dtb built: $DTB"; exit 1; }

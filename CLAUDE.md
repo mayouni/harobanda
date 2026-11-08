@@ -580,6 +580,21 @@ wsl -d Ubuntu -- bash `
 wsl -d Ubuntu -- bash `
   /mnt/d/GitHub/harobanda/experiment/mirror_probe.sh courts
 
+# which kernel advisories reach a machine (ONEHOUR-1): CVE
+# records brought (a directory of .json, or one), read against
+# the pinned release and the files its kernel compiled, which
+# os2_image.sh lists beside the image (kernel.sources)
+zig-out\bin\harb.exe advisories `
+  machines\<name>.machine <records> [--all]
+
+# the same for two machines and six fixture records, with the
+# refusals, against its pin -> zig-out/advisories_scene.txt
+bash experiment/advisories_scene.sh
+
+# its rules put back wrong, each convicted by the test named
+# for it -> zig-out/advisories_probe.txt
+bash experiment/advisories_probe.sh
+
 # every unit test, on Linux, none skipped
 #   -> zig-out/wsl/linux_test.txt
 wsl -d Ubuntu -- bash `
@@ -700,6 +715,21 @@ Linux and Zig analyses only the taken side, so a Windows build proves
 nothing about the init (the MicroRing injection finding, 2026-08-20).
 
 ## Doctrine (each line was paid for; the story of each is in `experiment/PROTOCOL.md` under its tag)
+
+- **An advisory reaches a machine through a FILE its kernel compiled,
+  and the list of those files is the build's own** (ONEHOUR-1): `harb
+  advisories <machine> <records>` reads the kernel authority's CVE
+  records (`programFiles`, the release ranges) against the pinned
+  release and `kernel.sources`, which `os2_image.sh` writes from
+  kbuild's `.cmd` files after every kernel build, and says per record
+  reaches, fixed, not-built or cannot-tell, one ledger-shaped line
+  each, exit 1 if anything reaches or cannot be told. The list carries
+  the name of the build it was read from (pin release + digest of the
+  fragment's options, the build directory's own key), and a list that
+  names another build is refused: re-run `os2_image.sh <machine>` after
+  a pin move or a declaration change, before asking. Records are
+  brought, never fetched. Judged by `experiment/advisories_scene.sh`
+  (pinned, 43 lines) and `experiment/advisories_probe.sh` (11 mutants).
 
 - **The kernel's crypto socket is never built, asked at every boot, and
   refused to every world** (ALGOUT-1): the image refuses a kernel whose
@@ -2082,7 +2112,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: TCPUAF-1 (the kernel pin moved to 6.12.115; the build cache keyed by
+  line carries: ONEHOUR-1 (`harb advisories`), ALGOUT-1, MENU-1, TCPUAF-1 (the kernel pin moved to 6.12.115; the build cache keyed by
   the kernel's version too), ROLL-1, MIR-1, TERR-1, NAV-1, FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two

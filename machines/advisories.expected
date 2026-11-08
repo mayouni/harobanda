@@ -1,0 +1,43 @@
+=== qemu_egress: a network, so the IPv4 stack is compiled
+advisory id=CVE-0000-0001 verdict=reaches kernel=6.12.115 build=6.12.115-04bf90e9a773 named=net/ipv4/tcp.c built=net/ipv4/tcp.c
+advisory id=CVE-0000-0006 verdict=reaches kernel=6.12.115 build=6.12.115-04bf90e9a773 named=kernel/seccomp.c built=kernel/seccomp.c
+advisory id=CVE-0000-0005 verdict=cannot-tell kernel=6.12.115 build=6.12.115-04bf90e9a773 named=none built=none why="it names no file"
+advisory id=CVE-0000-0003 verdict=not-built kernel=6.12.115 build=6.12.115-04bf90e9a773 named=crypto/af_alg.c,crypto/algif_aead.c built=none
+advisory id=CVE-0000-0004 verdict=not-built kernel=6.12.115 build=6.12.115-04bf90e9a773 named=net/netfilter/nf_tables_api.c built=none
+advisory id=CVE-0000-0002 verdict=fixed kernel=6.12.115 build=6.12.115-04bf90e9a773 named=net/ipv4/tcp_ipv4.c built=net/ipv4/tcp_ipv4.c
+advisories: qemu_egress, kernel 6.12.115 (build 6.12.115-04bf90e9a773, 3061 source files compiled) -- 6 records: 2 reach it, 1 cannot be told, 2 not built into it, 1 fixed in 6.12.115, 0 not about the kernel, 0 rejected
+exit 1
+=== qemu_hello: no network
+advisory id=CVE-0000-0006 verdict=reaches kernel=6.12.115 build=6.12.115-07c8ed75801e named=kernel/seccomp.c built=kernel/seccomp.c
+advisory id=CVE-0000-0005 verdict=cannot-tell kernel=6.12.115 build=6.12.115-07c8ed75801e named=none built=none why="it names no file"
+advisory id=CVE-0000-0001 verdict=not-built kernel=6.12.115 build=6.12.115-07c8ed75801e named=net/ipv4/tcp.c built=none
+advisory id=CVE-0000-0003 verdict=not-built kernel=6.12.115 build=6.12.115-07c8ed75801e named=crypto/af_alg.c,crypto/algif_aead.c built=none
+advisory id=CVE-0000-0004 verdict=not-built kernel=6.12.115 build=6.12.115-07c8ed75801e named=net/netfilter/nf_tables_api.c built=none
+advisory id=CVE-0000-0002 verdict=fixed kernel=6.12.115 build=6.12.115-07c8ed75801e named=net/ipv4/tcp_ipv4.c built=none
+advisories: qemu_hello, kernel 6.12.115 (build 6.12.115-07c8ed75801e, 2763 source files compiled) -- 6 records: 1 reaches it, 1 cannot be told, 3 not built into it, 1 fixed in 6.12.115, 0 not about the kernel, 0 rejected
+exit 1
+=== by default, only what reaches and what cannot be told
+advisory id=CVE-0000-0001 verdict=reaches kernel=6.12.115 build=6.12.115-04bf90e9a773 named=net/ipv4/tcp.c built=net/ipv4/tcp.c
+advisory id=CVE-0000-0006 verdict=reaches kernel=6.12.115 build=6.12.115-04bf90e9a773 named=kernel/seccomp.c built=kernel/seccomp.c
+advisory id=CVE-0000-0005 verdict=cannot-tell kernel=6.12.115 build=6.12.115-04bf90e9a773 named=none built=none why="it names no file"
+advisories: qemu_egress, kernel 6.12.115 (build 6.12.115-04bf90e9a773, 3061 source files compiled) -- 6 records: 2 reach it, 1 cannot be told, 2 not built into it, 1 fixed in 6.12.115, 0 not about the kernel, 0 rejected
+exit 1
+=== one record, fixed: nothing reaches, exit 0
+advisories: qemu_egress, kernel 6.12.115 (build 6.12.115-04bf90e9a773, 3061 source files compiled) -- 1 record: 0 reach it, 0 cannot be told, 0 not built into it, 1 fixed in 6.12.115, 0 not about the kernel, 0 rejected
+exit 0
+=== REFUSED: another machine's list
+advisories: refused -- zig-out/image/qemu_egress/kernel.sources lists the kernel build 6.12.115-04bf90e9a773, and qemu_hello with the pin of vendor/PIN.md is the build 6.12.115-07c8ed75801e today: build its image again (experiment/os2_image.sh qemu_hello) before asking what reaches it
+exit 1
+=== REFUSED: a list of the kernel the pin held before
+advisories: refused -- zig-out/advisories_scene.tmp/old_pin.sources lists the kernel build 6.12.109-04bf90e9a773, and qemu_egress with the pin of vendor/PIN.md is the build 6.12.115-04bf90e9a773 today: build its image again (experiment/os2_image.sh qemu_egress) before asking what reaches it
+exit 1
+=== REFUSED: a directory that holds something that is not a record
+advisories: refused -- zig-out/advisories_scene.tmp/records holds README, which is not a record (a .json file): the directory is read whole or not at all
+exit 1
+=== REFUSED: a record that is not a CVE record
+advisories: refused -- zig-out/advisories_scene.tmp/osv.json is not a CVE record (CVE JSON 5, with cveMetadata.cveId and containers.cna): NotACveRecord
+exit 1
+=== the list decides: egress without net/ipv4/tcp.c
+advisory id=CVE-0000-0001 verdict=not-built kernel=6.12.115 build=6.12.115-04bf90e9a773 named=net/ipv4/tcp.c built=none
+advisories: qemu_egress, kernel 6.12.115 (build 6.12.115-04bf90e9a773, 3060 source files compiled) -- 1 record: 0 reach it, 0 cannot be told, 1 not built into it, 0 fixed in 6.12.115, 0 not about the kernel, 0 rejected
+exit 0

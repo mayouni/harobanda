@@ -39,6 +39,7 @@ const mirror = @import("mirror.zig");
 const mirroraudit = @import("mirroraudit.zig");
 const mirrorserve = @import("mirrorserve.zig");
 const roll = @import("roll.zig");
+const advisories = @import("advisories.zig");
 const timeattest = @import("timeattest.zig");
 const timeaudit = @import("timeaudit.zig");
 const timeserve = @import("timeserve.zig");
@@ -81,6 +82,7 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb mirror check [file.machine] [--wait N] [--fresh | --follow]   (is the copy this machine keeps the source's word? every file against the listing the source signed, from inside the machine; --follow also asks that the attempt just made reached the source)
         \\  harb mirror verify <file.fleet> <mirror> <listing> <dir>   (the same, with the fleet's two keys and nothing else: the listing the keeper kept and the directory it keeps, checked from anywhere)
         \\  harb roll   <file.fleet> <dir> [--since <roll>] [--at <time>] [--out <roll>]   (who has written a record since: every member's brought record against the fleet's keys and the time authority's statements, and against the roll before it; --at is when the records were collected, default now; --out writes the roll the next call is compared with)
+        \\  harb advisories <file.machine> <records> [--sources <file>] [--pin <PIN.md>] [--all]   (which kernel advisories reach this machine: each CVE record brought -- a directory of .json files, or one -- read against the release the pin names and the source files this machine's kernel compiled; prints what reaches it and what cannot be told, --all every record; exits 1 if anything does)
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
         \\  harb place  <file.machine> <file.pack>... [--after <world>] [--out <file>]   (a solution's services, placed on a machine and judged as one; --after orders them after one of its worlds)
         \\  harb court  --pack [declarative/pack/fixtures.json]
@@ -407,6 +409,45 @@ pub fn main() !u8 {
             return 1;
         }
         return timeaudit.run(arena, args[3..], out);
+    }
+    if (std.mem.eql(u8, verb, "advisories")) {
+        // Which kernel advisories reach THIS machine (ONEHOUR-1): the records brought, read against the pinned
+        // release and the files its kernel compiled; nothing is fetched
+        var o = advisories.Options{ .machine_path = "", .records = "" };
+        var pos: usize = 0;
+        var j: usize = 2;
+        while (j < args.len) : (j += 1) {
+            const a = args[j];
+            if (std.mem.eql(u8, a, "--all")) {
+                o.all = true;
+            } else if (std.mem.eql(u8, a, "--sources") or std.mem.eql(u8, a, "--pin")) {
+                if (j + 1 >= args.len) {
+                    try out.print("harb: advisories: {s} takes a value\n", .{a});
+                    return 1;
+                }
+                j += 1;
+                if (std.mem.eql(u8, a, "--sources")) o.sources = args[j] else o.pin = args[j];
+            } else if (std.mem.startsWith(u8, a, "--")) {
+                try out.print("harb: advisories: there is no flag {s}\n", .{a});
+                return 1;
+            } else {
+                if (pos == 0) {
+                    o.machine_path = a;
+                } else if (pos == 1) {
+                    o.records = a;
+                } else {
+                    try out.print("harb: advisories takes a machine file and the records brought\n", .{});
+                    return 1;
+                }
+                pos += 1;
+            }
+        }
+        if (pos != 2) {
+            try out.print("harb: advisories <file.machine> <records> [--sources <file>] [--pin <PIN.md>] [--all]\n", .{});
+            return 1;
+        }
+        const m = (try load(arena, o.machine_path, out)) orelse return 1;
+        return advisories.run(arena, &m, o, out);
     }
     if (std.mem.eql(u8, verb, "roll")) {
         // The roll call (ROLL-1): the records members brought, read against the fleet's keys and its time
@@ -1239,6 +1280,7 @@ pub fn main() !u8 {
 }
 
 test {
+    _ = advisories;
     _ = machine;
     _ = plan;
     _ = net;

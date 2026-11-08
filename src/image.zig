@@ -230,6 +230,179 @@ fn staged(arena: std.mem.Allocator, root: []const u8, path: []const u8) !?[]cons
 /// staging root (LRN-3).
 pub const unstaged_fmt = "image: refused -- service {s}: program {s} is not staged under {s}\n";
 
+/// The fragment of a machine's kernel as `harb image` would derive it, or null for a machine with no
+/// image here: a profile that is not hosted, an edge board, or two block mounts, which `write` refuses.
+/// Read by `harb advisories` to name the build a machine's kernel is (ONEHOUR-1).
+pub fn kernelFragment(arena: std.mem.Allocator, m: *const machine.Machine, machine_path: []const u8) !?[]const u8 {
+    if (m.profile != .hosted) return null;
+    if (m.arch != .x86_64 and m.arch != .aarch64) return null;
+    const t = target(m.board) orelse return null;
+    var block: ?*const machine.Mount = null;
+    for (m.mounts) |*mt| {
+        if (mt.fs == .ext4 or mt.fs == .vfat) {
+            if (block != null) return null;
+            block = mt;
+        }
+    }
+    return try fragment(arena, m, t, block, machine_path);
+}
+
+/// The kconfig fragment a machine's kernel is built from, merged over tinyconfig: the options the
+/// profile, the board and the declaration need, and nothing else. One derivation, read by `harb
+/// image` to write `kernel.fragment` and by `harb advisories` to know which build a machine's kernel
+/// is (ONEHOUR-1), so the two can never disagree about it.
+pub fn fragment(arena: std.mem.Allocator, m: *const machine.Machine, t: Target, block: ?*const machine.Mount, machine_path: []const u8) ![]const u8 {
+    var frag: std.ArrayList(u8) = .{};
+    const w = frag.writer(arena);
+    try w.print("# kernel.fragment -- derived by harb image from {s} for {s} ({s}); merged over tinyconfig\n", .{ machine_path, t.kernel_arch, @tagName(m.board) });
+    const base = [_][]const u8{
+        "CONFIG_64BIT=y",       "CONFIG_PRINTK=y",    "CONFIG_TTY=y",        "CONFIG_BLK_DEV_INITRD=y",
+        "CONFIG_BINFMT_ELF=y",  "CONFIG_PROC_FS=y",   "CONFIG_SYSFS=y",      "CONFIG_DEVTMPFS=y",
+        "CONFIG_TMPFS=y",       "CONFIG_SHMEM=y",     "CONFIG_FUTEX=y",      "CONFIG_EPOLL=y",
+        "CONFIG_EVENTFD=y",     "CONFIG_SIGNALFD=y",  "CONFIG_TIMERFD=y",    "CONFIG_MULTIUSER=y",
+        "# CONFIG_MODULES is not set",
+    };
+    for (base) |l| try w.print("{s}\n", .{l});
+    for (t.serial_cfg) |l| try w.print("{s}\n", .{l});
+    for (t.platform_cfg) |l| try w.print("{s}\n", .{l});
+    if (m.networks.len > 0) {
+        // the wire: the IP stack, and the emulator's NIC when the board
+        // has none of its own (a real board's NIC is in platform_cfg)
+        try w.print("CONFIG_NET=y\nCONFIG_INET=y\nCONFIG_NETDEVICES=y\n", .{});
+        // the way between networks is a switch under /proc/sys (FWD-1)
+        if (m.forward) try w.print("CONFIG_SYSCTL=y\nCONFIG_PROC_SYSCTL=y\n", .{});
+        if (t.net_device != null) {
+            try w.print("CONFIG_VIRTIO_MENU=y\nCONFIG_VIRTIO=y\nCONFIG_VIRTIO_NET=y\n", .{});
+            for (t.net_cfg) |l| try w.print("{s}\n", .{l});
+        }
+    }
+    // the real-time clock a time authority reads (TIME-1): the class, the device node under /dev, and the
+    // PC's driver; refused above for any other board
+    if (m.clock != null) try w.print("CONFIG_RTC_CLASS=y\nCONFIG_RTC_INTF_DEV=y\nCONFIG_RTC_DRV_CMOS=y\n", .{});
+    if (m.slots != null) {
+        // the boot partition is FAT (the firmware's), mounted by PID 1 to
+        // read the committed slot and to commit a trial
+        try w.print("CONFIG_VFAT_FS=y\nCONFIG_NLS_CODEPAGE_437=y\nCONFIG_NLS_ISO8859_1=y\n", .{});
+    }
+    {
+        // the groups a declared budget is held in (BDG-1): the memory
+        // controller for the ceiling that kills, the cpu controller
+        // and its bandwidth for the share that throttles. Asked for
+        // only when a world declares one -- a machine carries the
+        // kernel its own declaration needs.
+        var budgeted = false;
+        var counted = false;
+        for (m.services) |s| {
+            if (s.memory_mb != null or s.cpu_percent != null) budgeted = true;
+            if (s.tasks != null) counted = true;
+        }
+        // a reservation's core is a cpuset partition, which needs the cgroup tree, SMP and the
+        // isolation menu; and a reserved world is only held to its deadline by a kernel that can
+        // be preempted to meet it, with timers finer than a jiffy (TIM-1). The real-time model is
+        // mainline in this tree for x86 and arm64 (EXPERT is set by tinyconfig); the build prints
+        // every requested option that did not survive, which is where a missing dependency shows.
+        var reserved = false;
+        for (m.services) |s| {
+            if (s.reservation != null) reserved = true;
+        }
+        if (budgeted or counted or reserved) {
+            try w.print("CONFIG_CGROUPS=y\n", .{});
+        }
+        if (m.cores > 1) {
+            try w.print("CONFIG_SMP=y\nCONFIG_NR_CPUS={d}\n", .{m.cores});
+            for (t.cores_cfg) |l| try w.print("{s}\n", .{l});
+        }
+        if (reserved) {
+            // ... and POSIX timers, which tinyconfig leaves out (SAFE-1): the kernel's word on
+            // an overrun, SIGXCPU, is sent from its CPU-timer code, so a kernel built without
+            // it holds a reservation, throttles a world that runs past its runtime, and never
+            // tells it. Found by the tick machine's neighbour, which listens for the word before
+            // it marks ready and marked nothing for 180 s on the first kernel derived here; PID
+            // 1 reads it back at every boot now (`posixTimersPresent`), before any reservation.
+            try w.print("CONFIG_CPUSETS=y\nCONFIG_CPU_ISOLATION=y\nCONFIG_PREEMPT_RT=y\nCONFIG_HIGH_RES_TIMERS=y\nCONFIG_POSIX_TIMERS=y\n", .{});
+        }
+        if (budgeted) {
+            try w.print("CONFIG_MEMCG=y\nCONFIG_CGROUP_SCHED=y\nCONFIG_FAIR_GROUP_SCHED=y\nCONFIG_CFS_BANDWIDTH=y\n", .{});
+        }
+        // a world held to the ports it declares needs Landlock's network rules (PORT-1): the
+        // security framework, its socket hooks and Landlock itself, which tinyconfig leaves
+        // out; PID 1 asks the kernel for its Landlock version at the world's start and does
+        // not start the world on a kernel without it
+        var ported = false;
+        for (m.services) |s| {
+            if (s.ports.len > 0) ported = true;
+        }
+        if (ported) try w.print("CONFIG_SECURITY=y\nCONFIG_SECURITY_NETWORK=y\nCONFIG_SECURITY_LANDLOCK=y\nCONFIG_LSM=\"landlock\"\n", .{});
+        // the pids controller is what holds a TASKS ceiling (THR-1)
+        if (counted) try w.print("CONFIG_CGROUP_PIDS=y\n", .{});
+        // ... and the kernel that can hold a world to what it did NOT
+        // declare (NS-1). NAMESPACES is the menu NET_NS lives under
+        // and tinyconfig closes it, which is the trap OS-3 paid for;
+        // SECCOMP_FILTER is what makes a filter more than a mode.
+        // Only when a world is actually confined: a machine carries
+        // the kernel its own declaration needs and nothing else.
+        var needs_namespaces = false;
+        var needs_netns = false;
+        var needs_pidns = false;
+        var needs_seccomp = false;
+        for (m.services) |s| {
+            const c = try confine.Confinement.ofAlloc(m.*, s, arena);
+            if (!c.network) {
+                needs_netns = true;
+                needs_namespaces = true;
+            }
+            // a MOUNT namespace needs no option of its own: it exists
+            // wherever NAMESPACES does (MNT-1)
+            if (c.hidden.len > 0) needs_namespaces = true;
+            if (!c.process) {
+                // a world alone in its own process table (PID-1), which
+                // also needs the mount namespace its /proc is remounted in
+                needs_pidns = true;
+                needs_namespaces = true;
+            }
+            if (!c.process or !c.threads) needs_seccomp = true;
+        }
+        // NAMESPACES is a menu tinyconfig closes; NET_NS lives under
+        // it AND under NET, which only a machine with a declared
+        // network opens -- so each is asked for exactly where it can
+        // be built and where it means something.
+        if (needs_namespaces) try w.print("CONFIG_NAMESPACES=y\n", .{});
+        if (needs_netns) try w.print("CONFIG_NET_NS=y\n", .{});
+        if (needs_pidns) try w.print("CONFIG_PID_NS=y\n", .{});
+        // EVERY world carries the floor's own refusals since SYS-1, so
+        // a machine with any world at all needs the filter built in
+        if (m.services.len > 0) needs_seccomp = true;
+        if (needs_seccomp) {
+            // CONFIG_SECCOMP_FILTER depends on HAVE_ARCH_SECCOMP_FILTER
+            // && SECCOMP && NET: the kernel builds its filter engine on
+            // the BPF core, which lives under NET. So a machine with no
+            // declared network still needs CONFIG_NET to hold its worlds
+            // to the floor, and it gets it -- a machine carries the
+            // kernel ITS OWN DECLARATION needs, and since SYS-1 every
+            // declaration needs the floor's refusals. Found because
+            // qemu_hello refused to start a world it could not confine,
+            // which is the NS-1 law doing exactly its job.
+            if (m.networks.len == 0) try w.print("CONFIG_NET=y\n", .{});
+            try w.print("CONFIG_SECCOMP=y\nCONFIG_SECCOMP_FILTER=y\n", .{});
+        }
+    }
+    if (block) |b| {
+        // BLOCK and BLK_DEV are menus tinyconfig closes; VIRTIO_MENU
+        // gates every virtio driver. Without them, olddefconfig drops
+        // the drivers silently and the mount fails NOENT -- the Makeen
+        // box's first emulated boot (PROTOCOL.md, OS-3 finding 2).
+        try w.print("CONFIG_BLOCK=y\nCONFIG_BLK_DEV=y\n", .{});
+        if (t.blk_device != null) try w.print("CONFIG_VIRTIO_MENU=y\nCONFIG_VIRTIO=y\nCONFIG_VIRTIO_BLK=y\n", .{});
+        for (t.block_cfg) |l| try w.print("{s}\n", .{l});
+        switch (b.fs) {
+            .ext4 => try w.print("CONFIG_EXT4_FS=y\n", .{}),
+            .vfat => try w.print("CONFIG_VFAT_FS=y\nCONFIG_NLS_CODEPAGE_437=y\nCONFIG_NLS_ISO8859_1=y\n", .{}),
+            else => {},
+        }
+    }
+    return frag.items;
+}
+
 pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Writer) !u8 {
     const m = p.machine;
     if (m.profile != .hosted) {
@@ -429,157 +602,7 @@ pub fn write(arena: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io
     }
 
     // kernel.fragment
-    {
-        var frag: std.ArrayList(u8) = .{};
-        const w = frag.writer(arena);
-        try w.print("# kernel.fragment -- derived by harb image from {s} for {s} ({s}); merged over tinyconfig\n", .{ opts.machine_path, t.kernel_arch, @tagName(m.board) });
-        const base = [_][]const u8{
-            "CONFIG_64BIT=y",       "CONFIG_PRINTK=y",    "CONFIG_TTY=y",        "CONFIG_BLK_DEV_INITRD=y",
-            "CONFIG_BINFMT_ELF=y",  "CONFIG_PROC_FS=y",   "CONFIG_SYSFS=y",      "CONFIG_DEVTMPFS=y",
-            "CONFIG_TMPFS=y",       "CONFIG_SHMEM=y",     "CONFIG_FUTEX=y",      "CONFIG_EPOLL=y",
-            "CONFIG_EVENTFD=y",     "CONFIG_SIGNALFD=y",  "CONFIG_TIMERFD=y",    "CONFIG_MULTIUSER=y",
-            "# CONFIG_MODULES is not set",
-        };
-        for (base) |l| try w.print("{s}\n", .{l});
-        for (t.serial_cfg) |l| try w.print("{s}\n", .{l});
-        for (t.platform_cfg) |l| try w.print("{s}\n", .{l});
-        if (m.networks.len > 0) {
-            // the wire: the IP stack, and the emulator's NIC when the board
-            // has none of its own (a real board's NIC is in platform_cfg)
-            try w.print("CONFIG_NET=y\nCONFIG_INET=y\nCONFIG_NETDEVICES=y\n", .{});
-            // the way between networks is a switch under /proc/sys (FWD-1)
-            if (m.forward) try w.print("CONFIG_SYSCTL=y\nCONFIG_PROC_SYSCTL=y\n", .{});
-            if (t.net_device != null) {
-                try w.print("CONFIG_VIRTIO_MENU=y\nCONFIG_VIRTIO=y\nCONFIG_VIRTIO_NET=y\n", .{});
-                for (t.net_cfg) |l| try w.print("{s}\n", .{l});
-            }
-        }
-        // the real-time clock a time authority reads (TIME-1): the class, the device node under /dev, and the
-        // PC's driver; refused above for any other board
-        if (m.clock != null) try w.print("CONFIG_RTC_CLASS=y\nCONFIG_RTC_INTF_DEV=y\nCONFIG_RTC_DRV_CMOS=y\n", .{});
-        if (m.slots != null) {
-            // the boot partition is FAT (the firmware's), mounted by PID 1 to
-            // read the committed slot and to commit a trial
-            try w.print("CONFIG_VFAT_FS=y\nCONFIG_NLS_CODEPAGE_437=y\nCONFIG_NLS_ISO8859_1=y\n", .{});
-        }
-        {
-            // the groups a declared budget is held in (BDG-1): the memory
-            // controller for the ceiling that kills, the cpu controller
-            // and its bandwidth for the share that throttles. Asked for
-            // only when a world declares one -- a machine carries the
-            // kernel its own declaration needs.
-            var budgeted = false;
-            var counted = false;
-            for (m.services) |s| {
-                if (s.memory_mb != null or s.cpu_percent != null) budgeted = true;
-                if (s.tasks != null) counted = true;
-            }
-            // a reservation's core is a cpuset partition, which needs the cgroup tree, SMP and the
-            // isolation menu; and a reserved world is only held to its deadline by a kernel that can
-            // be preempted to meet it, with timers finer than a jiffy (TIM-1). The real-time model is
-            // mainline in this tree for x86 and arm64 (EXPERT is set by tinyconfig); the build prints
-            // every requested option that did not survive, which is where a missing dependency shows.
-            var reserved = false;
-            for (m.services) |s| {
-                if (s.reservation != null) reserved = true;
-            }
-            if (budgeted or counted or reserved) {
-                try w.print("CONFIG_CGROUPS=y\n", .{});
-            }
-            if (m.cores > 1) {
-                try w.print("CONFIG_SMP=y\nCONFIG_NR_CPUS={d}\n", .{m.cores});
-                for (t.cores_cfg) |l| try w.print("{s}\n", .{l});
-            }
-            if (reserved) {
-                // ... and POSIX timers, which tinyconfig leaves out (SAFE-1): the kernel's word on
-                // an overrun, SIGXCPU, is sent from its CPU-timer code, so a kernel built without
-                // it holds a reservation, throttles a world that runs past its runtime, and never
-                // tells it. Found by the tick machine's neighbour, which listens for the word before
-                // it marks ready and marked nothing for 180 s on the first kernel derived here; PID
-                // 1 reads it back at every boot now (`posixTimersPresent`), before any reservation.
-                try w.print("CONFIG_CPUSETS=y\nCONFIG_CPU_ISOLATION=y\nCONFIG_PREEMPT_RT=y\nCONFIG_HIGH_RES_TIMERS=y\nCONFIG_POSIX_TIMERS=y\n", .{});
-            }
-            if (budgeted) {
-                try w.print("CONFIG_MEMCG=y\nCONFIG_CGROUP_SCHED=y\nCONFIG_FAIR_GROUP_SCHED=y\nCONFIG_CFS_BANDWIDTH=y\n", .{});
-            }
-            // a world held to the ports it declares needs Landlock's network rules (PORT-1): the
-            // security framework, its socket hooks and Landlock itself, which tinyconfig leaves
-            // out; PID 1 asks the kernel for its Landlock version at the world's start and does
-            // not start the world on a kernel without it
-            var ported = false;
-            for (m.services) |s| {
-                if (s.ports.len > 0) ported = true;
-            }
-            if (ported) try w.print("CONFIG_SECURITY=y\nCONFIG_SECURITY_NETWORK=y\nCONFIG_SECURITY_LANDLOCK=y\nCONFIG_LSM=\"landlock\"\n", .{});
-            // the pids controller is what holds a TASKS ceiling (THR-1)
-            if (counted) try w.print("CONFIG_CGROUP_PIDS=y\n", .{});
-            // ... and the kernel that can hold a world to what it did NOT
-            // declare (NS-1). NAMESPACES is the menu NET_NS lives under
-            // and tinyconfig closes it, which is the trap OS-3 paid for;
-            // SECCOMP_FILTER is what makes a filter more than a mode.
-            // Only when a world is actually confined: a machine carries
-            // the kernel its own declaration needs and nothing else.
-            var needs_namespaces = false;
-            var needs_netns = false;
-            var needs_pidns = false;
-            var needs_seccomp = false;
-            for (m.services) |s| {
-                const c = try confine.Confinement.ofAlloc(m.*, s, arena);
-                if (!c.network) {
-                    needs_netns = true;
-                    needs_namespaces = true;
-                }
-                // a MOUNT namespace needs no option of its own: it exists
-                // wherever NAMESPACES does (MNT-1)
-                if (c.hidden.len > 0) needs_namespaces = true;
-                if (!c.process) {
-                    // a world alone in its own process table (PID-1), which
-                    // also needs the mount namespace its /proc is remounted in
-                    needs_pidns = true;
-                    needs_namespaces = true;
-                }
-                if (!c.process or !c.threads) needs_seccomp = true;
-            }
-            // NAMESPACES is a menu tinyconfig closes; NET_NS lives under
-            // it AND under NET, which only a machine with a declared
-            // network opens -- so each is asked for exactly where it can
-            // be built and where it means something.
-            if (needs_namespaces) try w.print("CONFIG_NAMESPACES=y\n", .{});
-            if (needs_netns) try w.print("CONFIG_NET_NS=y\n", .{});
-            if (needs_pidns) try w.print("CONFIG_PID_NS=y\n", .{});
-            // EVERY world carries the floor's own refusals since SYS-1, so
-            // a machine with any world at all needs the filter built in
-            if (m.services.len > 0) needs_seccomp = true;
-            if (needs_seccomp) {
-                // CONFIG_SECCOMP_FILTER depends on HAVE_ARCH_SECCOMP_FILTER
-                // && SECCOMP && NET: the kernel builds its filter engine on
-                // the BPF core, which lives under NET. So a machine with no
-                // declared network still needs CONFIG_NET to hold its worlds
-                // to the floor, and it gets it -- a machine carries the
-                // kernel ITS OWN DECLARATION needs, and since SYS-1 every
-                // declaration needs the floor's refusals. Found because
-                // qemu_hello refused to start a world it could not confine,
-                // which is the NS-1 law doing exactly its job.
-                if (m.networks.len == 0) try w.print("CONFIG_NET=y\n", .{});
-                try w.print("CONFIG_SECCOMP=y\nCONFIG_SECCOMP_FILTER=y\n", .{});
-            }
-        }
-        if (block) |b| {
-            // BLOCK and BLK_DEV are menus tinyconfig closes; VIRTIO_MENU
-            // gates every virtio driver. Without them, olddefconfig drops
-            // the drivers silently and the mount fails NOENT -- the Makeen
-            // box's first emulated boot (PROTOCOL.md, OS-3 finding 2).
-            try w.print("CONFIG_BLOCK=y\nCONFIG_BLK_DEV=y\n", .{});
-            if (t.blk_device != null) try w.print("CONFIG_VIRTIO_MENU=y\nCONFIG_VIRTIO=y\nCONFIG_VIRTIO_BLK=y\n", .{});
-            for (t.block_cfg) |l| try w.print("{s}\n", .{l});
-            switch (b.fs) {
-                .ext4 => try w.print("CONFIG_EXT4_FS=y\n", .{}),
-                .vfat => try w.print("CONFIG_VFAT_FS=y\nCONFIG_NLS_CODEPAGE_437=y\nCONFIG_NLS_ISO8859_1=y\n", .{}),
-                else => {},
-            }
-        }
-        try writeOut(opts.out_dir, "kernel.fragment", frag.items);
-    }
+    try writeOut(opts.out_dir, "kernel.fragment", try fragment(arena, m, t, block, opts.machine_path));
 
     // disk.list -- the virtio disks to create (emulator boards)
     {

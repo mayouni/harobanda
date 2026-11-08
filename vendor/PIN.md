@@ -54,6 +54,16 @@ Nobody watches the advisories for this desk yet: until something does
 (`harb advisories`, HAROBANDA-ONEHOUR-01, not built), a move happens when
 a reading like stzlib-security's reaches the mailbox.
 
+*Amended 2026-11-08 (ONEHOUR-1).* `harb advisories <machine> <records>`
+is built: it reads the kernel's own CVE records against the release
+this pin names and the source files a machine's kernel compiled
+(`kernel.sources`, written by `os2_image.sh` beside the image), and
+says which reach that machine -- the reading this rule asks for, made
+by a program. What is still a person's act is BRINGING the records:
+nothing on this desk fetches them, on a schedule or otherwise, so
+"who watches" is whoever runs the verb over the records they brought,
+and "how fast" is how often they do.
+
 Changing the pin means changing this file, `os2_kernel_fetch.sh`'s
 version pattern, and the first boot transcript in the same commit.
 *(Amended 2026-09-27: the fetch has no version pattern now -- it reads
