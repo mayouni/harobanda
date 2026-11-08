@@ -343,6 +343,26 @@ world's directory and not the floor's record, and a machine keeps one mirror,
 so a witness cannot yet fetch from many), a heartbeat on a timer so that a live
 member keeps writing, an alarm, and a roll that is signed.
 
+*The loss drill, as built (LOSS-1, 2026-11-08, STZ-OS-RULING-19).* The
+first four declarations are lines a designer writes; this one is a test of
+them. `experiment/os14_loss.sh` takes the mirror's two machines, each also
+keeping a record, and destroys the source while both run: its emulator is
+killed outright and every disk image of it deleted. What is left is what the
+rest hold. The keeper goes on asking, and its disk comes to say nobody
+answered; its copy is the ledger the source held at the last round, checked
+with the fleet file and no secret; booted alone, its boot matches its
+declaration. The roll says the source is ABSENT, with the entries and the
+last entry the roll before held of it. What the source wrote after that roll
+was on the disk that is gone: the scene reads its number off the dead
+machine's console, which no member holds, and the fleet's own answer stays
+the roll's line. A machine rebuilt on the same declaration makes a new key,
+and its record is not the member's until somebody enrols it. *Judged* by the
+scene, pinned at 234 lines, and by a reader with no stake, whose six
+findings are each a case. *Not built, and named:* a failover (running from
+the copy is a person's act); a measure of what a source wrote between two
+pulls, which is lost with it; more than two machines; and the loss of a room
+-- here the loss is a process on one host.
+
 **Rung 4 -- an image a provider's machine boots.** An EFI stub or a
 boot loader, the two slots on a disk, a `BOARD` for a generic virtio
 virtual machine, `HARDWARE` being the address the provider gives.

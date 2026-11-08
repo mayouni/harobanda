@@ -845,7 +845,15 @@ pub fn call(
                 }
             },
             .broken_within => |old| {
-                try out.print("roll: {s} -- the break is inside what the roll of {s} vouched for ({d} entr{s}): entries that roll saw have been changed or removed\n", .{ name, when(&wb, old), old.entries, plural(old.entries, "y", "ies") });
+                // a record whose FIRST entry is whole, in its place, and not signed by the key the member holds is
+                // what another device's record looks like -- the loss drill's new card -- and "changed or removed"
+                // would name neither of the two things it can be (LOSS-1). Only that reason, and never a retired
+                // key's chain: a first entry removed, or one whose bytes do not hash, is still "changed or removed"
+                if (r.broken_at != null and r.broken_at.? == 1 and r.retired_as == null and std.mem.eql(u8, r.why, journal.unsigned_reason)) {
+                    try out.print("roll: {s} -- the roll of {s} vouched for {d} entr{s}, and the first entry of this record is whole and in its place but not signed by the member's key: the record is another device's, or its first entry was rewritten by somebody who does not hold that key\n", .{ name, when(&wb, old), old.entries, plural(old.entries, "y", "ies") });
+                } else {
+                    try out.print("roll: {s} -- the break is inside what the roll of {s} vouched for ({d} entr{s}): entries that roll saw have been changed or removed\n", .{ name, when(&wb, old), old.entries, plural(old.entries, "y", "ies") });
+                }
             },
             .broken_after => |old| {
                 try out.print("roll: {s} -- the {d} entr{s} the roll of {s} vouched for {s} intact; the break is in what was written after {s}\n", .{ name, old.entries, plural(old.entries, "y", "ies"), when(&wb, old), plural(old.entries, "is", "are"), plural(old.entries, "it", "them") });
@@ -2173,6 +2181,24 @@ test "what the roll says of a record it cannot go on from is said in words (ROLL
     const r1 = try kept(arena, held.c);
     const inside = try callIt(arena, fx.f, &.{ .{ .member = "till", .record = try altered(arena, long, 2) }, .{ .member = "till2", .record = second } }, r1, at2);
     try must(inside.text, "roll: till -- the break is inside what the roll of 2026-09-21 14:15 UTC vouched for (3 entries): entries that roll saw have been changed or removed");
+    // a record another device signed, brought for till: a new card on the old card's design (LOSS-1). Its first entry
+    // already fails, and the roll does not claim the entries it saw were changed
+    const other = try callIt(arena, fx.f, &.{ .{ .member = "till", .record = try recordOf(arena, fx.till2, "till", 3) }, .{ .member = "till2", .record = second } }, r1, at2);
+    const foreign_said = "roll: till -- the roll of 2026-09-21 14:15 UTC vouched for 3 entries, and the first entry of this record is whole and in its place but not signed by the member's key: the record is another device's, or its first entry was rewritten by somebody who does not hold that key";
+    try must(other.text, "roll: till -- BROKEN at entry 1: this device's key did not sign this entry");
+    try must(other.text, foreign_said);
+    try testing.expect(std.mem.indexOf(u8, other.text, "have been changed or removed") == null);
+    // the other ways to break at the first entry are still "changed or removed", and never "another device's": a
+    // first entry whose bytes were altered (it no longer hashes) and a record whose first entry was taken out (what
+    // is first now carries the place of the second) -- the review of LOSS-1 found the sentence first heardOf both wrong
+    const removed_first = std.mem.indexOfScalar(u8, long, '\n').? + 1;
+    for ([_][]const u8{ try altered(arena, long, 1), long[removed_first..] }) |rec| {
+        const heardOf = try callIt(arena, fx.f, &.{ .{ .member = "till", .record = rec }, .{ .member = "till2", .record = second } }, r1, at2);
+        try must(heardOf.text, "roll: till -- BROKEN at entry 1: ");
+        try testing.expect(std.mem.indexOf(u8, heardOf.text, "this device's key did not sign") == null);
+        try must(heardOf.text, "roll: till -- the break is inside what the roll of 2026-09-21 14:15 UTC vouched for (3 entries): entries that roll saw have been changed or removed");
+        try testing.expect(std.mem.indexOf(u8, heardOf.text, "another device's") == null);
+    }
     const after = try callIt(arena, fx.f, &.{ .{ .member = "till", .record = try altered(arena, long, 5) }, .{ .member = "till2", .record = second } }, r1, at2);
     try must(after.text, "roll: till -- the 3 entries the roll of 2026-09-21 14:15 UTC vouched for are intact; the break is in what was written after them");
     const empty = try callIt(arena, fx.f, &.{ .{ .member = "till", .record = "" }, .{ .member = "till2", .record = second } }, r1, at2);

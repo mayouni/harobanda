@@ -1,0 +1,234 @@
+=== the two machines: the mirror's pair, each also keeping a signed record of its boots ===
+loss_source: machines/mirror_source.machine, and one line more: JOURNAL "/data/journal"
+loss_keeper: machines/mirror_keeper.machine, and one line more: JOURNAL "/data/journal"
+loss_source: image built (20 expected lines)
+loss_keeper: image built (19 expected lines)
+=== round 0: each machine booted alone makes its key and publishes the public half ===
+enrolled: each device's key, as the line it printed on its own console
+=== the fleet: both enrolled, the copy named, each keeping a record ===
+fleet: fleet boutique -- 2 members on lan, served by nobody in this fleet -- judged, no refusal
+fleet:   mirror ledger_copy -- depot gives /data/ledger to annex, which keeps it in /data/copy and asks every 5 s, in warehouse
+fleet:   depot -- mirror_source (mirror_source.machine, 10.30.0.1/24) -- 52:54:00:12:37:01 -- in shop -- enrolled, fingerprint FP1
+fleet:   annex -- mirror_keeper (mirror_keeper.machine, 10.30.0.2/24) -- 52:54:00:12:37:02 -- in warehouse -- enrolled, fingerprint FP2
+=== the images again, from the enrolled declarations ===
+loss_source: image built (20 expected lines)
+loss_keeper: image built (19 expected lines)
+=== round 1: running -- the source holds a ledger, the keeper takes a copy ===
+disk: round 1 -- the source's /data/ledger holds 3 files besides the note, 1 directory, 300060 bytes
+disk: round 1 -- the keeper's /data/copy is, file for file, that directory: yes
+disk: round 1 -- the source's record holds 2 entries, the keeper's 1
+=== the first roll: both records, collected from their disks ===
+first: roll: fleet boutique -- 2 members, 2 keep a record; as of 2026-11-08 09:00 UTC, by the caller's clock
+first: roll: this fleet takes its time from nobody, so no entry is dated: every record below is ORDERED and UNDATED
+first: roll: this is the first roll: there is nothing to compare it with
+first: roll: depot -- 2 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP1); head H1, and no secret took part
+first: roll: depot -- every entry is ORDERED and UNDATED: the fleet takes its time from nobody
+first: roll: annex -- 1 entry, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H2, and no secret took part
+first: roll: annex -- every entry is ORDERED and UNDATED: the fleet takes its time from nobody
+first: roll: 2 of 2 records held
+first: roll: clean: every record that should be there is, and is its member's, in order from its first entry
+first: roll: written to zig-out/loss/first.roll: the next roll is compared with it (--since)
+first: exit 0
+=== round 2: the loss -- both machines run, and the source is destroyed while they do ===
+drill: both machines are running and each has written this boot in its record: source yes, keeper yes
+drill: the source is destroyed -- its emulator killed outright: no running; disk images of it left: 0
+drill: what the scene keeps of it, read before the loss and held by no member: its directory as round 1's disk held it, and its record as the first roll was brought it
+drill: after the loss the keeper went on asking, and its disk came to say its last attempt was silent: yes
+drill: the keeper's emulator is still running: yes (a running emulator is not a working machine: the line above is the keeper's own word)
+=== the rest: what the keeper's disk holds after the loss ===
+disk: the keeper's /data/copy holds 3 files besides the note, 1 directory, 300060 bytes
+disk: it is, file for file, the ledger the source's disk held at round 1: yes
+disk: /data/copy.last says: silent nobody answered at 10.30.0.1:7400
+=== the host: the copy, checked by somebody who holds only the fleet file ===
+kept: mirror: fleet boutique, MIRROR ledger_copy -- depot (enrolled as FP1) gives /data/ledger to annex (enrolled as FP2)
+kept: mirror: zig-out/loss/k_r2/copy -- 4 files, 1 directory, 300066 bytes: every file matches the digest the source signed, and nothing else is there
+kept: mirror: the listing was signed by FP1 for FP2, the two keys this fleet holds, and no secret took part
+kept: exit 0
+=== round 3: re-judged -- the keeper boots alone, with the source gone for good ===
+disk: round 3 -- the keeper's /data/copy is the copy it held at the loss: yes
+=== the second roll: what was lost -- the keeper's record is brought, and nobody can bring the source's ===
+disk: the keeper's record holds 3 entries
+second: roll: fleet boutique -- 2 members, 2 keep a record; as of 2026-11-08 17:00 UTC, by the caller's clock
+second: roll: this fleet takes its time from nobody, so no entry is dated: every record below is ORDERED and UNDATED
+second: roll: compared with the roll of 2026-11-08 09:00 UTC, 8 h before this one by the caller's clock
+second: roll: depot -- ABSENT: its machine keeps a record at /data/journal, and none was brought
+second: roll: depot -- the roll of 2026-11-08 09:00 UTC held it: 2 entries, head H1, none of them dated
+second: roll: annex -- 3 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H3, and no secret took part
+second: roll: annex -- every entry is ORDERED and UNDATED: the fleet takes its time from nobody
+second: roll: annex -- WROTE 2 entries since the roll of 2026-11-08 09:00 UTC (entries 2-3); ORDERED and UNDATED: nothing dates them
+second: roll: 1 of 2 records held; since the last roll 1 wrote, 0 had nothing new, 1 absent, 0 diverged, 0 new, 0 left the fleet
+second: roll: NOT clean: 1 thing the set owes an answer for
+second: roll: written to zig-out/loss/second.roll: the next roll is compared with it (--since)
+second: exit 1
+lost: read by the scene off the destroyed source's own console, which no member of the fleet holds: it appended entry 3 in the boot it was destroyed in; the last roll that held it held 2 -- entry 3 was on the disk that is gone, and no roll ever held it
+=== round 4: a new card -- the source's declaration on a new disk, and the record it keeps ===
+disk: the new card's record holds 1 entry, signed by a key of its own
+third: roll: fleet boutique -- 2 members, 2 keep a record; as of 2026-11-09 09:00 UTC, by the caller's clock
+third: roll: this fleet takes its time from nobody, so no entry is dated: every record below is ORDERED and UNDATED
+third: roll: compared with the roll of 2026-11-08 17:00 UTC, 16 h before this one by the caller's clock
+third: roll: depot -- BROKEN at entry 1: this device's key did not sign this entry; 0 entries verified before it
+third: roll: depot -- the roll of 2026-11-08 09:00 UTC vouched for 2 entries, and the first entry of this record is whole and in its place but not signed by the member's key: the record is another device's, or its first entry was rewritten by somebody who does not hold that key
+third: roll: annex -- 3 entries, from its first, in order, each signed by the key enrolled for it (fingerprint FP2); head H3, and no secret took part
+third: roll: annex -- every entry is ORDERED and UNDATED: the fleet takes its time from nobody
+third: roll: annex -- NOTHING NEW since the roll of 2026-11-08 17:00 UTC: the record brought still ends at entry 3, head H3
+third: roll: 1 of 2 records held; since the last roll 0 wrote, 1 had nothing new, 0 absent, 0 diverged, 0 new, 0 left the fleet
+third: roll: NOT clean: 1 thing the set owes an answer for
+third: exit 1
+=== what each machine said ===
+running source: the source with the ledger, round 1:
+source1: boot: harb init -- machine mirror_source (hosted / x86_64 / qemu_pc) -- pid 1
+source1: boot: console /dev/ttyS0
+source1: boot: mount proc at /proc -- done
+source1: boot: mount sysfs at /sys -- done
+source1: boot: mount devtmpfs at /dev -- done
+source1: boot: mount ext4 at /data -- done
+source1: boot: grant process (effectful)
+source1: boot: grant filesystem (effectful)
+source1: boot: grant network (effectful)
+source1: boot: network lan -- eth0 up 10.30.0.1/24
+source1: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP1
+source1: boot: mirror -- lan gives the files of /data/ledger on 10.30.0.1:7400, only to a request signed by the one device whose key it was told; the listing is signed with this device's key and cut for that device alone, and only the files ledger owns are given
+source1: boot: confine -- enrol has no network of its own, ledger has no network of its own and no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
+source1: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+source1: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
+source1: boot: state -- ledger owns /data/ledger as clerk (2000:2000); each made, then read back as that identity's, mode 0700
+source1: boot: start enrol -- pid N -- /harb attest --export
+source1: attest mirror_source -- ed25519, fingerprint FP1
+source1: enrol mirror_source ed25519 KEY1 -- KEY for this machine's MEMBER in a fleet
+source1: attest: signed 21 bytes with this device's key and verified them against its public half
+source1: attest: one bit flipped in the message, and the same signature is refused
+source1: boot: enrol (pid N) exited 0
+source1: boot: start ledger -- pid N -- /harb own /data/ledger -- as clerk (2000:2000)
+source1: own: uid=2000 gid=2000
+source1: own: /data/ledger -- wrote note and read it back (6 bytes)
+source1: own: /data -- refused: AccessDenied
+source1: own: / -- refused: AccessDenied
+source1: own: this world wrote in its own directory and nowhere else
+source1: boot: ledger (pid N) exited 0
+source1: boot: judge -- the boot matches its expectation (/etc/expected, 20 lines)
+source1: boot: journal -- /data/journal: 1 entry verified, entry 2 appended and signed (verdict matched)
+source1: boot: every service has ended -- and this machine is still the mirror source of lan: a server stops when the machine stops, not when the asking does
+running keeper: the keeper, taking its copy, round 1:
+keeper1: boot: harb init -- machine mirror_keeper (hosted / x86_64 / qemu_pc) -- pid 1
+keeper1: boot: console /dev/ttyS0
+keeper1: boot: mount proc at /proc -- done
+keeper1: boot: mount sysfs at /sys -- done
+keeper1: boot: mount devtmpfs at /dev -- done
+keeper1: boot: mount ext4 at /data -- done
+keeper1: boot: grant process (effectful)
+keeper1: boot: grant filesystem (effectful)
+keeper1: boot: grant network (effectful)
+keeper1: boot: network lan -- eth0 up 10.30.0.2/24
+keeper1: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP2
+keeper1: boot: mirror -- takes the files at 10.30.0.1:7400 into /data/copy every 5 s, when the listing verifies against the key it was told; a copy replaces the last one only when every file has matched its digest
+keeper1: boot: confine -- enrol has no network of its own, check has no network of its own; what a world did not declare, the kernel does not give it
+keeper1: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+keeper1: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
+keeper1: boot: start enrol -- pid N -- /harb attest --export
+keeper1: attest mirror_keeper -- ed25519, fingerprint FP2
+keeper1: enrol mirror_keeper ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+keeper1: attest: signed 21 bytes with this device's key and verified them against its public half
+keeper1: attest: one bit flipped in the message, and the same signature is refused
+keeper1: boot: enrol (pid N) exited 0
+keeper1: boot: start check -- pid N -- /harb mirror check --wait 60 --fresh
+keeper1: mirror: /data/copy -- 4 files, 1 directory, 300066 bytes: every file matches the digest the source signed, and nothing else is there
+keeper1: mirror: the listing was signed by FP1 for this device (FP2), and verifies against the key this machine was told
+keeper1: mirror: last attempt -- ok files=4 dirs=1 bytes=300066
+keeper1: boot: check (pid N) exited 0
+keeper1: boot: judge -- the boot matches its expectation (/etc/expected, 19 lines)
+keeper1: boot: journal -- /data/journal: the chain begins, entry 1 signed by this device (verdict matched)
+keeper1: boot: every service has ended -- and this machine is still taking a copy from 10.30.0.1:7400: it asks for as long as the machine stands, and not only while a world runs
+drill source: the source in the boot it was destroyed in -- what its console said before it was killed:
+source2: boot: harb init -- machine mirror_source (hosted / x86_64 / qemu_pc) -- pid 1
+source2: boot: console /dev/ttyS0
+source2: boot: mount proc at /proc -- done
+source2: boot: mount sysfs at /sys -- done
+source2: boot: mount devtmpfs at /dev -- done
+source2: boot: mount ext4 at /data -- done
+source2: boot: grant process (effectful)
+source2: boot: grant filesystem (effectful)
+source2: boot: grant network (effectful)
+source2: boot: network lan -- eth0 up 10.30.0.1/24
+source2: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP1
+source2: boot: mirror -- lan gives the files of /data/ledger on 10.30.0.1:7400, only to a request signed by the one device whose key it was told; the listing is signed with this device's key and cut for that device alone, and only the files ledger owns are given
+source2: boot: confine -- enrol has no network of its own, ledger has no network of its own and no sight of the other worlds and no way to start one; what a world did not declare, the kernel does not give it
+source2: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+source2: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
+source2: boot: state -- ledger owns /data/ledger as clerk (2000:2000); each made, then read back as that identity's, mode 0700
+source2: boot: start enrol -- pid N -- /harb attest --export
+source2: attest mirror_source -- ed25519, fingerprint FP1
+source2: enrol mirror_source ed25519 KEY1 -- KEY for this machine's MEMBER in a fleet
+source2: attest: signed 21 bytes with this device's key and verified them against its public half
+source2: attest: one bit flipped in the message, and the same signature is refused
+source2: boot: enrol (pid N) exited 0
+source2: boot: start ledger -- pid N -- /harb own /data/ledger -- as clerk (2000:2000)
+source2: own: uid=2000 gid=2000
+source2: own: /data/ledger -- wrote note and read it back (6 bytes)
+source2: own: /data -- refused: AccessDenied
+source2: own: / -- refused: AccessDenied
+source2: own: this world wrote in its own directory and nowhere else
+source2: boot: ledger (pid N) exited 0
+source2: boot: judge -- the boot matches its expectation (/etc/expected, 20 lines)
+source2: boot: journal -- /data/journal: 2 entries verified, entry 3 appended and signed (verdict matched)
+source2: boot: every service has ended -- and this machine is still the mirror source of lan: a server stops when the machine stops, not when the asking does
+source2: (the emulator was killed here, outright: the line the shell printed for it names a process and is not kept)
+drill keeper: the keeper in the same run, until it was ended 45 s after the loss:
+keeper2: boot: harb init -- machine mirror_keeper (hosted / x86_64 / qemu_pc) -- pid 1
+keeper2: boot: console /dev/ttyS0
+keeper2: boot: mount proc at /proc -- done
+keeper2: boot: mount sysfs at /sys -- done
+keeper2: boot: mount devtmpfs at /dev -- done
+keeper2: boot: mount ext4 at /data -- done
+keeper2: boot: grant process (effectful)
+keeper2: boot: grant filesystem (effectful)
+keeper2: boot: grant network (effectful)
+keeper2: boot: network lan -- eth0 up 10.30.0.2/24
+keeper2: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP2
+keeper2: boot: mirror -- takes the files at 10.30.0.1:7400 into /data/copy every 5 s, when the listing verifies against the key it was told; a copy replaces the last one only when every file has matched its digest
+keeper2: boot: confine -- enrol has no network of its own, check has no network of its own; what a world did not declare, the kernel does not give it
+keeper2: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+keeper2: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
+keeper2: boot: start enrol -- pid N -- /harb attest --export
+keeper2: attest mirror_keeper -- ed25519, fingerprint FP2
+keeper2: enrol mirror_keeper ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+keeper2: attest: signed 21 bytes with this device's key and verified them against its public half
+keeper2: attest: one bit flipped in the message, and the same signature is refused
+keeper2: boot: enrol (pid N) exited 0
+keeper2: boot: start check -- pid N -- /harb mirror check --wait 60 --fresh
+keeper2: mirror: /data/copy -- 4 files, 1 directory, 300066 bytes: every file matches the digest the source signed, and nothing else is there
+keeper2: mirror: the listing was signed by FP1 for this device (FP2), and verifies against the key this machine was told
+keeper2: mirror: last attempt -- ok files=4 dirs=1 bytes=300066
+keeper2: boot: check (pid N) exited 0
+keeper2: boot: judge -- the boot matches its expectation (/etc/expected, 19 lines)
+keeper2: boot: journal -- /data/journal: 1 entry verified, entry 2 appended and signed (verdict matched)
+keeper2: boot: every service has ended -- and this machine is still taking a copy from 10.30.0.1:7400: it asks for as long as the machine stands, and not only while a world runs
+after keeper: the keeper, booted alone after the loss:
+keeper3: boot: harb init -- machine mirror_keeper (hosted / x86_64 / qemu_pc) -- pid 1
+keeper3: boot: console /dev/ttyS0
+keeper3: boot: mount proc at /proc -- done
+keeper3: boot: mount sysfs at /sys -- done
+keeper3: boot: mount devtmpfs at /dev -- done
+keeper3: boot: mount ext4 at /data -- done
+keeper3: boot: grant process (effectful)
+keeper3: boot: grant filesystem (effectful)
+keeper3: boot: grant network (effectful)
+keeper3: boot: network lan -- eth0 up 10.30.0.2/24
+keeper3: boot: identity -- ed25519, custody a file at /data/device.key -- already on this device, fingerprint FP2
+keeper3: boot: mirror -- takes the files at 10.30.0.1:7400 into /data/copy every 5 s, when the listing verifies against the key it was told; a copy replaces the last one only when every file has matched its digest
+keeper3: boot: confine -- enrol has no network of its own, check has no network of its own; what a world did not declare, the kernel does not give it
+keeper3: boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+keeper3: boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
+keeper3: boot: start enrol -- pid N -- /harb attest --export
+keeper3: attest mirror_keeper -- ed25519, fingerprint FP2
+keeper3: enrol mirror_keeper ed25519 KEY2 -- KEY for this machine's MEMBER in a fleet
+keeper3: attest: signed 21 bytes with this device's key and verified them against its public half
+keeper3: attest: one bit flipped in the message, and the same signature is refused
+keeper3: boot: enrol (pid N) exited 0
+keeper3: boot: start check -- pid N -- /harb mirror check --wait 60 --fresh
+keeper3: mirror: /data/copy -- 4 files, 1 directory, 300066 bytes: every file matches the digest the source signed, and nothing else is there
+keeper3: mirror: the listing was signed by FP1 for this device (FP2), and verifies against the key this machine was told
+keeper3: mirror: last attempt -- silent nobody answered at 10.30.0.1:7400
+keeper3: boot: check (pid N) exited 0
+keeper3: boot: judge -- the boot matches its expectation (/etc/expected, 19 lines)
+keeper3: boot: journal -- /data/journal: 2 entries verified, entry 3 appended and signed (verdict matched)
+keeper3: boot: every service has ended -- and this machine is still taking a copy from 10.30.0.1:7400: it asks for as long as the machine stands, and not only while a world runs

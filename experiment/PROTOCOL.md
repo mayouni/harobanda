@@ -1,3 +1,76 @@
+# LOSS-1 — a member destroyed while the fleet runs, and what the rest can say of it
+
+Ruling 19's fifth declaration, in its order after the roll call: a scene that
+destroys a member while the fleet runs, and shows the rest serve, re-judge
+themselves and say what was lost. Every scene before it built a fleet; none
+broke one.
+
+**The drill is the mirror's two machines, each also keeping a record.**
+`experiment/os14_loss.sh` derives its machines from
+`machines/mirror_source.machine` and `machines/mirror_keeper.machine` by one
+line each, `JOURNAL "/data/journal"`, and refuses to run if the derivation
+adds anything else; no committed machine file and no other pin changes. After
+enrolment and a first round in which the keeper takes its copy, the first roll
+is called over both records as their DISKS hold them (`harb roll` is brought
+what was collected, and here that is the disk). Then both boot again on one
+wire; once each has judged its boot and written it in its record, the source's
+emulator is killed outright (SIGKILL: no reset reaches the keeper) and every
+disk image of it is deleted. The keeper goes on asking, and the scene waits for
+its disk to say its last attempt was `silent nobody answered`. Its copy is,
+file for file, the ledger the source's disk held at round 1; the host checks it
+with the fleet file and no secret; booted alone, the keeper's boot matches its
+declaration and its witness reads the copy back. The second roll says `depot --
+ABSENT`, with what the first roll held (2 entries, its head), and the keeper
+WROTE 2 entries since. The scene then reads the destroyed source's own console:
+it appended entry 3 in the boot it was destroyed in, on the disk that is gone,
+and no roll ever held it. Last, a new card on the same declaration makes a new
+key, and the roll refuses its record as the member's. Pinned at 234 lines in
+`machines/loss.expected`, matched on a second run.
+
+**A one-shot that fails holds back the verdict, and the record is written after
+the verdict** (JDG-1, read again): the keeper's enrol boot has no copy, its
+witness exits 1, and that boot writes no entry -- on every run. The first
+reading called it a race and added a wait for a line that never comes; the
+second run stopped there, and the code said why. The keeper's record starts at
+round 1, one entry shorter than its source's.
+
+**The roll said more than it knows of a new card.** Its record breaks at entry
+1, inside what the first roll vouched for, and the roll said "entries that roll
+saw have been changed or removed" -- neither, here: the whole record is
+another device's. The roll now says, ONLY when the first entry is whole, in its
+place, and not signed by the member's key (`journal.unsigned_reason`, one named
+constant), and never of a retired key's chain: "the record is another device's,
+or its first entry was rewritten by somebody who does not hold that key". The
+first version of that sentence was printed for every break at entry 1, and the
+review found it wrong for a first entry taken out and for one whose bytes were
+altered; a test now holds the three cases, and a mutant with the first
+condition fails it on the exact sentence.
+
+**A read-only review found six things after every gate was green**, each
+checked at the code before it was acted on: (1) that sentence, as above; (2)
+the scene's 45 s wait for the keeper to give up was a guess under a limit of
+300 s (a source killed outright sends no reset, and a keeper waiting for a
+listing waits `listing_ms`) -- the scene now waits for the keeper's OWN word,
+its disk saying silent, for up to 400 s; (3) "0 disks left" counted the names
+`rm` had just been given, which cannot fail -- it counts every disk image left
+now, and the scene names what it still holds of the source (two readings taken
+before the loss, held by no member); (4) "the rest serve", "re-judge themselves"
+and "what was lost" claimed more than the scene showed -- the keeper serves
+nothing, a running emulator is not a working machine, the keeper's expectation
+does not hold the last-attempt line, and the lost entry's number is read off
+the destroyed machine's console, which the fleet never holds -- each is now
+said as narrowly as it is shown; (5) a test comment called an altered first
+entry indistinguishable from another device's, which the BROKEN line already
+tells apart; (6) the EXIT trap's process pattern would have ended another run's
+machines -- they are named for the run now.
+
+Named seams: two machines, so "the rest" is one; nothing is failed over --
+what to run from the copy is a person's act; what a source writes between two
+pulls is lost with it and not measured (the ledger does not change in round 2);
+the lost entry's number is the scene's reading of a console no member holds;
+the keeper's judge alone cannot see the loss; the wire is two emulators on one
+host, so the loss of the source is the loss of a process, never of a room.
+
 # MENU-2 — a section's landing page opens its strip
 
 Central's NOTE of 2026-11-08 relayed the Principal's ruling, which reverses

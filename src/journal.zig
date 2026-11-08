@@ -95,6 +95,11 @@ pub fn entryShaped(payload: []const u8, n: usize) bool {
     return std.mem.startsWith(u8, payload, want);
 }
 
+/// The reason `verify` gives when an entry is whole and in its place and the
+/// key it was asked under did not sign it -- the one reason a reader may take
+/// as "this may be another device's record" (the roll does, LOSS-1).
+pub const unsigned_reason = "this device's key did not sign this entry";
+
 /// Walk the chain and say where it breaks, if it does. Every entry owes
 /// three things: its own hash over its own bytes, a `prev` that is the
 /// entry before it, and a signature this device's public key accepts --
@@ -171,7 +176,7 @@ pub fn verify(text: []const u8, public: Ed25519.PublicKey) Check {
         const sig = Ed25519.Signature.fromBytes(sig_bytes);
         sig.verify(payload, public) catch {
             c.broken_at = n;
-            c.reason = "this device's key did not sign this entry";
+            c.reason = unsigned_reason;
             return c;
         };
 
