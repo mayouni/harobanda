@@ -29,6 +29,15 @@ LOG=zig-out/wsl/kernel_fetch.txt
     echo "vendor/PIN.md has no sha256 of 64 hex for $NAME -- refused"; exit 1
   fi
   echo "pin: $NAME sha256 $SUM (vendor/PIN.md)"
+  if [ -n "${HARB_MIRROR:-}" ]; then
+    # the estate's mirror, restored to a directory (experiment/mirror_restore.sh): the tarball is copied from
+    # there and nothing is asked of the network -- kernel.org is not consulted, and the pin above is the judge
+    M=$(cd "$HARB_MIRROR" 2> /dev/null && pwd) || { echo "HARB_MIRROR=$HARB_MIRROR is not a directory -- refused"; exit 1; }
+    cd vendor/linux || exit 1
+    [ -f "$M/$NAME" ] || { echo "the mirror at $M holds no $NAME -- refused"; exit 1; }
+    cp "$M/$NAME" "$NAME.part" && mv "$NAME.part" "$NAME" || { echo "copy from the mirror failed"; exit 1; }
+    echo "taken from the mirror at $M: kernel.org not asked, the pin is the judge"
+  else
   cd vendor/linux || exit 1
   BASE=https://cdn.kernel.org/pub/linux/kernel/v6.x
   curl -4 -sSf -o sha256sums.asc "$BASE/sha256sums.asc" || { echo "sha256sums fetch failed"; exit 1; }
@@ -40,6 +49,7 @@ LOG=zig-out/wsl/kernel_fetch.txt
   echo "kernel.org agrees with the pin"
   if [ ! -f "$NAME" ]; then
     curl -4 -sSf -o "$NAME" "$BASE/$NAME" || { echo "tarball fetch failed"; exit 1; }
+  fi
   fi
   echo "$SUM  $NAME" | sha256sum -c - || { echo "DIGEST MISMATCH -- refused"; exit 1; }
   echo "$NAME $SUM" > PIN.txt

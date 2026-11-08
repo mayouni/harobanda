@@ -31,7 +31,13 @@ LOG=zig-out/wsl/caddy_fetch.txt
   URL="https://github.com/caddyserver/caddy/releases/download/v$VER/$NAME"
   echo "pin: $NAME"
   echo "sha512: $SUM"
-  if [ ! -f "vendor/caddy/$NAME" ]; then
+  if [ -n "${HARB_MIRROR:-}" ]; then
+    # the estate's mirror, restored to a directory: copied from there, nothing asked of the network
+    [ -f "$HARB_MIRROR/$NAME" ] || { echo "the mirror at $HARB_MIRROR holds no $NAME -- refused"; exit 1; }
+    cp "$HARB_MIRROR/$NAME" "vendor/caddy/$NAME.part" && mv "vendor/caddy/$NAME.part" "vendor/caddy/$NAME" || { echo "copy from the mirror failed"; exit 1; }
+    URL="the mirror at $HARB_MIRROR"
+    echo "taken from the mirror at $HARB_MIRROR: the network not asked, the pin is the judge"
+  elif [ ! -f "vendor/caddy/$NAME" ]; then
     echo "fetching $URL"
     curl -4 -sSfL -o "vendor/caddy/$NAME.part" "$URL" || { echo "fetch failed"; rm -f "vendor/caddy/$NAME.part"; exit 1; }
     mv "vendor/caddy/$NAME.part" "vendor/caddy/$NAME"

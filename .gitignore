@@ -6,6 +6,7 @@ vendor/linux/
 vendor/rpi-firmware/
 vendor/zig/
 vendor/caddy/
+vendor/ringserv/
 
 # python bytecode, from site/diagrams/
 __pycache__/

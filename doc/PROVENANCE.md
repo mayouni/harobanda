@@ -121,6 +121,16 @@ the post was written; then territory, the mirror, the roll call, the
 loss drill, and the source mirror last, because it needs a place to hold
 a private release.
 
+*Amended 2026-11-08: all five are built.* The loss drill (LOSS-1) and the
+source mirror (SRCMIRROR-1) were the last two. The source mirror's place
+was ruled by the author the same day, in two words: "go (a)" -- the
+public release on this repository, since everything in it is software its
+makers publish openly, so the "private release" above was never needed --
+and "(b) leave them out and say so" for the host's build tools (gcc,
+make, flex, bison, bc) and QEMU, whose compiled packages would owe their
+GPL source beside them. The release is `vendor-mirror-2026-11-08`; the
+record is `vendor/PIN.md`.
+
 Not touched by these rulings: the Pi kit and OS-5, parked.
 
 ## The ruling of 2026-10-13 (taken on the author's behalf, at his word)

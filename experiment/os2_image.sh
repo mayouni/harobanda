@@ -187,17 +187,24 @@ mkdir -p "$OUT" zig-out/wsl
   fi
   if [ "$SD" = yes ]; then
     echo "=== sd card ==="
-    # the board's firmware, pinned by digest after the first fetch (vendor/rpi-firmware/, gitignored)
+    # the board's firmware, pinned in vendor/PIN.md by its tag and the digest of each file -- the first version
+    # took the NEWEST release on the day it ran and wrote what it took into a gitignored PIN.txt, so a fresh clone
+    # was re-pinned without a word (DOC-1's defect, one table over; found by the source mirror's seat)
     FW=vendor/rpi-firmware; mkdir -p "$FW"; mkdir -p "$OUT/firmware"
-    if [ ! -f "$FW/start4.elf" ] || [ ! -f "$FW/fixup4.dat" ]; then
-      TAG=$(curl -4 -sSf https://api.github.com/repos/raspberrypi/firmware/releases/latest | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
-      echo "firmware: raspberrypi/firmware tag ${TAG:-?}"
-      for f in start4.elf fixup4.dat; do
-        curl -4 -sSf -o "$FW/$f" "https://raw.githubusercontent.com/raspberrypi/firmware/$TAG/boot/$f" || echo "firmware: $f NOT fetched"
+    FW_TAG=$(awk -F'`' '/^\| tag \| `/ {print $2; exit}' vendor/PIN.md)
+    FW_START=$(awk -F'`' '/^\| start4\.elf sha256 \| `/ {print $2; exit}' vendor/PIN.md)
+    FW_FIXUP=$(awk -F'`' '/^\| fixup4\.dat sha256 \| `/ {print $2; exit}' vendor/PIN.md)
+    fw_ok() { [ -f "$FW/start4.elf" ] && [ -f "$FW/fixup4.dat" ] && printf '%s  start4.elf\n%s  fixup4.dat\n' "$FW_START" "$FW_FIXUP" | (cd "$FW" && sha256sum -c --status -); }
+    if [ -z "$FW_TAG" ] || [ -z "$FW_START" ] || [ -z "$FW_FIXUP" ]; then
+      echo "firmware: vendor/PIN.md pins no firmware -- not fetched"
+    elif ! fw_ok; then
+      for f in start4.elf fixup4.dat LICENCE.broadcom; do
+        if [ -n "${HARB_MIRROR:-}" ]; then cp "$HARB_MIRROR/$f" "$FW/$f" 2> /dev/null || echo "firmware: $f not in the mirror at $HARB_MIRROR"
+        else curl -4 -sSf -o "$FW/$f" "https://raw.githubusercontent.com/raspberrypi/firmware/$FW_TAG/boot/$f" || echo "firmware: $f NOT fetched"; fi
       done
-      [ -f "$FW/start4.elf" ] && { echo "$TAG" > "$FW/TAG.txt"; (cd "$FW" && sha256sum start4.elf fixup4.dat > PIN.txt); }
+      fw_ok || { echo "firmware: the files do not match vendor/PIN.md's digests for $FW_TAG -- removed"; rm -f "$FW/start4.elf" "$FW/fixup4.dat"; }
     fi
-    [ -f "$FW/PIN.txt" ] && { echo "firmware pin ($(cat "$FW/TAG.txt")):"; cat "$FW/PIN.txt"; }
+    fw_ok && { echo "$FW_TAG" > "$FW/TAG.txt"; (cd "$FW" && sha256sum start4.elf fixup4.dat > PIN.txt); echo "firmware pin ($FW_TAG, vendor/PIN.md):"; cat "$FW/PIN.txt"; }
     cp "$FW"/start4.elf "$FW"/fixup4.dat "$OUT/firmware/" 2>/dev/null || echo "firmware: blobs missing -- the card boots in QEMU (which loads the kernel itself) but not on the board"
     # partitions: p1 at sector 2048, then p2 right after; sizes from sd.list
     P1MB=$(awk '$1=="part" && $2=="p1"{print $4}' "$OUT/sd.list"); P2FS=$(awk '$1=="part" && $2=="p2"{print $3}' "$OUT/sd.list"); P2MB=$(awk '$1=="part" && $2=="p2"{print $4}' "$OUT/sd.list")

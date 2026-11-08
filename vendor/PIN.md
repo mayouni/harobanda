@@ -85,6 +85,39 @@ ZIGCC-1); nothing in the shipped images depends on it.
 | source of the digest | ziglang.org's own `download/index.json`, fetched 2026-09-12 |
 | version | 0.15.2, the same the Windows toolchain builds `harb` with; its C front end reports clang 20.1.2 |
 
+## The Windows Zig, pinned the same way (the source mirror)
+
+The compiler that builds `harb` itself -- every binary this repository
+ships, the CLI and PID 1 alike -- is the Windows Zig in `D:\Zig` on this
+desk, 0.15.2. It was installed and never pinned; the source mirror's seat
+pinned it, fetched the official archive once and found its `zig.exe`
+byte-identical to the installed one (sha256 `d408dd38...c018`, both).
+
+| what | value |
+|---|---|
+| archive | `zig-x86_64-windows-0.15.2.zip` |
+| sha256 | `3a0ed1e8799a2f8ce2a6e6290a9ff22e6906f8227865911fb7ddedc3cc14cb0c` |
+| source of the digest | ziglang.org's own `download/index.json`, fetched 2026-11-08 |
+| licence | MIT (Zig's own `LICENSE`, in the archive), and the licences of what it bundles, listed in the archive |
+
+## The Pi firmware, pinned by tag and digest (the source mirror)
+
+The board's two firmware files, read by `os2_image.sh` for an SD card.
+Until 2026-11-08 they were fetched from the NEWEST release of
+`raspberrypi/firmware` on the day of the first fetch and the digests
+written only into a gitignored `PIN.txt`, so a fresh clone took whatever
+was newest that day -- DOC-1's defect, one table over. The fetch now
+takes exactly this tag and refuses files whose digests are not these.
+
+| what | value |
+|---|---|
+| tag | `1.20260907` |
+| start4.elf sha256 | `43a5993684a46a65280d128ce9b8c68bcde1e83e2e5791c9bb0271e4a2aa0e39` |
+| fixup4.dat sha256 | `f5e57d4f49d8eaf5381e0f83b0171f03a938931fc6c79f36a93df0d67910a098` |
+| LICENCE.broadcom sha256 | `c7283ff51f863d93a275c66e3b4cb08021a5dd4d8c1e7acc47d872fbe52d3d6b` |
+| source | `https://raw.githubusercontent.com/raspberrypi/firmware/<tag>/boot/<file>` |
+| licence | Broadcom's redistribution licence, `LICENCE.broadcom`, which travels with the files |
+
 ## RingServ, pinned by SOURCE (SRV-2)
 
 The first real server a pack places (`machines/ringserv.pack`) is RingServ,
@@ -104,6 +137,16 @@ one, and a rebuild there gave the same digest.
 | built with | `zig build -j2 -Dtarget=x86_64-linux-musl`, Zig 0.15.2, ReleaseFast (RingServ's default): one static x86-64 ELF with no interpreter, 24,313,280 bytes, sha256 `d172da3e7471675ac8f2d4895bc7b017879606d6278480ae45ab0bce03829e69` in `zig-out/ringserv/src` (for the record, not the pin) |
 | reports itself as | `RingServ 0.9.0 (Ring 1.27, resident, ReleaseFast)`, vendored SQLite 3.53.4 |
 | licence | MIT (RingServ's own `LICENSE`); the binary is not committed here and not redistributed |
+
+*Amended 2026-11-08 (the source mirror).* The source is mirrored as a git
+bundle of this ref, `ringserv-002ba212.bundle`, made from a scratch clone
+of the ringserv repository's objects (its working tree not read) with one
+branch, `ringserv-pin`, at the ref. `git clone <bundle> -b ringserv-pin`
+gives the ref back, and `ringserv_build.ps1 -Source <bundle>` builds from
+it. A bundle's bytes are not the pin -- the ref is -- so its digest is
+recorded in the mirror's `SHA256SUMS` and not here. RingServ declares no
+fetched packages (no `build.zig.zon` at this ref), so its build needs
+nothing else from the network.
 
 Changing the pin means changing the `$Ref` in `experiment/ringserv_build.ps1`,
 this table, and the pinned boot `machines/qemu_cloud_ringserv.expected` in the
@@ -158,3 +201,35 @@ judged by a RESTORE -- downloaded whole, every digest checked, the two
 tarballs against the pins in this file. The pins here stay the
 authority; the mirror carries a copy of them so it can be checked on its
 own. Integrity ours, availability ours, for as long as the account is.
+
+*Amended 2026-11-08 (the source mirror, STZ-OS-RULING-19's last item, on
+the author's "go (a)").* The 2026-09-27 mirror had fallen behind its own
+pins: it held `linux-6.12.109` when the pin had moved to 6.12.115, and it
+never held Caddy, RingServ or the Windows Zig. It is kept as it was, a
+record of that day. The mirror is now `vendor-mirror-2026-11-08`, made by
+`experiment/mirror_make.sh`, which takes every file from `vendor/`,
+checks each against THIS file before it is staged, and writes `SHA256SUMS`
+and `MIRROR.txt` (what each file is, which pin judges it, its licence):
+the kernel, the Linux and the Windows Zig, Caddy, RingServ's bundle, and
+the Pi firmware with its licence. Every fetch script takes `HARB_MIRROR=
+<dir>` -- a restored mirror -- and then copies from it and asks the
+network nothing (`os2_kernel_fetch.sh` does not consult kernel.org then:
+the pin is the judge). It is judged by `experiment/mirror_restore.sh`:
+the release downloaded whole into an empty directory, every digest
+checked, and then, with the network taken away (a namespace with no
+interface but loopback), a copy of what this repository publishes is
+given every file from the restore alone, builds `harb` with the restored
+Zig, builds the kernel from the restored tarball and boots `qemu_egress`
+against its pin, and builds RingServ from the bundle. A move of any pin
+above is a new mirror, made the same day.
+
+**Not mirrored, and named: the host's build tools.** The kernel is built
+with gcc, make, flex, bison and bc, and booted by QEMU -- Ubuntu's
+packages, installed by `experiment/os2_env.sh` and pinned by nothing
+here. Mirroring their compiled packages publicly is a redistribution of
+GPL binaries, which owes their source beside them. **Ruled by the author
+2026-11-08: "(b) leave them out and say so."** So they stay out, and this
+is the saying: a cloud rebuilt from this mirror alone still needs an
+Ubuntu archive for those tools, and the toolchain this mirror carries is
+the one that builds `harb` and RingServ (Zig), not the one that builds the
+kernel (gcc).

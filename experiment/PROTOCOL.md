@@ -1,3 +1,72 @@
+# SRCMIRROR-1 — every pinned file restored from the estate's mirror, and a rebuild with no network
+
+Ruling 19's last item, on the author's "go (a)" of 2026-11-08: the kernel,
+the toolchain and every pinned program restored from a mirror inside the
+estate, so that a cloud is rebuilt with no outside network at all.
+
+**The mirror of 2026-09-27 had fallen behind its own pins.** It held
+`linux-6.12.109` while the pin had moved to 6.12.115 five days before
+(TCPUAF-1), and it never held Caddy, RingServ or the compiler that builds
+`harb`. A mirror nobody re-makes when a pin moves is a copy of the past.
+It is kept as the record of its day; the mirror is now
+`vendor-mirror-2026-11-08`, made by `experiment/mirror_make.sh`, which
+stages a file only if its digest is the one `vendor/PIN.md` gives (one
+wrong digest, put in on purpose, refused the whole mirror), and writes
+`MIRROR.txt` (each file, its pin, its licence) and `SHA256SUMS`, which
+covers `MIRROR.txt` too.
+
+**What it holds.** The kernel's source; the Linux Zig; the Windows Zig,
+which builds `harb` itself and had never been pinned -- its official
+archive was fetched against ziglang.org's digest and its `zig.exe` found
+byte-identical to the one installed here; Caddy; RingServ's source as a
+git bundle of the pinned ref (made from a scratch clone, its desk's
+working tree not read; RingServ fetches no packages); and the Pi firmware
+with its licence. **Not held, by the author's ruling of 2026-11-08 ("(b)
+leave them out and say so"):** gcc, make, flex, bison, bc and QEMU --
+Ubuntu's compiled packages, whose public redistribution owes their GPL
+source beside them. A rebuild from this mirror alone still needs an
+Ubuntu archive for those, and `vendor/PIN.md` and `MIRROR.txt` say so.
+
+**Three defects found on the way, each older than this seat.** (1) The Pi
+firmware was fetched as the NEWEST release on the day of the first fetch
+and its digests written only to a gitignored `PIN.txt`: a fresh clone
+took whatever was newest, without a word -- DOC-1's defect one table
+over. It is pinned in `vendor/PIN.md` now (tag `1.20260907`, three
+digests), and the fetch takes that tag and removes files that do not
+match. (2) `zigcc_fetch.sh` restated its digest instead of reading the
+pin (HDW-1). (3) `zigcc_fetch.sh` ended with `cd <relative> && tail`, so
+its exit was tail's: a refused digest exited 0, and a good fetch exited 1
+because the relative `cd` failed from inside `vendor/zig` -- found by the
+restore, the first caller ever to read that exit code (VDCT-1, again).
+
+**Every fetch script takes `HARB_MIRROR=<dir>`**: it copies the pinned
+file from a restored mirror, asks the network nothing, and the pin alone
+judges (the kernel's fetch does not consult kernel.org then).
+
+**Judged by a restore that rebuilds** (`experiment/mirror_restore.sh`):
+the release downloaded whole into an empty directory and checked against
+`SHA256SUMS`; then, in a network namespace whose only interface is
+loopback -- where a request to ziglang.org is made and must fail -- a copy
+of what this repository publishes is given every pinned file from the
+restore alone, with a fresh HOME so nothing cached on the host can stand
+in: `harb` built with the restored Zig, the kernel built from the
+restored tarball in that run's own home and `qemu_egress` booted and
+judged against its pin, the firmware checked against the pin's three
+digests, and RingServ cloned from the bundle (the pinned ref read back)
+and built with the restored Zig. The trial from the staged files, before
+upload: RESTORED -- harb 123 s, the boot 325 s (its 20 lines matched),
+RingServ 216 s. Then the release itself, after upload (324 MB, ten files): RESTORED again -- every file matching `SHA256SUMS`, harb 220 s, the kernel built in that run's own home and the boot 524 s (20 lines matched), RingServ 110 s. **A judge of a mirror must not be fooled by a cache**: the
+first version printed the kernel cache's line from a log that does not
+carry it; the restore now asserts the kernel it booted was built under its
+own home. Git Bash's `sha256sum` marks every name with `*`, and a name
+with a mark is not a file the release has: the sums are written plain.
+
+Named seams: the host's build tools and QEMU, by ruling; availability is
+GitHub's for as long as the account is; a mirror is made by hand when a
+pin moves, and nothing checks that the newest mirror matches today's pins
+except running the restore; RingServ's binary is not reproducible across
+folders, so the restore says it BUILT, never that it built the same bytes.
+
 # LOSS-1 — a member destroyed while the fleet runs, and what the rest can say of it
 
 Ruling 19's fifth declaration, in its order after the roll call: a scene that
