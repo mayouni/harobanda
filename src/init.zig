@@ -32,6 +32,7 @@ const netcfg = @import("netcfg.zig");
 const names = @import("names.zig");
 const confine = @import("confine.zig");
 const ports = @import("ports.zig");
+const work = @import("work.zig");
 const expect = @import("expect.zig");
 const journal = @import("journal.zig");
 const mirrorserve = @import("mirrorserve.zig");
@@ -709,10 +710,23 @@ fn cgroupPrepare(m: *const machine.Machine, slots: []Slot, out: *std.Io.Writer) 
     }
     if (!any and !reserved) return .none;
 
-    if (any) writeKernelFile("/sys/fs/cgroup/cgroup.subtree_control", "+memory +cpu +pids") catch |e| {
-        out.print("boot: budget -- the kernel would not delegate the controllers ({s}); no ceiling is held this boot\n", .{@errorName(e)}) catch {};
-        return .refused;
-    };
+    // the controllers the image derived and no others (WORKER-1): the pids controller is built only for a
+    // machine with a TASKS world (`image.fragment`), and asked for in one write with the other two, the
+    // kernel refused all three on the first machine whose ceilings were memory and cpu alone -- every
+    // budgeted machine pinned until then also declared TASKS
+    var sized = false;
+    var counted = false;
+    for (m.services) |s| {
+        if (s.memory_mb != null or s.cpu_percent != null) sized = true;
+        if (s.tasks != null) counted = true;
+    }
+    if (any) {
+        const ask: []const u8 = if (sized and counted) "+memory +cpu +pids" else if (sized) "+memory +cpu" else "+pids";
+        writeKernelFile("/sys/fs/cgroup/cgroup.subtree_control", ask) catch |e| {
+            out.print("boot: budget -- the kernel would not delegate the controllers ({s}); no ceiling is held this boot\n", .{@errorName(e)}) catch {};
+            return .refused;
+        };
+    }
     // a reservation's core is a cpuset partition of its own (TIM-1): the controller is asked for apart,
     // because a kernel that holds ceilings and no cpusets must still hold the ceilings -- so a refusal
     // here marks every reserved world NOT STARTED and the budgets go on being written below
@@ -733,9 +747,13 @@ fn cgroupPrepare(m: *const machine.Machine, slots: []Slot, out: *std.Io.Writer) 
         while (core < m.cores) : (core += 1) {
             var used = false;
             var budgeted = false;
+            var core_mem = false;
+            var core_tasks = false;
             for (m.services) |s| if (s.reservation) |r| if (r.core == core) {
                 used = true;
                 if (s.memory_mb != null or s.tasks != null) budgeted = true;
+                if (s.memory_mb != null) core_mem = true;
+                if (s.tasks != null) core_tasks = true;
             };
             if (!used) continue;
             var cbuf: [64]u8 = undefined;
@@ -757,7 +775,10 @@ fn cgroupPrepare(m: *const machine.Machine, slots: []Slot, out: *std.Io.Writer) 
             } else if (budgeted) {
                 var pbuf: [160]u8 = undefined;
                 const sc = std.fmt.bufPrint(&pbuf, "{s}/cgroup.subtree_control", .{cdir}) catch return .refused;
-                writeKernelFile(sc, "+memory +pids") catch |e| {
+                // the controllers this core's worlds ask for, and no others: the pids controller is built only for a
+                // machine with a TASKS world (WORKER-1, the same defect as the root's write above)
+                const ask: []const u8 = if (core_mem and core_tasks) "+memory +pids" else if (core_mem) "+memory" else "+pids";
+                writeKernelFile(sc, ask) catch |e| {
                     out.print("boot: budget -- core {d}: the kernel would not delegate the controllers beneath its partition ({s}); no ceiling is held this boot\n", .{ core, @errorName(e) }) catch {};
                     return .refused;
                 };
@@ -900,7 +921,7 @@ fn partitionOf(dir: []const u8, core: u32, answer: []u8) []const u8 {
 /// Move a world into its own group. PID 1 does it after the fork, so the
 /// one path serves a world that drops to a USER and one that does not:
 /// a child that has already dropped its privileges could not write here.
-fn cgroupJoin(svc: *const machine.Service, pid: i32) void {
+fn cgroupJoin(svc: *const machine.Service, pid: i32) bool {
     // every budget, or a world is left outside the group whose ceiling
     // was written for it -- which is what happened to the first TASKS
     // world: pids.max was set on a group nobody was in, and the boot
@@ -908,15 +929,16 @@ fn cgroupJoin(svc: *const machine.Service, pid: i32) void {
     // has been narrower than the thing it guards. A reservation's core is
     // the same kind of thing: joined here, BEFORE the gate opens, so the
     // world takes its reservation inside its partition (TIM-1).
-    if (svc.memory_mb == null and svc.cpu_percent == null and svc.tasks == null and svc.reservation == null) return;
+    if (svc.memory_mb == null and svc.cpu_percent == null and svc.tasks == null and svc.reservation == null) return true;
     var dbuf: [128]u8 = undefined;
     var pbuf: [160]u8 = undefined;
-    const path = std.fmt.bufPrint(&pbuf, "{s}/cgroup.procs", .{groupDir(&dbuf, svc)}) catch return;
+    const path = std.fmt.bufPrint(&pbuf, "{s}/cgroup.procs", .{groupDir(&dbuf, svc)}) catch return false;
     var vbuf: [24]u8 = undefined;
-    const val = std.fmt.bufPrint(&vbuf, "{d}", .{pid}) catch return;
+    const val = std.fmt.bufPrint(&vbuf, "{d}", .{pid}) catch return false;
     // a world that has already exited cannot be moved, and that is not
     // an error: the reaper's line is the one that matters
-    writeKernelFile(path, val) catch {};
+    writeKernelFile(path, val) catch return false;
+    return true;
 }
 
 /// The wall clock in milliseconds. The machine sets no clock -- the
@@ -1101,7 +1123,9 @@ const is_linux = builtin.os.tag == .linux;
 //                       (a timer would race a boot; the wait does not).
 // (systemd's oneshot/simple distinction without a Type= seat; the OS-2
 // transcripts interleaved because AFTER only ordered spawns, PROTOCOL.md.)
-const State = enum { pending, running, exited, never };
+/// `on_demand` is a worker's (WORKER-1): never started at boot, started for each job, and as ready as
+/// it will ever be from the first look -- nothing comes AFTER a worker, and the boot is not judged on it.
+const State = enum { pending, running, exited, never, on_demand };
 
 const Slot = struct {
     service: *const machine.Service,
@@ -1123,8 +1147,23 @@ const Slot = struct {
     /// the kernel keeps no posix timers (SAFE-1): it could never say when this world runs past its
     /// runtime, which its reservation promises, so the world is not started
     word_refused: bool = false,
+    /// a worker's job, while one runs (WORKER-1): the stand-in PID 1 started for it (0 when none), the job's
+    /// id, when it started, whether the floor ended it at its LIMIT, the scratch folder's descriptor, and the
+    /// kernel's count of memory kills in its group when it started
+    job_pid: i32 = 0,
+    job_id: [33]u8 = undefined,
+    job_id_len: usize = 0,
+    job_started_ms: i64 = 0,
+    job_limited: bool = false,
+    job_scratch: i32 = -1,
+    job_oom: u64 = 0,
+    /// the kernel would not put the job inside its group: killed at the gate, never run
+    job_unjoined: bool = false,
+    /// a job could not be answered, so this worker takes no further job this boot
+    work_stopped: bool = false,
 
     fn ready(self: Slot) bool {
+        if (self.state == .on_demand) return true;
         return switch (self.service.restart) {
             .never => self.state == .exited and !self.signaled and self.code == 0,
             .always, .on_failure => if (self.service.ready != null)
@@ -1223,6 +1262,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     for (p.steps) |step| if (step == .service) try slots.append(gpa, .{
         .service = step.service,
         .held = try confine.Confinement.ofAlloc(m.*, step.service.*, gpa),
+        // a worker is started for each job, never at boot (WORKER-1)
+        .state = if (step.service.jobs != null) .on_demand else .pending,
     });
 
     var ab: ?Slots = if (m.slots) |dev| Slots{ .dev = dev } else null;
@@ -1424,7 +1465,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
 
     // the ceilings, before the first world runs: a world must never see
     // a boot in which its group did not exist yet (BDG-1)
-    switch (cgroupPrepare(m, slots.items, out)) {
+    const budget = cgroupPrepare(m, slots.items, out);
+    switch (budget) {
         .none => {},
         .held => {
             _ = try expect.budgetLine(led.w(), m);
@@ -1497,6 +1539,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
     // ... and the signals an earlier boot left, which are not this boot's word (after the directories,
     // so that nothing is removed through a path that was not verified)
     try clearSignals(slots.items, opts.rehearse, out);
+    // the place a worker's scratch folders go, and the kernel's word that it can hold one to its folder (WORKER-1)
+    const has_workers = try prepareWork(m, slots.items, budget == .held, opts.rehearse, &led, out);
     try startReady(gpa, slots.items, &led);
     try out.flush();
 
@@ -1609,6 +1653,10 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         for (slots.items) |s| switch (s.state) {
             .running => alive += 1,
             .pending => pending += 1,
+            // a job that runs keeps the machine up until it has been answered (WORKER-1)
+            .on_demand => if (s.job_pid != 0) {
+                alive += 1;
+            },
             else => {},
         };
         if (alive == 0) {
@@ -1665,6 +1713,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
             };
             break;
         };
+        // the jobs placed since the last look, and the one that ran past its LIMIT (WORKER-1)
+        if (has_workers) try workTick(gpa, m, slots.items, out);
         const poll = try pollReady(slots.items, &led);
         if (poll.signalled) {
             try startReady(gpa, slots.items, &led);
@@ -1680,7 +1730,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         // the watchdog needs feeding, a declared signal is outstanding,
         // a service has not started yet (only a signal can start it), or
         // the court's instrument is still owed a verdict.
-        const polling = ab != null or poll.awaiting or pending > 0 or has_health or (opts.halt_on_verdict and !judged);
+        // ... and while a worker waits for a job: a job is a file, and only a look finds it (WORKER-1)
+        const polling = ab != null or poll.awaiting or pending > 0 or has_health or has_workers or (opts.halt_on_verdict and !judged);
         var status: u32 = 0;
         const rc = linux.wait4(-1, &status, if (polling) linux.W.NOHANG else 0, null);
         if (polling and rc == 0) {
@@ -1704,7 +1755,8 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
         }
         const ended: i32 = @intCast(rc);
         turns += 1;
-        var known = false;
+        // a worker's job that ended: answered, and its folder removed (WORKER-1)
+        var known = try workEnded(m, slots.items, ended, status, out);
         for (slots.items) |*c| {
             if (c.pid != ended or c.state != .running) continue;
             known = true;
@@ -1738,13 +1790,13 @@ fn runLinux(gpa: std.mem.Allocator, p: plan.Plan, opts: Options, out: *std.Io.Wr
                     try led.say("boot: {s} -- restart {s}, but gave up after {d} restarts\n", .{ c.service.name, @tagName(c.service.restart), c.restarts });
                 } else {
                     c.restarts += 1;
-                    const again = spawn(gpa, c.service, c.held) catch |e| {
+                    const again = spawn(gpa, c.service, c.held, null) catch |e| {
                         try led.say("boot: restart {s} -- could not spawn: {s}\n", .{ c.service.name, @errorName(e) });
                         break;
                     };
                     c.pid = again.pid;
                     c.state = .running;
-                    cgroupJoin(c.service, again.pid);
+                    _ = cgroupJoin(c.service, again.pid);
                     try led.say("boot: restart {s} ({s}, {d}/{d}) -- pid {d}\n", .{ c.service.name, @tagName(c.service.restart), c.restarts, opts.max_restarts, again.pid });
                     try led.flush();
                     release(again.gate);
@@ -1865,7 +1917,7 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
                 progressed = true;
                 continue;
             }
-            const started = spawn(gpa, s.service, s.held) catch |e| {
+            const started = spawn(gpa, s.service, s.held, null) catch |e| {
                 s.state = .never;
                 try led.say("boot: start {s} -- could not spawn: {s}\n", .{ s.service.name, @errorName(e) });
                 progressed = true;
@@ -1873,7 +1925,7 @@ fn startReady(gpa: std.mem.Allocator, slots: []Slot, led: *Ledger) !void {
             };
             s.pid = started.pid;
             s.state = .running;
-            cgroupJoin(s.service, started.pid); // inside its ceiling before its first instruction
+            _ = cgroupJoin(s.service, started.pid); // inside its ceiling before its first instruction
             progressed = true;
             var pb: [16]u8 = undefined;
             try expect.startLine(led.w(), s.service, std.fmt.bufPrint(&pb, "{d}", .{started.pid}) catch "?");
@@ -1904,7 +1956,8 @@ const Started = struct { pid: i32, gate: std.posix.fd_t };
 /// listened for SIGXCPU and did not handle it. Worded once.
 const fmt_overrun_ended = "boot: {s} (pid {s}) killed by signal {d} -- SIGXCPU, the kernel's word that it ran past its runtime: it listened for the word and did not handle it, so the word ended it\n";
 
-fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Confinement) !Started {
+/// `job` is a worker's scratch folder (WORKER-1): the one place it may write, its cwd, and where its stdout goes.
+fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Confinement, job: ?[*:0]const u8) !Started {
     var argv = try gpa.alloc(?[*:0]const u8, svc.run.len + 1);
     defer gpa.free(argv);
     for (svc.run, 0..) |a, i| argv[i] = (try gpa.dupeZ(u8, a)).ptr;
@@ -1969,9 +2022,28 @@ fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Conf
                 if (ports.keepCaps()) |why| notStarted(svc.name, "the kernel would not keep its privilege through the drop of identity", why);
             }
         }
+        // A worker (WORKER-1): its stdin is nothing, and its rule set allows its scratch folder and its own
+        // program and no other file -- set here, after the filter whose no_new_privs Landlock needs, while
+        // /dev/null can still be opened. A worker the kernel cannot hold to its folder is not started.
+        if (job) |scratch| {
+            // and fd 0 is never left on the console, which the kernel opened for PID 1 read and write
+            const nul = std.os.linux.openat(std.os.linux.AT.FDCWD, "/dev/null", .{ .CLOEXEC = true }, 0);
+            if (std.os.linux.E.init(nul) != .SUCCESS) jobNotStarted(svc.name, "its stdin could not be made /dev/null");
+            if (std.os.linux.E.init(std.os.linux.dup2(@intCast(nul), 0)) != .SUCCESS) jobNotStarted(svc.name, "its stdin could not be made /dev/null");
+            if (work.holdToScratch(scratch, path)) |why| jobNotStarted(svc.name, why);
+        }
         if (svc.user) |u| {
             std.posix.setgid(u.gid) catch std.posix.exit(126);
             std.posix.setuid(u.uid) catch std.posix.exit(126);
+        }
+        // ... and, as the worker, into its folder, its words to the file there and never to the console
+        if (job) |scratch| {
+            if (std.os.linux.E.init(std.os.linux.chdir(scratch)) != .SUCCESS) jobNotStarted(svc.name, "its folder could not be entered");
+            const so = std.os.linux.openat(std.os.linux.AT.FDCWD, work.stdout_name, .{ .ACCMODE = .WRONLY, .APPEND = true, .NOFOLLOW = true }, 0);
+            if (std.os.linux.E.init(so) != .SUCCESS) jobNotStarted(svc.name, "its stdout file could not be opened");
+            if (std.os.linux.E.init(std.os.linux.dup2(@intCast(so), 1)) != .SUCCESS) jobNotStarted(svc.name, "its stdout could not be made its file");
+            if (std.os.linux.E.init(std.os.linux.dup2(@intCast(so), 2)) != .SUCCESS) jobNotStarted(svc.name, "its stderr could not be made its file");
+            _ = std.os.linux.close(@intCast(so));
         }
         if (svc.ports.len > 0 and ports.needsPrivilege(svc.ports)) {
             if (ports.raiseBind()) |why| notStarted(svc.name, "the kernel would not give it the privilege for a port below 1024", why);
@@ -1988,6 +2060,239 @@ fn spawn(gpa: std.mem.Allocator, svc: *const machine.Service, held: confine.Conf
 fn notStarted(name: []const u8, what: []const u8, why: []const u8) noreturn {
     var msg: [320]u8 = undefined;
     const line = std.fmt.bufPrint(&msg, "boot: {s} -- NOT STARTED: {s} ({s}); a port the machine promised and the kernel does not hold is a promise the machine printed and did not keep\n", .{ name, what, why }) catch "boot: a world could not be held to its ports\n";
+    _ = std.posix.write(1, line) catch {};
+    std.posix.exit(125);
+}
+
+// ---- a worker's jobs (WORKER-1) -------------------------------------------------
+//
+// A worker is started by PID 1 for each job another world places, in a scratch folder of its own, and ended
+// after it. The acts on the files are `work.zig`'s; what is here is when they happen: a job is looked for at
+// every look, taken when its worker is idle, ended at its LIMIT, and answered when its stand-in is reaped.
+
+/// `<work_dir>/<worker>`: the machine's, beneath which the worker's scratch folder is made for each job.
+fn workerDir(buf: []u8, s: *const machine.Service) []const u8 {
+    return std.fmt.bufPrint(buf, "{s}/{s}", .{ machine.work_dir, s.name }) catch machine.work_dir;
+}
+
+/// Make the place the scratch folders go, as the machine's, and ask the kernel whether it can hold a worker
+/// to one. The work lines are said only when both are so (CON-1); otherwise no worker takes a job, and the
+/// console says why. Returns whether this machine takes jobs.
+fn prepareWork(m: *const machine.Machine, slots: []Slot, ceilings_held: bool, rehearse: bool, led: *Ledger, out: *std.Io.Writer) !bool {
+    var any = false;
+    for (slots) |s| {
+        if (s.state == .on_demand) any = true;
+    }
+    if (!any) return false;
+    if (rehearse) {
+        try out.print("boot: work -- rehearsed, not executed\n", .{});
+        return false;
+    }
+    // a worker runs code nobody vouched for INSIDE its ceilings (the court requires both), and the floor ends a
+    // job through its group: with no group held this boot, no job is taken
+    const why: ?[]const u8 = if (!ceilings_held) "the kernel holds no ceiling this boot (the budget line above says why)" else if (!work.canHold()) "the kernel speaks no Landlock, which holds a worker to its folder" else blk: {
+        work.makeMachineDir(machine.work_dir) catch |e| break :blk work.reason(e);
+        for (slots) |*s| if (s.state == .on_demand) {
+            var b: [160]u8 = undefined;
+            work.makeMachineDir(workerDir(&b, s.service)) catch |e| break :blk work.reason(e);
+        };
+        break :blk null;
+    };
+    if (why) |w| {
+        for (slots) |*s| if (s.state == .on_demand) {
+            s.state = .never;
+        };
+        try out.print("boot: work -- no job is taken on this machine: {s}; a worker the floor cannot hold is not run\n", .{w});
+        try out.flush();
+        return false;
+    }
+    _ = try expect.workLines(led.w(), m);
+    try led.echo();
+    try out.flush();
+    return true;
+}
+
+/// The kernel's count of the times its memory ceiling ended something in a world's group.
+fn oomKills(s: *const machine.Service) u64 {
+    var db: [128]u8 = undefined;
+    var pb: [160]u8 = undefined;
+    const path = std.fmt.bufPrint(&pb, "{s}/memory.events", .{groupDir(&db, s)}) catch return 0;
+    var buf: [512]u8 = undefined;
+    const text = std.fs.cwd().readFile(path, &buf) catch return 0;
+    var it = std.mem.splitScalar(u8, text, '\n');
+    while (it.next()) |l| if (std.mem.startsWith(u8, l, "oom_kill ")) {
+        return std.fmt.parseInt(u64, l["oom_kill ".len..], 10) catch 0;
+    };
+    return 0;
+}
+
+/// End every process of a worker's group but its stand-in, which then ends the way the world did -- killed
+/// -- and is reaped like any child, with no orphan left for PID 1 to name.
+fn endGroup(s: *const machine.Service, stand_in: i32) void {
+    var db: [128]u8 = undefined;
+    var pb: [160]u8 = undefined;
+    const path = std.fmt.bufPrint(&pb, "{s}/cgroup.procs", .{groupDir(&db, s)}) catch return;
+    var buf: [4096]u8 = undefined;
+    const text = std.fs.cwd().readFile(path, &buf) catch return;
+    var it = std.mem.tokenizeAny(u8, text, " \n");
+    while (it.next()) |w| {
+        const pid = std.fmt.parseInt(i32, w, 10) catch continue;
+        if (pid != stand_in) _ = std.os.linux.kill(pid, std.os.linux.SIG.KILL);
+    }
+}
+
+fn plural(n: usize) []const u8 {
+    return if (n == 1) "" else "s";
+}
+
+/// At every look: a worker whose job ran past its LIMIT is ended, and an idle worker takes the next job placed
+/// for it -- its files copied into a fresh folder, the worker started there, inside its ceilings, held.
+fn workTick(gpa: std.mem.Allocator, m: *const machine.Machine, slots: []Slot, out: *std.Io.Writer) !void {
+    for (slots) |*s| {
+        if (s.state != .on_demand) continue;
+        const svc = s.service;
+        if (s.job_pid != 0) {
+            const limit_ms = @as(i64, svc.limit_s orelse 1) * 1000;
+            // at every look past its limit, never once: what one look's kill did not reach, the next one does
+            if (nowMs() - s.job_started_ms > limit_ms) {
+                s.job_limited = true;
+                endGroup(svc, s.job_pid);
+            }
+            continue;
+        }
+        if (s.work_stopped) continue;
+        const p = machine.placerOf(m.services, svc) orelse continue;
+        const pu = p.user orelse continue;
+        const wu = svc.user orelse continue;
+        // not made yet, or not the placer's: there is nothing to take
+        const jobs = work.openOwnedDir(svc.jobs.?, pu.uid) catch continue;
+        defer _ = std.os.linux.close(jobs);
+        var idb: [33]u8 = undefined;
+        const id = work.nextJob(jobs, &idb) orelse continue;
+        @memcpy(s.job_id[0..id.len], id);
+        s.job_id_len = id.len;
+        var db: [160]u8 = undefined;
+        const dir = workerDir(&db, svc);
+        const parent = work.openOwnedDir(dir, std.os.linux.getuid()) catch |e| {
+            try answerUntaken(s, jobs, id, p, "refused", work.reason(e), out);
+            continue;
+        };
+        defer _ = std.os.linux.close(parent);
+        const taken = work.takeJob(parent, jobs, id, pu.uid, wu) catch |e| {
+            work.clearScratch(parent);
+            try answerUntaken(s, jobs, id, p, "refused", work.reason(e), out);
+            continue;
+        };
+        var sb: [200]u8 = undefined;
+        const scratch_path = std.fmt.bufPrintZ(&sb, "{s}/{s}", .{ dir, work.scratch_leaf }) catch unreachable;
+        s.job_oom = oomKills(svc);
+        const started = spawn(gpa, svc, s.held, scratch_path) catch |e| {
+            work.removeScratch(parent, taken.scratch);
+            try answerUntaken(s, jobs, id, p, "not started", @errorName(e), out);
+            continue;
+        };
+        s.job_pid = started.pid;
+        s.job_scratch = taken.scratch;
+        s.job_started_ms = nowMs();
+        s.job_limited = false;
+        s.job_unjoined = false;
+        // inside its ceilings before its first instruction, or not run at all: a worker outside its group is
+        // outside its MEMORY and CPU, and outside the group the floor ends it through (NS-1). Held at the gate,
+        // it is killed before the exec, and the reaper answers the job
+        if (!cgroupJoin(svc, started.pid)) {
+            s.job_unjoined = true;
+            _ = std.os.linux.kill(started.pid, std.os.linux.SIG.KILL);
+            std.posix.close(started.gate);
+            continue;
+        }
+        try out.print("work: {s} -- job {s} taken from {s}: {d} file{s} in, a folder of its own\n", .{ svc.name, id, p.name, taken.moved.files, plural(taken.moved.files) });
+        try out.flush();
+        release(started.gate);
+    }
+}
+
+/// A job that was never run is answered too: said on the console, then written as its `.done`.
+fn answerUntaken(s: *Slot, jobs: i32, id: []const u8, placer: *const machine.Service, what: []const u8, why: []const u8, out: *std.Io.Writer) !void {
+    try out.print("work: {s} -- job {s} {s}: {s}\n", .{ s.service.name, id, what, why });
+    try out.flush();
+    var lb: [300]u8 = undefined;
+    const line = std.fmt.bufPrint(&lb, "{s}: {s}", .{ what, why }) catch what;
+    work.writeDone(jobs, id, line, placer.user.?) catch |e| try stopWork(s, id, e, out);
+}
+
+/// A job that could not be answered would be taken again at the next look, and the one after: so the worker
+/// takes no further job this boot, and the console says which job and why (WORKER-1).
+fn stopWork(s: *Slot, id: []const u8, e: anyerror, out: *std.Io.Writer) !void {
+    s.work_stopped = true;
+    try out.print("work: {s} -- job {s} could not be answered ({s}), and a job nobody answers would be taken again at every look: {s} takes no further job this boot\n", .{ s.service.name, id, work.reason(e), s.service.name });
+    try out.flush();
+}
+
+/// The reaper's half: if `ended` is a worker's job, say what became of it, hand back what it left to the world
+/// that placed it, answer it last, and remove its folder. Returns whether it was one.
+fn workEnded(m: *const machine.Machine, slots: []Slot, ended: i32, status: u32, out: *std.Io.Writer) !bool {
+    const W = std.os.linux.W;
+    for (slots) |*s| {
+        if (s.state != .on_demand or s.job_pid == 0 or s.job_pid != ended) continue;
+        const svc = s.service;
+        const id = s.job_id[0..s.job_id_len];
+        endGroup(svc, ended); // anything it left in its group; nothing should be there
+        var vb: [160]u8 = undefined;
+        const verdict = if (s.job_unjoined)
+            "not started: the kernel would not put it inside its ceilings"
+        else if (s.job_limited)
+            std.fmt.bufPrint(&vb, "it ran past its LIMIT of {d} s, and the floor ended it", .{svc.limit_s orelse 0}) catch "ended at its limit"
+        else if (W.IFEXITED(status))
+            std.fmt.bufPrint(&vb, "exited {d}", .{W.EXITSTATUS(status)}) catch "exited"
+        else if (W.IFSIGNALED(status) and oomKills(svc) > s.job_oom)
+            std.fmt.bufPrint(&vb, "ended by the kernel: it passed its MEMORY ceiling of {d} MiB", .{svc.memory_mb orelse 0}) catch "ended by the kernel"
+        else if (W.IFSIGNALED(status))
+            std.fmt.bufPrint(&vb, "killed by signal {d}", .{W.TERMSIG(status)}) catch "killed"
+        else
+            "ended";
+        var db: [160]u8 = undefined;
+        const parent = work.openOwnedDir(workerDir(&db, svc), std.os.linux.getuid()) catch -1;
+        defer if (parent >= 0) {
+            _ = std.os.linux.close(parent);
+        };
+        const p = machine.placerOf(m.services, svc).?;
+        var lb: [300]u8 = undefined;
+        if (work.openOwnedDir(svc.jobs.?, p.user.?.uid)) |jobs| {
+            defer _ = std.os.linux.close(jobs);
+            if (work.handBack(s.job_scratch, jobs, id, svc.user.?.uid, p.user.?)) |moved| {
+                var left_b: [96]u8 = undefined;
+                const left = if (moved.left == 0) "" else std.fmt.bufPrint(&left_b, " ({d} thing{s} it left that {s} not a plain file, not handed back)", .{ moved.left, plural(moved.left), if (moved.left == 1) "is" else "are" }) catch "";
+                const line = std.fmt.bufPrint(&lb, "{s}; {d} file{s} handed back{s}", .{ verdict, moved.files, plural(moved.files), left }) catch verdict;
+                try out.print("work: {s} -- job {s} ended: {s} to {s}\n", .{ svc.name, id, line, p.name });
+                try out.flush();
+                work.writeDone(jobs, id, line, p.user.?) catch |e| try stopWork(s, id, e, out);
+            } else |e| {
+                const line = std.fmt.bufPrint(&lb, "{s}; nothing handed back: {s}", .{ verdict, work.reason(e) }) catch verdict;
+                try out.print("work: {s} -- job {s} ended: {s}\n", .{ svc.name, id, line });
+                try out.flush();
+                work.writeDone(jobs, id, line, p.user.?) catch |e2| try stopWork(s, id, e2, out);
+            }
+        } else |e| {
+            try out.print("work: {s} -- job {s} ended: {s}; its jobs folder could not be opened again: {s}\n", .{ svc.name, id, verdict, work.reason(e) });
+            try out.flush();
+            try stopWork(s, id, e, out);
+        }
+        if (parent >= 0) work.removeScratch(parent, s.job_scratch) else _ = std.os.linux.close(s.job_scratch);
+        s.job_pid = 0;
+        s.job_scratch = -1;
+        s.job_id_len = 0;
+        s.job_limited = false;
+        s.job_unjoined = false;
+        return true;
+    }
+    return false;
+}
+
+/// In the child, before the exec: a worker the kernel cannot hold to its folder (WORKER-1). Said on the
+/// console, which the child still has, and the job's answer says it was not started.
+fn jobNotStarted(name: []const u8, why: []const u8) noreturn {
+    var msg: [320]u8 = undefined;
+    const line = std.fmt.bufPrint(&msg, "work: {s} -- NOT STARTED: the kernel cannot hold it to its folder ({s}); a worker the floor cannot hold is not run\n", .{ name, why }) catch "work: a worker could not be held\n";
     _ = std.posix.write(1, line) catch {};
     std.posix.exit(125);
 }

@@ -5,10 +5,24 @@
 `fixtures.json` sha256:
 
 ```
-d7ad491b9b233e4616db43ce0360b9c1e1efdc77739a54095a888199340009dd
+1ddcf7142b47db7f4db39414a8a585eee6c6713687d305e16e7d968385567fb8
 ```
 
-(Before the mirror of 2026-10-19 (MIR-1):
+(Before the worker of 2026-11-08 (WORKER-1):
+`d7ad491b9b233e4616db43ce0360b9c1e1efdc77739a54095a888199340009dd`,
+317/317; the widening added A61 and R258-R278 -- a world that declares
+`JOBS` and `LIMIT` is a worker, started for each job another world places
+and ended after it: it runs as a `USER` no other world uses (R278, asked for by an
+independent review of the same day), inside ceilings of `MEMORY` and
+`CPU`, needs no network, process or storage, is `RESTART never`, keeps
+no `STATE` and nothing comes `AFTER` it; its jobs lie in the `STATE` of the
+one other world that places them, one worker to a directory, and
+`/run/harb-work`, where the floor makes the scratch folders, is nobody's.
+Its first run was 337/338 for one rule no machine file could reach (an
+edge machine refuses `USER` before `JOBS` is read), and four more of the
+same kind were removed before it ran: READY, PORTS, a reservation and a
+placer that is a worker are each refused by an older rule first.
+Before the mirror of 2026-10-19 (MIR-1):
 `17c8ecddae2253e7854a10e84ea5de7f7929128df9fef230489794ee87d5c558`,
 262/262; the widening added A54-A59 and R210-R253 -- a machine gives the
 copy of a world's directory (`MIRROR_OF`, `MIRROR_FOR`, and `MIRROR_SERVER`
@@ -217,7 +231,7 @@ the digest it passed against; drift is then a diff, never a surprise.
 
 | host | runner | 2026-09-12 |
 |---|---|---|
-| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **317/317** — 60 accepts with structural expectations, 257 rejects with expected refusal fragments (262/262 before the mirror, 260/260 before RESIDENCY, and the row not kept in step with the seats between 213/213 and there: the pin above is the one judged, PIN-1; 213/213 after TIME, 173/173 before TIME; 132/132 before STATE; 120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
+| Zig (`src/machine.zig` + `src/plan.zig`) | `zig build court` / `harb court` | **339/339** — 61 accepts with structural expectations, 278 rejects with expected refusal fragments (317/317 before the worker, 262/262 before the mirror, 260/260 before RESIDENCY, and the row not kept in step with the seats between 213/213 and there: the pin above is the one judged, PIN-1; 213/213 after TIME, 173/173 before TIME; 132/132 before STATE; 120/120 before FORWARD; 39/40 on the first run of the v0.1 floor, 43/44 on the first run of the BOARD widening, then 51/51 NETWORK, 54/54 SLOTS, 58/58 READY, 64/64 USER, 67/67 the edge boards, 114/114 EGRESS; 116/120 on the first run of the CONSOLE widening, the four refusals accepted by the code as it stood) |
 
 The language's own declaration, `machine.stzu`, judged by stz's
 meta-court (`face/stz/Stzu.luau`, run by stz's `stzr`):

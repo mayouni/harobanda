@@ -1,3 +1,140 @@
+# WORKER-1 — a world started for one job and ended after it
+
+Routed by stzlib-security as HAROBANDA-WORKER-01 (2026-11-05), read
+against a template that escaped its language's sandbox through a bug in
+the interpreter beneath it: code a model or a stranger wrote is run in a
+process of its own, and on this floor the boundary is the kernel's. The
+ask: no network, no filesystem beyond one scratch folder, no socket
+families, a CPU and memory ceiling, started per piece of untrusted code
+and ended after it, booted, with a refused call shown refused. Most of
+it stood already (NS-1, MNT-1, BDG-1, SYS-1, ALGOUT-1); two parts did
+not, and are this seat.
+
+**A worker is a world that declares `JOBS "<dir>"` and a `LIMIT`.** It
+is not started at boot. PID 1 starts it once for each job another world
+places in that directory -- the world whose `STATE` holds it, which the
+court requires, so the court knows whose files the floor copies in and
+to whom it hands the results -- and ends it after: when it exits, or
+when it runs past its `LIMIT`, at which PID 1 kills, at every look from
+then on, every process of its group but the stand-in, which then dies the way the world did and is
+reaped with no orphan left to name. A job is files: the placer makes
+`<id>/`, then `<id>.go` last; PID 1 copies the files into a fresh
+scratch folder under `/run/harb-work/<worker>/job`, given to the
+worker's identity; and when the job has ended it copies back what the
+worker left into `<id>.out/`, given to the placer, writes `<id>.done`
+last (one line: what became of it), and removes the folder.
+
+**Three walls besides every world's.** NO SOCKET OF ANY KIND:
+`socket` and `socketpair` are refused outright by the filter, whatever
+the family (`Confinement.sockets`) -- an empty network namespace alone
+leaves a world unix sockets and netlink. ONE FOLDER: a Landlock rule set
+that handles every file access the kernel's ABI knows lets the worker
+read its scratch folder and read, write, make and remove the files in it
+(not execute them, not make a folder, a device, a socket, a pipe or a
+link) and read and execute its own program, and nothing else --
+`/etc/machine`, `/` and every other world's files are refused by the
+kernel to open, read or write (not to `stat`, which Landlock does not
+govern); where the ABI has them, TCP and abstract unix
+sockets and signals outside its domain are refused too. ITS OWN OUTPUT:
+the worker's stdout and stderr are a file in its folder, handed back
+with the rest, and never the machine's console, where code nobody
+vouched for could otherwise print lines that look like the floor's. The
+court holds the shape: a `USER` no other world uses, `MEMORY` and `CPU`, no `network`,
+`process` or `filesystem`, `RESTART never`, no `STATE`, nothing `AFTER`
+it; and PID 1 takes no job on a boot whose ceilings or Landlock the
+kernel did not give, nor runs one the kernel would not put in its group,
+and says why.
+
+**Every name in the jobs folder is the placer's**, and PID 1 reads and
+writes there as root: it is opened from the root down with no link
+followed, a file is copied in only if it is a regular file the placer
+owns with one link (a hard link to the machine's key is a regular file
+too, MIR-1's lesson), what PID 1 makes there it makes with `O_EXCL` and
+hands to the placer, and the results are moved into place by renaming a
+name PID 1 made.
+
+**Judged** by `machines/qemu_worker.machine` (65 lines; 63 before the
+review added the folder question, and matched on two boots then): four jobs placed by `asker` -- two probes, each in a new folder
+that holds, when the worker starts, only `stdout` and `task`; each
+refused three socket families, a socket pair, `/etc/machine`, a listing
+of `/`, a file made outside its folder, a folder in its own and a
+process, and let read its task and make a file in its folder; a job that runs for ever, ended at
+its 3 s `LIMIT`; and one that asks for memory until the kernel ends it
+at its 32 MiB ceiling. By A61 and R258-R278 (339/339). By six unit
+tests (the filter program for a worker and for a world that is not
+one; the job copied in and handed back, a link left behind not handed
+back; a link, a hard link and a folder in a job refused; a link above
+the jobs folder never followed; names a crash left under an answer's
+names cleared, a link there removed and never written through; and a
+child held by the rule set,
+writing in its folder and refused every other file, by the kernel --
+195/195 on Linux, none skipped). And by `experiment/worker_probe.sh`:
+four things taken away in a scratch copy, each convicted by its line --
+the sockets kept, the rule set not applied, the stdout left on the
+console, the limit noticed and nothing ended.
+
+**Found on the way.** The first boot held no ceiling: PID 1 asked the
+kernel for the memory, cpu and pids controllers in one write, and the
+pids controller is built only for a machine with a `TASKS` world -- every
+budgeted machine pinned until then also declared one, so a machine whose
+ceilings were memory and cpu alone had never booted. It asks for what
+the image derived now. And a worker started anyway, outside the ceilings
+it was declared with: PID 1 now takes no job when the ceilings are not
+held. **Five rules were written that no machine file can reach** --
+READY, PORTS and a reservation on a worker, a worker placing another's
+jobs, and a worker on an edge machine are each refused by an older rule
+first -- and were removed, four before the court ran and one after its
+first run (337/338) showed it. **The probe's first run named the wrong
+line for its first mutant**: this machine declares no network, so its
+kernel has no unix or inet family at all, and with the filter's rule
+taken away the kernel answers AFNOSUPPORT for both and opens netlink.
+So in the pinned boot the PERM for all four is the filter's answer, not
+the kernel's, and the mutant is convicted by netlink.
+
+**A read-only review by a reader with no stake found seven real things
+in work that had passed every gate**, and each is fixed with the case
+that now convicts it or named below:
+1. a worker could hang PID 1 -- it made a thousand nested folders and
+   changed into each, and PID 1's clean-up recursed and retried until
+   the folder was empty, its descriptors spent: a worker may now make no
+   folder at all (a job is flat files), and the clean-up is one pass
+   with no recursion and no retry, so a folder it cannot remove makes the
+   NEXT job's folder fail to be made, which is said;
+2. another world that ran as the worker's identity could write in its
+   folder while a job ran: a worker's `USER` is its own (R278);
+3. a job whose answer could not be written -- a name left under the
+   answer's names by a crash or by the placer -- was taken again at every
+   look: PID 1 clears those names before it makes them, and a job it
+   still cannot answer stops that worker for the boot, said once;
+4. the confine line was copied into a 256-byte buffer with no bound, and
+   a worker is hidden from every mount, so a machine with enough mount
+   paths panicked PID 1: the words are written to the line's writer now
+   (a defect older than this seat, made easier to reach by it);
+5. a worker the kernel would not put in its group still ran, outside its
+   ceilings and outside the group its LIMIT ends it through: it is killed
+   at the gate and its job answered "not started", and the kill at the
+   LIMIT is made at every look past it, not once;
+6. a worker whose stdin could not be made `/dev/null` kept the console
+   on fd 0, which the kernel opened for PID 1 read and write: such a job
+   is not started;
+7. the reserved-core path still asked for the pids controller with
+   memory: it asks for what its worlds declared, as the root does.
+And the eighth, io_uring, which can make a socket with no `socket` call
+for the filter to see, is not built in any kernel this floor derives;
+the worker's filter refuses its three calls anyway, so the claim does not
+rest on a kernel option.
+
+Named seams: one job at a time per worker; a job is flat files, at most
+64 and 16 MiB each way; the scratch folder is RAM, and what the floor
+copies in is not charged to the worker's ceiling (what it writes is);
+the worker's program is the declared one, never one a job brings, and it
+must be a static program -- the rule set lets it read one file, its own,
+so a program that needs a loader and libraries cannot start; Landlock
+governs opening, reading, writing and making files and not `stat`, so a
+worker can learn whether a path exists and its size and owner, never its
+contents; the placer must make its jobs folder itself; a job waits for
+PID 1's next look (250 ms); and no lesson of the tour yet.
+
 # ONEHOUR-1 — which kernel advisories reach THIS machine
 
 Routed by stzlib-security as HAROBANDA-ONEHOUR-01 (2026-11-05, B6 of

@@ -1,7 +1,7 @@
 {
   "grammar": "machine",
   "version": "0.1",
-  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once. Widened again 2026-10-05 (STATE, a world's own directory): A30-A35, R104-R138; a world that runs as an identity owns the directories it names and nothing else of the machine's, only an identity can own one, only where the machine can hand one over (under /run, or inside an ext4 or tmpfs mount the world keeps and that is not read-only, with every mount above it kept too), no two worlds own overlapping directories, a world's signal sits directly in its own directory and never in a neighbour's, the floor's own key and record are in no directory a world owns, and the paths the court compares are plain names of bounded length, so that no spelling reaches one file by two names. Two rules about mounts came with it, because a directory's holder is the innermost mount only if the outer one is declared first and no two share a mount point. Widened again 2026-10-05 (the time seat, TIME-1): A36-A43, R139-R170; time enters a record only as an authority's signed statement, so a machine declares the clock it HAS (a plain device path under /dev, and a key to sign with), a link it answers the time on (one, a static address, a port from 1024 to 65535, never a loopback, never asking anybody), or whom it asks and whose word it takes (a journal to date, an address and a port from 1 to 65535 each spelled one way, a way there, and one spelling of a key that is a key); and a clock is a real-time clock, not any device. The boundary cases are here because a probe with a mutated court found the first version of these fixtures judged none of them: A38-A40 and R159-R162 are what that probe asked for; A41-A43 and R164-R170 are what an independent review of the seat asked for. Widened again 2026-10-13 (the reservation, TIM-1): A44-A51, R171-R194; a world may ask the kernel for time it will get every period -- a PERIOD, a DEADLINE and a RUNTIME in microseconds and the CORE it runs on, the four together -- and a hosted machine says how many CORES it has (2 to 64; a Raspberry Pi 4 has four); the runtime fits the deadline and the deadline the period, a runtime of ten microseconds at least and a period within the kernel's own bounds (100 us to 4194304 us), core 0 is the machine's, the reservations on one core sum to no more than the 90 per cent the kernel gives (it admits 95 and holds 5 for the ordinary tasks' own deadline server), counted as the kernel counts it, and a world with a reservation declares no CPU ceiling. The kernel judges the same set again at the act, and refuses what does not fit. Widened again 2026-10-14 (the ports a world may bind, PORT-1): A52-A53, R195-R206; a world that runs as an identity and speaks on the network may be given the TCP ports it will bind -- one to eight of them, 1 to 65535, a list of numbers and nothing else -- and no other: the kernel holds it to them with a rule set, and gives a port below 1024 only to a world that declares it; only an identity can be given a port, a world kept off the network has nothing to bind, and one port is bound by one world. Widened again 2026-10-19 (the mirror, MIR-1): A54-A59, R210-R249; a machine gives the copy of a world's directory or takes one, never both, and says which with a key it is told: the source declares the directory (inside a world's STATE, on a disk that keeps owners), the one device it is given to and the link it is given on (a TCP port from 1024 to 65535, a static address, never a loopback, one link); the destination declares whom it takes from, whose word it takes, where it keeps the copy (on a disk that keeps modes, writable, not the root of the disk, not in a world's place, and not where any name the floor makes for the copy would land on the key or the record) and how often it asks (5 seconds to a day). Both ends sign, so both need an IDENTITY, and an address and a key are each one spelling of a key that is one.",
+  "comment": "The machine v0.1 conformance floor. Accepts carry structural expectations (identity, counts, service start order, granted capability set, and where it matters the folded rationale); rejects carry the fragment the refusal must contain, so a runtime refusing for the wrong reason fails (exemplar gap G8, applied from birth). Three of the accepts are the three profiles a machine can declare: a hosted box, an edge sensor, a touch phone. v0.1 widened 2026-09-12 (OS-4) with the BOARD clause: A9, R33, R34, R35 are the board's own; A1 and A2 carry the defaulted and the declared board. Widened again 2026-09-12 (the NETWORK kind): A10, A11, R36-R40; A2 is the box file with its NETWORK; every accept's counts carry networks. Widened again 2026-09-12 (SLOTS, A/B): A12, R41, R42. Widened again 2026-09-12 (READY, a daemon's own signal): A13, R43, R44, R45. Widened again 2026-09-12 (USER, a declared identity): A14, R46-R50; every accept's counts carry users. Widened again 2026-09-12 (the edge boards): A3 becomes machines/cold_room_sensor.machine verbatim with BOARD pico2; A15, R51, R52; R35 now refuses a hosted board on an edge machine by profile. Widened again 2026-10-04 (FORWARD, the way between networks): A27-A29, R95-R103; a machine says it forwards, never assumes it, one network (and a loopback is not one) has nothing to forward between, a machine that forwards cannot say there is no way off a link it joins, and one machine answers for a domain once. Widened again 2026-10-05 (STATE, a world's own directory): A30-A35, R104-R138; a world that runs as an identity owns the directories it names and nothing else of the machine's, only an identity can own one, only where the machine can hand one over (under /run, or inside an ext4 or tmpfs mount the world keeps and that is not read-only, with every mount above it kept too), no two worlds own overlapping directories, a world's signal sits directly in its own directory and never in a neighbour's, the floor's own key and record are in no directory a world owns, and the paths the court compares are plain names of bounded length, so that no spelling reaches one file by two names. Two rules about mounts came with it, because a directory's holder is the innermost mount only if the outer one is declared first and no two share a mount point. Widened again 2026-10-05 (the time seat, TIME-1): A36-A43, R139-R170; time enters a record only as an authority's signed statement, so a machine declares the clock it HAS (a plain device path under /dev, and a key to sign with), a link it answers the time on (one, a static address, a port from 1024 to 65535, never a loopback, never asking anybody), or whom it asks and whose word it takes (a journal to date, an address and a port from 1 to 65535 each spelled one way, a way there, and one spelling of a key that is a key); and a clock is a real-time clock, not any device. The boundary cases are here because a probe with a mutated court found the first version of these fixtures judged none of them: A38-A40 and R159-R162 are what that probe asked for; A41-A43 and R164-R170 are what an independent review of the seat asked for. Widened again 2026-10-13 (the reservation, TIM-1): A44-A51, R171-R194; a world may ask the kernel for time it will get every period -- a PERIOD, a DEADLINE and a RUNTIME in microseconds and the CORE it runs on, the four together -- and a hosted machine says how many CORES it has (2 to 64; a Raspberry Pi 4 has four); the runtime fits the deadline and the deadline the period, a runtime of ten microseconds at least and a period within the kernel's own bounds (100 us to 4194304 us), core 0 is the machine's, the reservations on one core sum to no more than the 90 per cent the kernel gives (it admits 95 and holds 5 for the ordinary tasks' own deadline server), counted as the kernel counts it, and a world with a reservation declares no CPU ceiling. The kernel judges the same set again at the act, and refuses what does not fit. Widened again 2026-10-14 (the ports a world may bind, PORT-1): A52-A53, R195-R206; a world that runs as an identity and speaks on the network may be given the TCP ports it will bind -- one to eight of them, 1 to 65535, a list of numbers and nothing else -- and no other: the kernel holds it to them with a rule set, and gives a port below 1024 only to a world that declares it; only an identity can be given a port, a world kept off the network has nothing to bind, and one port is bound by one world. Widened again 2026-10-19 (the mirror, MIR-1): A54-A59, R210-R249; a machine gives the copy of a world's directory or takes one, never both, and says which with a key it is told: the source declares the directory (inside a world's STATE, on a disk that keeps owners), the one device it is given to and the link it is given on (a TCP port from 1024 to 65535, a static address, never a loopback, one link); the destination declares whom it takes from, whose word it takes, where it keeps the copy (on a disk that keeps modes, writable, not the root of the disk, not in a world's place, and not where any name the floor makes for the copy would land on the key or the record) and how often it asks (5 seconds to a day). Both ends sign, so both need an IDENTITY, and an address and a key are each one spelling of a key that is one. Widened again 2026-11-08 (WORKER-1, a world started for one job and ended after it): A61, R258-R278; a worker declares JOBS and a LIMIT, runs as a USER no other world uses, inside ceilings of MEMORY and CPU, needs no network, process or storage, is RESTART never, keeps no STATE and follows nothing; its jobs lie in the STATE of the one other world that places them, one worker to a directory, and the floor's own place for scratch folders is nobody's.",
   "accepts": [
     {
       "id": "A1",
@@ -1187,6 +1187,22 @@
           "from": "10.30.0.9:7400",
           "into": "/data/copy",
           "every": 30
+        }
+      }
+    },
+    {
+      "id": "A61",
+      "name": "a worker: started for each job another world places in its STATE, with a user, ceilings of memory and cpu, and a limit",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3) RATIONALE \"x\"\n",
+      "expect": {
+        "name": "m",
+        "counts": {
+          "services": 2,
+          "capabilities": 0,
+          "mounts": 0,
+          "pins": 0,
+          "networks": 0,
+          "users": 2
         }
       }
     }
@@ -2733,6 +2749,132 @@
       "name": "nor is a mount inside the copy: renaming a directory that holds one is renaming the disk's place",
       "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux, IDENTITY \"/data/device.key\", MIRROR_FROM \"10.30.0.9:7400\", MIRROR_KEY \"abababababababababababababababababababababababababababababababab\", MIRROR_INTO \"/data/copy\") RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE MOUNT data AS (AT \"/data\", FS ext4, DEVICE \"/dev/vda\", OPTIONS [rw]) RATIONALE \"x\"\nDEFINE MOUNT inner AS (AT \"/data/copy/x\", FS tmpfs, OPTIONS [rw]) RATIONALE \"x\"\nDEFINE NETWORK lan AS (INTERFACE \"eth0\", ADDRESS \"10.30.0.2/24\") RATIONALE \"x\"\n",
       "refusal": "is mounted, or holds it"
+    },
+    {
+      "id": "R258",
+      "name": "LIMIT is a worker's: a world with no JOBS runs as long as the machine does",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], LIMIT 3) RATIONALE \"x\"\n",
+      "refusal": "declares no JOBS"
+    },
+    {
+      "id": "R259",
+      "name": "LIMIT 0 is a job that may not run at all",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 0) RATIONALE \"x\"\n",
+      "refusal": "may not run at all"
+    },
+    {
+      "id": "R260",
+      "name": "LIMIT past an hour is a worker holding its ceilings for nothing",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3601) RATIONALE \"x\"\n",
+      "refusal": "longer than an hour"
+    },
+    {
+      "id": "R261",
+      "name": "a worker runs as a declared identity, never as the machine",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3) RATIONALE \"x\"\n",
+      "refusal": "declares JOBS and no USER"
+    },
+    {
+      "id": "R262",
+      "name": "a worker has a limit",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\") RATIONALE \"x\"\n",
+      "refusal": "declares JOBS and no LIMIT"
+    },
+    {
+      "id": "R263",
+      "name": "a worker has a memory ceiling",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3) RATIONALE \"x\"\n",
+      "refusal": "without both MEMORY and CPU"
+    },
+    {
+      "id": "R264",
+      "name": "... and a cpu ceiling",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, JOBS \"/run/asker/jobs\", LIMIT 3) RATIONALE \"x\"\n",
+      "refusal": "without both MEMORY and CPU"
+    },
+    {
+      "id": "R265",
+      "name": "a worker is given no network",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE CAPABILITY network AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3, NEEDS [network]) RATIONALE \"x\"\n",
+      "refusal": "and needs network"
+    },
+    {
+      "id": "R266",
+      "name": "... no process",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE CAPABILITY process AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3, NEEDS [process]) RATIONALE \"x\"\n",
+      "refusal": "and needs process"
+    },
+    {
+      "id": "R267",
+      "name": "... and no storage",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE CAPABILITY filesystem AS (GRANT yes) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3, NEEDS [filesystem]) RATIONALE \"x\"\n",
+      "refusal": "and needs filesystem"
+    },
+    {
+      "id": "R268",
+      "name": "a worker runs once for each job: RESTART never",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3, RESTART always) RATIONALE \"x\"\n",
+      "refusal": "so it is RESTART never"
+    },
+    {
+      "id": "R269",
+      "name": "a worker starts when a job is placed, so nothing orders its start",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3, AFTER [asker]) RATIONALE \"x\"\n",
+      "refusal": "nothing orders its start"
+    },
+    {
+      "id": "R270",
+      "name": "a worker keeps nothing between jobs",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3, STATE [\"/run/w\"]) RATIONALE \"x\"\n",
+      "refusal": "keeps nothing between jobs"
+    },
+    {
+      "id": "R271",
+      "name": "JOBS is a plain absolute path",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/../jobs\", LIMIT 3) RATIONALE \"x\"\n",
+      "refusal": "JOBS is an absolute path of plain names"
+    },
+    {
+      "id": "R272",
+      "name": "a job is placed by a world in a directory it owns",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/other/jobs\", LIMIT 3) RATIONALE \"x\"\n",
+      "refusal": "lies in no other world's STATE"
+    },
+    {
+      "id": "R273",
+      "name": "one job is taken by one worker",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE USER other AS (UID 2003) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3) RATIONALE \"x\"\nDEFINE SERVICE second AS (RUN [\"/harb\", \"untrusted\"], USER other, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3) RATIONALE \"x\"\n",
+      "refusal": "one job is taken by one worker"
+    },
+    {
+      "id": "R274",
+      "name": "the place the floor makes a worker's scratch folders in is no world's STATE",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], USER placer, STATE [\"/run/harb-work/s\"]) RATIONALE \"x\"\n",
+      "refusal": "where the floor makes a worker's scratch folders"
+    },
+    {
+      "id": "R275",
+      "name": "... nor a signal's place",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE s AS (RUN [\"/s\"], RESTART always, READY \"/run/harb-work/ready\") RATIONALE \"x\"\n",
+      "refusal": "where the floor makes a worker's scratch folders"
+    },
+    {
+      "id": "R276",
+      "name": "... nor a worker's jobs, judged at the worker when it comes first",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/harb-work/jobs\", LIMIT 3) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/s\"], USER placer, STATE [\"/run/harb-work\"]) RATIONALE \"x\"\n",
+      "refusal": "where the floor makes a worker's scratch folders"
+    },
+    {
+      "id": "R277",
+      "name": "nothing comes AFTER a worker: it is never ready for anything to follow",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE USER runner AS (UID 2002) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER runner, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3) RATIONALE \"x\"\nDEFINE SERVICE late AS (RUN [\"/s\"], AFTER [sandbox]) RATIONALE \"x\"\n",
+      "refusal": "a worker is started for each job and never at boot"
+    },
+    {
+      "id": "R278",
+      "name": "a worker's identity is its own: another world that ran as it could write in its folder while a job runs",
+      "source": "DEFINE MACHINE m AS (PROFILE hosted, ARCH x86_64, KERNEL linux) RATIONALE \"x\"\nDEFINE USER placer AS (UID 2001) RATIONALE \"x\"\nDEFINE SERVICE asker AS (RUN [\"/harb\", \"job\", \"/run/asker/jobs\", \"a=probe\"], USER placer, STATE [\"/run/asker\"]) RATIONALE \"x\"\nDEFINE SERVICE sandbox AS (RUN [\"/harb\", \"untrusted\"], USER placer, MEMORY 32, CPU 50, JOBS \"/run/asker/jobs\", LIMIT 3) RATIONALE \"x\"\n",
+      "refusal": "a worker's identity is its own"
     }
   ]
 }

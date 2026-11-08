@@ -141,6 +141,23 @@ pub fn stateLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     return true;
 }
 
+/// What a WORKER is held to (WORKER-1), one line for each: where its jobs are placed, as whom it runs one,
+/// for how long at most, and the walls PID 1 puts round each job. Worded ONCE here -- init prints it once it
+/// has made the place the scratch folders go and the kernel has said it speaks Landlock, which holds a worker
+/// to its folder (CON-1: said only after asking), and derive() writes it. A machine with no worker says
+/// nothing, and its transcript is what it always was.
+pub fn workLines(w: *std.Io.Writer, m: *const machine.Machine) !bool {
+    var any = false;
+    for (m.services) |*s| {
+        const jobs = s.jobs orelse continue;
+        const u = s.user orelse continue; // the court refuses a worker with no USER
+        const placer = machine.placerOf(m.services, s) orelse continue; // ... and one nobody places jobs for
+        try w.print("boot: work -- {s} runs once for each job {s} places in {s}, as {s} ({d}:{d}), for at most {d} s: it may write only a folder of its own, read only its program, make no socket of any kind, and what it prints goes to a file in that folder\n", .{ s.name, placer.name, jobs, u.name, u.uid, u.gid, s.limit_s orelse 0 });
+        any = true;
+    }
+    return any;
+}
+
 /// What a machine that answers the time says it does (TIME-1): which link, on which port, and what it
 /// stands on. Worded ONCE here, like every judged line -- init prints it once the clock has answered and the
 /// socket is bound, a line that says where the machine is being said only after asking (CON-1), and derive()
@@ -221,8 +238,8 @@ pub fn confineLine(w: *std.Io.Writer, m: *const machine.Machine) !bool {
     for (m.services) |s| {
         const c = try confine.Confinement.ofAlloc(m.*, s, a);
         if (!c.confined()) continue;
-        var buf: [256]u8 = undefined;
-        try w.print("{s}{s} has {s}", .{ if (first) "" else ", ", s.name, c.words(&buf) });
+        try w.print("{s}{s} has ", .{ if (first) "" else ", ", s.name });
+        try c.writeWords(w);
         first = false;
     }
     try w.print("; what a world did not declare, the kernel does not give it\n", .{});
@@ -581,10 +598,14 @@ pub fn derive(arena: std.mem.Allocator, p: plan.Plan, lens: Lens) ![]const u8 {
     _ = try floorLine(w, m);
     _ = try cryptoLine(w, m, crypto_expected);
     _ = try stateLine(w, m);
+    _ = try workLines(w, m);
     // every service starts; a one-shot is ready when it has exited 0, a
-    // daemon when spawned or, if it declares READY, when it has signalled
+    // daemon when spawned or, if it declares READY, when it has signalled.
+    // A worker does not: it is started for each job, and what becomes of a
+    // job is the console's and not the boot's (WORKER-1)
     for (p.steps) |step| if (step == .service) {
         const s = step.service;
+        if (s.jobs != null) continue;
         try startLine(w, s, "N");
         switch (s.restart) {
             .never => try w.print(fmt_exited, .{ s.name, "N", @as(u32, 0) }),

@@ -304,6 +304,13 @@ pub const Service = struct {
     /// (a world that is the machine may bind anything already), and a bind is a network act.
     ports: []const u16 = &.{},
     ports_line: usize = 0,
+    /// A WORKER (WORKER-1): the directory it takes its jobs from. A world that declares JOBS is not
+    /// started at boot; PID 1 starts it once for each job another world places there, in a scratch
+    /// folder of its own, and ends it after -- for code nobody vouched for. Null for every other world.
+    jobs: ?[]const u8 = null,
+    jobs_line: usize = 0,
+    /// how long one job may run, in seconds, before PID 1 ends it (a worker's, and only a worker's)
+    limit_s: ?u32 = null,
     rationale: []const u8,
 
     /// Whether this world has the machine's declared storage in its tree at
@@ -985,7 +992,7 @@ pub const Decl = struct {
 fn allowedClauses(kind: Kind) []const []const u8 {
     return switch (kind) {
         .MACHINE => &.{ "PROFILE", "ARCH", "KERNEL", "LIBC", "BOARD", "CONSOLE", "SLOTS", "IDENTITY", "JOURNAL", "FORWARD", "CLOCK", "TIME_FROM", "TIME_KEY", "CORES", "MIRROR_OF", "MIRROR_FOR", "MIRROR_FROM", "MIRROR_KEY", "MIRROR_INTO", "MIRROR_EVERY" },
-        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES", "STATE", "PERIOD", "DEADLINE", "RUNTIME", "CORE", "PORTS" },
+        .SERVICE => &.{ "RUN", "RESTART", "AFTER", "NEEDS", "READY", "HEALTH", "MEMORY", "CPU", "TASKS", "USER", "SEES", "STATE", "PERIOD", "DEADLINE", "RUNTIME", "CORE", "PORTS", "JOBS", "LIMIT" },
         .CAPABILITY => &.{"GRANT"},
         .MOUNT => &.{ "AT", "FS", "DEVICE", "OPTIONS" },
         .PIN => &.{ "GPIO", "MODE" },
@@ -1167,6 +1174,32 @@ pub fn required(ctx: *Ctx, d: Decl, name: []const u8) Error!Clause {
 /// The machine's own scratch directory, in RAM: where a world's signal lives
 /// (READY) and one of the two places a world may own a directory (STATE).
 pub const run_dir = "/run";
+/// Where PID 1 makes each worker's scratch folder, one for each job, and removes it after (WORKER-1): the
+/// floor's, in no world's STATE.
+pub const work_dir = "/run/harb-work";
+/// What a job is, in the directory a worker takes its jobs from (WORKER-1): the world that places it makes
+/// `<id>/` with its files, then `<id>.go` as its last act; PID 1 answers with `<id>.out/` and, last, `<id>.done`.
+/// An id is 1 to 32 of [a-z0-9_-], so that every name the floor makes from it is a plain name.
+pub const job_go = ".go";
+pub const job_out = ".out";
+pub const job_done = ".done";
+/// The world that places a worker's jobs: the one, other than the worker, whose STATE holds its JOBS
+/// directory. The ONE reading, asked by the court that requires it and by PID 1, which copies that world's
+/// files in and hands the results back to it (EGR-3: never a second reading that has to agree).
+pub fn placerOf(services: []const Service, worker: *const Service) ?*const Service {
+    const jobs = worker.jobs orelse return null;
+    for (services) |*ow| {
+        if (std.mem.eql(u8, ow.name, worker.name)) continue;
+        for (ow.state) |dir| if (within(jobs, dir)) return ow;
+    }
+    return null;
+}
+
+pub fn jobId(s: []const u8) bool {
+    if (s.len == 0 or s.len > 32) return false;
+    for (s) |c| if (!((c >= 'a' and c <= 'z') or (c >= '0' and c <= '9') or c == '_' or c == '-')) return false;
+    return true;
+}
 
 /// The mounts the machine makes for itself, which no MOUNT declares and no world owns a
 /// directory in (the profile makes them: `plan.derive`).
@@ -1814,7 +1847,40 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
             }
             ports = list;
         }
-        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .tasks = tasks, .reservation = reservation, .user = user, .sees = sees, .state = state, .state_line = state_line, .ready_line = ready_line, .ports = ports, .ports_line = ports_line, .rationale = d.rationale });
+        // JOBS and LIMIT -- a WORKER (WORKER-1): a world started once for each job and ended after it, for code
+        // nobody vouched for. Read last, because what a worker may NOT be is everything read above: it is given no
+        // network, no process, no filesystem, no place of its own and no port, and it is no daemon. Where its jobs
+        // come from -- the STATE of the world that places them -- is judged below, once every world is read.
+        var jobs: ?[]const u8 = null;
+        var jobs_line: usize = 0;
+        var limit_s: ?u32 = null;
+        if (find(d, "LIMIT")) |c| {
+            if (find(d, "JOBS") == null) return ctx.refuse(c.line, "LIMIT is how long one job may run, and {s} declares no JOBS: a world started at boot runs for as long as the machine does", .{d.name});
+            const secs = try wantNumber(&ctx, c);
+            if (secs == 0) return ctx.refuse(c.line, "LIMIT 0 is a job that may not run at all", .{});
+            if (secs > 3600) return ctx.refuse(c.line, "LIMIT {d} is longer than an hour: a job nobody would wait out is a worker that holds its ceilings for nothing", .{secs});
+            limit_s = @intCast(secs);
+        }
+        if (find(d, "JOBS")) |c| {
+            jobs_line = c.line;
+            // (an edge machine needs no rule here: it has no identities, and a worker must run as one)
+            if (user == null) return ctx.refuse(c.line, "{s} declares JOBS and no USER: a worker runs code nobody vouched for, and a world with no declared identity is the machine itself", .{d.name});
+            if (limit_s == null) return ctx.refuse(c.line, "{s} declares JOBS and no LIMIT: a job is ended after its time, and a worker without one could hold its ceilings for ever", .{d.name});
+            if (memory_mb == null or cpu_percent == null) return ctx.refuse(c.line, "{s} declares JOBS without both MEMORY and CPU: a worker runs code nobody vouched for, and the kernel holds it to a ceiling of each", .{d.name});
+            for (needs.items) |n| switch (n) {
+                .network, .process, .filesystem => return ctx.refuse(c.line, "{s} declares JOBS and needs {s}: a worker runs code nobody vouched for and is given no network, no process and no storage -- a world that needs one is not a worker", .{ d.name, @tagName(n) }),
+                else => {},
+            };
+            if (restart != .never) return ctx.refuse(c.line, "{s} declares JOBS and RESTART {s}: a worker runs once for each job and is ended after it, so it is RESTART never", .{ d.name, @tagName(restart) });
+            // (READY, PORTS and a reservation need no rule here: the clauses' own rules above already refuse them on a
+            // world that runs once, that needs no network, and that declares a CPU ceiling, which a worker must)
+            if (after.len > 0) return ctx.refuse(c.line, "{s} declares JOBS and AFTER: a worker starts when a job is placed, never at boot, so nothing orders its start", .{d.name});
+            if (state.len > 0) return ctx.refuse(c.line, "{s} declares JOBS and STATE: a worker keeps nothing between jobs -- the floor gives it a scratch folder for one job and removes it after", .{d.name});
+            const dir = try wantString(&ctx, c);
+            if (!plainPath(dir)) return ctx.refuse(c.line, "JOBS is an absolute path of plain names (\"/run/app/jobs\"), not '{s}': PID 1 reads it as root, and a spelling that reaches one directory by two names would be judged as the wrong place", .{dir});
+            jobs = dir;
+        }
+        try services.append(arena, .{ .name = d.name, .line = d.line, .run = run, .restart = restart, .after = after, .needs = try needs.toOwnedSlice(arena), .ready = ready, .health = health, .memory_mb = memory_mb, .cpu_percent = cpu_percent, .tasks = tasks, .reservation = reservation, .user = user, .sees = sees, .state = state, .state_line = state_line, .ready_line = ready_line, .ports = ports, .ports_line = ports_line, .jobs = jobs, .jobs_line = jobs_line, .limit_s = limit_s, .rationale = d.rationale });
     };
     const svc_slice = try services.toOwnedSlice(arena);
 
@@ -2029,6 +2095,34 @@ pub fn declare(arena: Allocator, src: []const u8, refusal: *Refusal) Error!Machi
                 return ctx.refuse(at, "{s} signals ready on {s}, inside {s}'s STATE {s}: the world that owns the directory can write or delete the signal, so no world's word that it serves may sit in another's place", .{ sv.name, ready, ow.name, dir });
             };
         }
+    }
+    // WORKER-1: where a worker's jobs come from, and the place the floor keeps for its scratch folders. A job is
+    // placed by a world -- the one whose STATE holds the JOBS directory, so the court knows whose files PID 1 will
+    // copy and to whom it hands the results back -- and never by the worker itself, which owns nothing.
+    for (svc_slice, 0..) |sv, si| {
+        for (sv.state) |dir| if (within(dir, work_dir) or within(work_dir, dir)) {
+            return ctx.refuse(sv.state_line, "STATE {s} is in {s}, where the floor makes a worker's scratch folders: a world's directory and the floor's own are not one place", .{ dir, work_dir });
+        };
+        if (sv.ready) |r| if (within(r, work_dir)) return ctx.refuse(sv.ready_line, "{s} signals ready on {s}, inside {s}, where the floor makes a worker's scratch folders", .{ sv.name, r, work_dir });
+        for (sv.after) |a| for (svc_slice) |w| if (w.jobs != null and std.mem.eql(u8, w.name, a)) {
+            return ctx.refuse(sv.line, "{s} comes AFTER {s}, a worker: a worker is started for each job and never at boot, so it is never ready for anything to follow", .{ sv.name, a });
+        };
+        const jobs = sv.jobs orelse continue;
+        // a worker's identity is its own: any other world that ran as it -- the placer included -- could open the
+        // scratch folder, which is that identity's, while a job runs, and add to what is handed back (found by the
+        // review of WORKER-1)
+        if (sv.user) |u| for (svc_slice) |ow| {
+            if (std.mem.eql(u8, ow.name, sv.name)) continue;
+            if (ow.user) |ou| if (std.mem.eql(u8, ou.name, u.name)) {
+                return ctx.refuse(sv.jobs_line, "{s} is a worker and runs as {s}, and so does {s}: a worker's identity is its own, or another world could write in its folder while a job runs", .{ sv.name, u.name, ow.name });
+            };
+        };
+        if (within(jobs, work_dir)) return ctx.refuse(sv.jobs_line, "JOBS {s} is in {s}, where the floor makes a worker's scratch folders", .{ jobs, work_dir });
+        // (a worker owns no STATE, so the world that places its jobs is never a worker itself)
+        _ = placerOf(svc_slice, &sv) orelse return ctx.refuse(sv.jobs_line, "JOBS {s} lies in no other world's STATE: a job is placed by a world in a directory it owns, and the court must know whose files the floor copies in and to whom it hands the results", .{jobs});
+        for (svc_slice[0..si]) |ow| if (ow.jobs) |other| if (within(jobs, other) or within(other, jobs)) {
+            return ctx.refuse(sv.jobs_line, "JOBS {s} overlaps {s}, the jobs of {s}: one job is taken by one worker", .{ jobs, other, ow.name });
+        };
     }
     // MIRROR_OF, MIRROR_FOR, MIRROR_SERVER, MIRROR_FROM, MIRROR_KEY, MIRROR_INTO and MIRROR_EVERY -- a copy of a
     // world's directory on another machine (MIR-1, STZ-OS-RULING-19). Read here and not beside the clauses of time,

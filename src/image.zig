@@ -330,7 +330,8 @@ pub fn fragment(arena: std.mem.Allocator, m: *const machine.Machine, t: Target, 
         // not start the world on a kernel without it
         var ported = false;
         for (m.services) |s| {
-            if (s.ports.len > 0) ported = true;
+            // ... and a worker (WORKER-1) is held by Landlock's file rules to its scratch folder and its program
+            if (s.ports.len > 0 or s.jobs != null) ported = true;
         }
         if (ported) try w.print("CONFIG_SECURITY=y\nCONFIG_SECURITY_NETWORK=y\nCONFIG_SECURITY_LANDLOCK=y\nCONFIG_LSM=\"landlock\"\n", .{});
         // the pids controller is what holds a TASKS ceiling (THR-1)

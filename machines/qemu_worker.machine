@@ -1,0 +1,57 @@
+-- qemu_worker.machine -- a world started for one job and ended after it (WORKER-1).
+--
+-- Code a model or a stranger wrote is run in a process of its own, because
+-- a language's sandbox is not a boundary. Here the boundary is the
+-- kernel's, and a WORKER is its shape: `sandbox` is not started at boot.
+-- PID 1 starts it once for each job `asker` places in its jobs folder, in
+-- a scratch folder of its own holding a copy of the job's files, inside a
+-- ceiling of memory and of processor, with no network, no process, no
+-- storage and NO SOCKET OF ANY KIND -- and a Landlock rule set that lets
+-- it write only that folder and read only its own program. What it prints
+-- goes to a file in the folder, never to this console. When it has ended,
+-- PID 1 hands back what it left, answers the job, and removes the folder.
+--
+-- Four jobs, one after another:
+--
+--   one    probe   asks the kernel, from inside, for what a worker must be
+--                  refused -- three socket families, a socket pair,
+--                  /etc/machine, a listing of /, a file made outside its
+--                  folder, a process -- and for the two things it must be
+--                  let do: read its task, make a file in its folder
+--   two    probe   the same, in a NEW folder: what the first job left is
+--                  not there
+--   three  spin    runs for ever, and is ended at its LIMIT
+--   four   eat    asks for memory until the kernel ends it at its ceiling
+--
+-- The worker's answers come back to `asker` as files and are printed by
+-- it, so every one is on the console as the placer read it.
+
+DEFINE MACHINE qemu_worker AS (
+  PROFILE hosted,
+  ARCH x86_64,
+  KERNEL linux,
+  CONSOLE "/dev/ttyS0"
+) RATIONALE "The smallest machine that runs code nobody vouched for, one job at a time, inside the walls a worker is given"
+
+DEFINE USER placer AS (
+  UID 2001
+) RATIONALE "The world that places the jobs: it owns the folder they are placed in, and what comes back is handed to it"
+
+DEFINE USER runner AS (
+  UID 2002
+) RATIONALE "The identity a job runs as: it owns nothing on this machine but the scratch folder of the job it runs"
+
+DEFINE SERVICE asker AS (
+  RUN ["/harb", "job", "/run/asker/jobs", "one=probe", "two=probe", "three=spin", "four=eat"],
+  USER placer,
+  STATE ["/run/asker"]
+) RATIONALE "Places four jobs one after another, waits for each to be answered, and prints what came back"
+
+DEFINE SERVICE sandbox AS (
+  RUN ["/harb", "untrusted"],
+  USER runner,
+  MEMORY 32,
+  CPU 50,
+  JOBS "/run/asker/jobs",
+  LIMIT 3
+) RATIONALE "Stands in for code nobody vouched for: started for each job and ended after it, given nothing it does not need"

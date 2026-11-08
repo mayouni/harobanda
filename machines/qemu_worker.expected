@@ -1,0 +1,65 @@
+boot: harb init -- machine qemu_worker (hosted / x86_64 / qemu_pc) -- pid 1
+boot: console /dev/ttyS0
+boot: mount proc at /proc -- done
+boot: mount sysfs at /sys -- done
+boot: mount devtmpfs at /dev -- done
+boot: mount cgroup2 at /sys/fs/cgroup -- done
+boot: budget -- sandbox 32 MiB and 50% of a core; the kernel holds the ceiling, not the world
+boot: confine -- asker has no sight of the other worlds and no way to start one, sandbox has no sight of the other worlds and no way to start one and no socket of any kind; what a world did not declare, the kernel does not give it
+boot: floor -- the machine is not a world's to change: none may mount or unmount, set the clock, load a module, rename the host, make or enter a namespace, trace another process, take a priority over the other worlds, or reboot the box
+boot: crypto -- the kernel answers a request for its crypto socket (AF_ALG) with EAFNOSUPPORT: it has none for a world to open, and the floor refuses one to every world besides
+boot: state -- asker owns /run/asker as placer (2001:2001); each made, then read back as that identity's, mode 0700
+boot: work -- sandbox runs once for each job asker places in /run/asker/jobs, as runner (2002:2002), for at most 3 s: it may write only a folder of its own, read only its program, make no socket of any kind, and what it prints goes to a file in that folder
+boot: start asker -- pid N -- /harb job /run/asker/jobs one=probe two=probe three=spin four=eat -- as placer (2001:2001)
+job: one -- placed: probe
+work: sandbox -- job one taken from asker: 1 file in, a folder of its own
+work: sandbox -- job one ended: exited 0; 4 files handed back to asker
+job: one -- exited 0; 4 files handed back
+job: one -- left: (empty)
+job: one -- report: its folder holds, when it starts: stdout task
+job: one -- report: a unix socket -- refused (PERM)
+job: one -- report: an inet socket -- refused (PERM)
+job: one -- report: a netlink socket -- refused (PERM)
+job: one -- report: a socket pair -- refused (PERM)
+job: one -- report: read /etc/machine -- refused (ACCES)
+job: one -- report: list / -- refused (ACCES)
+job: one -- report: make /run/escape -- refused (ACCES)
+job: one -- report: start a process -- refused (PERM)
+job: one -- report: read its task -- allowed
+job: one -- report: make a file in its folder -- allowed
+job: one -- report: make a folder in its folder -- refused (ACCES)
+job: one -- report: every answer was the one a worker must get
+job: one -- stdout: untrusted: this line is the worker's own, and it is written to a file in its folder, not to the console
+job: two -- placed: probe
+work: sandbox -- job two taken from asker: 1 file in, a folder of its own
+work: sandbox -- job two ended: exited 0; 4 files handed back to asker
+job: two -- exited 0; 4 files handed back
+job: two -- left: (empty)
+job: two -- report: its folder holds, when it starts: stdout task
+job: two -- report: a unix socket -- refused (PERM)
+job: two -- report: an inet socket -- refused (PERM)
+job: two -- report: a netlink socket -- refused (PERM)
+job: two -- report: a socket pair -- refused (PERM)
+job: two -- report: read /etc/machine -- refused (ACCES)
+job: two -- report: list / -- refused (ACCES)
+job: two -- report: make /run/escape -- refused (ACCES)
+job: two -- report: start a process -- refused (PERM)
+job: two -- report: read its task -- allowed
+job: two -- report: make a file in its folder -- allowed
+job: two -- report: make a folder in its folder -- refused (ACCES)
+job: two -- report: every answer was the one a worker must get
+job: two -- stdout: untrusted: this line is the worker's own, and it is written to a file in its folder, not to the console
+job: three -- placed: spin
+work: sandbox -- job three taken from asker: 1 file in, a folder of its own
+work: sandbox -- job three ended: it ran past its LIMIT of 3 s, and the floor ended it; 2 files handed back to asker
+job: three -- it ran past its LIMIT of 3 s, and the floor ended it; 2 files handed back
+job: three -- stdout: untrusted: this line is the worker's own, and it is written to a file in its folder, not to the console
+job: four -- placed: eat
+work: sandbox -- job four taken from asker: 1 file in, a folder of its own
+work: sandbox -- job four ended: ended by the kernel: it passed its MEMORY ceiling of 32 MiB; 2 files handed back to asker
+job: four -- ended by the kernel: it passed its MEMORY ceiling of 32 MiB; 2 files handed back
+job: four -- stdout: untrusted: this line is the worker's own, and it is written to a file in its folder, not to the console
+boot: asker (pid N) exited 0
+boot: judge -- the boot matches its expectation (/etc/expected, 14 lines)
+boot: every service has ended -- init has nothing left to keep alive
+boot: init halts the machine -- reboot(RESTART)

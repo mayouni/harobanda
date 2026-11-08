@@ -93,6 +93,10 @@ pub const Confinement = struct {
     /// worth keeping from it lives: the device key, the signed record,
     /// the business data.
     hidden: []const []const u8 = &.{},
+    /// may it make a socket of any family (WORKER-1). Every world may but a worker: a world kept off the
+    /// network still has unix sockets and netlink in an empty namespace of its own, and a worker runs code
+    /// nobody vouched for, so `socket` and `socketpair` are refused to it outright, whatever the family.
+    sockets: bool = true,
 
     /// Read off the machine and the service together. The machine
     /// matters for one reason: a machine that declares NO network has
@@ -145,7 +149,7 @@ pub const Confinement = struct {
         // PROCESS creation precise -- one clone call makes either, and
         // one bit says which. What is missing is not the machinery but a
         // seat that decides whose thread it is. Named, not hidden.
-        var c = Confinement{ .network = false, .process = false, .threads = true };
+        var c = Confinement{ .network = false, .process = false, .threads = true, .sockets = svc.jobs == null };
         for (svc.needs) |n| switch (n) {
             .network => c.network = true,
             .process => c.process = true,
@@ -156,54 +160,34 @@ pub const Confinement = struct {
 
     /// does anything need saying about this world at all
     pub fn confined(self: Confinement) bool {
-        return !self.network or !self.process or !self.threads or self.hidden.len > 0;
+        return !self.network or !self.process or !self.threads or self.hidden.len > 0 or !self.sockets;
     }
 
-    /// what to call it in one word, for the line the boot prints
-    pub fn words(self: Confinement, buf: []u8) []const u8 {
-        var n: usize = 0;
-        _ = &n;
-        if (!self.network) {
-            const s = "no network of its own";
-            @memcpy(buf[n..][0..s.len], s);
-            n += s.len;
-        }
-        if (!self.process) {
-            if (n > 0) {
-                @memcpy(buf[n..][0..5], " and ");
-                n += 5;
-            }
-            const s = "no sight of the other worlds and no way to start one";
-            @memcpy(buf[n..][0..s.len], s);
-            n += s.len;
-        }
-        if (!self.threads) {
-            if (n > 0) {
-                @memcpy(buf[n..][0..5], " and ");
-                n += 5;
-            }
-            const s = "no way to start a thread";
-            @memcpy(buf[n..][0..s.len], s);
-            n += s.len;
-        }
+    /// what to call it in words, for the line the boot prints, written to `w` -- never into a buffer of a
+    /// fixed size: a world hidden from every mount carries every mount path in its words, and a 256-byte
+    /// buffer copied into without a bound was a panic of PID 1 on a machine with enough of them (found by the
+    /// review of WORKER-1, whose worlds are always hidden from every mount)
+    pub fn writeWords(self: Confinement, w: *std.Io.Writer) !void {
+        var first = true;
+        const parts = [_]struct { on: bool, s: []const u8 }{
+            .{ .on = !self.network, .s = "no network of its own" },
+            .{ .on = !self.process, .s = "no sight of the other worlds and no way to start one" },
+            .{ .on = !self.threads, .s = "no way to start a thread" },
+            .{ .on = !self.sockets, .s = "no socket of any kind" },
+        };
+        for (parts) |part| if (part.on) {
+            if (!first) try w.writeAll(" and ");
+            try w.writeAll(part.s);
+            first = false;
+        };
         if (self.hidden.len > 0) {
-            if (n > 0) {
-                @memcpy(buf[n..][0..5], " and ");
-                n += 5;
-            }
-            const s = "no sight of ";
-            @memcpy(buf[n..][0..s.len], s);
-            n += s.len;
-            for (self.hidden, 0..) |p, i| {
-                if (i > 0) {
-                    @memcpy(buf[n..][0..2], ", ");
-                    n += 2;
-                }
-                @memcpy(buf[n..][0..p.len], p);
-                n += p.len;
+            if (!first) try w.writeAll(" and ");
+            try w.writeAll("no sight of ");
+            for (self.hidden, 0..) |path, i| {
+                if (i > 0) try w.writeAll(", ");
+                try w.writeAll(path);
             }
         }
-        return buf[0..n];
     }
 };
 
@@ -326,7 +310,7 @@ pub fn filter(c: Confinement, buf: []sock_filter) []sock_filter {
 
     var n: usize = 0;
     var arch_jmp: usize = 0;
-    var deny_jmps: [off_limits.len + 4]usize = undefined;
+    var deny_jmps: [off_limits.len + 9]usize = undefined;
     var ndeny: usize = 0;
     var clone_jmp: ?usize = null;
     var thread_jmp: ?usize = null;
@@ -357,7 +341,21 @@ pub fn filter(c: Confinement, buf: []sock_filter) []sock_filter {
     // IS socket -- any other call skips the read and keeps its number in the
     // accumulator for the tests that follow, and a socket of any other
     // family is allowed at once, since nothing after this tests socket
-    if (nrOf("socket")) |nr| {
+    //
+    // A worker (WORKER-1) makes no socket at all: both calls that make one are refused outright, before any
+    // argument is read, so the crypto family needs no rule of its own there
+    if (!c.sockets) {
+        // ... and the io_uring calls: a ring can make a socket (IORING_OP_SOCKET) with no `socket` call for this
+        // filter to see. The kernels this floor derives build no io_uring today; the refusal does not depend on that
+        inline for (.{ "socket", "socketpair", "io_uring_setup", "io_uring_enter", "io_uring_register" }) |name| {
+            if (nrOf(name)) |nr| {
+                deny_jmps[ndeny] = n;
+                ndeny += 1;
+                buf[n] = .{ .code = JMP_JEQ_K, .jt = 0, .jf = 0, .k = nr };
+                n += 1;
+            }
+        }
+    } else if (nrOf("socket")) |nr| {
         buf[n] = .{ .code = JMP_JEQ_K, .jt = 0, .jf = 2, .k = nr };
         n += 1;
         buf[n] = .{ .code = LD_W_ABS, .jt = 0, .jf = 0, .k = OFF_ARG0 };
@@ -672,7 +670,9 @@ test "the confinement is read off NEEDS, and threads are deliberately not read" 
     try testing.expect(none.confined());
 
     var buf: [128]u8 = undefined;
-    try testing.expectEqualStrings("no network of its own and no sight of the other worlds and no way to start one", none.words(&buf));
+    var tw = std.Io.Writer.fixed(&buf);
+    try none.writeWords(&tw);
+    try testing.expectEqualStrings("no network of its own and no sight of the other worlds and no way to start one", tw.buffered());
 }
 
 test "a machine with no wire keeps no world off one" {
@@ -827,6 +827,29 @@ test "the kernel's crypto socket is refused to every world, and no other family 
         const want: u32 = if (c.process) linux.SECCOMP.RET.ALLOW else eperm;
         try testing.expectEqual(want, verdict(prog, fork_nr, 0));
     }
+}
+
+test "a worker makes no socket of any family, and every other world still does (WORKER-1)" {
+    if (audit_arch == 0) return error.SkipZigTest;
+    const socket = nrOf("socket").?;
+    const eperm = linux.SECCOMP.RET.ERRNO | @as(u32, @intFromEnum(linux.E.PERM));
+    const families = [_]u32{ linux.AF.INET, linux.AF.INET6, linux.AF.UNIX, linux.AF.NETLINK, linux.AF.PACKET, AF_ALG };
+    const worker = Confinement{ .network = false, .process = false, .threads = true, .sockets = false };
+    var buf: [64]sock_filter = undefined;
+    const prog = filter(worker, &buf);
+    for (families) |fam| try testing.expectEqual(eperm, verdict(prog, socket, fam));
+    if (nrOf("socketpair")) |pair| try testing.expectEqual(eperm, verdict(prog, pair, linux.AF.UNIX));
+    if (nrOf("io_uring_setup")) |ring| try testing.expectEqual(eperm, verdict(prog, ring, 0));
+    // the rest of its envelope is what it was: no process, the floor's refusals, ordinary calls allowed
+    try testing.expectEqual(eperm, verdict(prog, nrOf("clone").?, 0));
+    try testing.expectEqual(eperm, verdict(prog, nrOf("mount").?, 0));
+    try testing.expectEqual(linux.SECCOMP.RET.ALLOW, verdict(prog, nrOf("read").?, 0));
+    // ... and the same world that is not a worker keeps its sockets, all but the crypto one
+    var buf2: [64]sock_filter = undefined;
+    const ordinary = filter(.{ .network = false, .process = false, .threads = true }, &buf2);
+    try testing.expectEqual(linux.SECCOMP.RET.ALLOW, verdict(ordinary, socket, linux.AF.UNIX));
+    if (nrOf("socketpair")) |pair| try testing.expectEqual(linux.SECCOMP.RET.ALLOW, verdict(ordinary, pair, linux.AF.UNIX));
+    try testing.expectEqual(eperm, verdict(ordinary, socket, AF_ALG));
 }
 
 test "the scheduling calls are the floor's refusals, by name (PRI-1)" {

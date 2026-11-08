@@ -40,6 +40,7 @@ const mirroraudit = @import("mirroraudit.zig");
 const mirrorserve = @import("mirrorserve.zig");
 const roll = @import("roll.zig");
 const advisories = @import("advisories.zig");
+const work = @import("work.zig");
 const timeattest = @import("timeattest.zig");
 const timeaudit = @import("timeaudit.zig");
 const timeserve = @import("timeserve.zig");
@@ -82,6 +83,8 @@ fn usage(out: *std.Io.Writer) !void {
         \\  harb mirror check [file.machine] [--wait N] [--fresh | --follow]   (is the copy this machine keeps the source's word? every file against the listing the source signed, from inside the machine; --follow also asks that the attempt just made reached the source)
         \\  harb mirror verify <file.fleet> <mirror> <listing> <dir>   (the same, with the fleet's two keys and nothing else: the listing the keeper kept and the directory it keeps, checked from anywhere)
         \\  harb roll   <file.fleet> <dir> [--since <roll>] [--at <time>] [--out <roll>]   (who has written a record since: every member's brought record against the fleet's keys and the time authority's statements, and against the roll before it; --at is when the records were collected, default now; --out writes the roll the next call is compared with)
+        \\  harb job <jobs dir> <id>=<task>...   (the placer of a worker's jobs, a witness: each job placed in turn, waited for, and what came back printed)
+        \\  harb untrusted   (a worker's program, a witness: asks the kernel from inside what a worker must be refused, and writes the answers to its folder)
         \\  harb advisories <file.machine> <records> [--sources <file>] [--pin <PIN.md>] [--all]   (which kernel advisories reach this machine: each CVE record brought -- a directory of .json files, or one -- read against the release the pin names and the source files this machine's kernel compiled; prints what reaches it and what cannot be told, --all every record; exits 1 if anything does)
         \\  harb court  --fleet [declarative/fleet/fixtures.json]
         \\  harb place  <file.machine> <file.pack>... [--after <world>] [--out <file>]   (a solution's services, placed on a machine and judged as one; --after orders them after one of its worlds)
@@ -279,6 +282,16 @@ pub fn main() !u8 {
         // The neighbour a witness is measured beside: it says where it runs
         // and burns the processor until the machine ends
         return tick.spin(args[2..], out);
+    }
+    if (std.mem.eql(u8, verb, "job")) {
+        // The witness of the WORKER seat (WORKER-1), on the placer's side: jobs placed one at a time in the
+        // directory a worker takes them from, each waited for, and what came back printed
+        return work.place(args[2..], out);
+    }
+    if (std.mem.eql(u8, verb, "untrusted")) {
+        // ... and the worker's side: code nobody vouched for, standing in, asking the kernel from inside what a
+        // worker must be refused
+        return work.untrusted(out);
     }
     if (std.mem.eql(u8, verb, "bound")) {
         // The witness of the PORTS seat (PORT-1): a world asks the kernel, as
@@ -1281,6 +1294,7 @@ pub fn main() !u8 {
 
 test {
     _ = advisories;
+    _ = work;
     _ = machine;
     _ = plan;
     _ = net;
