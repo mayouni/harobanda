@@ -1,3 +1,30 @@
+# MENU-2 — a section's landing page opens its strip
+
+Central's NOTE of 2026-11-08 relayed the Principal's ruling, which reverses
+Central's NOTE of 2026-11-06: a menu with levels names a SECTION at the
+parent level, the section's LANDING PAGE is the first entry of the child
+level, under a label of its own, and no child label repeats its parent's.
+MENU-1 (06a7ab0) had already kept "The approach" first under "Security",
+and its check refused a label shown twice; nothing refused a strip that
+dropped its landing page, which is what the reversed NOTE asked for.
+
+`harb docs --check` now reads which main-menu entry a page marks `active`
+(a word of its `class`, never a substring) and requires that every section
+strip opens with the page that entry opens; a page with a strip and no
+entry marked, or two, is convicted rather than passed over. Every page of
+the site already held the rule. Shown failing on the real site: with
+`security.html` removed from `refusals.html`'s strip, the check named the
+page, the line and both pages, and exited 1; the page was restored.
+
+**The pushed worker's court was red, and this seat found it.** Lesson 3
+of the tour quotes the machine court's scoreboard, and `learn --check`
+holds the quotation to what the court says: WORKER-1 (ce39985) moved the
+count from 317 to 339 and the quotation stayed. The WORKER-1 report gave
+"court 339/339" from the machine line and did not read the rest of the
+court's output, whose exit was 1. **A gate's verdict is its exit code,
+never the line that looks like its score** (VDCT-1, again). The
+quotation is the court's again.
+
 # WORKER-1 — a world started for one job and ended after it
 
 Routed by stzlib-security as HAROBANDA-WORKER-01 (2026-11-05), read

@@ -49,6 +49,13 @@
 //!    (Real time), and the Security chain stopped one page short of its
 //!    fifth. The author found the first by eye; the court, the tour and the
 //!    rules above were green over both.
+//! 5. A menu names each section once, and its landing page once (MENU-1,
+//!    MENU-2; the Principal, 2026-11-06 and 2026-11-08). No label appears
+//!    twice in the main menu and the strip together, case and a leading
+//!    "The" ignored; and every strip opens with the page its section's
+//!    menu entry -- the one marked `active` -- opens, under a label of its
+//!    own. A NOTE of 2026-11-06 told sites to drop the landing page from
+//!    its strip; the Principal reversed it, and this rule refuses it.
 //!
 //! What this does NOT judge, stated rather than implied: an excerpt elided
 //! with `...` (what is elided cannot be judged, which is why the pages say
@@ -446,7 +453,7 @@ const Page = struct { path: []const u8, text: []const u8 };
 /// One entry of a section strip: where it goes, what it says (entities
 /// decoded, so `&amp;` and `&` are one word), and whether the page marks it
 /// as itself.
-const Entry = struct { href: []const u8, label: []const u8, current: bool };
+const Entry = struct { href: []const u8, label: []const u8, current: bool, active: bool = false };
 
 /// A page's section strip, `<nav class="path">`: the pages of its section in
 /// the order the reader is meant to take them, and the line it begins on.
@@ -524,6 +531,15 @@ fn nextLabel(alloc: std.mem.Allocator, raw: []const u8) ![]const u8 {
     return if (std.mem.endsWith(u8, plain, arrow)) plain[0 .. plain.len - arrow.len] else plain;
 }
 
+/// whether a main-menu link is marked as the section the page is in: its
+/// `class` names `active` as one of its words
+fn isActive(tag: []const u8) bool {
+    const class = attrOf(tag, "class") orelse return false;
+    var words = std.mem.tokenizeScalar(u8, class, ' ');
+    while (words.next()) |word| if (std.mem.eql(u8, word, "active")) return true;
+    return false;
+}
+
 /// the page's section strip, if it has one
 fn parseStrip(alloc: std.mem.Allocator, text: []const u8) !?Strip {
     return parseNav(alloc, text, "<nav class=\"path\"");
@@ -548,6 +564,7 @@ fn parseNav(alloc: std.mem.Allocator, text: []const u8, open: []const u8) !?Stri
             .href = attrOf(tag, "href") orelse "",
             .label = try decoded(alloc, body[tag_end + 1 .. label_end]),
             .current = std.mem.indexOf(u8, tag, "aria-current=\"page\"") != null,
+            .active = isActive(tag),
         });
         pos = label_end + "</a>".len;
     }
@@ -819,6 +836,26 @@ fn checkLabels(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const Page,
         };
         t.nav_labelled += 1;
         const strip = try parseStrip(alloc, p.text);
+        // Rule 1 (the Principal, 2026-11-08): a section's landing page -- the
+        // page its menu entry opens -- is the FIRST entry of its strip. A page
+        // with a strip names its section by the one menu entry marked active.
+        if (strip) |s| {
+            var active: ?Entry = null;
+            var marked: usize = 0;
+            for (menu.entries) |e| if (e.active) {
+                marked += 1;
+                active = e;
+            };
+            if (marked != 1) {
+                t.bad += 1;
+                try w.print("  {s}:{d} -- has a section strip and {d} main-menu entries marked active: the section a strip belongs to is the one menu entry marked active\n", .{ p.path, menu.line, marked });
+            } else if (s.entries.len == 0 or !std.mem.eql(u8, s.entries[0].href, active.?.href)) {
+                t.bad += 1;
+                try w.print("  {s}:{d} -- the section strip opens with {s}, and the section '{s}' opens {s}: a section's landing page is the first entry of its strip\n", .{
+                    p.path, s.line, if (s.entries.len == 0) "nothing" else s.entries[0].href, active.?.label, active.?.href,
+                });
+            }
+        }
         const where = [_][]const u8{ "the main menu", "the section strip" };
         const lists = [_][]const Entry{ menu.entries, if (strip) |s| s.entries else &.{} };
         const lines = [_]usize{ menu.line, if (strip) |s| s.line else 0 };
@@ -881,7 +918,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         try compareWords(alloc, w, pg.path, got, &learn.words, &t);
     }
     if (t.bad == 0) {
-        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled });
+        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together, and every strip opens with the page its section's menu entry opens\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled });
     } else {
         try w.print("docs -- {d} claim(s) the documents make do not hold\n", .{t.bad});
     }
@@ -1519,14 +1556,46 @@ test "a strip entry that repeats its menu entry is convicted, naming both (MENU-
     try t.expectEqual(@as(usize, 1), q.tally.nav_labelled);
 }
 
+test "a section's landing page is the first entry of its strip, and the section is the menu entry marked active (MENU-2)" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    // the landing page dropped from its strip -- Central's NOTE of 2026-11-06, applied
+    const gone = "<nav class=\"path\">\n<a href=\"refusals.html\" class=\"here\" aria-current=\"page\">What it refuses</a>\n" ++
+        "<a href=\"threats.html\">The ten agent threats</a>\n</nav>\n";
+    const p = try labelProbe(arena, &.{.{ .path = "site/refusals.html", .text = menu_sec ++ gone }});
+    try t.expectEqual(@as(usize, 1), p.tally.bad);
+    try t.expect(heard(p, "site/refusals.html:5 -- the section strip opens with refusals.html, and the section 'Security' opens security.html"));
+    // the landing page there, but not first
+    const late = "<nav class=\"path\">\n<a href=\"refusals.html\" class=\"here\" aria-current=\"page\">What it refuses</a>\n" ++
+        "<a href=\"security.html\">The approach</a>\n</nav>\n";
+    const q = try labelProbe(arena, &.{.{ .path = "site/refusals.html", .text = menu_sec ++ late }});
+    try t.expectEqual(@as(usize, 1), q.tally.bad);
+    // a strip under a menu that marks no section has no section to belong to
+    const plain = "<nav class=\"nav\" id=\"nav\">\n<a href=\"why.html\">Why</a>\n<a href=\"security.html\">Security</a>\n</nav>\n";
+    const first = "<nav class=\"path\">\n<a href=\"security.html\" class=\"here\" aria-current=\"page\">The approach</a>\n</nav>\n";
+    const r = try labelProbe(arena, &.{.{ .path = "site/security.html", .text = plain ++ first }});
+    try t.expectEqual(@as(usize, 1), r.tally.bad);
+    try t.expect(heard(r, "0 main-menu entries marked active"));
+    // the rule kept: no finding
+    const s = try labelProbe(arena, &.{.{ .path = "site/security.html", .text = menu_sec ++ first }});
+    try t.expectEqual(@as(usize, 0), s.tally.bad);
+    // `active` is a word of the class, never a substring of another
+    try t.expect(isActive("<a href=\"x\" class=\"k active\""));
+    try t.expect(!isActive("<a href=\"x\" class=\"inactive\""));
+}
+
 test "a label is one label whatever its case and a leading The, in a menu or a strip alone (MENU-1)" {
     const t = std.testing;
     var arena_state = std.heap.ArenaAllocator.init(t.allocator);
     defer arena_state.deinit();
     const arena = arena_state.allocator();
-    const strip = "<nav class=\"path\">\n<a href=\"m.html\" class=\"here\" aria-current=\"page\">The machine</a>\n" ++
-        "<a href=\"n.html\">MACHINE</a>\n</nav>\n";
-    const p = try labelProbe(arena, &.{.{ .path = "site/m.html", .text = menu_sec ++ strip }});
+    // the strip opens with the section's landing page, so rule 1 holds and
+    // only the repeated label is found
+    const strip = "<nav class=\"path\">\n<a href=\"security.html\" class=\"here\" aria-current=\"page\">The approach</a>\n" ++
+        "<a href=\"m.html\">The machine</a>\n<a href=\"n.html\">MACHINE</a>\n</nav>\n";
+    const p = try labelProbe(arena, &.{.{ .path = "site/security.html", .text = menu_sec ++ strip }});
     try t.expectEqual(@as(usize, 1), p.tally.bad);
     try t.expect(heard(p, "'MACHINE' (n.html) in the section strip repeats 'The machine' (m.html) in the section strip"));
     // two menu entries alike
