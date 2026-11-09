@@ -159,6 +159,8 @@ const Tally = struct {
     /// links (each judged) of which how many go onward, by name; the rest
     /// are named as having no strip, and how many Next links they carry,
     /// each judged to go to a page that exists (NAV-1)
+    /// the site's pages read for lines that list what the project lacks (AFFIRM-1)
+    affirm_pages: usize = 0,
     nav_total: usize = 0,
     nav_pages: usize = 0,
     nav_sections: usize = 0,
@@ -879,6 +881,61 @@ fn checkLabels(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const Page,
     }
 }
 
+// ---- the site says what the project is and does (AFFIRM-1) ----
+
+/// The phrases of a line that lists what the project lacks, read in a page's
+/// words as a reader sees them, case ignored. The Principal's rule of
+/// 2026-11-08 for every Softanza site (PRINCIPAL-AFFIRM-01): a public page
+/// states what the project IS and DOES; what is not built, shown or measured
+/// is recorded in the repository's own documents (doc/, experiment/PROTOCOL.md,
+/// vendor/PIN.md), never listed on a page.
+const lack_phrases = [_][]const u8{
+    "not yet",        "not built",        "nobody has",   "never been",
+    "does not claim", "not claimed",      "later step",   "limit:",
+    "still open",     "said plainly",     "not one of them",
+    "is not done",    "are not done",
+};
+/// ... and the one in the markup: a status tag that marks a row as not built
+const lack_markup = "class=\"stage open\"";
+
+/// A phrase allowed on one page, with the reason it is not a line about a lack.
+/// Empty today; an entry no page bears any more is convicted as stale.
+const Allowed = struct { page: []const u8, phrase: []const u8, reason: []const u8 };
+const affirm_allowed = [_]Allowed{};
+
+fn checkAffirm(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const Page, allowed: []const Allowed, t: *Tally) !void {
+    const used = try alloc.alloc(bool, allowed.len);
+    @memset(used, false);
+    for (pages) |p| {
+        t.affirm_pages += 1;
+        var n: usize = 0;
+        var lines = std.mem.splitScalar(u8, p.text, '\n');
+        while (lines.next()) |raw| {
+            n += 1;
+            const said = try std.ascii.allocLowerString(alloc, try plainText(alloc, raw));
+            var found: ?[]const u8 = null;
+            for (lack_phrases) |ph| if (std.mem.indexOf(u8, said, ph) != null) {
+                found = ph;
+                break;
+            };
+            if (found == null and std.mem.indexOf(u8, raw, lack_markup) != null) found = lack_markup;
+            const ph = found orelse continue;
+            var excused = false;
+            for (allowed, 0..) |a, i| if (std.mem.eql(u8, a.page, p.path) and std.mem.eql(u8, a.phrase, ph)) {
+                excused = true;
+                used[i] = true;
+            };
+            if (excused) continue;
+            t.bad += 1;
+            try w.print("  {s}:{d} -- '{s}': a public page states what the project is and does, and lists no lack; what is not built is recorded in the repository's documents (PRINCIPAL-AFFIRM-01)\n", .{ p.path, n, ph });
+        }
+    }
+    for (allowed, 0..) |a, i| if (!used[i]) {
+        t.bad += 1;
+        try w.print("  {s} -- allowed '{s}' (src/docs.zig, affirm_allowed: {s}), and the page no longer says it: the allowance is stale\n", .{ a.page, a.phrase, a.reason });
+    };
+}
+
 /// Run from the repository root, as `zig build court` runs it.
 pub fn check(w: *std.Io.Writer) !usize {
     var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -904,6 +961,11 @@ pub fn check(w: *std.Io.Writer) !usize {
     }
     try checkNavigation(alloc, w, site.items, &onward, &no_strip, &t);
     try checkLabels(alloc, w, site.items, &t);
+    // the public pages the rule reads: the site's, and the README a stranger lands on at the repository's URL
+    var public: std.ArrayList(Page) = .{};
+    try public.appendSlice(alloc, site.items);
+    try public.append(alloc, .{ .path = "README.md", .text = try root.readFileAlloc(alloc, "README.md", 1 << 24) });
+    try checkAffirm(alloc, w, public.items, &affirm_allowed, &t);
     const pages = [_]struct { path: []const u8, html: bool }{
         .{ .path = "README.md", .html = false },
         .{ .path = "site/words.html", .html = true },
@@ -918,7 +980,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         try compareWords(alloc, w, pg.path, got, &learn.words, &t);
     }
     if (t.bad == 0) {
-        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together, and every strip opens with the page its section's menu entry opens\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled });
+        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together, and every strip opens with the page its section's menu entry opens; and the {d} public pages (the site's and the README) state what the project is and does, with no line listing a lack ({d} allowed, each with its reason)\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled, t.affirm_pages, affirm_allowed.len });
     } else {
         try w.print("docs -- {d} claim(s) the documents make do not hold\n", .{t.bad});
     }
@@ -1554,6 +1616,43 @@ test "a strip entry that repeats its menu entry is convicted, naming both (MENU-
     const q = try labelProbe(arena, &.{.{ .path = "site/security.html", .text = menu_sec ++ new }});
     try t.expectEqual(@as(usize, 0), q.tally.bad);
     try t.expectEqual(@as(usize, 1), q.tally.nav_labelled);
+}
+
+test "a public page lists no lack, and an allowance is a reason or it is stale (AFFIRM-1)" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    const page = "<p>The machine signs every boot.</p>\n" ++
+        "<p>A firewall is <b>Not Built</b> yet.</p>\n" ++
+        "<div><span class=\"stage open\">later</span></div>\n" ++
+        "<p>What this page does not claim.</p>\n";
+    var aw = std.Io.Writer.Allocating.init(arena);
+    var tally = Tally{};
+    try checkAffirm(arena, &aw.writer, &.{.{ .path = "site/x.html", .text = page }}, &.{}, &tally);
+    const said = aw.written();
+    // the phrase read as a reader sees it, across markup and case; the status tag in the markup; the section heading
+    try t.expectEqual(@as(usize, 3), tally.bad);
+    try t.expect(std.mem.indexOf(u8, said, "site/x.html:2 -- 'not built'") != null);
+    try t.expect(std.mem.indexOf(u8, said, "site/x.html:3 -- 'class=\"stage open\"'") != null);
+    try t.expect(std.mem.indexOf(u8, said, "site/x.html:4 -- 'does not claim'") != null);
+    try t.expectEqual(@as(usize, 1), tally.affirm_pages);
+    // an allowance with its reason excuses its line; one no page bears is convicted as stale
+    var aw2 = std.Io.Writer.Allocating.init(arena);
+    var tally2 = Tally{};
+    const allowed = [_]Allowed{
+        .{ .page = "site/x.html", .phrase = "does not claim", .reason = "a quotation" },
+        .{ .page = "site/gone.html", .phrase = "not yet", .reason = "was a quotation" },
+    };
+    try checkAffirm(arena, &aw2.writer, &.{.{ .path = "site/x.html", .text = page }}, &allowed, &tally2);
+    try t.expectEqual(@as(usize, 3), tally2.bad);
+    try t.expect(std.mem.indexOf(u8, aw2.written(), "site/x.html:4") == null);
+    try t.expect(std.mem.indexOf(u8, aw2.written(), "site/gone.html -- allowed 'not yet'") != null);
+    // a clean page passes
+    var aw3 = std.Io.Writer.Allocating.init(arena);
+    var tally3 = Tally{};
+    try checkAffirm(arena, &aw3.writer, &.{.{ .path = "site/y.html", .text = "<p>The machine signs every boot.</p>\n" }}, &.{}, &tally3);
+    try t.expectEqual(@as(usize, 0), tally3.bad);
 }
 
 test "a section's landing page is the first entry of its strip, and the section is the menu entry marked active (MENU-2)" {

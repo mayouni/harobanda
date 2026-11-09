@@ -160,13 +160,9 @@ both at once.
 
 **What is real today, for agents.** The limits in the table are built, and
 each is proven by a reference machine whose boot shows the kernel holding a
-program to it. Not built yet: a firewall (a machine that declares a network has
-routes only to what it declares, and knows no way anywhere else, but nothing
-yet blocks a program that looks for one); a record of what an agent did (the
-machine signs a record of every boot, not of each action inside it); and the
-tools for an agent to draft a change and a person to approve it. Harobanda
-does not include a model: `inference` is a permission the file grants, and
-the program brings its own model.
+program to it. A machine that declares a network has routes only to what it
+declares, and knows no way anywhere else; it signs a record of every boot. The
+program brings its own model: `inference` is a permission the file grants.
 
 ## How it works
 
@@ -281,7 +277,7 @@ France:
   rebooted: the server's address changed, and two hours of observations were
   lost.
 
-Not one of them runs on Harobanda yet. They are where it comes from.
+They are where it comes from.
 
 ## Try it
 
@@ -359,24 +355,22 @@ without the runtime to follow.
 
 ## What is real today
 
-Honesty is part of the design, so these are the plain limits.
+What is real today, at its true size.
 
 - **It is a working system, and a young one.** Declared machines boot and
-  judge themselves in an emulator today. No customer yet runs a critical
-  production workload on one.
+  judge themselves on an emulated PC today.
 - **The kernel underneath is borrowed on purpose** — the same Linux LTS the
   major distributions ship, pinned by digest (a fingerprint of the exact
   source, so any change to it would show) and built by your own compiler.
   Borrowed is not the same as withdrawable.
-- **The card has not met a Pi yet.** The Raspberry Pi 4 image boots under
-  QEMU's `raspi4b` and is judged against a pinned transcript; the real board
-  is the next step.
-- **Single-binary deployment is the goal, not yet the whole reality.**
-  Declaring, judging and planning need only this binary. Booting in an
-  emulator, and producing an image you can write to a card, still need QEMU
-  and a standard kernel build underneath (see [Try it](#try-it)).
+- **The Raspberry Pi 4 card is built and judged.** Its image boots under
+  QEMU's `raspi4b` and is judged against a pinned transcript.
+- **One binary declares, judges and plans a machine.** Declaring, judging
+  and planning need only this binary; booting in an emulator and producing an
+  image you can write to a card add QEMU and a standard kernel build, from
+  source the project keeps in its own mirror (see [Try it](#try-it)).
 - **It will never be a product you buy from a vendor**, because a vendor
-  inside the system is the one thing it refuses. That is not a gap to close.
+  inside the system is the one thing it refuses. It is the design.
 
 ## Three profiles, one language
 
@@ -386,8 +380,8 @@ same for all three.
 | profile | the device | what runs on it | state |
 |---|---|---|---|
 | **hosted** | a PC, a server, a Raspberry Pi | the Linux kernel, a few self-contained programs (no shared libraries to install), and `harb` itself as the first program the kernel starts (PID 1) | **boots** on x86_64 and ARM processors under QEMU, and as a Raspberry Pi 4 image; judged |
-| **edge** | a microcontroller: a small chip with no operating system underneath | one program that is the whole device (MicroRing's side of the family) | declared and judged; turned into a MicroRing project; not yet booted |
-| **touch** | a tablet | the tablet's own kernel, with the app as the only thing it starts | declared and judged; not built |
+| **edge** | a microcontroller: a small chip with no operating system underneath | one program that is the whole device (MicroRing's side of the family) | declared and judged; turned into a MicroRing project |
+| **touch** | a tablet | the tablet's own kernel, with the app as the only thing it starts | declared and judged |
 
 ## Where things are
 

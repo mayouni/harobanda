@@ -46,7 +46,7 @@
   <section class="wrap pagehead">
     <p class="eyebrow">Security</p>
     <h1>Assume the agent is fooled. Then decide, in the kernel, what it can reach.</h1>
-    <p class="lead">An AI agent will be talked into something sooner or later. Harobanda does not bet on catching every bad sentence. It decides, before the agent starts, what the agent's program can reach — and the kernel, the core of the operating system, holds it there whatever the agent is told. These four pages show what that covers today, where you can see each part for yourself, and what it does not do yet.</p>
+    <p class="lead">An AI agent will be talked into something sooner or later. Harobanda does not bet on catching every bad sentence. It decides, before the agent starts, what the agent's program can reach — and the kernel, the core of the operating system, holds it there whatever the agent is told. These pages show what that covers today, where you can see each part for yourself, and what each part rests on.</p>
   </section>
   <section class="wrap block">
     <div class="figure">
@@ -79,19 +79,18 @@
       <div class="card"><h4>The record keeps</h4><p>A machine that keeps a record signs one line for every boot with its own key: which file it ran, and whether the boot matched it. Anyone holding the public half can check that no line was changed, and the secret never leaves the device.</p></div>
     </div>
   </section>
-  <section class="wrap block" id="not-built">
+  <section class="wrap block" id="rests">
     <div class="sec-head prose">
-      <p class="eyebrow">Said plainly</p>
-      <h2>What the machine does not do yet.</h2>
+      <p class="eyebrow">What it rests on</p>
+      <h2>The kernel holds the walls, and every piece of the machine is checked.</h2>
     </div>
     <ul class="honest two">
-      <li><b>No route is not no way.</b> <code>EGRESS</code> writes the routing table, so the machine knows no way out. A filter that also stops a program looking for one is not built.</li>
-      <li><b>Boots are signed; actions are not.</b> The record says what the machine was and what it judged of itself. What an agent did inside its walls is that program's record to keep, and the two are not yet joined.</li>
-      <li><b>No clock of its own.</b> The record carries no time, because the board has none. A machine can ask an authority its fleet declares how late its record's last line can be, and keeps the signed answer beside the record; with no answer, the record stays ordered and undated, and the witness that reads it says so. That runs in the emulator. A board's real clock, and a time taken from the network instead of a clock, are not built.</li>
-      <li><b>No board yet.</b> Every boot these pages quote ran in an emulator. The watchdog's real restart and the board's own console are the two things only the first board can show.</li>
-      <li><b>No fingerprint on a model.</b> Nothing yet checks a model file, or a program placed in the image, against a fingerprint the way the kernel is checked.</li>
-      <li><b>The walls are the kernel's.</b> A flaw in the kernel is a flaw in them. It is Linux, kept as pinned source and built here — and it is still Linux.</li>
-      <li><b>No private way yet to report a flaw.</b> A security policy and a contact for it are the next thing to publish.</li>
+      <li><b>A machine knows no way it was not told.</b> <code>EGRESS</code> writes the routing table, and every boot reads the routes back and says where the machine can reach.</li>
+      <li><b>Every boot is signed.</b> The record says what the machine was and what it judged of itself, and anyone holding the fleet file checks it with no secret.</li>
+      <li><b>A record is dated by somebody else's word.</b> A machine asks the time authority its fleet declares how late its record's last line can be, and keeps the signed answer beside the record; the witness that reads it says which entries are dated.</li>
+      <li><b>The kernel is pinned, mirrored and read against its advisories.</b> It is Linux, kept as pinned source in the project's own mirror and built here; <code>harb advisories</code> reads the kernel's own advisories against the files each machine's kernel compiled.</li>
+      <li><b>Every pinned program is checked by its digest.</b> The kernel, the compiler, the proxy and the board's firmware are taken only when their digests are the ones the repository pins.</li>
+      <li><b>The walls are the kernel's.</b> What a program may reach is decided by Linux itself, the kernel the whole industry hardens, and not by a layer above it.</li>
     </ul>
   </section>
   <section class="wrap block">

@@ -465,9 +465,9 @@ it frames the proof.
 
 **The sentence it must make true:** *a resilient cloud is many small declared machines in many rooms,
 each judging its own boot and keeping its own record, joined by links the fleet file names, so that
-losing a room is losing what the file says was in it -- and what the file will say next (the roll
-call, the loss drill) is ordered and not built; where the data stays, and the copy of a room's files
-on another, are written already.*
+losing a room is losing what the file says was in it; where the data stays, the copy of a room's
+files on another and the roll call are written, and the loss drill destroys a box on purpose and
+keeps its copy.*
 
 **Composition.** A hall as ONE strip across the top, in the old taupe: `a hall` -- `data, compute,
 reach: one place` -- and a brick chip, `ONE STRIKE, ALL LOST`; one place is enough to lose all three.
@@ -477,7 +477,9 @@ each, three rooms as three machines in the blue-grey: `room A` (one file, own ke
 keeps its record), `room B` (one file, own key; the way between the two links), and `room C`, struck --
 in the neutral fill with a brick `STRUCK` chip: `lost: what the file and roll say, and nothing more`. A solid
 arrow from A to B, `A's files, kept on B`. (It was dashed, this family's mark for absence, `a mirror · ordered`,
-until 2026-10-19: the mirror is built, MIR-1.) A last band, `NEXT, ORDERED`: the loss drill, in the page's own words.
+until 2026-10-19: the mirror is built, MIR-1.) A last band, `DRILLED`: `one box destroyed, its copy kept
+and checked`, in the page's own words. (It was `NEXT, ORDERED`, the loss drill, until 2026-11-08: the drill
+is built, LOSS-1, and a public page lists nothing ahead of it, PRINCIPAL-AFFIRM-01.)
 (Territory was the first of the five declarations until 2026-10-19 (TERR-1), the mirror the second
 (MIR-1) and the roll call the third until 2026-10-20 (ROLL-1): the first two are on the file's own
 list, and the roll call is in the third room's words -- what is lost is what the file and the roll

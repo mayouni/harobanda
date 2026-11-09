@@ -53,5 +53,5 @@ c.gap(8)
 c.note("The links the file names join the rooms. A's files are kept on B, and verified.", MUTED)
 c.gap(16)
 
-c.strip_items("NEXT, ORDERED", ["the loss drill: one box lost, the rest serve"])
+c.strip_items("DRILLED", ["one box destroyed, its copy kept and checked"])
 c.render("harobanda-diagram-14-narrow.png")

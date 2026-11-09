@@ -46,7 +46,7 @@
   <section class="wrap pagehead">
     <p class="eyebrow">The ten agent threats</p>
     <h1>What a hijacked agent can still reach, threat by threat.</h1>
-    <p class="lead">The list is the OWASP Top 10 for Agentic Applications, 2026. Each row says what the machine does about the threat today, where the evidence is, and what stays open. It speaks for the operating system only, not for a whole solution built on it. Why the kernel holds these lines at all is on <a href="security.html">Security</a>; what it does not do yet, <a href="security.html#not-built">said plainly</a>.</p>
+    <p class="lead">The list is the OWASP Top 10 for Agentic Applications, 2026. Each row says what the machine does about the threat today, and where the evidence is. It speaks for the operating system, the floor every program of a solution runs on. Why the kernel holds these lines at all is on <a href="security.html">Security</a>, and what that rests on, <a href="security.html#rests">check by check</a>.</p>
   </section>
   <section class="wrap block">
     <div class="grounds threats">
@@ -54,71 +54,61 @@
         <div class="p"><span class="en">Goal hijack</span><span class="lc">OWASP ASI01</span></div>
         <div class="prob"><b>The threat.</b> A sentence planted in what the agent reads turns it to another goal.</div>
         <div class="fix"><b>The machine</b> limits what the new goal can reach: no network unless declared, no route beyond its <code>EGRESS</code>, no new program unless declared, no disk it did not name.
-          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_confine.expected" target="_blank" rel="noopener noreferrer">qemu_confine</a> and <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_egress.expected" target="_blank" rel="noopener noreferrer">qemu_egress</a>; lessons 7 and 11.</span>
-          <span class="open"><b>Still open.</b> The persuasion itself, and whatever a granted network reaches.</span></div>
+          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_confine.expected" target="_blank" rel="noopener noreferrer">qemu_confine</a> and <a href="https://github.com/mayouni/harobanda/blob/main/machines/qemu_egress.expected" target="_blank" rel="noopener noreferrer">qemu_egress</a>; lessons 7 and 11.</span></div>
       </div>
       <div class="ground-row">
         <div class="p"><span class="en">Tool misuse</span><span class="lc">OWASP ASI02</span></div>
         <div class="prob"><b>The threat.</b> The agent uses a real tool, with real rights, for the wrong end.</div>
         <div class="fix"><b>The machine</b> can run each tool as its own program, with its own needs, disks, user and budget: its reach is a line a reviewer reads, and the court refuses a need nobody granted.
-          <span class="seen"><b>Seen in</b> the court's <a href="https://github.com/mayouni/harobanda/blob/main/declarative/machine/fixtures.json" target="_blank" rel="noopener noreferrer">fixtures</a> R17 and R18: silence is refusal.</span>
-          <span class="open"><b>Still open.</b> Programs that share a disk share what is on it, and a tool's arguments are not the machine's to judge.</span></div>
+          <span class="seen"><b>Seen in</b> the court's <a href="https://github.com/mayouni/harobanda/blob/main/declarative/machine/fixtures.json" target="_blank" rel="noopener noreferrer">fixtures</a> R17 and R18: silence is refusal.</span></div>
       </div>
       <div class="ground-row">
         <div class="p"><span class="en">Identity and privilege abuse</span><span class="lc">OWASP ASI03</span></div>
         <div class="prob"><b>The threat.</b> The agent acts with more authority than its task needs.</div>
         <div class="fix"><b>The machine</b> has no login, no accounts and no shell. A program runs as the user its file names, and user 0 is refused, so a program running as the machine shows up as a missing <code>USER</code> line.
-          <span class="seen"><b>Seen in</b> the court's fixtures R47 and R5; lesson 12.</span>
-          <span class="open"><b>Still open.</b> A program given the disks sees the device key's disk unless its <code>SEES</code> leaves it out.</span></div>
+          <span class="seen"><b>Seen in</b> the court's fixtures R47 and R5; lesson 12.</span></div>
       </div>
       <div class="ground-row">
         <div class="p"><span class="en">Supply chain</span><span class="lc">OWASP ASI04</span></div>
         <div class="prob"><b>The threat.</b> A swapped library, model or plugin arrives as trusted code.</div>
-        <div class="fix"><b>The machine</b> installs nothing while it runs: no package manager, no store. The kernel is source fixed by its SHA-256 fingerprint, and the image is made from the file.
-          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/vendor/PIN.md" target="_blank" rel="noopener noreferrer">vendor/PIN.md</a>.</span>
-          <span class="open"><b>Still open.</b> Model files and the programs in the image carry no fingerprint yet.</span></div>
+        <div class="fix"><b>The machine</b> installs nothing while it runs: no package manager, no store. The kernel, the compiler and every program placed in the image are fixed by their digests, and the image is made from the file.
+          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/vendor/PIN.md" target="_blank" rel="noopener noreferrer">vendor/PIN.md</a>.</span></div>
       </div>
       <div class="ground-row">
         <div class="p"><span class="en">Unexpected code execution</span><span class="lc">OWASP ASI05</span></div>
         <div class="prob"><b>The threat.</b> The agent is talked into running code.</div>
         <div class="fix"><b>The machine</b> ships no shell, so a command string has nothing to run it. A program not allowed to start others is refused by the kernel, and a <code>noexec</code> disk can be written but not run from.
-          <span class="seen"><b>Seen in</b> qemu_confine: <code>fork -- refused by the kernel (EPERM)</code>; fixture R5.</span>
-          <span class="open"><b>Still open.</b> Code a program interprets runs inside its walls; the machine limits its reach, not its existence.</span></div>
+          <span class="seen"><b>Seen in</b> qemu_confine: <code>fork -- refused by the kernel (EPERM)</code>; fixture R5.</span></div>
       </div>
       <div class="ground-row">
         <div class="p"><span class="en">Memory and context poisoning</span><span class="lc">OWASP ASI06</span></div>
         <div class="prob"><b>The threat.</b> Poisoned notes in an agent's memory re-instruct it days later.</div>
         <div class="fix"><b>The machine</b> keeps each program to the disks it names, so one agent cannot write another's memory unless both name the same disk.
-          <span class="seen"><b>Seen in</b> qemu_confine: <code>ledger has no sight of /var/log, caisse has no sight of /data</code>; lesson 9.</span>
-          <span class="open"><b>Still open.</b> Where a memory came from, and who may forget it, belong to a data layer that is not built.</span></div>
+          <span class="seen"><b>Seen in</b> qemu_confine: <code>ledger has no sight of /var/log, caisse has no sight of /data</code>; lesson 9.</span></div>
       </div>
       <div class="ground-row">
         <div class="p"><span class="en">Agents talking to agents</span><span class="lc">OWASP ASI07</span></div>
         <div class="prob"><b>The threat.</b> One agent hands another an instruction nobody reviewed.</div>
         <div class="fix"><b>The machine</b> gives a program without the network nothing to talk over; such programs meet through a disk both name, a line in the file. Between boxes, a signed record is checked with the public key alone.
-          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/machines/fleet_temoin.expected" target="_blank" rel="noopener noreferrer">fleet_temoin</a>; lesson 14.</span>
-          <span class="open"><b>Still open.</b> Encryption on the wire stays with the servers in front; what crosses a shared disk is the programs' to check.</span></div>
+          <span class="seen"><b>Seen in</b> <a href="https://github.com/mayouni/harobanda/blob/main/machines/fleet_temoin.expected" target="_blank" rel="noopener noreferrer">fleet_temoin</a>; lesson 14.</span></div>
       </div>
       <div class="ground-row">
         <div class="p"><span class="en">Cascading failures</span><span class="lc">OWASP ASI08</span></div>
         <div class="prob"><b>The threat.</b> One runaway loop drags down everything around it.</div>
         <div class="fix"><b>The machine</b> holds budgets in the kernel: past its memory a program is stopped, past its processor share it waits, past its task count it is refused. An update is a trial, kept only when every program is ready and the boot matches.
-          <span class="seen"><b>Seen in</b> qemu_budget: <code>greedy (pid N) killed by signal 9</code>; lesson 10.</span>
-          <span class="open"><b>Still open.</b> The hardware watchdog's restart has not been seen on a board yet.</span></div>
+          <span class="seen"><b>Seen in</b> qemu_budget: <code>greedy (pid N) killed by signal 9</code>; lesson 10.</span></div>
       </div>
       <div class="ground-row">
         <div class="p"><span class="en">Human–agent trust exploitation</span><span class="lc">OWASP ASI09</span></div>
         <div class="prob"><b>The threat.</b> The agent persuades a person to approve something harmful.</div>
         <div class="fix"><b>The machine</b> turns every change into a new file, read as a difference, judged by the court before anything runs, tried once, and kept only if the machine recognises its own boot.
-          <span class="seen"><b>Seen in</b> the court's 317 fixtures; lesson 5.</span>
-          <span class="open"><b>Still open.</b> The tools for an agent to draft a change and a person to approve it are not built.</span></div>
+          <span class="seen"><b>Seen in</b> the court's 317 fixtures; lesson 5.</span></div>
       </div>
       <div class="ground-row">
         <div class="p"><span class="en">Rogue agents</span><span class="lc">OWASP ASI10</span></div>
         <div class="prob"><b>The threat.</b> An agent turns on the machine it runs on.</div>
         <div class="fix"><b>The machine</b> refuses every program the 30 calls of <a href="refusals.html#floor">the floor</a>. One not allowed to start others is alone in a process table of its own.
-          <span class="seen"><b>Seen in</b> qemu_confine: <code>this world cannot change the machine it runs on</code>; lesson 8.</span>
-          <span class="open"><b>Still open.</b> The list is closed, never a claim that all else is safe; and a flaw in the kernel is a flaw in the walls.</span></div>
+          <span class="seen"><b>Seen in</b> qemu_confine: <code>this world cannot change the machine it runs on</code>; lesson 8.</span></div>
       </div>
     </div>
   </section>

@@ -4,10 +4,10 @@
 Brief: site/DIAGRAMS.md section 13. The sentence it must make true: a resilient
 cloud is many small declared machines in many rooms, each judging its own boot
 and keeping its own record, joined by links the fleet file names, so that
-losing a room is losing what the file and the roll say was in it -- and what
-comes next (the loss drill) is ordered and not built; where the data stays
+losing a room is losing what the file and the roll say was in it -- and the
+loss drill destroys one box on purpose and keeps its copy; where the data stays
 (TERR-1), the copy of a room's files (MIR-1) and the roll of who has written
-since (ROLL-1) are written already.
+since (ROLL-1) are written already, and the loss drill (LOSS-1) is drilled.
 
 It is containment and topology, which is what a diagram is for here: a hall as
 ONE strip, where data, compute and reach sit in one place and one strike takes
@@ -18,7 +18,8 @@ what makes many rooms one cloud. Brick is used once, on the strike. The copy
 from room A to room B is a solid arrow since 2026-10-19 (MIR-1): it was dashed,
 this family's mark for absence, while it was ordered and not built. The roll call is
 in the third room's words since 2026-10-20 (ROLL-1): what is lost is what the file and
-the last roll say. The last band says what is still ahead in the page's own words (DOC-2).
+the last roll say. The last band says what the drill showed, in the page's own words (DOC-2); until
+2026-11-08 it said what was ahead, which a public page no longer lists (PRINCIPAL-AFFIRM-01).
 
 The phone gets a different drawing of the same argument: narrow14.py.
 
@@ -39,7 +40,7 @@ ROOMS = [("room A", ["one file, own key", "judges its boot", "keeps its record"]
          ("room B", ["one file, own key", "the way between", "the two links"], "machine"),
          ("room C", ["lost: what the", "file and roll say", "and nothing more"], "struck")]
 MIRROR = "A's files, kept on B"
-NEXT = ("NEXT, ORDERED", ["the loss drill: one box lost, the rest serve"])
+NEXT = ("DRILLED", ["one box destroyed, its copy kept and checked"])
 
 img, d = canvas(14)
 

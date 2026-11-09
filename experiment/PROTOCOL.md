@@ -1,3 +1,53 @@
+# AFFIRM-1 — a public page states what the project is and does
+
+The Principal's rule of 2026-11-08 for every Softanza site
+(PRINCIPAL-AFFIRM-01), relayed by Central as AFFIRM-HAROBANDA: "Avoid this
+role of transparency that hurts the project image (negative markeing)!" A
+public page states what the project IS and DOES; no line lists what has not
+been done, shown, measured or perceived; nothing is inflated -- a line that
+only said what is missing goes, and a line that bounded a claim restates the
+claim at its true size; the record of what is unmeasured stays in the
+repository's own documents. He had said it once already, through this
+desk, on 2026-10-13.
+
+**The guard first, and it failed on the pages as they stood**: rule 6 of
+`harb docs --check` reads every site page, and the README, as a reader sees
+it (markup stripped, case ignored) for the phrase class -- "not yet", "not
+built", "nobody has", "never been", "does not claim", "not claimed", "later
+step", "Limit:", "still open", "said plainly", "not one of them", "is/are
+not done" -- and the markup that tags a row as not built
+(`class="stage open"`). An allow list takes an entry only with its reason,
+and an entry no page bears is convicted as stale; it is empty. Its first
+run found **44 lines on 13 pages**; a sweep by eye for the forms the list
+cannot catch ("yet", "nothing fetches", "no customer") found eight more, on
+the pages and in the README. A unit test holds the class, the markup, the
+allowance and the stale allowance.
+
+**What changed.** Three sections whose subject was a lack -- "Not built yet,
+said plainly" (AI agents), "What this page does not claim" (resilience),
+"What the machine does not do yet" (security) -- became what is built: the
+agent card names the thirty calls no file can grant, and the security
+section is what the walls rest on (routes read back, signed boots, dated
+records, the pinned and mirrored kernel read against its advisories, every
+pinned program checked by digest). The status pages say what each built
+step does and what judges it; the rows of steps not built left them, and
+their order is where it always was, `doc/CLOUD.md` and `doc/REALTIME.md`.
+The threats page's ten "Still open" parts went, after each row's claim was
+read to see that none leaned on its bound. Two claims were restated at their
+true size rather than kept: the secure-design model's answers "which the
+desk reads" (a hand-over between two worlds is not built), and the source
+mirror's kernel "built from it alone" (the kernel is compiled by the host's
+gcc, which the mirror does not carry by ruling) -- both written on these
+pages in the last day, and both caught by reading them for this rule.
+Diagram 14's last band, "NEXT, ORDERED: the loss drill", is "DRILLED: one
+box destroyed, its copy kept and checked", wide and narrow, with its alt
+text and brief.
+
+Named seams: the phrase list catches a class of words, never every
+sentence that lists a lack -- the eye sweep is what found the rest; the
+glossary's "a route is not a wall" stays, because it defines a word and is
+carried verbatim from the tour.
+
 # SRCMIRROR-1 — every pinned file restored from the estate's mirror, and a rebuild with no network
 
 Ruling 19's last item, on the author's "go (a)" of 2026-11-08: the kernel,
