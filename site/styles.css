@@ -89,6 +89,10 @@ p.prose:not(.lead):not(.pull){font-size:21px;line-height:1.65;}
     padding:2px var(--gutter) 12px;box-shadow:0 22px 44px -30px rgba(0,0,0,.45);}
   .nav:not(.open){display:none;}
   .nav a{padding:14px 2px;border-bottom:1px solid var(--line);font-size:17px;color:var(--ink);}
+  /* a line SEPARATES two entries, so none follows the last: a line under it reads
+     as the top of one more entry below, and sends the reader scrolling for it
+     (PRINCIPAL-MENULAST-01, 2026-11-12) */
+  .nav a:last-child{border-bottom:0;}
   .nav a.active{color:var(--river);}
   .nav a.active::after{left:2px;right:auto;width:30px;bottom:8px;}
 }

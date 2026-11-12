@@ -1059,8 +1059,16 @@ fn checkRadarHero(w: *std.Io.Writer, css: []const u8, t: *Tally) !void {
     }
 }
 
+/// The phone menu draws a line between two entries and none after the last
+/// (PRINCIPAL-MENULAST-01): a line under the last entry reads as the top of one more below it.
+const menu_last = ".nav a:last-child{border-bottom:0;}";
+
 fn checkEstate(w: *std.Io.Writer, css: []const u8, pages: []const Page, t: *Tally) !void {
     try checkRadarHero(w, css, t);
+    if (std.mem.indexOf(u8, css, menu_last) == null) {
+        t.bad += 1;
+        try w.print("  site/styles.css -- carries no '{s}': the phone menu's last entry has a line under it, which reads as one more entry below (PRINCIPAL-MENULAST-01)\n", .{menu_last});
+    }
     for (running_rules) |r| {
         const px = rulePx(css, r) orelse {
             t.bad += 1;
@@ -1800,6 +1808,16 @@ test "running text is 21 px, the footer 18, and every page carries the foot and 
     var css: std.ArrayList(u8) = .{};
     for (running_rules) |r| try css.writer(arena).print("{s}font-size:21px;}}\n", .{r});
     for (foot_rules) |r| try css.writer(arena).print("{s}font-size:18px;}}\n", .{r});
+    try css.appendSlice(arena, menu_last);
+    {
+        // the phone menu's last line put back: refused, by name
+        const lined = try std.mem.replaceOwned(u8, arena, css.items, menu_last, ".nav a{border-bottom:1px solid;}");
+        var awm = std.Io.Writer.Allocating.init(arena);
+        var tm = Tally{};
+        try checkEstate(&awm.writer, lined, &.{}, &tm);
+        try t.expectEqual(@as(usize, 1), tm.bad);
+        try t.expect(std.mem.indexOf(u8, awm.written(), "PRINCIPAL-MENULAST-01") != null);
+    }
     var page: std.ArrayList(u8) = .{};
     for (foot_parts) |part| try page.appendSlice(arena, part);
     var aw = std.Io.Writer.Allocating.init(arena);

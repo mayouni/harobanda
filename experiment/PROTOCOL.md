@@ -33,6 +33,13 @@ twice. Named seam: a height set inside a page's own style attribute is not read.
 **The headline.** The motto is the headline now, "Declared. Judged. *Yours.*",
 and the separate motto line and its styles are gone; the word is said once.
 
+**MENULAST, the same day, on the author's word**: "the last separator line in
+the mobile meny is not necessary. because ti me indices the user on error to
+assume he must scroll the menu down for yet an other option menu". A line
+separates two entries, so none follows the last: `.nav a:last-child` has no
+border, read back in the browser at 375 px (Blog 0 px, the six above 0.8 px),
+and rule 8 refuses a stylesheet without it, its test putting the line back.
+
 **Generalised beyond this repository** by routing, never by editing: the rule
 and its measure go to Central for the other Softanza sites and the Zui design
 system, which are other desks' repositories.
