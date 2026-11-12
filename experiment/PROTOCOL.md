@@ -1,3 +1,56 @@
+# ESTATE-1, NORING-1, HOME-1 — the site says what Harobanda is, in the estate's type, foot and words
+
+Three seats on the site in one session (2026-11-12), each its own commit.
+
+**HOME-1 (9bcf2ad), on the author's word.** He liked how an outside summary
+presented Harobanda and asked the site to learn from it. What it did that the
+site did not: one plain sentence saying what the project is before any
+detail; a motto to remember; the distinctive ideas as five short named lines;
+the project's place in Softanza. What it got wrong stayed out: a motto that
+appears nowhere in the estate ("Simple. Fast. Everywhere." -- and "fast" is
+a number the site cannot measure on an emulator), a "personal-hardware
+cloud" without subscriptions, a desktop system. The author chose the motto,
+"Declared. Judged. Yours.", from three offered; it opens the home page and the
+README, and a new first section says what Harobanda is in one sentence, its
+five ideas (Declared, Judged, Yours, On proven Linux, Simple to hold) and its
+place in Softanza, each line something built.
+
+**NORING-1 (4ade989), PRINCIPAL-NORING-01 and its scope.** No public page
+names the retired language: the cloud's server is named by its role, the
+engine's surfaces are Haro, Luau, Python, JavaScript and PHP, the edge is
+MicroHaro, and diagram 12 labels the server "app server". `docs --check`
+rule 7 refuses the word, matched whole, and the three products named for it,
+with a unit test. **Scope taken, and named**: the README and the site, the
+two public faces; the repository's own documents, file names
+(`ringserv_build.ps1`, `qemu_cloud_ringserv`) and the server's product name
+are not touched here -- the server is another desk's program, and renaming
+it is that desk's and the Principal's. **A picture slipped past AFFIRM-1**:
+diagram 12's last band listed what was "NOT THERE YET", because a phrase
+check reads a page's text and not the text drawn in its images; the band now
+says what was built since, and a line in it that said the copy was of "the
+server's files" was corrected before commit -- the copy that is built is
+another program's directory.
+
+**ESTATE-1 (42b5c38), PRINCIPAL-ESTATETYPE-01 and -SITEFOOT-01.** Running text
+is 21 px (28 stylesheet rules and 13 sizes set inside pages moved from 18; the
+section strip is navigation and kept its size), a link in a sentence is
+underlined at rest in its own colour (it was a 40 % tint), footer text is
+18 px (was 14). Every page's foot reads "Harobanda is a Softanza project.
+(c) 2020-<year> Mansour Ayouni. Released under the MIT licence.", the year
+written by the site's build and again by the page; the LICENSE reads
+2020-2026. The Radar bar 2.0.0 is in every page's head, with its integrity
+hash. `docs --check` rule 8 holds the named running-text rules to 21 px and
+the footer to 18, refuses a smaller size set in a page and a page without
+the foot or the bar, and refuses a running-text rule it cannot find rather
+than pass it over; on the stylesheet as it stood it found 22. Measured in the
+browser on 16 page kinds at 530 and 1280 px: running text 21 px at its
+smallest, footer 18, every link in a sentence underlined, the year written,
+the bar loaded, nothing scrolling sideways.
+
+Named seams: the phrase and name checks read text, never the text drawn in an
+image -- a new diagram is read by eye; rule 8 knows the running-text rules by
+name, so a new kind of running text is a new name in its list.
+
 # AFFIRM-1 — a public page states what the project is and does
 
 The Principal's rule of 2026-11-08 for every Softanza site
