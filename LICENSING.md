@@ -1,6 +1,6 @@
 # What the licence covers, and what it does not
 
-The licence is [`LICENSE`](LICENSE): MIT, © 2026 Mansour Ayouni. These
+The licence is [`LICENSE`](LICENSE): MIT, © 2020-2026 Mansour Ayouni. These
 notes stood at the end of that file until 2026-09-28, and moved here so
 that the file is the MIT text alone -- which is what lets GitHub
 recognise it as MIT. The terms did not change.

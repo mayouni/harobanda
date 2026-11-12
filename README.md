@@ -407,7 +407,7 @@ same for all three.
 | profile | the device | what runs on it | state |
 |---|---|---|---|
 | **hosted** | a PC, a server, a Raspberry Pi | the Linux kernel, a few self-contained programs (no shared libraries to install), and `harb` itself as the first program the kernel starts (PID 1) | **boots** on x86_64 and ARM processors under QEMU, and as a Raspberry Pi 4 image; judged |
-| **edge** | a microcontroller: a small chip with no operating system underneath | one program that is the whole device (MicroRing's side of the family) | declared and judged; turned into a MicroRing project |
+| **edge** | a microcontroller: a small chip with no operating system underneath | one program that is the whole device (MicroHaro's side of the family) | declared and judged; turned into a MicroHaro project |
 | **touch** | a tablet | the tablet's own kernel, with the app as the only thing it starts | declared and judged |
 
 ## Where things are
@@ -423,8 +423,8 @@ same for all three.
 | identity: a device's key, and the record it signs | `src/journal.zig` | `machines/qemu_identity.expected` |
 | a fleet: facts about a set, the keys a device used to have, the ways between its links, the door of a link, where its data stays, and which machine keeps a copy of which other's directory | `src/fleet.zig` | `declarative/fleet/`, `experiment/os7_fleet.sh`, `experiment/os8_links.sh` |
 | a machine that is the way between two networks, and the names it answers across them | `src/machine.zig` (`FORWARD`), `src/names.zig`, `src/get.zig` | `machines/qemu_forward.expected`, `machines/cloud_links.expected` |
-| a solution's services, written apart from a machine and placed on one; and the program that says a server is serving | `src/pack.zig`, `src/ready.zig` | `harb court --pack`, `machines/qemu_cloud_ringserv.expected` |
-| a world that runs as an identity, and the directories it owns | `src/machine.zig` (`STATE`), `src/init.zig` | `machines/qemu_cloud_ringserv.expected` (the directory read back from the disk), `machines/qemu_own.expected` (a world asks the kernel what it may write), `experiment/state_probe.sh` |
+| a solution's services, written apart from a machine and placed on one; and the program that says a server is serving | `src/pack.zig`, `src/ready.zig` | `harb court --pack`, the cloud's pinned boot (`machines/qemu_cloud*.expected`) |
+| a world that runs as an identity, and the directories it owns | `src/machine.zig` (`STATE`), `src/init.zig` | the cloud's pinned boot (the directory read back from the disk), `machines/qemu_own.expected` (a world asks the kernel what it may write), `experiment/state_probe.sh` |
 | time: a record dated by an authority's signed word, or said to be undated | `src/timeattest.zig`, `src/timeserve.zig`, `src/timeaudit.zig`, `src/machine.zig` (`CLOCK`, `TIME_FROM`) | `machines/time.expected` (two machines on one wire), `experiment/time_probe.sh`, `experiment/time_scene_probe.sh` |
 | a copy: the files of a world's directory kept on another machine, only if the source's signed list and every digest in it match | `src/mirror.zig`, `src/mirrorserve.zig`, `src/mirroraudit.zig`, `src/machine.zig` (`MIRROR_OF`, `MIRROR_FROM`), `src/fleet.zig` (`MIRROR`) | `machines/mirror.expected` (two machines on one wire, the disks read back), `experiment/mirror_unit.sh`, `experiment/mirror_probe.sh` |
 | the roll call: who has written a record since, read from the records members were brought, against the fleet's keys, its time authority's statements and the roll before | `src/roll.zig` | `machines/roll.expected` (the time seat's arc, rolled over), `experiment/roll_probe.sh` |
@@ -471,8 +471,8 @@ transcript:
   rebuilt card and a stolen one;
 - `bash experiment/os8_links.sh` — three machines on two wires: a till on
   one link reaches a server on the other through a box that is the way
-  between them (the server is RingServ, built from its own source by
-  `experiment/ringserv_build.ps1`);
+  between them (the server is the estate's application server, built from
+  its pinned source as `vendor/PIN.md` says);
 - `bash experiment/os9_cloud.sh` — a real server placed on a declared
   machine and booted, with the program that says it is serving. It runs as an
   identity of its own, and the boot reads its directory back from the disk it
@@ -524,8 +524,8 @@ carries. The ruling that changed it is STZ-OS-RULING-02 in
 
 ## Licence
 
-MIT, © 2026 Mansour Ayouni — the licence the estate's other code already
-carries (stzlib, Ring++, MicroRing, zin). [`LICENSE`](LICENSE) is the
+MIT, © 2020-2026 Mansour Ayouni — the licence the estate's other code
+already carries (stzlib, Haro, MicroHaro, zin). [`LICENSE`](LICENSE) is the
 licence itself, and [`LICENSING.md`](LICENSING.md) says what it covers and
 what it does not: a machine is built from Linux, which is GPL-2.0 and is
 fetched and pinned by digest rather than contained here, so an image that

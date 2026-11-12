@@ -936,6 +936,45 @@ fn checkAffirm(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const Page,
     };
 }
 
+// ---- the retired language is named on no public page (NORING-1) ----
+
+/// The Principal, 2026-11-09 (PRINCIPAL-NORING-01, scope ruled 2026-11-10): no README,
+/// site page, release or public text names the language Softanza was first written in.
+/// Its names as a reader would meet them: the word itself, and the three products that
+/// carried it. The word is matched whole, case ignored, so "string" and "bring" are not it.
+const retired_names = [_][]const u8{ "ring++", "microring", "ringserv" };
+const retired_word = "ring";
+
+fn isWordByte(c: u8) bool {
+    return std.ascii.isAlphanumeric(c) or c == '+' or c == '_' or c == '-';
+}
+
+fn namesRetired(said: []const u8) ?[]const u8 {
+    for (retired_names) |n| if (std.mem.indexOf(u8, said, n) != null) return n;
+    var from: usize = 0;
+    while (std.mem.indexOfPos(u8, said, from, retired_word)) |at| {
+        from = at + retired_word.len;
+        const before_ok = at == 0 or !isWordByte(said[at - 1]);
+        const after_ok = from >= said.len or !isWordByte(said[from]);
+        if (before_ok and after_ok) return retired_word;
+    }
+    return null;
+}
+
+fn checkRetired(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const Page, t: *Tally) !void {
+    for (pages) |p| {
+        var n: usize = 0;
+        var lines = std.mem.splitScalar(u8, p.text, '\n');
+        while (lines.next()) |raw| {
+            n += 1;
+            const said = try std.ascii.allocLowerString(alloc, try plainText(alloc, raw));
+            const name = namesRetired(said) orelse continue;
+            t.bad += 1;
+            try w.print("  {s}:{d} -- '{s}': no public page names the retired language or a product named for it (PRINCIPAL-NORING-01)\n", .{ p.path, n, name });
+        }
+    }
+}
+
 /// Run from the repository root, as `zig build court` runs it.
 pub fn check(w: *std.Io.Writer) !usize {
     var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -966,6 +1005,7 @@ pub fn check(w: *std.Io.Writer) !usize {
     try public.appendSlice(alloc, site.items);
     try public.append(alloc, .{ .path = "README.md", .text = try root.readFileAlloc(alloc, "README.md", 1 << 24) });
     try checkAffirm(alloc, w, public.items, &affirm_allowed, &t);
+    try checkRetired(alloc, w, public.items, &t);
     const pages = [_]struct { path: []const u8, html: bool }{
         .{ .path = "README.md", .html = false },
         .{ .path = "site/words.html", .html = true },
@@ -980,7 +1020,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         try compareWords(alloc, w, pg.path, got, &learn.words, &t);
     }
     if (t.bad == 0) {
-        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together, and every strip opens with the page its section's menu entry opens; and the {d} public pages (the site's and the README) state what the project is and does, with no line listing a lack ({d} allowed, each with its reason)\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled, t.affirm_pages, affirm_allowed.len });
+        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together, and every strip opens with the page its section's menu entry opens; and the {d} public pages (the site's and the README) state what the project is and does, with no line listing a lack ({d} allowed, each with its reason), and none names the retired language\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled, t.affirm_pages, affirm_allowed.len });
     } else {
         try w.print("docs -- {d} claim(s) the documents make do not hold\n", .{t.bad});
     }
@@ -1616,6 +1656,25 @@ test "a strip entry that repeats its menu entry is convicted, naming both (MENU-
     const q = try labelProbe(arena, &.{.{ .path = "site/security.html", .text = menu_sec ++ new }});
     try t.expectEqual(@as(usize, 0), q.tally.bad);
     try t.expectEqual(@as(usize, 1), q.tally.nav_labelled);
+}
+
+test "no public page names the retired language, and a word that merely contains it is not it (NORING-1)" {
+    const t = std.testing;
+    try t.expectEqualStrings("ring", namesRetired("the engine's ring surface").?);
+    try t.expectEqualStrings("ring", namesRetired("ring apps").?);
+    try t.expectEqualStrings("ring++", namesRetired("built on ring++ first").?);
+    try t.expectEqualStrings("ringserv", namesRetired("the server is ringserv 0.9").?);
+    try t.expectEqualStrings("microring", namesRetired("a microring project").?);
+    try t.expect(namesRetired("a string, during the spring, to bring") == null);
+    try t.expect(namesRetired("haro and luau run today") == null);
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    var aw = std.Io.Writer.Allocating.init(arena);
+    var tally = Tally{};
+    try checkRetired(arena, &aw.writer, &.{.{ .path = "site/x.html", .text = "<p>Haro runs.</p>\n<p>Luau &amp; <b>Ring</b> today</p>\n" }}, &tally);
+    try t.expectEqual(@as(usize, 1), tally.bad);
+    try t.expect(std.mem.indexOf(u8, aw.written(), "site/x.html:2 -- 'ring'") != null);
 }
 
 test "a public page lists no lack, and an allowance is a reason or it is stale (AFFIRM-1)" {

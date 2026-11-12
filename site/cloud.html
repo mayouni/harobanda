@@ -51,13 +51,12 @@
 
   <section class="wrap block">
     <div class="figure">
-      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-12.png" alt="The smallest cloud. A fleet file at the top names three machines and the two links between them. A till, on the front link, asks for a server by name. A box, drawn with the one orange mark, has a foot on both links and is the way between them. A server, RingServ 0.9, is on the core link. Beneath them, what the machines said, quoted from the pinned boot: the box says commons.core.cloud is 10.20.0.2; the till gets commons.core.cloud:8210/health -- 200; the server runs as appserver (2000:2000). A last band lists what is not there yet: no front, only plain HTTP inside the cloud; no packet filter, a route is a way both ways; no board, every boot shown is emulated." width="1376" height="768">
-      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-12-narrow.png" alt="The smallest cloud, as a column. A fleet file names three machines and the two links between them. A till asks for a server by name; the front link joins it to a box, drawn with the one orange mark, which is the way between; the core link joins the box to a server, RingServ 0.9. Then what the machines said, quoted from the pinned boot: the box says commons.core.cloud is 10.20.0.2; the till gets commons.core.cloud:8210/health -- 200; the server runs as appserver (2000:2000). Last, what is not there yet: no front, only plain HTTP inside the cloud; no packet filter, a route is a way both ways; no board, every boot shown is emulated." width="640" height="1846">
+      <img class="diagram-img wide-only" loading="lazy" src="harobanda-diagram-12.png" alt="The smallest cloud. A fleet file at the top names three machines and the two links between them. A till, on the front link, asks for a server by name. A box, drawn with the one orange mark, has a foot on both links and is the way between them. An app server is on the core link. Beneath them, what the machines said, quoted from the pinned boot: the box says commons.core.cloud is 10.20.0.2; the till gets commons.core.cloud:8210/health -- 200; the server runs as appserver (2000:2000). A last band lists what was built since: a door at the box, where the till asks over TLS; a copy of a program's files on another box; and a box destroyed on purpose, its copy kept." width="1376" height="768">
+      <img class="diagram-img narrow-only" loading="lazy" src="harobanda-diagram-12-narrow.png" alt="The smallest cloud, as a column. A fleet file names three machines and the two links between them. A till asks for a server by name; the front link joins it to a box, drawn with the one orange mark, which is the way between; the core link joins the box to an app server. Then what the machines said, quoted from the pinned boot: the box says commons.core.cloud is 10.20.0.2; the till gets commons.core.cloud:8210/health -- 200; the server runs as appserver (2000:2000). Last, what was built since: a door at the box, where the till asks over TLS; a copy of a program's files on another box; and a box destroyed on purpose, its copy kept." width="640" height="1846">
     </div>
     <div class="prose stack-gap">
       <p>This is the smallest cloud there is: three machines on two networks, each booted from its own file in an emulator, and a fleet file that names them. The till, a shop's counter device and here simply the machine that asks, is on the front network, and the server is on the core network. The box has a foot on each, and the fleet file says it is the one machine that is the way between them. The till asks the box for <code>commons.core.cloud</code>, is told <code>10.20.0.2</code>, and reaches the server, which answers its health check.</p>
-      <p>The server is <a href="https://mayouni.github.io/ringserv/" target="_blank" rel="noopener noreferrer">RingServ</a> 0.9, built from its own source at a pinned version, and it stands in for a customer's server. It runs as a user of its own, not as root, in directories only that user may write.</p>
-      <p>RingServ is a server for Ring apps and web services. It will be replaced by HaroServ after the Haro language replaces Ring in the Softanza Project.</p>
+      <p>The server is the Softanza estate's application server, built from its own source at a pinned version, and it stands in for a customer's server. It runs as a user of its own, not as root, in directories only that user may write.</p>
     </div>
   </section>
 
@@ -76,7 +75,7 @@ box: boot: forward -- between front and core: a packet that arrives on one may l
 box: boot: names front -- commons.core.cloud is <span class="k">10.20.0.2</span>, through this machine
 
 <span class="d"># the server, behind the box</span>
-core: boot: state -- ringserv owns /run/ringserv and /data/ringserv as <span class="k">appserver (2000:2000)</span>; each made, then read back as that identity's, mode 0700
+core: boot: egress core -- 192.168.20.0/24 and nowhere else: <span class="k">no default route</span>
 
 <span class="d"># the till, asking by name</span>
 till: ask commons.core.cloud -- 10.20.0.2 (from 192.168.20.1)

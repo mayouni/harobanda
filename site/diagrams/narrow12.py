@@ -124,14 +124,14 @@ c.box("till", "asks by name", "plain")
 c.link("the front link")
 c.box("box", "the way between", "machine", accent=True)
 c.link("the core link")
-c.box("server", "RingServ 0.9", "plain")
+c.box("server", "app server", "plain")
 c.gap(20)
 
 c.kicker("WHAT THE MACHINES SAID", NEW_LINE)
 c.said(SAID)
 c.gap(22)
 
-c.strip_items("NOT THERE YET", ["No front: plain HTTP, inside the cloud only.",
-                                "No packet filter: a route is a way both ways.",
-                                "No board: every boot shown is emulated."])
+c.strip_items("BUILT SINCE", ["A door at the box: the till asks over TLS.",
+                              "A copy of a program's files on another box.",
+                              "A box destroyed on purpose, its copy kept."])
 c.render("harobanda-diagram-12-narrow.png")

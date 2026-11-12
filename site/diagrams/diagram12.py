@@ -39,15 +39,17 @@ FILE = ("The fleet file", "names the machines, the two links, and the way betwee
 # (title, what it does, which network it is on)
 MACHINES = [("till", "asks by name"),
             ("box", "the way between"),
-            ("server", "RingServ 0.9")]
+            ("server", "app server")]
 LINKS = ["front", "core"]
 # (who, the machine's own words), in reading order
 SAID = [("the box says", "commons.core.cloud is 10.20.0.2"),
         ("the till gets", "commons.core.cloud:8210/health -- 200"),
         ("the server runs", "as appserver (2000:2000)")]
-NOT_YET = ("NOT THERE YET", ["No front: plain HTTP, inside the cloud only.",
-                             "No packet filter: a route is a way both ways.",
-                             "No board: every boot shown is emulated."])
+# the last band says what was built on this cloud after the picture's first drawing (AFFIRM-1: a public picture
+# lists no lack; until 2026-11-12 it was "NOT THERE YET")
+NOT_YET = ("BUILT SINCE", ["A door at the box: the till asks over TLS.",
+                           "A copy of a program's files on another box.",
+                           "A box destroyed on purpose, its copy kept."])
 
 # every quotation is the machines', verbatim, or nothing is drawn
 pinned = PINNED.read_text(encoding="utf-8")
