@@ -829,7 +829,10 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   the README open with the author's motto, "Declared. Judged. Yours.",
   and one sentence of what Harobanda is. **A check that reads text does
   not read a picture**: diagram 12 said "NOT THERE YET" past AFFIRM-1;
-  read a new diagram by eye.
+  read a new diagram by eye.  **A zone sized by the screen gives up the
+  Radar bar's height** (RADARHERO-1, the author 2026-11-12): the bar pushes
+  the page down, so `app.js` measures it as `--radar-h` and every vh/svh
+  height subtracts it; rule 8 refuses one that does not.
 - **A public page states what the project is and does, and lists no lack**
   (AFFIRM-1, PRINCIPAL-AFFIRM-01): `harb docs --check` refuses, on every
   site page and the README, the phrase class of a line about what is not
@@ -2256,7 +2259,7 @@ nothing about the init (the MicroRing injection finding, 2026-08-20).
   licence was attached to the mirror before the mirror went public.
 - **What is built, and where its story is.** Every seat is written up in
   `experiment/PROTOCOL.md`, newest first, under the tag its doctrine
-  line carries: ESTATE-1, NORING-1, HOME-1 (the site's type, foot, words and motto), AFFIRM-1 (no page lists a lack), SRCMIRROR-1 (the source mirror), LOSS-1 (the loss drill), MENU-2, WORKER-1 (a world per job), ONEHOUR-1 (`harb advisories`), ALGOUT-1, MENU-1, TCPUAF-1 (the kernel pin moved to 6.12.115; the build cache keyed by
+  line carries: RADARHERO-1, ESTATE-1, NORING-1, HOME-1 (the site's type, foot, words and motto), AFFIRM-1 (no page lists a lack), SRCMIRROR-1 (the source mirror), LOSS-1 (the loss drill), MENU-2, WORKER-1 (a world per job), ONEHOUR-1 (`harb advisories`), ALGOUT-1, MENU-1, TCPUAF-1 (the kernel pin moved to 6.12.115; the build cache keyed by
   the kernel's version too), ROLL-1, MIR-1, TERR-1, NAV-1, FRONT-2, FRONT-1, PORT-1, SAFE-1, TCK-1, TIM-1, PRI-1, TIME-1, OWN-2, OWN-1, WDG-1, FWD-1, SRV-2, PLC-1, DOC-3, CON-1, LRN-3, DOC-2, DOC-1, EGR-3, RET-1, PIN-1, NAME-1, LRN-2, NAM-2, JRN-2, EGR-2, VDCT-1, LRN-1, THR-1, SEE-1, KCACHE-1, SYS-1, PID-1, MNT-1, NS-1,
   HDW-1, FLT-1, NAM-1, JRN-1, IDN-1, EGR-1, GRT-1, BDG-1, HLT-1, SRV-1,
   JDG-1, AB-1, PRJ-1/2, USR-1, RDY-1, NET-1 and OS-1..5. The two

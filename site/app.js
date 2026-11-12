@@ -44,13 +44,33 @@
     var behind = img.getBoundingClientRect().bottom > bar.getBoundingClientRect().bottom + 8;
     document.body.classList.toggle('over-hero', behind);
   };
+  /* The Radar bar, when it shows, is inserted above the menu and pushes the page
+     down by its height; that height is written as --radar-h, and the picture gives
+     it up (styles.css), so the hero stays whole in the first screen. The bar
+     arrives after the page, and shrinks to nothing when dismissed: both are
+     watched, never assumed. */
+  var radar = null, watching = null;
+  var radarH = function () {
+    radar = radar && radar.isConnected ? radar : document.querySelector('[data-radar-bar]');
+    if (radar && radar !== watching && window.ResizeObserver) {
+      watching = radar;
+      new ResizeObserver(function () { place(); }).observe(radar);
+    }
+    return radar ? Math.round(radar.getBoundingClientRect().height) : 0;
+  };
   var place = function () {
+    var r = radarH();
+    if (r > 0) root.style.setProperty('--radar-h', r + 'px');
+    else root.style.removeProperty('--radar-h');
     root.style.removeProperty('--bar-h');
-    if (Math.abs(hero.getBoundingClientRect().top + window.scrollY) > 0.5)
+    if (Math.abs(hero.getBoundingClientRect().top + window.scrollY - r) > 1.5)
       root.style.setProperty('--bar-h', Math.round(bar.getBoundingClientRect().height) + 'px');
     state();
   };
   place();
+  if (window.MutationObserver)
+    new MutationObserver(function () { if (!watching) place(); })
+      .observe(document.body, { childList: true });
   window.addEventListener('resize', place);
   window.addEventListener('load', place);
   window.addEventListener('scroll', state, { passive: true });

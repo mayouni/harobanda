@@ -1,3 +1,36 @@
+# RADARHERO-1 — the hero stays whole in the first screen when the Radar bar shows
+
+On the author's word (2026-11-12): "When the Radar bar is displayed the hero
+zone must be reposined to be visible in the visipbe view of the page.
+generalise this rule in Zane/Zui and all the other Softanza sites". And in the
+same session: "Declared is dupplicated!" -- the home headline read "The machine,
+declared." over the motto "Declared. Judged. Yours.".
+
+**The defect.** The Radar bar is inserted at the top of the page and pushes it
+down by its own height. The home page's photograph is one screen tall
+(`100svh`), so with the bar shown its bottom -- the panel with the sentence and
+the arrow -- fell below the first screen: 67 px at 1280x800, 180 px on a phone,
+where the bar wraps to five lines.
+
+**The fix.** `app.js` measures the bar's height as `--radar-h` and watches it,
+because the bar arrives after the page and shrinks to nothing when it is
+dismissed; every height sized by the screen subtracts it. Measured in the
+browser: at 1280x800 the hero runs from 67 to 800, arrow bottom 736; on a
+375x812 phone the picture gives up 180 px and the headline and the sentence sit
+in the first screen; after Dismiss the bar is 0 and the picture is whole again.
+
+**The check.** `harb docs --check` refuses any declaration in the stylesheet
+that sizes by the screen's height (vh, svh, dvh, lvh) without
+`var(--radar-h`; its unit test feeds it the rule as it stood, which it convicts
+twice. Named seam: a height set inside a page's own style attribute is not read.
+
+**The headline.** The motto is the headline now, "Declared. Judged. *Yours.*",
+and the separate motto line and its styles are gone; the word is said once.
+
+**Generalised beyond this repository** by routing, never by editing: the rule
+and its measure go to Central for the other Softanza sites and the Zui design
+system, which are other desks' repositories.
+
 # ESTATE-1, NORING-1, HOME-1 — the site says what Harobanda is, in the estate's type, foot and words
 
 Three seats on the site in one session (2026-11-12), each its own commit.

@@ -185,7 +185,12 @@ html:not(:has(.path)):not(:has(.home-body)){scroll-padding-top:var(--bar-h);}
    picture it is the ordinary bar again (app.js says when). On a phone the
    picture is a block of its own and the panel sits under it, on the page's
    own paper. */
-.hero-photo{position:relative;z-index:0;height:100vh;height:100svh;min-height:520px;
+/* The Radar bar, when it shows, stands above the menu and pushes the page down;
+   the picture gives up exactly its height (--radar-h, measured by app.js), so the
+   whole hero -- picture, panel and arrow -- stays in the first screen
+   (PRINCIPAL-RADARHERO-01, 2026-11-12). */
+.hero-photo{position:relative;z-index:0;height:calc(100vh - var(--radar-h,0px));
+  height:calc(100svh - var(--radar-h,0px));min-height:520px;
   margin-top:calc(-1 * var(--bar-h));overflow:hidden;background:#15110D;}
 .hero-img{position:absolute;inset:0;width:100%;height:100%;max-width:none;
   object-fit:cover;object-position:50% 40%;border:0;border-radius:0;}
@@ -205,10 +210,6 @@ html:not(:has(.path)):not(:has(.home-body)){scroll-padding-top:var(--bar-h);}
 .hero-panel h1 em{font-style:italic;font-weight:400;color:var(--panel-river);}
 .hero-sub{margin-top:14px;font-family:var(--serif);font-size:21px;
   line-height:1.42;color:#fff;}
-/* the motto, the author's word of 2026-11-12: three words, each one a thing the site shows */
-.motto{margin-top:12px;font-family:var(--sans);font-size:21px;font-weight:600;
-  letter-spacing:.01em;color:#fff;}
-.motto span{color:var(--panel-river);}
 .down{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;
   margin-top:18px;border:2px solid #fff;border-radius:50%;color:#fff;text-decoration:none;
   font-size:1.5rem;line-height:1;}
@@ -239,14 +240,14 @@ html:not(:has(.path)):not(:has(.home-body)){scroll-padding-top:var(--bar-h);}
 }
 @media(max-width:760px){
   .hero-photo{height:auto;min-height:0;background:var(--bg);}
-  .hero-img{position:static;display:block;width:100%;height:58svh;min-height:320px;
+  .hero-img{position:static;display:block;width:100%;
+    height:max(200px,calc(58svh - var(--radar-h,0px)));
     object-position:72% 50%;}
   .hero-panel{position:static;width:auto;background:none;color:var(--ink);
     padding:24px var(--gutter) 8px;border-radius:0;}
   .hero-panel .eyebrow,.hero-panel h1 em{color:var(--river);}
   .hero-panel h1{font-size:40px;color:var(--ink);}
-  .hero-sub,.motto{color:var(--ink);}
-  .motto span{color:var(--river);}
+  .hero-sub{color:var(--ink);}
   .down{border-color:var(--river);color:var(--river);}
   .down:hover{background:var(--river-wash);}
 }

@@ -1025,7 +1025,42 @@ const foot_parts = [_][]const u8{
     "https://mayouni.github.io/stzradar/bar/radar-bar-2.0.0.js",
 };
 
+/// whether a declaration sizes something by the screen's height: a number followed by vh, svh,
+/// dvh or lvh
+fn sizesByScreen(decl: []const u8) bool {
+    var i: usize = 0;
+    while (i < decl.len) : (i += 1) {
+        if (!std.ascii.isDigit(decl[i])) continue;
+        var j = i + 1;
+        while (j < decl.len and (std.ascii.isDigit(decl[j]) or decl[j] == '.')) j += 1;
+        const rest = decl[j..];
+        for ([_][]const u8{ "vh", "svh", "dvh", "lvh" }) |u| {
+            if (std.mem.startsWith(u8, rest, u) and
+                (rest.len == u.len or !std.ascii.isAlphanumeric(rest[u.len]))) return true;
+        }
+        i = j;
+    }
+    return false;
+}
+
+/// The Radar bar stands above the menu and pushes the page down by its height
+/// (PRINCIPAL-RADARHERO-01): a zone sized by the screen's height gives that height up, or
+/// its bottom -- the hero's sentence and its arrow -- falls below the first screen. Every
+/// declaration that sizes by the screen subtracts var(--radar-h), which app.js measures.
+fn checkRadarHero(w: *std.Io.Writer, css: []const u8, t: *Tally) !void {
+    var it = std.mem.tokenizeAny(u8, css, ";{}");
+    while (it.next()) |decl| {
+        if (!sizesByScreen(decl)) continue;
+        if (std.mem.indexOf(u8, decl, "var(--radar-h") != null) continue;
+        t.bad += 1;
+        const at = @intFromPtr(decl.ptr) - @intFromPtr(css.ptr);
+        const line = std.mem.count(u8, css[0..at], "\n") + 1;
+        try w.print("  site/styles.css:{d} -- '{s}' sizes by the screen's height and does not give up the Radar bar's (var(--radar-h)): with the bar shown, its bottom falls below the first screen (PRINCIPAL-RADARHERO-01)\n", .{ line, std.mem.trim(u8, decl, " \r\n") });
+    }
+}
+
 fn checkEstate(w: *std.Io.Writer, css: []const u8, pages: []const Page, t: *Tally) !void {
+    try checkRadarHero(w, css, t);
     for (running_rules) |r| {
         const px = rulePx(css, r) orelse {
             t.bad += 1;
@@ -1115,7 +1150,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         try compareWords(alloc, w, pg.path, got, &learn.words, &t);
     }
     if (t.bad == 0) {
-        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together, and every strip opens with the page its section's menu entry opens; and the {d} public pages (the site's and the README) state what the project is and does, with no line listing a lack ({d} allowed, each with its reason), and none names the retired language; and the {d} site pages read at 21 px with an 18 px foot, the Softanza foot and the Radar bar on each\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled, t.affirm_pages, affirm_allowed.len, t.estate_pages });
+        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together, and every strip opens with the page its section's menu entry opens; and the {d} public pages (the site's and the README) state what the project is and does, with no line listing a lack ({d} allowed, each with its reason), and none names the retired language; and the {d} site pages read at 21 px with an 18 px foot, the Softanza foot and the Radar bar on each, and every zone sized by the screen gives up the bar's height\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled, t.affirm_pages, affirm_allowed.len, t.estate_pages });
     } else {
         try w.print("docs -- {d} claim(s) the documents make do not hold\n", .{t.bad});
     }
@@ -1789,6 +1824,29 @@ test "running text is 21 px, the footer 18, and every page carries the foot and 
     var tally3 = Tally{};
     try checkEstate(&aw3.writer, gone, &.{}, &tally3);
     try t.expectEqual(@as(usize, 1), tally3.bad);
+}
+
+test "a zone sized by the screen gives up the Radar bar's height (RADARHERO-1)" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    try t.expect(sizesByScreen("height:100svh"));
+    try t.expect(sizesByScreen("height:calc(58.5dvh - 2px)"));
+    try t.expect(!sizesByScreen("width:100vw"));
+    try t.expect(!sizesByScreen("font-size:21px"));
+    const good = ".hero{height:calc(100svh - var(--radar-h,0px));min-height:520px;}\n.a{width:100vw}";
+    var aw = std.Io.Writer.Allocating.init(arena);
+    var tally = Tally{};
+    try checkRadarHero(&aw.writer, good, &tally);
+    try t.expectEqual(@as(usize, 0), tally.bad);
+    // the rule as it stood before the bar: the hero's bottom fell below the first screen
+    const bad = ".x{}\n.hero{height:100vh;height:100svh;min-height:520px;}";
+    var aw2 = std.Io.Writer.Allocating.init(arena);
+    var tally2 = Tally{};
+    try checkRadarHero(&aw2.writer, bad, &tally2);
+    try t.expectEqual(@as(usize, 2), tally2.bad);
+    try t.expect(std.mem.indexOf(u8, aw2.written(), "site/styles.css:2 -- 'height:100vh' sizes by the screen's height") != null);
 }
 
 test "no public page names the retired language, and a word that merely contains it is not it (NORING-1)" {
