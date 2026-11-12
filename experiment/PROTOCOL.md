@@ -19,6 +19,12 @@ browser: at 1280x800 the hero runs from 67 to 800, arrow bottom 736; on a
 375x812 phone the picture gives up 180 px and the headline and the sentence sit
 in the first screen; after Dismiss the bar is 0 and the picture is whole again.
 
+**Read back after the push, and one fix more.** The published page, in a
+browser pane that drew no frame, kept the hero at 867 px: a resize observation is
+delivered with a frame, and the bar filled in after the page's last measure.
+`app.js` now also measures at 0.3, 1, 2.5 and 6 s; the same hidden pane then
+read 800, arrow 736.
+
 **The check.** `harb docs --check` refuses any declaration in the stylesheet
 that sizes by the screen's height (vh, svh, dvh, lvh) without
 `var(--radar-h`; its unit test feeds it the rule as it stood, which it convicts

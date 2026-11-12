@@ -74,6 +74,10 @@
   window.addEventListener('resize', place);
   window.addEventListener('load', place);
   window.addEventListener('scroll', state, { passive: true });
+  /* A browser that draws no frame (a tab in the background) delivers no resize
+     observation, and the bar fills in after its own request: measure again a few
+     times as well, so the hero is right whichever comes first. */
+  [300, 1000, 2500, 6000].forEach(function (ms) { setTimeout(place, ms); });
 })();
 
 /* The foot's end year is computed, never typed (PRINCIPAL-COPYRIGHTYEARS-01): the
