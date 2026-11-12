@@ -36,6 +36,11 @@ jobs:
         run: |
           mkdir _site
           cp site/*.html site/*.css site/*.js site/*.png site/*.jpg _site/
+          # the foot's end year, computed when the site is built (the page's
+          # script writes it again when it is read): never typed in a page
+          sed -i "s|<span class=\"year\"></span>|<span class=\"year\">$(date -u +%Y)</span>|g" _site/*.html
+          missing=$(grep -L "<span class=\"year\">[0-9]\{4\}</span>" _site/*.html | wc -l)
+          [ "$missing" = 0 ] || { echo "$missing page(s) carry no year"; exit 1; }
           echo "$(ls _site | wc -l) files published"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

@@ -161,6 +161,8 @@ const Tally = struct {
     /// each judged to go to a page that exists (NAV-1)
     /// the site's pages read for lines that list what the project lacks (AFFIRM-1)
     affirm_pages: usize = 0,
+    /// the site's pages read for the estate's type sizes and its foot (ESTATE-1)
+    estate_pages: usize = 0,
     nav_total: usize = 0,
     nav_pages: usize = 0,
     nav_sections: usize = 0,
@@ -975,6 +977,98 @@ fn checkRetired(alloc: std.mem.Allocator, w: *std.Io.Writer, pages: []const Page
     }
 }
 
+// ---- every page reads at the estate's size, and carries the Softanza foot (ESTATE-1) ----
+
+/// The Principal's type rule for every Softanza site (PRINCIPAL-ESTATETYPE-01, 2026-11-09):
+/// running text is 21 px and footer text 18 px at least. The rules below are the stylesheet's
+/// running text, named, so that one moved below its size is refused by name; a rule renamed
+/// away is refused too, because a check that cannot find what it judges is not passed over.
+const running_rules = [_][]const u8{
+    ".lead{",                            ".prose p:not(.lead):not(.eyebrow):not(.pull){", "p.prose:not(.lead):not(.pull){",
+    ".xcard p{",                         ".cap{",                                         ".card p{",
+    ".kind p{",                          ".card li{",                                     ".honest li{",
+    ".fam .rl{",                         ".ground-row .prob{",                            ".ground-row .fix{",
+    ".placing .df{",                     ".words span{",                                  ".step p{",
+    ".hilite p{",                        ".osdelta p{",                                   ".versus li{",
+    ".hero-sub{",
+};
+const foot_rules = [_][]const u8{ ".foot p{", ".credits .credit-line{" };
+const running_px = 21;
+const foot_px = 18;
+
+/// what a rule declares as its font size, in px, if it declares one in px
+fn rulePx(css: []const u8, rule: []const u8) ?u32 {
+    const at = std.mem.indexOf(u8, css, rule) orelse return null;
+    const end = std.mem.indexOfScalarPos(u8, css, at, '}') orelse return null;
+    return declPx(css[at..end]);
+}
+
+/// the font size a list of declarations sets, in px -- a rule's body or a style attribute
+fn declPx(decls: []const u8) ?u32 {
+    const key = "font-size:";
+    const fs = std.mem.indexOf(u8, decls, key) orelse return null;
+    var i = fs + key.len;
+    while (i < decls.len and decls[i] == ' ') i += 1;
+    const from = i;
+    while (i < decls.len and std.ascii.isDigit(decls[i])) i += 1;
+    if (i == from or !std.mem.startsWith(u8, decls[i..], "px")) return null;
+    return std.fmt.parseInt(u32, decls[from..i], 10) catch null;
+}
+
+/// The foot every page carries (PRINCIPAL-SITEFOOT-01) and the Radar bar (LOOKOUT-BAR-SITES-01),
+/// in the parts that make them what was ruled: the link to the Softanza site, the end year left
+/// empty for the build and the page to compute, the licence's own link, and the bar's 2.0.0 script.
+const foot_parts = [_][]const u8{
+    "Harobanda is a <a href=\"https://mayouni.github.io/stzsite/\">Softanza project</a>.",
+    "&copy; 2020-<span class=\"year\"></span> Mansour Ayouni",
+    "Released under the <a href=\"https://github.com/mayouni/harobanda/blob/main/LICENSE\">MIT licence</a>.",
+    "https://mayouni.github.io/stzradar/bar/radar-bar-2.0.0.js",
+};
+
+fn checkEstate(w: *std.Io.Writer, css: []const u8, pages: []const Page, t: *Tally) !void {
+    for (running_rules) |r| {
+        const px = rulePx(css, r) orelse {
+            t.bad += 1;
+            try w.print("  site/styles.css -- the running-text rule '{s}' is not there, or declares no size in px: the type rule cannot be judged on it\n", .{r});
+            continue;
+        };
+        if (px < running_px) {
+            t.bad += 1;
+            try w.print("  site/styles.css -- '{s}' sets running text at {d} px; it is {d} px on every Softanza site (PRINCIPAL-ESTATETYPE-01)\n", .{ r, px, running_px });
+        }
+    }
+    for (foot_rules) |r| {
+        const px = rulePx(css, r) orelse {
+            t.bad += 1;
+            try w.print("  site/styles.css -- the footer rule '{s}' is not there, or declares no size in px\n", .{r});
+            continue;
+        };
+        if (px < foot_px) {
+            t.bad += 1;
+            try w.print("  site/styles.css -- '{s}' sets footer text at {d} px; footer text is {d} px at least (PRINCIPAL-ESTATETYPE-01)\n", .{ r, px, foot_px });
+        }
+    }
+    for (pages) |p| {
+        t.estate_pages += 1;
+        // a size set in the page itself, on running text, is held to the same floor
+        var from: usize = 0;
+        while (std.mem.indexOfPos(u8, p.text, from, "style=\"")) |at| {
+            const end = std.mem.indexOfScalarPos(u8, p.text, at + 7, '"') orelse break;
+            from = end;
+            const style = p.text[at + 7 .. end];
+            if (declPx(style)) |px| if (px < running_px) {
+                t.bad += 1;
+                const line = std.mem.count(u8, p.text[0..at], "\n") + 1;
+                try w.print("  {s}:{d} -- a size set in the page, {d} px, is below the {d} px of running text (PRINCIPAL-ESTATETYPE-01)\n", .{ p.path, line, px, running_px });
+            };
+        }
+        for (foot_parts) |part| if (std.mem.indexOf(u8, p.text, part) == null) {
+            t.bad += 1;
+            try w.print("  {s} -- carries no '{s}': every page carries the Softanza foot and the Radar bar (PRINCIPAL-SITEFOOT-01)\n", .{ p.path, part });
+        };
+    }
+}
+
 /// Run from the repository root, as `zig build court` runs it.
 pub fn check(w: *std.Io.Writer) !usize {
     var arena_state = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -1006,6 +1100,7 @@ pub fn check(w: *std.Io.Writer) !usize {
     try public.append(alloc, .{ .path = "README.md", .text = try root.readFileAlloc(alloc, "README.md", 1 << 24) });
     try checkAffirm(alloc, w, public.items, &affirm_allowed, &t);
     try checkRetired(alloc, w, public.items, &t);
+    try checkEstate(w, try root.readFileAlloc(alloc, "site/styles.css", 1 << 22), site.items, &t);
     const pages = [_]struct { path: []const u8, html: bool }{
         .{ .path = "README.md", .html = false },
         .{ .path = "site/words.html", .html = true },
@@ -1020,7 +1115,7 @@ pub fn check(w: *std.Io.Writer) !usize {
         try compareWords(alloc, w, pg.path, got, &learn.words, &t);
     }
     if (t.bad == 0) {
-        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together, and every strip opens with the page its section's menu entry opens; and the {d} public pages (the site's and the README) state what the project is and does, with no line listing a lack ({d} allowed, each with its reason), and none names the retired language\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled, t.affirm_pages, affirm_allowed.len });
+        try w.print("docs -- {d} Markdown files: no code line wider than {d}, nor than {d} inside a quote, where {d} code block(s) sit; {d} machine(s) shown in full, and the court accepts every one; the {d} words the tour defines, carried word for word to the README and the site; of the site's {d} pages, {d} sit in {d} section strips, each the same on every page of its section, and their {d} Next links each go to the next page of the strip ({d} onward, named); the {d} pages named as having no strip carry {d} Next link(s), each to a page that exists; and on {d} pages no label appears twice in the main menu and the strip together, and every strip opens with the page its section's menu entry opens; and the {d} public pages (the site's and the README) state what the project is and does, with no line listing a lack ({d} allowed, each with its reason), and none names the retired language; and the {d} site pages read at 21 px with an 18 px foot, the Softanza foot and the Radar bar on each\n", .{ found.md.items.len, max_code_width, allowedWidth(1), t.quoted, t.judged, learn.words.len, t.nav_total, t.nav_pages, t.nav_sections, t.nav_next, t.nav_onward, t.nav_bare, t.nav_bare_next, t.nav_labelled, t.affirm_pages, affirm_allowed.len, t.estate_pages });
     } else {
         try w.print("docs -- {d} claim(s) the documents make do not hold\n", .{t.bad});
     }
@@ -1656,6 +1751,44 @@ test "a strip entry that repeats its menu entry is convicted, naming both (MENU-
     const q = try labelProbe(arena, &.{.{ .path = "site/security.html", .text = menu_sec ++ new }});
     try t.expectEqual(@as(usize, 0), q.tally.bad);
     try t.expectEqual(@as(usize, 1), q.tally.nav_labelled);
+}
+
+test "running text is 21 px, the footer 18, and every page carries the foot and the bar (ESTATE-1)" {
+    const t = std.testing;
+    var arena_state = std.heap.ArenaAllocator.init(t.allocator);
+    defer arena_state.deinit();
+    const arena = arena_state.allocator();
+    try t.expectEqual(@as(?u32, 21), rulePx(".a{x:1}.lead{font-family:s;font-size:21px;}", ".lead{"));
+    try t.expectEqual(@as(?u32, null), rulePx(".lead{font-size:1.2rem;}", ".lead{"));
+    try t.expectEqual(@as(?u32, 18), declPx("margin:0;font-size: 18px;line-height:1"));
+    // a stylesheet with every rule at its size, and a page with the foot and the bar
+    var css: std.ArrayList(u8) = .{};
+    for (running_rules) |r| try css.writer(arena).print("{s}font-size:21px;}}\n", .{r});
+    for (foot_rules) |r| try css.writer(arena).print("{s}font-size:18px;}}\n", .{r});
+    var page: std.ArrayList(u8) = .{};
+    for (foot_parts) |part| try page.appendSlice(arena, part);
+    var aw = std.Io.Writer.Allocating.init(arena);
+    var tally = Tally{};
+    try checkEstate(&aw.writer, css.items, &.{.{ .path = "site/x.html", .text = page.items }}, &tally);
+    try t.expectEqual(@as(usize, 0), tally.bad);
+    // one running rule moved down, one page size set small, and a page with no bar
+    const smaller = try std.mem.replaceOwned(u8, arena, css.items, ".card p{font-size:21px;}", ".card p{font-size:18px;}");
+    const no_bar = try std.mem.replaceOwned(u8, arena, page.items, "radar-bar-2.0.0.js", "radar-bar-1.0.0.js");
+    const small_page = try std.mem.concat(arena, u8, &.{ page.items, "\n<p style=\"font-size:16px\">x</p>" });
+    var aw2 = std.Io.Writer.Allocating.init(arena);
+    var tally2 = Tally{};
+    try checkEstate(&aw2.writer, smaller, &.{ .{ .path = "site/a.html", .text = no_bar }, .{ .path = "site/b.html", .text = small_page } }, &tally2);
+    try t.expectEqual(@as(usize, 3), tally2.bad);
+    const said = aw2.written();
+    try t.expect(std.mem.indexOf(u8, said, "'.card p{' sets running text at 18 px") != null);
+    try t.expect(std.mem.indexOf(u8, said, "site/a.html -- carries no 'https://mayouni.github.io/stzradar/bar/radar-bar-2.0.0.js'") != null);
+    try t.expect(std.mem.indexOf(u8, said, "site/b.html:2 -- a size set in the page, 16 px") != null);
+    // a rule renamed away is refused, never passed over
+    const gone = try std.mem.replaceOwned(u8, arena, css.items, ".honest li{", ".plain li{");
+    var aw3 = std.Io.Writer.Allocating.init(arena);
+    var tally3 = Tally{};
+    try checkEstate(&aw3.writer, gone, &.{}, &tally3);
+    try t.expectEqual(@as(usize, 1), tally3.bad);
 }
 
 test "no public page names the retired language, and a word that merely contains it is not it (NORING-1)" {

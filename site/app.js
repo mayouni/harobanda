@@ -55,3 +55,11 @@
   window.addEventListener('load', place);
   window.addEventListener('scroll', state, { passive: true });
 })();
+
+/* The foot's end year is computed, never typed (PRINCIPAL-COPYRIGHTYEARS-01): the
+   site's build writes the year it was built, and this writes the year it is read. */
+(function () {
+  var y = String(new Date().getFullYear());
+  var spans = document.querySelectorAll('.year');
+  for (var i = 0; i < spans.length; i++) spans[i].textContent = y;
+})();
