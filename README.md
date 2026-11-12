@@ -3,11 +3,38 @@
 </p>
 
 <p align="center">
-  <b>The declared machine.</b><br>
+  <b>Declared. Judged. Yours.</b><br>
   You describe the whole computer in one text file. It boots exactly that, and checks every boot against the file.
 </p>
 
 ---
+
+**What Harobanda is.** An operating system built on Linux in which every
+machine is a short text file: what it runs, what each program may reach, and
+why each part is there. The file is checked before anything boots, and every
+boot is checked against the file. It is made for solutions that must stay
+their owner's: AI agents that must be governed, critical work that must keep
+running, and clouds made of the owner's own machines.
+
+- **Declared.** A machine is written, never assembled by hand: its programs,
+  the disks and networks each may use, and the reason for every part, in one
+  file a person or an agent can read.
+- **Judged.** Before it runs, the file is checked against the language's
+  rules; after it boots, the machine compares what it did with what its file
+  says, and an update that differs is not kept.
+- **Yours.** The machines, their data and the cloud they form stay with their
+  owner: a cloud is a set of your own machines in the rooms you choose,
+  written in one fleet file, with no account to open and no vendor inside.
+- **On proven Linux.** The same long-term-support kernel the major
+  distributions ship, fixed by its fingerprint, kept in the project's own
+  mirror and built here.
+- **Simple to hold.** One small program is the whole tool and the machine's
+  first program, and a machine carries only what it declared: no shell, no
+  package manager, no store.
+
+Harobanda is the floor of Softanza: the machine beneath Haro, its language
+and runtime, the Softanza foundation that designs a solution, and Aïcha, its
+intelligence -- so a solution is designed whole, down to the operating system.
 
 **Built for AI agents you must be able to govern.** An agent on a declared
 machine is one program the file names, and the file says what it may touch:

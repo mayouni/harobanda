@@ -205,6 +205,10 @@ html:not(:has(.path)):not(:has(.home-body)){scroll-padding-top:var(--bar-h);}
 .hero-panel h1 em{font-style:italic;font-weight:400;color:var(--panel-river);}
 .hero-sub{margin-top:14px;font-family:var(--serif);font-size:clamp(18px,1.5vw,20px);
   line-height:1.42;color:#fff;}
+/* the motto, the author's word of 2026-11-12: three words, each one a thing the site shows */
+.motto{margin-top:12px;font-family:var(--sans);font-size:21px;font-weight:600;
+  letter-spacing:.01em;color:#fff;}
+.motto span{color:var(--panel-river);}
 .down{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;
   margin-top:18px;border:2px solid #fff;border-radius:50%;color:#fff;text-decoration:none;
   font-size:1.5rem;line-height:1;}
@@ -241,7 +245,8 @@ html:not(:has(.path)):not(:has(.home-body)){scroll-padding-top:var(--bar-h);}
     padding:24px var(--gutter) 8px;border-radius:0;}
   .hero-panel .eyebrow,.hero-panel h1 em{color:var(--river);}
   .hero-panel h1{font-size:40px;color:var(--ink);}
-  .hero-sub{color:var(--ink);}
+  .hero-sub,.motto{color:var(--ink);}
+  .motto span{color:var(--river);}
   .down{border-color:var(--river);color:var(--river);}
   .down:hover{background:var(--river-wash);}
 }
